@@ -1,0 +1,362 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-318",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/merge-upstream",
+      "description": "Merges upstream base repo branch into fork branch via push or fake PR merge",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.MergeUpstream",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "APIContext with MergeUpstreamRequest form",
+          "output": "MergeUpstreamResponse or error",
+          "operations": ["Parse form body", "Call repo_service.MergeUpstream"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repository.MergeUpstream",
+          "type": "service",
+          "file_path": "services/repository/merge_upstream.go",
+          "input": "context, doer, repo, branch, ffOnly",
+          "output": "mergeStyle string, error",
+          "operations": ["Check repo not archived", "Load base repo", "Get upstream diverging info", "Attempt git push (fast-forward)", "If push fails and not ffOnly, create fake PR and call pull.Update"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load base repo via GetBaseRepo"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repository.GetUpstreamDivergingInfo",
+          "type": "service",
+          "file_path": "services/repository/merge_upstream.go",
+          "input": "context, forkRepo, forkBranch",
+          "output": "UpstreamDivergingInfo, error",
+          "operations": ["Validate repo is fork and not archived", "Load base repo", "Check if branch exists in base repo", "Get branch diverging info"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load base repo"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "gitrepo.Push",
+          "type": "utility",
+          "file_path": "modules/gitrepo/push.go",
+          "input": "context, baseRepo, forkRepo, PushOptions",
+          "output": "error",
+          "operations": ["Execute git push from base repo to fork repo"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "pull.Update",
+          "type": "service",
+          "file_path": "services/pull/update.go",
+          "input": "context, fakePR, doer, message, rebase",
+          "output": "error",
+          "operations": ["Perform merge of base branch into head branch using fake PR"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "MergeUpstreamRequest",
+          "to": "MergeUpstreamResponse",
+          "component": "repo.MergeUpstream",
+          "mappings": [
+            {"source_field": "branch", "target_field": "merge_type", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Repo is not a fork or is archived", "handler": "repo.MergeUpstream", "response_code": 400, "response": "error"},
+        {"condition": "Branch or repo not found", "handler": "repo.MergeUpstream", "response_code": 404, "response": "notFound"},
+        {"condition": "Internal error during merge", "handler": "repo.MergeUpstream", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-319",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/lock",
+      "description": "Locks an issue to restrict commenting, creates a lock comment",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.LockIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_lock.go",
+          "input": "APIContext with LockIssueOption form",
+          "output": "204 No Content or error",
+          "operations": ["Parse form for reason", "Get issue by index", "Check write permission", "Call issues_model.LockIssue if not already locked"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue", "description": "GetIssueByIndex"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.LockIssue",
+          "type": "repository",
+          "file_path": "models/issues/issue_lock.go",
+          "input": "context, IssueLockOptions",
+          "output": "error",
+          "operations": ["Set is_locked=true", "Update issue column", "Create lock comment in transaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "issue", "description": "Set is_locked=true"},
+            {"operation": "INSERT", "table": "comment", "description": "Create CommentTypeLock comment with reason"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "repo.LockIssue", "response_code": 404, "response": "notFound"},
+        {"condition": "No write permission", "handler": "repo.LockIssue", "response_code": 403, "response": "forbidden"},
+        {"condition": "DB error", "handler": "repo.LockIssue", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-320",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/lock",
+      "description": "Unlocks a previously locked issue, creates an unlock comment",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.UnlockIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_lock.go",
+          "input": "APIContext",
+          "output": "204 No Content or error",
+          "operations": ["Get issue by index", "Check write permission", "Call issues_model.UnlockIssue if currently locked"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue", "description": "GetIssueByIndex"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.UnlockIssue",
+          "type": "repository",
+          "file_path": "models/issues/issue_lock.go",
+          "input": "context, IssueLockOptions",
+          "output": "error",
+          "operations": ["Set is_locked=false", "Update issue column", "Create unlock comment in transaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "issue", "description": "Set is_locked=false"},
+            {"operation": "INSERT", "table": "comment", "description": "Create CommentTypeUnlock comment"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "repo.UnlockIssue", "response_code": 404, "response": "notFound"},
+        {"condition": "No write permission", "handler": "repo.UnlockIssue", "response_code": 403, "response": "forbidden"},
+        {"condition": "DB error", "handler": "repo.UnlockIssue", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-321",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks",
+      "description": "Lists all webhooks for a repository with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListHooks",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/hook.go",
+          "input": "APIContext",
+          "output": "JSON array of Hook objects",
+          "operations": ["Build ListWebhookOptions with repo ID and pagination", "Query webhooks", "Convert each to API Hook"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "webhook", "description": "FindAndCount with repo_id filter and pagination"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "webhook_service.ToHook",
+          "type": "service",
+          "file_path": "services/webhook/general.go",
+          "input": "repoLink, Webhook model",
+          "output": "api.Hook",
+          "operations": ["Build config map", "Decrypt authorization header", "Map model fields to API struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "webhook.Webhook",
+          "to": "api.Hook",
+          "component": "webhook_service.ToHook",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Type", "target_field": "type", "transformation": "direct_copy"},
+            {"source_field": "URL", "target_field": "config.url", "transformation": "direct_copy"},
+            {"source_field": "ContentType", "target_field": "config.content_type", "transformation": "computed"},
+            {"source_field": "IsActive", "target_field": "active", "transformation": "direct_copy"},
+            {"source_field": "EventsArray()", "target_field": "events", "transformation": "computed"},
+            {"source_field": "HeaderAuthorizationEncrypted", "target_field": "authorization_header", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "repo.ListHooks", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-322",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "description": "Gets a single webhook by ID for a repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/hook.go",
+          "input": "APIContext with hook ID path param",
+          "output": "JSON Hook object",
+          "operations": ["Get hook by repo ID and hook ID", "Convert to API Hook"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "webhook", "description": "GetWebhookByRepoID with id and repo_id filter"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "webhook_service.ToHook",
+          "type": "service",
+          "file_path": "services/webhook/general.go",
+          "input": "repoLink, Webhook model",
+          "output": "api.Hook",
+          "operations": ["Build config map", "Decrypt authorization header", "Map model fields to API struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "webhook.Webhook",
+          "to": "api.Hook",
+          "component": "webhook_service.ToHook",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "URL", "target_field": "config.url", "transformation": "direct_copy"},
+            {"source_field": "IsActive", "target_field": "active", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Webhook not found for repo", "handler": "utils.GetRepoHook", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "utils.GetRepoHook", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-323",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}/tests",
+      "description": "Tests a webhook by sending a push event payload with the latest commit",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.TestHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/hook.go",
+          "input": "APIContext with hook ID and optional ref query param",
+          "output": "204 No Content",
+          "operations": ["Check if repo has commits", "Determine ref (default branch or query param)", "Get hook by ID", "Convert commit to payload", "Call PrepareWebhook"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "webhook", "description": "GetWebhookByRepoID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToPayloadCommit",
+          "type": "service",
+          "file_path": "services/convert/git_commit.go",
+          "input": "context, repo, commit",
+          "output": "api.PayloadCommit",
+          "operations": ["Convert git commit to API payload commit struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "webhook_service.PrepareWebhook",
+          "type": "service",
+          "file_path": "services/webhook/webhook.go",
+          "input": "context, webhook, HookEventPush, PushPayload",
+          "output": "error",
+          "operations": ["Check webhooks not disabled", "Check event matches hook events", "Check branch filter", "Serialize payload to JSON", "Create HookTask in DB", "Enqueue task for delivery"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "hook_task", "description": "Create hook task for delivery"}
+          ],
+          "cache_ops": [],
+          "async": true
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "git.Commit",
+          "to": "api.PushPayload",
+          "component": "repo.TestHook",
+          "mappings": [
+            {"source_field": "ID", "target_field": "after", "transformation": "computed"},
+            {"source_field": "ID", "target_field": "before", "transformation": "computed"},
+            {"source_field": "commit", "target_field": "commits[0]", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Webhook not found", "handler": "utils.GetRepoHook", "response_code": 404, "response": "notFound"},
+        {"condition": "PrepareWebhook fails", "handler": "repo.TestHook", "response_code": 500, "response": "error"}
+      ]
+    }
+  ]
+}

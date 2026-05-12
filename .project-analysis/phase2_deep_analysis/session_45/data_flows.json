@@ -1,0 +1,556 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-306",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "description": "Get branch info with protection details by checking DB existence, fetching git commit, loading protection rule, and converting to API response",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetBranch",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx with repo context",
+          "output": "api.Branch JSON",
+          "operations": ["Extract branch name from path param"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "git_model.IsBranchExist",
+          "type": "repository",
+          "file_path": "models/git/branch.go",
+          "input": "repoID, branchName",
+          "output": "bool, error",
+          "operations": ["Check branch exists in DB and is not deleted"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "branch", "description": "Check branch existence by repo_id and name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "GitRepo.GetBranchCommit",
+          "type": "utility",
+          "file_path": "modules/git/repo_branch.go",
+          "input": "branchName",
+          "output": "*git.Commit",
+          "operations": ["Get latest commit from git repository for branch"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "git_model.GetFirstMatchProtectedBranchRule",
+          "type": "repository",
+          "file_path": "models/git/protected_branch.go",
+          "input": "repoID, branchName",
+          "output": "*ProtectedBranch",
+          "operations": ["Find first matching branch protection rule"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "protected_branch", "description": "Get protection rules for repo, match against branch name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToBranch",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "repo, branchName, commit, branchProtection, doer, isAdmin",
+          "output": "*api.Branch",
+          "operations": ["Convert to API response, check user permissions for push/merge"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "Check user access permissions for push/merge"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "git.Commit + ProtectedBranch",
+          "to": "api.Branch",
+          "component": "convert.ToBranch",
+          "mappings": [
+            {"source_field": "branchName", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "commit", "target_field": "Commit", "transformation": "computed"},
+            {"source_field": "bp != nil", "target_field": "Protected", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Branch not in DB", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Git or DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-307",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "description": "Delete a branch by checking preconditions, syncing branches if needed, then marking deleted in DB and removing from git",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteBranch",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx with repo context",
+          "output": "204 No Content",
+          "operations": ["Check repo not empty, not mirror, extract branch name"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "db.Count[git_model.Branch]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindBranchOptions",
+          "output": "int64 count",
+          "operations": ["Count non-deleted branches to check if sync needed"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT COUNT", "table": "branch", "description": "Count active branches for repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_module.SyncRepoBranches",
+          "type": "service",
+          "file_path": "modules/repository/branch.go",
+          "input": "repoID, pusherID",
+          "output": "int64, error",
+          "operations": ["Sync branches from git to DB if count is 0"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "branch", "description": "Insert synced branches"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "repo_service.DeleteBranch",
+          "type": "service",
+          "file_path": "services/repository/branch.go",
+          "input": "doer, repo, gitRepo, branchName",
+          "output": "error",
+          "operations": ["Check archive status, check permissions, check protection, mark deleted in DB, delete from git, send notifications"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repo_unit", "description": "Get PR config for default target branch check"},
+            {"operation": "SELECT", "table": "access", "description": "Check user write permission"},
+            {"operation": "SELECT", "table": "protected_branch", "description": "Check if branch is protected"},
+            {"operation": "UPDATE", "table": "branch", "description": "Mark branch as deleted"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "gitrepo.DeleteBranch",
+          "type": "utility",
+          "file_path": "modules/gitrepo/branch.go",
+          "input": "repo, branchName",
+          "output": "error",
+          "operations": ["Delete branch reference from git repository"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Repo is empty", "handler": "ctx.APIError", "response_code": 404, "response": "Git Repository is empty"},
+        {"condition": "Repo is mirror", "handler": "ctx.APIError", "response_code": 403, "response": "Git Repository is a mirror"},
+        {"condition": "Branch not exist", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Branch is default", "handler": "ctx.APIError", "response_code": 403, "response": "can not delete default or pull request target branch"},
+        {"condition": "Branch is protected", "handler": "ctx.APIError", "response_code": 403, "response": "branch protected"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-308",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/branches",
+      "description": "Create a new branch from an existing ref/branch/commit, push to git, then return branch info",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateBranch",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx with CreateBranchRepoOption form",
+          "output": "201 api.Branch",
+          "operations": ["Check repo not empty/mirror, resolve source ref"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "GitRepo.GetCommit/GetBranchCommit",
+          "type": "utility",
+          "file_path": "modules/git/repo_commit.go",
+          "input": "ref name or branch name",
+          "output": "*git.Commit",
+          "operations": ["Resolve source commit from OldRefName, OldBranchName, or default branch"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_service.CreateNewBranchFromCommit",
+          "type": "service",
+          "file_path": "services/repository/branch.go",
+          "input": "doer, repo, commitID, branchName",
+          "output": "error",
+          "operations": ["Check archive status, check branch name conflicts, push new branch to git"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "checkBranchName",
+          "type": "service",
+          "file_path": "services/repository/branch.go",
+          "input": "repo, branchName",
+          "output": "error",
+          "operations": ["Walk all refs to check for name conflicts with existing branches and tags"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "gitrepo.Push",
+          "type": "utility",
+          "file_path": "modules/gitrepo/push.go",
+          "input": "PushOptions with commitID:refs/heads/branchName",
+          "output": "error",
+          "operations": ["Execute git push to create branch"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 6,
+          "component": "convert.ToBranch",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "repo, branchName, commit, branchProtection, doer, isAdmin",
+          "output": "*api.Branch",
+          "operations": ["Convert new branch to API response"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "protected_branch", "description": "Get matching protection rule for new branch"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "CreateBranchRepoOption",
+          "to": "git push command",
+          "component": "repo_service.CreateNewBranchFromCommit",
+          "mappings": [
+            {"source_field": "BranchName", "target_field": "branch ref", "transformation": "computed"},
+            {"source_field": "OldRefName/OldBranchName", "target_field": "commitID", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Repo is empty", "handler": "ctx.APIError", "response_code": 404, "response": "Git Repository is empty"},
+        {"condition": "Repo is mirror", "handler": "ctx.APIError", "response_code": 403, "response": "Git Repository is a mirror"},
+        {"condition": "Old branch not exist", "handler": "ctx.APIError", "response_code": 404, "response": "The old branch does not exist"},
+        {"condition": "Branch already exists", "handler": "ctx.APIError", "response_code": 409, "response": "The branch already exists"},
+        {"condition": "Tag already exists", "handler": "ctx.APIError", "response_code": 409, "response": "The branch with the same tag already exists"},
+        {"condition": "Branch name conflict", "handler": "ctx.APIError", "response_code": 409, "response": "The branch with the same name already exists"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-309",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branches",
+      "description": "List all branches with pagination, syncing from git if needed, loading protection rules for each",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListBranches",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx with pagination params",
+          "output": "200 []api.Branch",
+          "operations": ["Get list options, check repo not empty"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "db.Count[git_model.Branch]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindBranchOptions",
+          "output": "int64",
+          "operations": ["Count total non-deleted branches"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT COUNT", "table": "branch", "description": "Count active branches"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "git_model.FindRepoProtectedBranchRules",
+          "type": "repository",
+          "file_path": "models/git/protected_branch.go",
+          "input": "repoID",
+          "output": "ProtectedBranchRules",
+          "operations": ["Load all protection rules for the repo"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "protected_branch", "description": "Get all protection rules for repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "db.Find[git_model.Branch]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindBranchOptions with pagination",
+          "output": "[]*git_model.Branch",
+          "operations": ["Fetch paginated branch list from DB"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "branch", "description": "Get branches with pagination"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "GitRepo.GetBranchCommit (loop)",
+          "type": "utility",
+          "file_path": "modules/git/repo_branch.go",
+          "input": "branchName",
+          "output": "*git.Commit",
+          "operations": ["Get commit for each branch in the list"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 6,
+          "component": "convert.ToBranch (loop)",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "repo, branchName, commit, protection, doer, isAdmin",
+          "output": "*api.Branch",
+          "operations": ["Convert each branch to API response with permission checks"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "Check user permissions per branch"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*git_model.Branch + git.Commit",
+          "to": "[]*api.Branch",
+          "component": "convert.ToBranch",
+          "mappings": [
+            {"source_field": "Branch.Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "commit", "target_field": "Commit", "transformation": "computed"},
+            {"source_field": "protection match", "target_field": "Protected", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-310",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "description": "Update a branch reference to point to a new commit, with optional optimistic locking and force push support",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.UpdateBranch",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx with UpdateBranchRepoOption form",
+          "output": "204 No Content",
+          "operations": ["Check repo not empty/mirror, extract branch name"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_service.UpdateBranch",
+          "type": "service",
+          "file_path": "services/repository/branch.go",
+          "input": "repo, gitRepo, doer, branchName, newCommitID, oldCommitID, force",
+          "output": "error",
+          "operations": ["Get branch from DB, validate old commit if provided, resolve new commit, check force push, execute git push"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "branch", "description": "Get current branch state"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "gitRepo.ConvertToGitID",
+          "type": "utility",
+          "file_path": "modules/git/repo.go",
+          "input": "commitID string",
+          "output": "ObjectID",
+          "operations": ["Validate and convert commit SHA"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "newCommit.IsForcePush",
+          "type": "utility",
+          "file_path": "modules/git/commit.go",
+          "input": "oldCommitID",
+          "output": "bool",
+          "operations": ["Check if update requires force push (not fast-forward)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "gitrepo.Push",
+          "type": "utility",
+          "file_path": "modules/gitrepo/push.go",
+          "input": "PushOptions with force flag",
+          "output": "error",
+          "operations": ["Execute git push to update branch reference"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Repo is empty", "handler": "ctx.APIError", "response_code": 404, "response": "Git Repository is empty"},
+        {"condition": "Repo is mirror", "handler": "ctx.APIError", "response_code": 403, "response": "Git Repository is a mirror"},
+        {"condition": "Branch not exist", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Invalid argument (commit mismatch)", "handler": "ctx.APIError", "response_code": 422, "response": "validationError"},
+        {"condition": "Push rejected", "handler": "ctx.APIError", "response_code": 403, "response": "rejected message"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-311",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "description": "Rename a branch, handling default branch updates, protection rules, and notifications",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.RenameBranch",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx with RenameBranchRepoOption form",
+          "output": "204 No Content",
+          "operations": ["Check repo not empty/mirror, extract old name"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_service.RenameBranch",
+          "type": "service",
+          "file_path": "services/repository/branch.go",
+          "input": "repo, doer, from, to",
+          "output": "string msg, error",
+          "operations": ["Check archive, check target exists, check source exists, check permissions, check protection, rename in DB and git"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "branch", "description": "Check target branch existence"},
+            {"operation": "SELECT", "table": "branch", "description": "Get source branch"},
+            {"operation": "SELECT", "table": "access", "description": "Check doer permissions"},
+            {"operation": "SELECT", "table": "protected_branch", "description": "Check protection rules for source and target"},
+            {"operation": "UPDATE", "table": "branch", "description": "Rename branch in DB"},
+            {"operation": "UPDATE", "table": "repository", "description": "Update default branch if renamed"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "git_model.RenameBranch",
+          "type": "repository",
+          "file_path": "models/git/branch.go",
+          "input": "repo, from, to, callback",
+          "output": "error",
+          "operations": ["Rename branch in DB within transaction, call git rename callback"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "branch", "description": "Rename branch record"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "gitrepo.RenameBranch",
+          "type": "utility",
+          "file_path": "modules/gitrepo/branch.go",
+          "input": "repo, from, to",
+          "output": "error",
+          "operations": ["Rename branch in git repository"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "notify_service.DeleteRef/CreateRef",
+          "type": "service",
+          "file_path": "services/notify/notify.go",
+          "input": "doer, repo, refName, commitID",
+          "output": "void",
+          "operations": ["Send notifications for old ref deletion and new ref creation"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": true
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Repo is empty", "handler": "ctx.APIError", "response_code": 404, "response": "Git Repository is empty"},
+        {"condition": "Repo is mirror", "handler": "ctx.APIError", "response_code": 403, "response": "Git Repository is a mirror"},
+        {"condition": "User not admin for default/protected", "handler": "ctx.APIError", "response_code": 403, "response": "User must be a repo or site admin"},
+        {"condition": "Target protected and user can't push", "handler": "ctx.APIError", "response_code": 403, "response": "Failed to rename branch due to branch protection rules"},
+        {"condition": "Target exists or same name", "handler": "ctx.APIError", "response_code": 422, "response": "Cannot rename a branch using the same name or rename to a branch that already exists"},
+        {"condition": "Source not exist", "handler": "ctx.APIError", "response_code": 404, "response": "Branch doesn't exist"}
+      ]
+    }
+  ]
+}

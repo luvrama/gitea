@@ -1,0 +1,432 @@
+{
+  "total_flows": 7,
+  "flows": [
+    {
+      "endpoint_id": "ep-077",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "description": "Lists all webhooks for an organization with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.ListHooks",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/hook.go",
+          "input": "APIContext with ContextUser",
+          "output": "delegates to ListOwnerHooks",
+          "operations": ["Extract context user", "Call ListOwnerHooks"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.ListOwnerHooks",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *user_model.User",
+          "output": "[]*api.Hook JSON response",
+          "operations": ["Get list options from query params", "Build ListWebhookOptions with OwnerID", "Call db.FindAndCount", "Convert each webhook to API format"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "webhook", "description": "Find webhooks by owner_id with pagination"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "webhook_service.ToHook",
+          "type": "service",
+          "file_path": "services/webhook/general.go",
+          "input": "*webhook_model.Webhook",
+          "output": "*api.Hook",
+          "operations": ["Build config map", "Decrypt authorization header", "Build events array", "Construct API hook struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*webhook.Webhook",
+          "to": "*api.Hook",
+          "component": "webhook_service.ToHook",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "URL", "target_field": "Config[url]", "transformation": "direct_copy"},
+            {"source_field": "ContentType.Name()", "target_field": "Config[content_type]", "transformation": "computed"},
+            {"source_field": "EventsArray()", "target_field": "Events", "transformation": "computed"},
+            {"source_field": "HeaderAuthorizationEncrypted", "target_field": "AuthorizationHeader", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "db.FindAndCount fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "ToHook fails (decrypt error)", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-078",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "description": "Gets a single organization webhook by ID",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.GetHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/hook.go",
+          "input": "APIContext",
+          "output": "*api.Hook JSON response",
+          "operations": ["Call GetOwnerHook", "Call ToHook", "Return JSON"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.GetOwnerHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "ownerID int64, hookID int64",
+          "output": "*webhook.Webhook",
+          "operations": ["Call GetWebhookByOwnerID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "webhook", "description": "Get webhook by id AND owner_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "webhook_service.ToHook",
+          "type": "service",
+          "file_path": "services/webhook/general.go",
+          "input": "*webhook_model.Webhook",
+          "output": "*api.Hook",
+          "operations": ["Convert webhook to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*webhook.Webhook",
+          "to": "*api.Hook",
+          "component": "webhook_service.ToHook",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "IsActive", "target_field": "Active", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Webhook not found (ErrWebhookNotExist)", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-079",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "description": "Creates a new webhook for an organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.CreateHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/hook.go",
+          "input": "APIContext with CreateHookOption form",
+          "output": "delegates to AddOwnerHook",
+          "operations": ["Get form from context", "Call AddOwnerHook"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.AddOwnerHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *user_model.User, *CreateHookOption",
+          "output": "*api.Hook JSON 201",
+          "operations": ["Call addHook", "Convert to API hook", "Return 201"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "utils.addHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "*CreateHookOption, ownerID, repoID",
+          "output": "*webhook.Webhook",
+          "operations": ["Validate hook type", "Validate config (url, content_type)", "Validate URL format", "Build Webhook struct", "Encrypt authorization header", "Handle Slack-specific meta", "Serialize events to JSON", "Insert webhook into DB"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "webhook", "description": "Create new webhook record"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*api.CreateHookOption",
+          "to": "*webhook.Webhook",
+          "component": "utils.addHook",
+          "mappings": [
+            {"source_field": "Config[url]", "target_field": "URL", "transformation": "direct_copy"},
+            {"source_field": "Config[content_type]", "target_field": "ContentType", "transformation": "computed"},
+            {"source_field": "Config[secret]", "target_field": "Secret", "transformation": "direct_copy"},
+            {"source_field": "Events", "target_field": "HookEvents", "transformation": "computed"},
+            {"source_field": "AuthorizationHeader", "target_field": "HeaderAuthorizationEncrypted", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid hook type", "handler": "ctx.APIError", "response_code": 422, "response": "Invalid hook type"},
+        {"condition": "Missing config url/content_type", "handler": "ctx.APIError", "response_code": 422, "response": "Missing config option"},
+        {"condition": "Invalid content type", "handler": "ctx.APIError", "response_code": 422, "response": "Invalid content type"},
+        {"condition": "Invalid URL", "handler": "ctx.APIError", "response_code": 422, "response": "Invalid url"},
+        {"condition": "Slack missing channel", "handler": "ctx.APIError", "response_code": 422, "response": "Missing config option: channel"},
+        {"condition": "Invalid slack channel", "handler": "ctx.APIError", "response_code": 400, "response": "Invalid slack channel name"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-080",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "description": "Updates an existing organization webhook",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.EditHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/hook.go",
+          "input": "APIContext with EditHookOption form",
+          "output": "delegates to EditOwnerHook",
+          "operations": ["Get form from context", "Call EditOwnerHook"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.EditOwnerHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *user_model.User, *EditHookOption, hookID",
+          "output": "*api.Hook JSON 200",
+          "operations": ["Get existing hook by owner+id", "Call editHook", "Re-fetch updated hook", "Convert to API format"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "webhook", "description": "Get webhook by id AND owner_id"},
+            {"operation": "SELECT", "table": "webhook", "description": "Re-fetch updated webhook"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "utils.editHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "*EditHookOption, *webhook.Webhook",
+          "output": "bool (success)",
+          "operations": ["Update URL if provided", "Update content_type if provided", "Update Slack meta if applicable", "Update events", "Encrypt auth header", "Serialize events", "Update active/name", "Save to DB"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "webhook", "description": "Update all columns of webhook"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*api.EditHookOption",
+          "to": "*webhook.Webhook (mutated)",
+          "component": "utils.editHook",
+          "mappings": [
+            {"source_field": "Config[url]", "target_field": "URL", "transformation": "direct_copy"},
+            {"source_field": "Config[content_type]", "target_field": "ContentType", "transformation": "computed"},
+            {"source_field": "Events", "target_field": "HookEvents", "transformation": "computed"},
+            {"source_field": "Active", "target_field": "IsActive", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Webhook not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "Invalid URL", "handler": "ctx.APIError", "response_code": 422, "response": "Invalid url"},
+        {"condition": "Invalid content type", "handler": "ctx.APIError", "response_code": 422, "response": "Invalid content type"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-081",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "description": "Deletes an organization webhook and its associated tasks",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.DeleteHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/hook.go",
+          "input": "APIContext",
+          "output": "delegates to DeleteOwnerHook",
+          "operations": ["Call DeleteOwnerHook"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.DeleteOwnerHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *user_model.User, hookID",
+          "output": "204 No Content",
+          "operations": ["Call DeleteWebhookByOwnerID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "webhook.DeleteWebhookByOwnerID",
+          "type": "repository",
+          "file_path": "models/webhook/webhook.go",
+          "input": "ownerID, hookID",
+          "output": "error",
+          "operations": ["Verify webhook exists for owner", "Call DeleteWebhookByID in transaction", "Delete webhook record", "Delete associated hook_task records"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "webhook", "description": "Verify webhook belongs to owner"},
+            {"operation": "DELETE", "table": "webhook", "description": "Delete webhook by ID"},
+            {"operation": "DELETE", "table": "hook_task", "description": "Delete all tasks for this hook"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Webhook not found (ErrWebhookNotExist)", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-082",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/labels",
+      "description": "Lists all labels for an organization with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.ListLabels",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/label.go",
+          "input": "APIContext",
+          "output": "[]*api.Label JSON response",
+          "operations": ["Get sort from form", "Get list options", "Call GetLabelsByOrgID", "Call CountLabelsByOrgID", "Set total count header", "Convert to API format"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "label", "description": "Get labels by org_id with sort and pagination"},
+            {"operation": "SELECT COUNT", "table": "label", "description": "Count labels by org_id"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToLabelList",
+          "type": "service",
+          "file_path": "services/convert/issue.go",
+          "input": "[]*issues_model.Label",
+          "output": "[]*api.Label",
+          "operations": ["Convert each label to API format", "Build URL from org name"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*issues_model.Label",
+          "to": "*api.Label",
+          "component": "convert.ToLabel",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Color", "target_field": "Color", "transformation": "computed"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"},
+            {"source_field": "Exclusive", "target_field": "Exclusive", "transformation": "direct_copy"},
+            {"source_field": "IsArchived()", "target_field": "IsArchived", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "GetLabelsByOrgID fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "CountLabelsByOrgID fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-083",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/labels",
+      "description": "Creates a new label for an organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.CreateLabel",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/label.go",
+          "input": "APIContext with CreateLabelOption form",
+          "output": "*api.Label JSON 201",
+          "operations": ["Get form", "Trim and normalize color", "Build Label struct", "Call NewLabel", "Convert to API format"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "label", "description": "Insert new label with org_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.NewLabel",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "*Label",
+          "output": "error",
+          "operations": ["Normalize color again", "Insert into DB"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "label", "description": "Insert label record"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*api.CreateLabelOption",
+          "to": "*issues_model.Label",
+          "component": "org.CreateLabel",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Exclusive", "target_field": "Exclusive", "transformation": "direct_copy"},
+            {"source_field": "Color", "target_field": "Color", "transformation": "computed"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid color format", "handler": "ctx.APIError", "response_code": 422, "response": "invalid color"},
+        {"condition": "DB insert fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

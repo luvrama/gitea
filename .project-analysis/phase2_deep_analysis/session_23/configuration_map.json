@@ -1,0 +1,37 @@
+{
+  "total_properties": 4,
+  "properties": [
+    {
+      "key": "admin.USER_DISABLED_FEATURES",
+      "type": "[]string",
+      "default_value": "empty",
+      "source_file": "modules/setting/admin.go",
+      "used_by": [{"class": "user_model", "method": "IsFeatureDisabledWithLoginType", "file_path": "models/user/user.go", "usage": "Check if manage_ssh_keys is in disabled features set", "impact": "If disabled, SSH key create/delete returns 404"}],
+      "affected_endpoints": ["ep-160", "ep-161"]
+    },
+    {
+      "key": "admin.EXTERNAL_USER_DISABLE_FEATURES",
+      "type": "[]string",
+      "default_value": "empty",
+      "source_file": "modules/setting/admin.go",
+      "used_by": [{"class": "user_model", "method": "IsFeatureDisabledWithLoginType", "file_path": "models/user/user.go", "usage": "Check if manage_ssh_keys is disabled for external login users", "impact": "If disabled, external users cannot manage SSH keys"}],
+      "affected_endpoints": ["ep-160", "ep-161"]
+    },
+    {
+      "key": "ssh.MINIMUM_KEY_SIZE_CHECK",
+      "type": "bool",
+      "default_value": "true",
+      "source_file": "modules/setting/ssh.go",
+      "used_by": [{"class": "asymkey_model", "method": "CheckPublicKeyString", "file_path": "models/asymkey/ssh_key_parse.go", "usage": "Controls whether key size validation is performed", "impact": "If false, any key size is accepted"}],
+      "affected_endpoints": ["ep-160"]
+    },
+    {
+      "key": "ssh.START_BUILTIN_SERVER",
+      "type": "bool",
+      "default_value": "false",
+      "source_file": "modules/setting/ssh.go",
+      "used_by": [{"class": "asymkey_service", "method": "RewriteAllPublicKeys", "file_path": "services/asymkey/ssh_key_authorized_keys.go", "usage": "If true, skip rewriting authorized_keys file", "impact": "Builtin SSH server does not use authorized_keys file"}],
+      "affected_endpoints": ["ep-161"]
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "ui.REACTIONS",
+      "type": "[]string",
+      "default_value": "[+1, -1, laugh, hooray, confused, heart, rocket, eyes]",
+      "source_file": "modules/setting/ui.go",
+      "used_by": [
+        {"class": "issues_model", "method": "CreateReaction", "file_path": "models/issues/reaction.go", "usage": "validate reaction type", "impact": "determines which reactions are allowed"},
+        {"class": "issues_model", "method": "FindReactions", "file_path": "models/issues/reaction.go", "usage": "filter returned reactions", "impact": "only configured reactions are returned in queries"}
+      ],
+      "affected_endpoints": ["ep-300", "ep-301", "ep-303", "ep-304"]
+    },
+    {
+      "key": "ui.REACTION_MAX_USER_NUM",
+      "type": "int",
+      "default_value": "10",
+      "source_file": "modules/setting/ui.go",
+      "used_by": [
+        {"class": "issues_model.ReactionList", "method": "GetFirstUsers", "file_path": "models/issues/reaction.go", "usage": "limit displayed user names", "impact": "controls how many user names shown in tooltip"}
+      ],
+      "affected_endpoints": []
+    }
+  ]
+}

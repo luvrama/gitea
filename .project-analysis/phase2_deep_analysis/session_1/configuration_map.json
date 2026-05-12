@@ -1,0 +1,53 @@
+{
+  "total_properties": 6,
+  "properties": [
+    {
+      "key": "APP_VER",
+      "type": "String",
+      "default_value": "dev",
+      "source_file": "modules/setting/setting.go",
+      "used_by": [{"class": "misc", "method": "Version", "file_path": "routers/api/v1/misc/version.go", "usage": "setting.AppVer", "impact": "Determines version string returned"}],
+      "affected_endpoints": ["ep-001"]
+    },
+    {
+      "key": "repository.SIGNING_KEY",
+      "type": "String",
+      "default_value": "default",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "git", "method": "GetSigningKey", "file_path": "modules/git/key.go", "usage": "setting.Repository.Signing.SigningKey", "impact": "Determines which signing key to use (none/default/specific key ID)"}],
+      "affected_endpoints": ["ep-004", "ep-005", "ep-006", "ep-007"]
+    },
+    {
+      "key": "repository.SIGNING_FORMAT",
+      "type": "String",
+      "default_value": "openpgp",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "git", "method": "GetSigningKey", "file_path": "modules/git/key.go", "usage": "setting.Repository.Signing.SigningFormat", "impact": "Determines key format when using explicit key"}],
+      "affected_endpoints": ["ep-004", "ep-005", "ep-006", "ep-007"]
+    },
+    {
+      "key": "git.HOME_PATH",
+      "type": "String",
+      "default_value": "",
+      "source_file": "modules/setting/git.go",
+      "used_by": [{"class": "asymkey_service", "method": "PublicSigningKey", "file_path": "services/asymkey/sign.go", "usage": "setting.Git.HomePath as exec dir for gpg", "impact": "Working directory for GPG key export"}],
+      "affected_endpoints": ["ep-004", "ep-005"]
+    },
+    {
+      "key": "server.APP_URL",
+      "type": "String",
+      "default_value": "http://localhost:3000/",
+      "source_file": "modules/setting/server.go",
+      "used_by": [{"class": "common", "method": "RenderMarkup", "file_path": "routers/common/markup.go", "usage": "setting.AppSubURL for URL path parsing", "impact": "Base URL for link resolution in rendered markup"}],
+      "affected_endpoints": ["ep-008"]
+    },
+    {
+      "key": "repository.PREFERRED_LICENSES",
+      "type": "[]String",
+      "default_value": "[]",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "repo_module", "method": "LoadRepoConfig", "file_path": "modules/repository/init.go", "usage": "setting.Repository.PreferredLicenses", "impact": "Determines sort order of license list (preferred first)"}],
+      "affected_endpoints": ["ep-002"]
+    }
+  ]
+}

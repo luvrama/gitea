@@ -1,0 +1,165 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 3,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "action_runner",
+      "entity_class": "ActionRunner",
+      "file_path": "models/actions/runner.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "uuid", "type": "CHAR(36)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "version", "type": "VARCHAR(64)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "base", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "repo_range", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "token_hash", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "token_salt", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "last_online", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "last_active", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "agent_labels", "type": "TEXT", "code_type": "[]string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "ephemeral", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "is_disabled", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "created", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]},
+        {"name": "deleted", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["deleted"]}
+      ],
+      "indexes": [
+        {"name": "idx_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "idx_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_last_online", "columns": ["last_online"], "unique": false},
+        {"name": "idx_last_active", "columns": ["last_active"], "unique": false},
+        {"name": "uq_uuid", "columns": ["uuid"], "unique": true},
+        {"name": "uq_token_hash", "columns": ["token_hash"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "email_address",
+      "entity_class": "EmailAddress",
+      "file_path": "models/user/email_address.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX NOT NULL"]},
+        {"name": "email", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE NOT NULL"]},
+        {"name": "lower_email", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE NOT NULL"]},
+        {"name": "is_activated", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_primary", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["DEFAULT(false) NOT NULL"]}
+      ],
+      "indexes": [
+        {"name": "idx_uid", "columns": ["uid"], "unique": false},
+        {"name": "uq_email", "columns": ["email"], "unique": true},
+        {"name": "uq_lower_email", "columns": ["lower_email"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "gpg_key",
+      "entity_class": "GPGKey",
+      "file_path": "models/asymkey/gpg_key.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX NOT NULL"]},
+        {"name": "key_id", "type": "CHAR(16)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX CHAR(16) NOT NULL"]},
+        {"name": "primary_key_id", "type": "CHAR(16)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "content", "type": "MEDIUMTEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "expired_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "added_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "verified", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "can_sign", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "can_encrypt_comms", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "can_encrypt_storage", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "can_certify", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "idx_key_id", "columns": ["key_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "one-to-many", "target_table": "gpg_key", "join_column": "primary_key_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-176",
+      "path": "/api/v1/user/actions/runners",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "db.FindAndCount", "description": "List runners by owner_id with optional disabled filter"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-177",
+      "path": "/api/v1/user/actions/runners/{runner_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "actions_model.GetRunnerByID", "description": "Get runner by ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-178",
+      "path": "/api/v1/user/actions/runners/{runner_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "actions_model.GetRunnerByID", "description": "Get runner by ID for validation"},
+        {"store_type": "database", "store_name": "action_runner", "operation": "DELETE", "method": "db.DeleteByID", "description": "Soft delete runner"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-179",
+      "path": "/api/v1/user/actions/runners/{runner_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "actions_model.GetRunnerByID", "description": "Get runner by ID"},
+        {"store_type": "database", "store_name": "action_runner", "operation": "UPDATE", "method": "actions_model.UpdateRunner", "description": "Update is_disabled column"},
+        {"store_type": "database", "store_name": "action_tasks_version", "operation": "UPDATE", "method": "IncreaseTaskVersion", "description": "Bump task version for runner scope"},
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "actions_model.GetRunnerByID", "description": "Re-fetch runner for response"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-180",
+      "path": "/api/v1/user/emails",
+      "operations": [
+        {"store_type": "database", "store_name": "email_address", "operation": "SELECT", "method": "user_model.GetEmailAddresses", "description": "Get all emails for user"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-181",
+      "path": "/api/v1/user/emails",
+      "operations": [
+        {"store_type": "database", "store_name": "email_address", "operation": "SELECT", "method": "user_model.GetEmailAddressByEmail", "description": "Check if email already exists"},
+        {"store_type": "database", "store_name": "email_address", "operation": "INSERT", "method": "user_model.InsertEmailAddress", "description": "Insert new email address"},
+        {"store_type": "database", "store_name": "email_address", "operation": "SELECT", "method": "user_model.GetEmailAddresses", "description": "Re-fetch all emails for response"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-182",
+      "path": "/api/v1/user/emails",
+      "operations": [
+        {"store_type": "database", "store_name": "email_address", "operation": "SELECT", "method": "user_model.GetEmailAddressOfUser", "description": "Find email by lower_email and uid"},
+        {"store_type": "database", "store_name": "email_address", "operation": "DELETE", "method": "db.DeleteByID", "description": "Delete email by ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-183",
+      "path": "/api/v1/users/{username}/gpg_keys",
+      "operations": [
+        {"store_type": "database", "store_name": "gpg_key", "operation": "SELECT", "method": "db.FindAndCount", "description": "Find GPG keys by owner_id excluding subkeys, paginated"},
+        {"store_type": "database", "store_name": "gpg_key", "operation": "SELECT", "method": "GPGKeyList.LoadSubKeys", "description": "Load subkeys by primary_key_id IN (...)"}
+      ]
+    }
+  ]
+}

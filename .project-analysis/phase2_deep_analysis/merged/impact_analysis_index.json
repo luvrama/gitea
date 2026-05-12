@@ -1,0 +1,6787 @@
+{
+  "endpoints_by_database_table": {
+    "notification": {
+      "read": [
+        "ep-023",
+        "ep-024",
+        "ep-025"
+      ],
+      "write": [
+        "ep-023",
+        "ep-025"
+      ]
+    },
+    "repository": {
+      "read": [
+        "ep-367",
+        "ep-368",
+        "ep-369"
+      ],
+      "write": [
+        "ep-369",
+        "ep-370"
+      ]
+    },
+    "issue": {
+      "read": [
+        "ep-376",
+        "ep-377",
+        "ep-378",
+        "ep-379",
+        "ep-380"
+      ],
+      "write": []
+    },
+    "user": {
+      "read": [
+        "ep-362",
+        "ep-364",
+        "ep-365",
+        "ep-366"
+      ],
+      "write": [
+        "ep-363",
+        "ep-365",
+        "ep-366"
+      ]
+    },
+    "comment": {
+      "read": [],
+      "write": [
+        "ep-376",
+        "ep-377"
+      ]
+    },
+    "org_user": {
+      "read": [],
+      "write": [
+        "ep-096"
+      ]
+    },
+    "team": {
+      "read": [
+        "ep-330",
+        "ep-331",
+        "ep-332"
+      ],
+      "write": []
+    },
+    "team_user": {
+      "read": [
+        "ep-124"
+      ],
+      "write": []
+    },
+    "team_unit": {
+      "read": [
+        "ep-330"
+      ],
+      "write": []
+    },
+    "user_redirect": {
+      "read": [],
+      "write": [
+        "ep-104"
+      ]
+    },
+    "package": {
+      "read": [
+        "ep-204",
+        "ep-205",
+        "ep-206",
+        "ep-207"
+      ],
+      "write": [
+        "ep-206",
+        "ep-207"
+      ]
+    },
+    "action": {
+      "read": [
+        "ep-374"
+      ],
+      "write": []
+    },
+    "secret": {
+      "read": [
+        "ep-264",
+        "ep-265",
+        "ep-266"
+      ],
+      "write": [
+        "ep-265",
+        "ep-266"
+      ]
+    },
+    "action_variable": {
+      "read": [
+        "ep-269",
+        "ep-270",
+        "ep-271"
+      ],
+      "write": [
+        "ep-269",
+        "ep-270"
+      ]
+    },
+    "action_runner": {
+      "read": [],
+      "write": [
+        "ep-294"
+      ]
+    },
+    "action_runner_token": {
+      "read": [
+        "ep-272"
+      ],
+      "write": [
+        "ep-272"
+      ]
+    },
+    "action_run": {
+      "read": [
+        "ep-294"
+      ],
+      "write": [
+        "ep-294"
+      ]
+    },
+    "action_run_job": {
+      "read": [
+        "ep-294"
+      ],
+      "write": [
+        "ep-294"
+      ]
+    },
+    "action_task": {
+      "read": [
+        "ep-294"
+      ],
+      "write": [
+        "ep-294"
+      ]
+    },
+    "action_task_step": {
+      "read": [
+        "ep-292"
+      ],
+      "write": []
+    },
+    "action_run_attempt": {
+      "read": [
+        "ep-285",
+        "ep-286",
+        "ep-287",
+        "ep-288",
+        "ep-289",
+        "ep-291"
+      ],
+      "write": [
+        "ep-287",
+        "ep-288",
+        "ep-289"
+      ]
+    },
+    "action_tasks_version": {
+      "read": [],
+      "write": [
+        "ep-179"
+      ]
+    },
+    "user_blocking": {
+      "read": [
+        "ep-301",
+        "ep-304"
+      ],
+      "write": []
+    },
+    "protected_branch": {
+      "read": [
+        "ep-312",
+        "ep-313",
+        "ep-314",
+        "ep-315",
+        "ep-316"
+      ],
+      "write": [
+        "ep-314",
+        "ep-315",
+        "ep-316",
+        "ep-317"
+      ]
+    },
+    "access": {
+      "read": [
+        "ep-368"
+      ],
+      "write": []
+    },
+    "team_repo": {
+      "read": [
+        "ep-330",
+        "ep-331",
+        "ep-332"
+      ],
+      "write": [
+        "ep-331",
+        "ep-332"
+      ]
+    },
+    "watch": {
+      "read": [],
+      "write": [
+        "ep-331",
+        "ep-332"
+      ]
+    },
+    "issue_watch": {
+      "read": [],
+      "write": [
+        "ep-253"
+      ]
+    },
+    "webhook": {
+      "read": [
+        "ep-325",
+        "ep-326"
+      ],
+      "write": [
+        "ep-324",
+        "ep-325",
+        "ep-326"
+      ]
+    },
+    "hook_task": {
+      "read": [],
+      "write": [
+        "ep-326"
+      ]
+    },
+    "label": {
+      "read": [
+        "ep-360"
+      ],
+      "write": [
+        "ep-359",
+        "ep-360",
+        "ep-361",
+        "ep-364"
+      ]
+    },
+    "issue_label": {
+      "read": [],
+      "write": [
+        "ep-361"
+      ]
+    },
+    "follow": {
+      "read": [],
+      "write": [
+        "ep-192"
+      ]
+    },
+    "star": {
+      "read": [
+        "ep-327"
+      ],
+      "write": []
+    },
+    "issue_assignees": {
+      "read": [],
+      "write": [
+        "ep-253"
+      ]
+    },
+    "collaboration": {
+      "read": [
+        "ep-254",
+        "ep-255"
+      ],
+      "write": []
+    },
+    "repo_transfer": {
+      "read": [],
+      "write": [
+        "ep-192"
+      ]
+    },
+    "email_address": {
+      "read": [
+        "ep-188"
+      ],
+      "write": []
+    },
+    "login_source": {
+      "read": [
+        "ep-161"
+      ],
+      "write": []
+    },
+    "public_key": {
+      "read": [
+        "ep-340",
+        "ep-341",
+        "ep-342",
+        "ep-343"
+      ],
+      "write": [
+        "ep-342",
+        "ep-343"
+      ]
+    },
+    "auth_token": {
+      "read": [],
+      "write": [
+        "ep-099"
+      ]
+    },
+    "two_factor": {
+      "read": [
+        "ep-103"
+      ],
+      "write": []
+    },
+    "notice": {
+      "read": [],
+      "write": [
+        "ep-111"
+      ]
+    },
+    "branch": {
+      "read": [],
+      "write": [
+        "ep-334"
+      ]
+    },
+    "release": {
+      "read": [
+        "ep-352",
+        "ep-353",
+        "ep-354",
+        "ep-355",
+        "ep-356"
+      ],
+      "write": []
+    },
+    "badge": {
+      "read": [
+        "ep-120",
+        "ep-121"
+      ],
+      "write": []
+    },
+    "user_badge": {
+      "read": [
+        "ep-120",
+        "ep-122"
+      ],
+      "write": [
+        "ep-121",
+        "ep-122"
+      ]
+    },
+    "blocked_user": {
+      "read": [
+        "ep-145"
+      ],
+      "write": []
+    },
+    "access_token": {
+      "read": [
+        "ep-164",
+        "ep-166"
+      ],
+      "write": [
+        "ep-165",
+        "ep-166"
+      ]
+    },
+    "oauth2_application": {
+      "read": [
+        "ep-168",
+        "ep-170",
+        "ep-171"
+      ],
+      "write": [
+        "ep-169",
+        "ep-171"
+      ]
+    },
+    "oauth2_authorization_code": {
+      "read": [],
+      "write": [
+        "ep-169"
+      ]
+    },
+    "oauth2_grant": {
+      "read": [],
+      "write": [
+        "ep-169"
+      ]
+    },
+    "gpg_key": {
+      "read": [
+        "ep-184",
+        "ep-185",
+        "ep-187",
+        "ep-188"
+      ],
+      "write": [
+        "ep-187",
+        "ep-188",
+        "ep-189"
+      ]
+    },
+    "gpg_key_import": {
+      "read": [],
+      "write": [
+        "ep-188",
+        "ep-189"
+      ]
+    },
+    "repo_unit": {
+      "read": [
+        "ep-367",
+        "ep-368"
+      ],
+      "write": [
+        "ep-369"
+      ]
+    },
+    "package_version": {
+      "read": [
+        "ep-202",
+        "ep-203",
+        "ep-204",
+        "ep-205"
+      ],
+      "write": [
+        "ep-202"
+      ]
+    },
+    "package_file": {
+      "read": [
+        "ep-203"
+      ],
+      "write": [
+        "ep-202"
+      ]
+    },
+    "package_property": {
+      "read": [
+        "ep-203"
+      ],
+      "write": [
+        "ep-202"
+      ]
+    },
+    "package_blob": {
+      "read": [
+        "ep-203"
+      ],
+      "write": []
+    },
+    "issue_dependency": {
+      "read": [
+        "ep-229"
+      ],
+      "write": []
+    },
+    "pull_request": {
+      "read": [
+        "ep-380"
+      ],
+      "write": []
+    },
+    "review": {
+      "read": [
+        "ep-222",
+        "ep-223",
+        "ep-224"
+      ],
+      "write": []
+    },
+    "milestone": {
+      "read": [
+        "ep-226",
+        "ep-227"
+      ],
+      "write": []
+    },
+    "pull_auto_merge": {
+      "read": [
+        "ep-231"
+      ],
+      "write": [
+        "ep-229",
+        "ep-231"
+      ]
+    },
+    "mirror": {
+      "read": [
+        "ep-367",
+        "ep-368"
+      ],
+      "write": [
+        "ep-369"
+      ]
+    },
+    "push_mirror": {
+      "read": [
+        "ep-235",
+        "ep-236",
+        "ep-237"
+      ],
+      "write": [
+        "ep-235",
+        "ep-238",
+        "ep-239"
+      ]
+    },
+    "attachment": {
+      "read": [
+        "ep-352",
+        "ep-353",
+        "ep-355",
+        "ep-356"
+      ],
+      "write": [
+        "ep-354",
+        "ep-355",
+        "ep-356"
+      ]
+    },
+    "protected_tag": {
+      "read": [
+        "ep-243",
+        "ep-245"
+      ],
+      "write": []
+    },
+    "stopwatch": {
+      "read": [],
+      "write": [
+        "ep-253"
+      ]
+    },
+    "action_artifact": {
+      "read": [
+        "ep-293",
+        "ep-295",
+        "ep-296",
+        "ep-297",
+        "ep-298"
+      ],
+      "write": [
+        "ep-294",
+        "ep-297"
+      ]
+    },
+    "reaction": {
+      "read": [
+        "ep-300",
+        "ep-301",
+        "ep-303",
+        "ep-304"
+      ],
+      "write": [
+        "ep-301",
+        "ep-302",
+        "ep-304",
+        "ep-305"
+      ]
+    },
+    "lfs_meta_object": {
+      "read": [],
+      "write": [
+        "ep-334"
+      ]
+    },
+    "deploy_key": {
+      "read": [
+        "ep-340",
+        "ep-341",
+        "ep-343"
+      ],
+      "write": [
+        "ep-342",
+        "ep-343"
+      ]
+    },
+    "repo_license": {
+      "read": [
+        "ep-346"
+      ],
+      "write": []
+    },
+    "topic": {
+      "read": [
+        "ep-347",
+        "ep-351"
+      ],
+      "write": [
+        "ep-348",
+        "ep-349",
+        "ep-350"
+      ]
+    },
+    "repo_topic": {
+      "read": [
+        "ep-347",
+        "ep-351"
+      ],
+      "write": [
+        "ep-348",
+        "ep-349",
+        "ep-350"
+      ]
+    },
+    "language_stat": {
+      "read": [
+        "ep-375"
+      ],
+      "write": []
+    },
+    "issue_pin": {
+      "read": [
+        "ep-376",
+        "ep-378",
+        "ep-379",
+        "ep-380",
+        "ep-381"
+      ],
+      "write": [
+        "ep-376",
+        "ep-377",
+        "ep-378"
+      ]
+    }
+  },
+  "endpoints_by_external_service": {
+    "GPG binary": [
+      "ep-004",
+      "ep-005"
+    ],
+    "Avatar Storage Backend": [
+      "ep-037",
+      "ep-038",
+      "ep-129"
+    ],
+    "HaveIBeenPwned API": [
+      "ep-098",
+      "ep-099"
+    ],
+    "Avatar Storage": [
+      "ep-128"
+    ],
+    "Git Remote (Push Mirror Target)": [
+      "ep-235"
+    ],
+    "Git Repository": [
+      "ep-243",
+      "ep-244",
+      "ep-245"
+    ],
+    "Object Storage (Attachments)": [
+      "ep-259",
+      "ep-261",
+      "ep-354",
+      "ep-356"
+    ],
+    "File Storage (RepoAvatars)": [
+      "ep-262",
+      "ep-263"
+    ],
+    "Object Storage": [
+      "ep-294",
+      "ep-298"
+    ],
+    "Git CLI": [
+      "ep-334"
+    ]
+  },
+  "endpoints_by_config_property": {
+    "APP_VER": [
+      "ep-001"
+    ],
+    "repository.SIGNING_KEY": [
+      "ep-004",
+      "ep-005",
+      "ep-006",
+      "ep-007"
+    ],
+    "repository.SIGNING_FORMAT": [
+      "ep-004",
+      "ep-005",
+      "ep-006",
+      "ep-007"
+    ],
+    "git.HOME_PATH": [
+      "ep-004",
+      "ep-005"
+    ],
+    "server.APP_URL": [
+      "ep-008",
+      "ep-352",
+      "ep-353",
+      "ep-354",
+      "ep-355"
+    ],
+    "repository.PREFERRED_LICENSES": [
+      "ep-002"
+    ],
+    "setting.AppURL": [
+      "ep-013",
+      "ep-014"
+    ],
+    "setting.AppSubURL": [
+      "ep-009"
+    ],
+    "setting.Repository.PreferredLicenses": [
+      "ep-013"
+    ],
+    "setting.CustomPath": [
+      "ep-012",
+      "ep-014"
+    ],
+    "ui.DEFAULT_THEME": [
+      "ep-015"
+    ],
+    "ui.REACTIONS": [
+      "ep-015",
+      "ep-300",
+      "ep-301",
+      "ep-303",
+      "ep-304"
+    ],
+    "ui.CUSTOM_EMOJIS": [
+      "ep-015"
+    ],
+    "api.MAX_RESPONSE_ITEMS": [
+      "ep-016",
+      "ep-019",
+      "ep-022",
+      "ep-242"
+    ],
+    "api.DEFAULT_PAGING_NUM": [
+      "ep-016",
+      "ep-019",
+      "ep-022",
+      "ep-208",
+      "ep-211",
+      "ep-242",
+      "ep-264"
+    ],
+    "api.DEFAULT_GIT_TREES_PER_PAGE": [
+      "ep-016"
+    ],
+    "api.DEFAULT_MAX_BLOB_SIZE": [
+      "ep-016"
+    ],
+    "api.DEFAULT_MAX_RESPONSE_SIZE": [
+      "ep-016"
+    ],
+    "mirror.ENABLED": [
+      "ep-017",
+      "ep-234",
+      "ep-235",
+      "ep-236",
+      "ep-237",
+      "ep-238",
+      "ep-239"
+    ],
+    "repository.DISABLE_HTTP_GIT": [
+      "ep-017"
+    ],
+    "attachment.ENABLED": [
+      "ep-018",
+      "ep-259",
+      "ep-260",
+      "ep-261",
+      "ep-354"
+    ],
+    "attachment.MAX_SIZE": [
+      "ep-018",
+      "ep-259"
+    ],
+    "api.default_paging_num": [
+      "ep-026",
+      "ep-027"
+    ],
+    "api.max_response_items": [
+      "ep-026",
+      "ep-027"
+    ],
+    "service.default_org_member_visible": [
+      "ep-026",
+      "ep-027"
+    ],
+    "setting.API.DefaultPagingNum": [
+      "ep-029",
+      "ep-043",
+      "ep-048",
+      "ep-070",
+      "ep-071",
+      "ep-077",
+      "ep-082",
+      "ep-190",
+      "ep-194",
+      "ep-195"
+    ],
+    "setting.API.MaxResponseItems": [
+      "ep-029",
+      "ep-043",
+      "ep-048",
+      "ep-070",
+      "ep-071",
+      "ep-077",
+      "ep-082",
+      "ep-190",
+      "ep-194",
+      "ep-195"
+    ],
+    "setting.Admin.DisableRegularOrgCreation": [
+      "ep-030"
+    ],
+    "setting.Service.DefaultOrgMemberVisible": [
+      "ep-030"
+    ],
+    "AVATAR_MAX_WIDTH": [
+      "ep-037"
+    ],
+    "AVATAR_MAX_HEIGHT": [
+      "ep-037"
+    ],
+    "AVATAR_MAX_ORIGIN_SIZE": [
+      "ep-037"
+    ],
+    "AVATAR_RENDERED_SIZE_FACTOR": [
+      "ep-037"
+    ],
+    "SECRET_KEY": [
+      "ep-040",
+      "ep-130",
+      "ep-298"
+    ],
+    "setting.PanicInDevOrTesting": [
+      "ep-050",
+      "ep-051",
+      "ep-052",
+      "ep-053",
+      "ep-114",
+      "ep-115",
+      "ep-116",
+      "ep-117",
+      "ep-176",
+      "ep-177",
+      "ep-178",
+      "ep-179"
+    ],
+    "service.AutoWatchNewRepos": [
+      "ep-062"
+    ],
+    "service.AUTO_WATCH_NEW_REPOS": [
+      "ep-066",
+      "ep-331"
+    ],
+    "setting.SecretKey": [
+      "ep-077",
+      "ep-078",
+      "ep-079",
+      "ep-080"
+    ],
+    "API.DefaultPagingNum": [
+      "ep-084",
+      "ep-087",
+      "ep-123",
+      "ep-127",
+      "ep-135",
+      "ep-136",
+      "ep-137",
+      "ep-138",
+      "ep-139",
+      "ep-140",
+      "ep-141",
+      "ep-142",
+      "ep-147",
+      "ep-221",
+      "ep-222"
+    ],
+    "API.MaxResponseItems": [
+      "ep-084",
+      "ep-087",
+      "ep-123",
+      "ep-127",
+      "ep-135",
+      "ep-136",
+      "ep-137",
+      "ep-138",
+      "ep-139",
+      "ep-140",
+      "ep-141",
+      "ep-142",
+      "ep-147"
+    ],
+    "PasswordCheckPwn": [
+      "ep-098"
+    ],
+    "MinPasswordLength": [
+      "ep-098"
+    ],
+    "AppURL": [
+      "ep-091",
+      "ep-094"
+    ],
+    "Service.DefaultOrgMemberVisible": [
+      "ep-096"
+    ],
+    "MIN_PASSWORD_LENGTH": [
+      "ep-099"
+    ],
+    "PASSWORD_CHECK_PWN": [
+      "ep-099"
+    ],
+    "USER_DELETE_WITH_COMMENTS_MAX_TIME": [
+      "ep-100"
+    ],
+    "repository.force_private": [
+      "ep-112"
+    ],
+    "repository.root_path": [
+      "ep-107",
+      "ep-108",
+      "ep-109"
+    ],
+    "database.iterate_buffer_size": [
+      "ep-107"
+    ],
+    "Avatar.MaxWidth": [
+      "ep-128"
+    ],
+    "Avatar.MaxHeight": [
+      "ep-128"
+    ],
+    "Avatar.MaxOriginSize": [
+      "ep-128"
+    ],
+    "avatar.STORAGE_TYPE": [
+      "ep-129"
+    ],
+    "SecretKey": [
+      "ep-147",
+      "ep-148",
+      "ep-149"
+    ],
+    "setting.DisableWebhooks": [
+      "ep-150",
+      "ep-151"
+    ],
+    "setting.Repository.DisableStars": [
+      "ep-152",
+      "ep-153",
+      "ep-154",
+      "ep-155"
+    ],
+    "admin.USER_DISABLED_FEATURES": [
+      "ep-160",
+      "ep-161",
+      "ep-188",
+      "ep-189"
+    ],
+    "admin.EXTERNAL_USER_DISABLE_FEATURES": [
+      "ep-160",
+      "ep-161",
+      "ep-188",
+      "ep-189"
+    ],
+    "ssh.MINIMUM_KEY_SIZE_CHECK": [
+      "ep-160"
+    ],
+    "ssh.START_BUILTIN_SERVER": [
+      "ep-161"
+    ],
+    "setting.OAuth2.CustomSchemes": [
+      "ep-167"
+    ],
+    "setting.SuccessfulTokensCacheSize": [
+      "ep-164",
+      "ep-165",
+      "ep-166"
+    ],
+    "OAuth2.DefaultApplications": [
+      "ep-169",
+      "ep-171"
+    ],
+    "OAuth2.CustomSchemes": [
+      "ep-171"
+    ],
+    "service.RegisterEmailConfirm": [
+      "ep-181"
+    ],
+    "service.auto_watch_on_changes": [
+      "ep-197"
+    ],
+    "service.require_signin_view_strict": [
+      "ep-199",
+      "ep-200"
+    ],
+    "packages.limit_total_owner_count": [
+      "ep-201"
+    ],
+    "packages.ENABLED": [
+      "ep-202",
+      "ep-203",
+      "ep-204",
+      "ep-205",
+      "ep-206",
+      "ep-207"
+    ],
+    "service.REQUIRE_SIGNIN_VIEW": [
+      "ep-202",
+      "ep-203",
+      "ep-204",
+      "ep-205",
+      "ep-206",
+      "ep-207"
+    ],
+    "service.DEFAULT_ENABLE_DEPENDENCIES": [
+      "ep-208",
+      "ep-209",
+      "ep-210",
+      "ep-212",
+      "ep-213"
+    ],
+    "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES": [
+      "ep-209",
+      "ep-210",
+      "ep-212",
+      "ep-213"
+    ],
+    "git.CommitsRangeSize": [
+      "ep-215"
+    ],
+    "api.SwaggerURL": [
+      "ep-215"
+    ],
+    "setting.IsInTesting": [
+      "ep-223",
+      "ep-224"
+    ],
+    "git.MAX_GIT_DIFF_LINES": [
+      "ep-233"
+    ],
+    "git.MAX_GIT_DIFF_LINE_CHARACTERS": [
+      "ep-233"
+    ],
+    "repository.PULL_REQUEST_DEFAULT_MERGE_STYLE": [
+      "ep-229"
+    ],
+    "mirror.MIN_INTERVAL": [
+      "ep-238"
+    ],
+    "git.TIMEOUT.MIRROR": [
+      "ep-235"
+    ],
+    "lfs.START_SERVER": [
+      "ep-235"
+    ],
+    "api.DefaultGitTreesPerPage": [
+      "ep-246"
+    ],
+    "api.DefaultPagingNum": [
+      "ep-250"
+    ],
+    "api.MaxResponseItems": [
+      "ep-250"
+    ],
+    "attachment.ALLOWED_TYPES": [
+      "ep-259",
+      "ep-260"
+    ],
+    "avatar.MAX_WIDTH": [
+      "ep-262"
+    ],
+    "avatar.MAX_HEIGHT": [
+      "ep-262"
+    ],
+    "avatar.MAX_ORIGIN_SIZE": [
+      "ep-262"
+    ],
+    "avatar.RENDERED_SIZE_FACTOR": [
+      "ep-262"
+    ],
+    "actions.workflow_dirs": [
+      "ep-280",
+      "ep-281",
+      "ep-283"
+    ],
+    "actions.MAX_RERUN_ATTEMPTS": [
+      "ep-287",
+      "ep-288",
+      "ep-289"
+    ],
+    "actions.artifact_storage.STORAGE_TYPE": [
+      "ep-294",
+      "ep-298"
+    ],
+    "actions.artifact_storage.SERVE_DIRECT": [
+      "ep-298"
+    ],
+    "SSH.MinimumKeySizeCheck": [
+      "ep-342"
+    ],
+    "SSH.StartBuiltinServer": [
+      "ep-343"
+    ],
+    "repository.release.ALLOWED_TYPES": [
+      "ep-354",
+      "ep-355"
+    ],
+    "repository.release.FILE_MAX_SIZE": [
+      "ep-354"
+    ],
+    "repository.FORCE_PRIVATE": [
+      "ep-363",
+      "ep-364",
+      "ep-365",
+      "ep-366"
+    ],
+    "repository.ForcePrivate": [
+      "ep-369"
+    ],
+    "mirror.MinInterval": [
+      "ep-369"
+    ],
+    "repository.issue.MaxPinned": [
+      "ep-371"
+    ],
+    "repository.issue.MAX_PINNED": [
+      "ep-376",
+      "ep-381"
+    ]
+  },
+  "endpoints_by_model_class": {
+    "structs.ServerVersion": [
+      "ep-001"
+    ],
+    "structs.MarkupOption": [
+      "ep-008"
+    ],
+    "label.Label": [
+      "ep-003"
+    ],
+    "api.LabelTemplate": [
+      "ep-003"
+    ],
+    "git.SigningKey": [
+      "ep-004",
+      "ep-005",
+      "ep-006",
+      "ep-007"
+    ],
+    "MarkdownOption": [
+      "ep-009"
+    ],
+    "MarkupOption": [],
+    "GitignoreTemplateInfo": [
+      "ep-012"
+    ],
+    "LicensesTemplateListEntry": [
+      "ep-013"
+    ],
+    "LicenseTemplateInfo": [
+      "ep-014"
+    ],
+    "Notification": [
+      "ep-019",
+      "ep-020",
+      "ep-021",
+      "ep-022"
+    ],
+    "GeneralUISettings": [
+      "ep-015"
+    ],
+    "GeneralAPISettings": [
+      "ep-016"
+    ],
+    "GeneralRepoSettings": [
+      "ep-017"
+    ],
+    "GeneralAttachmentSettings": [
+      "ep-018"
+    ],
+    "NotificationThread": [
+      "ep-019",
+      "ep-020",
+      "ep-022"
+    ],
+    "NotificationCount": [
+      "ep-021"
+    ],
+    "activities_model.Notification": [
+      "ep-023",
+      "ep-024",
+      "ep-025"
+    ],
+    "organization.Organization": [
+      "ep-026",
+      "ep-027",
+      "ep-028",
+      "ep-029",
+      "ep-030",
+      "ep-031",
+      "ep-032",
+      "ep-033",
+      "ep-034",
+      "ep-096",
+      "ep-097"
+    ],
+    "organization.OrgUser": [
+      "ep-026",
+      "ep-027",
+      "ep-028",
+      "ep-030",
+      "ep-031",
+      "ep-034",
+      "ep-070",
+      "ep-071",
+      "ep-072",
+      "ep-073",
+      "ep-074",
+      "ep-075",
+      "ep-076"
+    ],
+    "organization.Team": [
+      "ep-028",
+      "ep-030",
+      "ep-034",
+      "ep-056",
+      "ep-057",
+      "ep-058",
+      "ep-059",
+      "ep-060",
+      "ep-061",
+      "ep-062",
+      "ep-063",
+      "ep-064",
+      "ep-065",
+      "ep-066",
+      "ep-067",
+      "ep-068",
+      "ep-069",
+      "ep-076",
+      "ep-096",
+      "ep-329",
+      "ep-330",
+      "ep-331",
+      "ep-332"
+    ],
+    "organization.TeamUser": [
+      "ep-028",
+      "ep-030",
+      "ep-032",
+      "ep-033",
+      "ep-034",
+      "ep-060",
+      "ep-061",
+      "ep-062",
+      "ep-063",
+      "ep-076"
+    ],
+    "structs.NotificationThread": [
+      "ep-023",
+      "ep-024",
+      "ep-025"
+    ],
+    "structs.OrganizationPermissions": [
+      "ep-028"
+    ],
+    "user_model.User": [
+      "ep-029",
+      "ep-030",
+      "ep-031",
+      "ep-032",
+      "ep-033",
+      "ep-034",
+      "ep-037",
+      "ep-038",
+      "ep-060",
+      "ep-061",
+      "ep-062",
+      "ep-063",
+      "ep-070",
+      "ep-071",
+      "ep-072",
+      "ep-073",
+      "ep-074",
+      "ep-075",
+      "ep-076",
+      "ep-087",
+      "ep-088",
+      "ep-089",
+      "ep-090",
+      "ep-096",
+      "ep-097",
+      "ep-098",
+      "ep-099",
+      "ep-100",
+      "ep-103",
+      "ep-104",
+      "ep-123",
+      "ep-124",
+      "ep-125",
+      "ep-126",
+      "ep-127",
+      "ep-128",
+      "ep-142",
+      "ep-143",
+      "ep-144",
+      "ep-145",
+      "ep-146",
+      "ep-162",
+      "ep-163",
+      "ep-190",
+      "ep-191",
+      "ep-192",
+      "ep-193",
+      "ep-194",
+      "ep-195",
+      "ep-254",
+      "ep-255",
+      "ep-256",
+      "ep-327",
+      "ep-328",
+      "ep-362",
+      "ep-364",
+      "ep-365",
+      "ep-366"
+    ],
+    "organization.TeamUnit": [
+      "ep-030",
+      "ep-034",
+      "ep-056",
+      "ep-057",
+      "ep-058",
+      "ep-059"
+    ],
+    "activities_model.Action": [
+      "ep-035",
+      "ep-069",
+      "ep-126",
+      "ep-127",
+      "ep-374"
+    ],
+    "secret_model.Secret": [
+      "ep-039",
+      "ep-040",
+      "ep-041",
+      "ep-264",
+      "ep-265",
+      "ep-266"
+    ],
+    "repo_model.Repository": [
+      "ep-036",
+      "ep-064",
+      "ep-065",
+      "ep-066",
+      "ep-067",
+      "ep-172",
+      "ep-173",
+      "ep-174",
+      "ep-194",
+      "ep-195",
+      "ep-262",
+      "ep-263",
+      "ep-333",
+      "ep-334",
+      "ep-362",
+      "ep-363",
+      "ep-364",
+      "ep-365",
+      "ep-366",
+      "ep-367",
+      "ep-368",
+      "ep-369",
+      "ep-370",
+      "ep-371",
+      "ep-372",
+      "ep-373",
+      "ep-374"
+    ],
+    "ActionVariable": [
+      "ep-043",
+      "ep-044",
+      "ep-045",
+      "ep-046",
+      "ep-047",
+      "ep-132",
+      "ep-133",
+      "ep-134",
+      "ep-135",
+      "ep-136",
+      "ep-269",
+      "ep-270",
+      "ep-271"
+    ],
+    "ActionRunner": [
+      "ep-048",
+      "ep-049",
+      "ep-050",
+      "ep-051",
+      "ep-052",
+      "ep-114",
+      "ep-115",
+      "ep-116",
+      "ep-117",
+      "ep-176",
+      "ep-177",
+      "ep-178",
+      "ep-179",
+      "ep-273",
+      "ep-274",
+      "ep-275",
+      "ep-276"
+    ],
+    "ActionRunnerToken": [
+      "ep-042",
+      "ep-113",
+      "ep-272"
+    ],
+    "ActionRun": [
+      "ep-052",
+      "ep-053",
+      "ep-106",
+      "ep-137",
+      "ep-277",
+      "ep-278",
+      "ep-283",
+      "ep-285",
+      "ep-286",
+      "ep-287",
+      "ep-288",
+      "ep-289",
+      "ep-290",
+      "ep-291",
+      "ep-294"
+    ],
+    "ActionRunJob": [
+      "ep-052",
+      "ep-138",
+      "ep-277",
+      "ep-287",
+      "ep-288",
+      "ep-289",
+      "ep-290",
+      "ep-291",
+      "ep-292",
+      "ep-294"
+    ],
+    "Team": [
+      "ep-054",
+      "ep-055"
+    ],
+    "TeamUnit": [
+      "ep-054",
+      "ep-055"
+    ],
+    "organization.TeamRepo": [
+      "ep-064",
+      "ep-065",
+      "ep-066",
+      "ep-067",
+      "ep-330",
+      "ep-331",
+      "ep-332"
+    ],
+    "access_model.Access": [
+      "ep-076"
+    ],
+    "webhook.Webhook": [
+      "ep-077",
+      "ep-078",
+      "ep-079",
+      "ep-080",
+      "ep-081",
+      "ep-091",
+      "ep-092",
+      "ep-093",
+      "ep-094",
+      "ep-095",
+      "ep-147",
+      "ep-148",
+      "ep-149",
+      "ep-150",
+      "ep-151",
+      "ep-324",
+      "ep-325",
+      "ep-326"
+    ],
+    "issues_model.Label": [
+      "ep-082",
+      "ep-083",
+      "ep-084",
+      "ep-085",
+      "ep-086",
+      "ep-335",
+      "ep-336",
+      "ep-337",
+      "ep-338",
+      "ep-339",
+      "ep-357",
+      "ep-358",
+      "ep-359",
+      "ep-360",
+      "ep-361"
+    ],
+    "user_model.Blocking": [
+      "ep-087",
+      "ep-088",
+      "ep-089",
+      "ep-090",
+      "ep-190",
+      "ep-191",
+      "ep-192",
+      "ep-193"
+    ],
+    "user_model.EmailAddress": [
+      "ep-098",
+      "ep-099"
+    ],
+    "asymkey_model.PublicKey": [
+      "ep-101",
+      "ep-102",
+      "ep-157",
+      "ep-158",
+      "ep-159",
+      "ep-160",
+      "ep-161",
+      "ep-340",
+      "ep-341",
+      "ep-342",
+      "ep-343"
+    ],
+    "actions_model.ActionRunJob": [
+      "ep-105"
+    ],
+    "user_model.Redirect": [
+      "ep-104"
+    ],
+    "Repository": [
+      "ep-107",
+      "ep-108",
+      "ep-109",
+      "ep-112",
+      "ep-318"
+    ],
+    "User": [
+      "ep-106",
+      "ep-107",
+      "ep-108",
+      "ep-109",
+      "ep-129",
+      "ep-139",
+      "ep-140",
+      "ep-141",
+      "ep-220",
+      "ep-221",
+      "ep-222"
+    ],
+    "EmailAddress": [
+      "ep-118",
+      "ep-119",
+      "ep-180",
+      "ep-181",
+      "ep-182"
+    ],
+    "Badge": [
+      "ep-120",
+      "ep-121",
+      "ep-122"
+    ],
+    "UserBadge": [
+      "ep-120",
+      "ep-121",
+      "ep-122"
+    ],
+    "activities_model.UserHeatmapData": [
+      "ep-126"
+    ],
+    "Secret": [
+      "ep-130",
+      "ep-131"
+    ],
+    "Follow": [
+      "ep-139",
+      "ep-140",
+      "ep-141"
+    ],
+    "user_model.Follow": [
+      "ep-142",
+      "ep-143",
+      "ep-144",
+      "ep-145",
+      "ep-146"
+    ],
+    "repo.Star": [
+      "ep-152",
+      "ep-153",
+      "ep-154",
+      "ep-155"
+    ],
+    "user.Blocking": [
+      "ep-155"
+    ],
+    "repo_model.Star": [
+      "ep-156"
+    ],
+    "auth.Source": [
+      "ep-161"
+    ],
+    "auth_model.AccessToken": [
+      "ep-164",
+      "ep-165",
+      "ep-166"
+    ],
+    "auth_model.OAuth2Application": [
+      "ep-167"
+    ],
+    "auth.OAuth2Application": [
+      "ep-168",
+      "ep-169",
+      "ep-170",
+      "ep-171"
+    ],
+    "actions_model.ActionRunnerToken": [
+      "ep-175"
+    ],
+    "GPGKey": [
+      "ep-183"
+    ],
+    "asymkey_model.GPGKey": [
+      "ep-184",
+      "ep-185",
+      "ep-187",
+      "ep-188",
+      "ep-189"
+    ],
+    "asymkey_model.GPGKeyImport": [
+      "ep-188",
+      "ep-189"
+    ],
+    "api.GPGKey": [
+      "ep-184",
+      "ep-185",
+      "ep-187",
+      "ep-188"
+    ],
+    "api.CreateGPGKeyOption": [
+      "ep-188"
+    ],
+    "api.VerifyGPGKeyOption": [
+      "ep-187"
+    ],
+    "repo_model.Watch": [
+      "ep-194",
+      "ep-195",
+      "ep-196",
+      "ep-197",
+      "ep-198"
+    ],
+    "packages_model.Package": [
+      "ep-199",
+      "ep-200",
+      "ep-201",
+      "ep-204",
+      "ep-205",
+      "ep-206",
+      "ep-207"
+    ],
+    "packages_model.PackageVersion": [
+      "ep-199",
+      "ep-200",
+      "ep-201",
+      "ep-202",
+      "ep-203",
+      "ep-204",
+      "ep-205"
+    ],
+    "packages_model.PackageFile": [
+      "ep-199",
+      "ep-200",
+      "ep-201",
+      "ep-202",
+      "ep-203"
+    ],
+    "packages_model.PackageDescriptor": [
+      "ep-199",
+      "ep-200",
+      "ep-201",
+      "ep-202",
+      "ep-203",
+      "ep-204",
+      "ep-205"
+    ],
+    "api.WatchInfo": [
+      "ep-196",
+      "ep-197"
+    ],
+    "api.Package": [
+      "ep-199",
+      "ep-200"
+    ],
+    "packages_model.PackageBlob": [
+      "ep-203"
+    ],
+    "IssueDependency": [
+      "ep-208",
+      "ep-209",
+      "ep-210",
+      "ep-211",
+      "ep-212",
+      "ep-213"
+    ],
+    "Issue": [
+      "ep-208",
+      "ep-209",
+      "ep-210",
+      "ep-211",
+      "ep-212",
+      "ep-213",
+      "ep-220",
+      "ep-221",
+      "ep-222",
+      "ep-223",
+      "ep-224",
+      "ep-225",
+      "ep-319",
+      "ep-320"
+    ],
+    "DependencyInfo": [
+      "ep-208",
+      "ep-211"
+    ],
+    "IssueMeta": [
+      "ep-209",
+      "ep-210",
+      "ep-212",
+      "ep-213"
+    ],
+    "git.Commit": [
+      "ep-214",
+      "ep-215",
+      "ep-216"
+    ],
+    "api.Commit": [
+      "ep-214",
+      "ep-215"
+    ],
+    "issues.PullRequest": [
+      "ep-217"
+    ],
+    "issues.IssueWatch": [
+      "ep-218",
+      "ep-219"
+    ],
+    "issues.Issue": [
+      "ep-218",
+      "ep-219"
+    ],
+    "IssueWatch": [
+      "ep-220",
+      "ep-221"
+    ],
+    "PullRequest": [
+      "ep-222",
+      "ep-223",
+      "ep-224",
+      "ep-225"
+    ],
+    "Branch": [
+      "ep-222",
+      "ep-223",
+      "ep-224"
+    ],
+    "issues_model.PullRequest": [
+      "ep-226",
+      "ep-227",
+      "ep-228",
+      "ep-229",
+      "ep-230",
+      "ep-231",
+      "ep-232",
+      "ep-233"
+    ],
+    "issues_model.Issue": [
+      "ep-226",
+      "ep-227",
+      "ep-229",
+      "ep-257",
+      "ep-258",
+      "ep-259",
+      "ep-260",
+      "ep-261",
+      "ep-300",
+      "ep-301",
+      "ep-302",
+      "ep-303",
+      "ep-304",
+      "ep-305",
+      "ep-335",
+      "ep-376",
+      "ep-377",
+      "ep-378",
+      "ep-379",
+      "ep-380"
+    ],
+    "pull_model.AutoMerge": [
+      "ep-229",
+      "ep-231"
+    ],
+    "git_service.CompareInfo": [
+      "ep-226",
+      "ep-232",
+      "ep-233"
+    ],
+    "repo_model.Mirror": [
+      "ep-234",
+      "ep-367",
+      "ep-368",
+      "ep-369"
+    ],
+    "repo_model.PushMirror": [
+      "ep-235",
+      "ep-236",
+      "ep-237",
+      "ep-238",
+      "ep-239"
+    ],
+    "api.PushMirror": [
+      "ep-236",
+      "ep-237",
+      "ep-238"
+    ],
+    "api.CreatePushMirrorOption": [
+      "ep-238"
+    ],
+    "repo_model.Release": [
+      "ep-240",
+      "ep-241",
+      "ep-242",
+      "ep-243",
+      "ep-244",
+      "ep-245",
+      "ep-344",
+      "ep-345",
+      "ep-352",
+      "ep-353",
+      "ep-354",
+      "ep-355",
+      "ep-356"
+    ],
+    "repo_model.Attachment": [
+      "ep-240",
+      "ep-241",
+      "ep-242",
+      "ep-244",
+      "ep-245",
+      "ep-257",
+      "ep-258",
+      "ep-259",
+      "ep-260",
+      "ep-261",
+      "ep-352",
+      "ep-353",
+      "ep-354",
+      "ep-355",
+      "ep-356"
+    ],
+    "git_model.ProtectedTag": [
+      "ep-243",
+      "ep-245"
+    ],
+    "repo_model.Collaboration": [
+      "ep-250",
+      "ep-251",
+      "ep-252",
+      "ep-253"
+    ],
+    "api.GitTreeResponse": [
+      "ep-246"
+    ],
+    "api.Reference": [
+      "ep-247",
+      "ep-248"
+    ],
+    "api.AddCollaboratorOption": [
+      "ep-252"
+    ],
+    "api.ApplyDiffPatchFileOptions": [
+      "ep-249"
+    ],
+    "access_model.Permission": [
+      "ep-254"
+    ],
+    "actions_model.ActionVariable": [
+      "ep-267",
+      "ep-268"
+    ],
+    "ActionTask": [
+      "ep-277",
+      "ep-279",
+      "ep-292",
+      "ep-294"
+    ],
+    "ActionWorkflow": [
+      "ep-280",
+      "ep-281"
+    ],
+    "RepoUnit": [
+      "ep-282",
+      "ep-283",
+      "ep-284"
+    ],
+    "ActionRunAttempt": [
+      "ep-286",
+      "ep-287",
+      "ep-288",
+      "ep-289",
+      "ep-291"
+    ],
+    "ActionTaskStep": [
+      "ep-292"
+    ],
+    "ActionArtifact": [
+      "ep-293",
+      "ep-294",
+      "ep-295",
+      "ep-296",
+      "ep-297",
+      "ep-298"
+    ],
+    "issues_model.Reaction": [
+      "ep-300",
+      "ep-301",
+      "ep-302",
+      "ep-303",
+      "ep-304",
+      "ep-305"
+    ],
+    "issues_model.Comment": [
+      "ep-300",
+      "ep-301",
+      "ep-302"
+    ],
+    "git.Note": [
+      "ep-299"
+    ],
+    "api.Note": [
+      "ep-299"
+    ],
+    "git_model.Branch": [
+      "ep-306",
+      "ep-307",
+      "ep-308",
+      "ep-309",
+      "ep-310",
+      "ep-311"
+    ],
+    "git_model.ProtectedBranch": [
+      "ep-306",
+      "ep-307",
+      "ep-308",
+      "ep-309",
+      "ep-311",
+      "ep-312",
+      "ep-313",
+      "ep-314",
+      "ep-315",
+      "ep-316",
+      "ep-317"
+    ],
+    "api.Branch": [
+      "ep-306",
+      "ep-308",
+      "ep-309"
+    ],
+    "Webhook": [
+      "ep-321",
+      "ep-322",
+      "ep-323"
+    ],
+    "HookTask": [
+      "ep-323"
+    ],
+    "issues_model.IssueLabel": [
+      "ep-336",
+      "ep-337",
+      "ep-338",
+      "ep-339"
+    ],
+    "asymkey_model.DeployKey": [
+      "ep-340",
+      "ep-341",
+      "ep-342",
+      "ep-343"
+    ],
+    "repo_model.RepoLicense": [
+      "ep-346"
+    ],
+    "repo_model.Topic": [
+      "ep-347",
+      "ep-348",
+      "ep-349",
+      "ep-350",
+      "ep-351"
+    ],
+    "repo_model.RepoTopic": [
+      "ep-347",
+      "ep-348",
+      "ep-349",
+      "ep-350"
+    ],
+    "repo_model.LanguageStat": [
+      "ep-367",
+      "ep-368",
+      "ep-375"
+    ],
+    "issues_model.IssuePin": [
+      "ep-376",
+      "ep-377",
+      "ep-378",
+      "ep-379",
+      "ep-380",
+      "ep-381"
+    ],
+    "api.NewIssuePinsAllowed": [
+      "ep-381"
+    ],
+    "api.PullRequest": [
+      "ep-380"
+    ]
+  },
+  "endpoints_by_service_class": {
+    "asymkey_service.PublicSigningKey": [
+      "ep-004",
+      "ep-005",
+      "ep-006",
+      "ep-007"
+    ],
+    "common.RenderMarkup": [
+      "ep-008",
+      "ep-009"
+    ],
+    "convert.ToLabelTemplateList": [
+      "ep-003"
+    ],
+    "markdown.RenderRaw": [
+      "ep-010"
+    ],
+    "options.Gitignore": [
+      "ep-012"
+    ],
+    "options.License": [
+      "ep-014"
+    ],
+    "convert.ToNotificationThread": [
+      "ep-019",
+      "ep-020",
+      "ep-022",
+      "ep-023",
+      "ep-024",
+      "ep-025"
+    ],
+    "convert.ToNotifications": [
+      "ep-019",
+      "ep-022"
+    ],
+    "convert.ToOrganization": [
+      "ep-026",
+      "ep-027",
+      "ep-096",
+      "ep-097"
+    ],
+    "user_model.SearchUsers": [
+      "ep-029",
+      "ep-123"
+    ],
+    "organization.CreateOrganization": [
+      "ep-030"
+    ],
+    "organization.HasOrgOrUserVisible": [
+      "ep-031"
+    ],
+    "user_service.RenameUser": [
+      "ep-032",
+      "ep-104"
+    ],
+    "org.UpdateOrgEmailAddress": [
+      "ep-033"
+    ],
+    "user_service.UpdateUser": [
+      "ep-033",
+      "ep-099",
+      "ep-163"
+    ],
+    "org.DeleteOrganization": [
+      "ep-034"
+    ],
+    "feed_service": [
+      "ep-035"
+    ],
+    "user_service": [
+      "ep-037",
+      "ep-038",
+      "ep-129"
+    ],
+    "secret_service": [
+      "ep-040",
+      "ep-041",
+      "ep-130",
+      "ep-131"
+    ],
+    "repo_service": [
+      "ep-036"
+    ],
+    "actions_service.GetVariable": [
+      "ep-044",
+      "ep-045",
+      "ep-046",
+      "ep-047"
+    ],
+    "actions_service.CreateVariable": [
+      "ep-046"
+    ],
+    "actions_service.UpdateVariableNameData": [
+      "ep-047"
+    ],
+    "actions_service.DeleteVariableByName": [
+      "ep-045"
+    ],
+    "shared.GetRegistrationToken": [
+      "ep-042",
+      "ep-113",
+      "ep-175"
+    ],
+    "shared.ListRunners": [
+      "ep-048",
+      "ep-114",
+      "ep-176"
+    ],
+    "shared.GetRunner": [
+      "ep-049",
+      "ep-051",
+      "ep-115",
+      "ep-177"
+    ],
+    "shared.DeleteRunner": [
+      "ep-050",
+      "ep-116",
+      "ep-178"
+    ],
+    "shared.UpdateRunner": [
+      "ep-051",
+      "ep-117",
+      "ep-179"
+    ],
+    "shared.ListJobs": [
+      "ep-052",
+      "ep-105",
+      "ep-138",
+      "ep-277",
+      "ep-290",
+      "ep-291"
+    ],
+    "shared.ListRuns": [
+      "ep-053",
+      "ep-106",
+      "ep-137",
+      "ep-278"
+    ],
+    "convert.ToTeams": [
+      "ep-054",
+      "ep-055",
+      "ep-068",
+      "ep-329"
+    ],
+    "organization.SearchTeam": [
+      "ep-054",
+      "ep-055"
+    ],
+    "org_service.NewTeam": [
+      "ep-057"
+    ],
+    "org_service.UpdateTeam": [
+      "ep-058"
+    ],
+    "org_service.DeleteTeam": [
+      "ep-059"
+    ],
+    "org_service.AddTeamMember": [
+      "ep-062"
+    ],
+    "org_service.RemoveTeamMember": [
+      "ep-063"
+    ],
+    "convert.ToTeam": [
+      "ep-056",
+      "ep-057",
+      "ep-058",
+      "ep-330"
+    ],
+    "convert.ToUser": [
+      "ep-060",
+      "ep-061",
+      "ep-070",
+      "ep-071",
+      "ep-087",
+      "ep-098",
+      "ep-123",
+      "ep-124",
+      "ep-125",
+      "ep-139",
+      "ep-140",
+      "ep-141",
+      "ep-327",
+      "ep-328"
+    ],
+    "repo_service.TeamAddRepository": [
+      "ep-066",
+      "ep-331"
+    ],
+    "repo_service.RemoveRepositoryFromTeam": [
+      "ep-067",
+      "ep-332"
+    ],
+    "feed_service.GetFeeds": [
+      "ep-069",
+      "ep-127",
+      "ep-374"
+    ],
+    "convert.ToRepo": [
+      "ep-064",
+      "ep-065",
+      "ep-152",
+      "ep-153",
+      "ep-172",
+      "ep-173",
+      "ep-174",
+      "ep-367",
+      "ep-368",
+      "ep-369"
+    ],
+    "convert.ToActivities": [
+      "ep-069",
+      "ep-127"
+    ],
+    "org_service.RemoveOrgUser": [
+      "ep-076"
+    ],
+    "webhook_service.ToHook": [
+      "ep-077",
+      "ep-078",
+      "ep-079",
+      "ep-080",
+      "ep-091",
+      "ep-092",
+      "ep-093",
+      "ep-094",
+      "ep-150",
+      "ep-321",
+      "ep-322",
+      "ep-324",
+      "ep-325"
+    ],
+    "convert.ToLabel": [
+      "ep-082",
+      "ep-083",
+      "ep-084",
+      "ep-085"
+    ],
+    "convert.ToLabelList": [
+      "ep-082",
+      "ep-335"
+    ],
+    "user_service.BlockUser": [
+      "ep-089",
+      "ep-192"
+    ],
+    "user_service.UnblockUser": [
+      "ep-090",
+      "ep-193"
+    ],
+    "password.IsPwned": [
+      "ep-098"
+    ],
+    "mailer.SendRegisterNotifyMail": [
+      "ep-098"
+    ],
+    "user_service.UpdateAuth": [
+      "ep-099"
+    ],
+    "user_service.ReplacePrimaryEmailAddress": [
+      "ep-099"
+    ],
+    "user_service.DeleteUser": [
+      "ep-100"
+    ],
+    "asymkey_service.DeletePublicKey": [
+      "ep-102",
+      "ep-161"
+    ],
+    "repo_service.ListUnadoptedRepositories": [
+      "ep-107"
+    ],
+    "repo_service.AdoptRepository": [
+      "ep-108"
+    ],
+    "repo_service.DeleteUnadoptedRepository": [
+      "ep-109"
+    ],
+    "cron.ListTasks": [
+      "ep-110"
+    ],
+    "cron.GetTask": [
+      "ep-111"
+    ],
+    "repo.CreateUserRepo": [
+      "ep-112"
+    ],
+    "convert.ToActionRunner": [
+      "ep-114",
+      "ep-115",
+      "ep-117",
+      "ep-176",
+      "ep-177",
+      "ep-179"
+    ],
+    "convert.ToEmailSearch": [
+      "ep-118",
+      "ep-119"
+    ],
+    "user_model.SearchEmails": [
+      "ep-118",
+      "ep-119"
+    ],
+    "user_model.GetUserBadges": [
+      "ep-120"
+    ],
+    "user_model.AddUserBadges": [
+      "ep-121"
+    ],
+    "user_model.RemoveUserBadges": [
+      "ep-122"
+    ],
+    "user_model.IsUserVisibleToViewer": [
+      "ep-124"
+    ],
+    "activities_model.GetUserHeatmapDataByUser": [
+      "ep-126"
+    ],
+    "user_service.UploadAvatar": [
+      "ep-128"
+    ],
+    "actions_service": [
+      "ep-132",
+      "ep-133",
+      "ep-134",
+      "ep-135",
+      "ep-269",
+      "ep-270",
+      "ep-271"
+    ],
+    "user_model": [
+      "ep-142",
+      "ep-143",
+      "ep-144",
+      "ep-145",
+      "ep-146"
+    ],
+    "webhook_service": [
+      "ep-147",
+      "ep-148",
+      "ep-149"
+    ],
+    "utils": [
+      "ep-147",
+      "ep-148",
+      "ep-149"
+    ],
+    "repo_model.StarRepo": [
+      "ep-155",
+      "ep-156"
+    ],
+    "repo_model.IsStaring": [
+      "ep-154"
+    ],
+    "asymkey_service.RewriteAllPublicKeys": [
+      "ep-161"
+    ],
+    "convert.User2UserSettings": [
+      "ep-162",
+      "ep-163"
+    ],
+    "convert.ToOAuth2Application": [
+      "ep-167",
+      "ep-168",
+      "ep-170",
+      "ep-171"
+    ],
+    "forms.DetectInvalidOAuth2ApplicationRedirectURI": [
+      "ep-167"
+    ],
+    "user_service.AddEmailAddresses": [
+      "ep-181"
+    ],
+    "user_service.DeleteEmailAddresses": [
+      "ep-182"
+    ],
+    "convert.ToEmail": [
+      "ep-180",
+      "ep-181"
+    ],
+    "convert.ToGPGKey": [
+      "ep-183",
+      "ep-184",
+      "ep-185",
+      "ep-187",
+      "ep-188"
+    ],
+    "asymkey_model.VerificationToken": [
+      "ep-186",
+      "ep-187",
+      "ep-188"
+    ],
+    "asymkey_model.AddGPGKey": [
+      "ep-188"
+    ],
+    "asymkey_model.VerifyGPGKey": [
+      "ep-187"
+    ],
+    "asymkey_model.DeleteGPGKey": [
+      "ep-189"
+    ],
+    "shared.ListBlocks": [
+      "ep-190"
+    ],
+    "shared.CheckUserBlock": [
+      "ep-191"
+    ],
+    "shared.BlockUser": [
+      "ep-192"
+    ],
+    "shared.UnblockUser": [
+      "ep-193"
+    ],
+    "packages_service.RemovePackage": [
+      "ep-201"
+    ],
+    "convert.ToPackage": [
+      "ep-199",
+      "ep-200",
+      "ep-204",
+      "ep-205"
+    ],
+    "packages_service.RemovePackageVersion": [
+      "ep-202"
+    ],
+    "packages_service.LinkToRepository": [
+      "ep-206"
+    ],
+    "packages_service.UnlinkFromRepository": [
+      "ep-207"
+    ],
+    "convert.ToPackageFile": [
+      "ep-203"
+    ],
+    "convert.ToAPIIssue": [
+      "ep-209",
+      "ep-210",
+      "ep-212",
+      "ep-213"
+    ],
+    "convert.ToAPIIssueList": [
+      "ep-208",
+      "ep-211"
+    ],
+    "access_model.GetDoerRepoPermission": [
+      "ep-208",
+      "ep-209",
+      "ep-210",
+      "ep-211",
+      "ep-212",
+      "ep-213"
+    ],
+    "convert.ToCommit": [
+      "ep-214",
+      "ep-215",
+      "ep-299"
+    ],
+    "convert.ToAPIPullRequest": [
+      "ep-217"
+    ],
+    "git.GetRawDiff": [
+      "ep-216"
+    ],
+    "pull_service": [
+      "ep-223",
+      "ep-224",
+      "ep-225",
+      "ep-226",
+      "ep-227",
+      "ep-229",
+      "ep-230",
+      "ep-231",
+      "ep-255"
+    ],
+    "convert": [
+      "ep-221",
+      "ep-222",
+      "ep-223",
+      "ep-224",
+      "ep-226",
+      "ep-227",
+      "ep-232",
+      "ep-233",
+      "ep-254",
+      "ep-255",
+      "ep-256",
+      "ep-257",
+      "ep-258",
+      "ep-259",
+      "ep-260",
+      "ep-344",
+      "ep-351",
+      "ep-352",
+      "ep-353",
+      "ep-354",
+      "ep-355",
+      "ep-357",
+      "ep-358",
+      "ep-379",
+      "ep-380"
+    ],
+    "issue_service": [
+      "ep-227",
+      "ep-255",
+      "ep-259",
+      "ep-336",
+      "ep-337",
+      "ep-338",
+      "ep-339"
+    ],
+    "automerge": [
+      "ep-229",
+      "ep-231"
+    ],
+    "gitdiff": [
+      "ep-233"
+    ],
+    "git_service": [
+      "ep-226",
+      "ep-232",
+      "ep-233"
+    ],
+    "mirror_service.AddPullMirrorToQueue": [
+      "ep-234"
+    ],
+    "mirror_service.SyncPushMirror": [
+      "ep-235"
+    ],
+    "mirror_service.AddPushMirrorRemote": [
+      "ep-238"
+    ],
+    "convert.ToPushMirror": [
+      "ep-236",
+      "ep-237",
+      "ep-238"
+    ],
+    "release_service.CreateRelease": [
+      "ep-243"
+    ],
+    "release_service.UpdateRelease": [
+      "ep-243",
+      "ep-244"
+    ],
+    "release_service.DeleteReleaseByID": [
+      "ep-245"
+    ],
+    "convert.ToAPIRelease": [
+      "ep-240",
+      "ep-241",
+      "ep-242",
+      "ep-243",
+      "ep-244"
+    ],
+    "files_service.GetTreeBySHA": [
+      "ep-246"
+    ],
+    "files_service.ApplyDiffPatch": [
+      "ep-249"
+    ],
+    "repo_service.AddOrUpdateCollaborator": [
+      "ep-252"
+    ],
+    "repo_service.DeleteCollaboration": [
+      "ep-253"
+    ],
+    "attachment_service": [
+      "ep-259",
+      "ep-260",
+      "ep-354",
+      "ep-355"
+    ],
+    "repo_service (services/repository)": [
+      "ep-262",
+      "ep-263"
+    ],
+    "secret_service (services/secrets)": [
+      "ep-265",
+      "ep-266"
+    ],
+    "actions_service (services/actions)": [
+      "ep-267",
+      "ep-268"
+    ],
+    "shared.runners": [
+      "ep-272",
+      "ep-273",
+      "ep-274",
+      "ep-275",
+      "ep-276"
+    ],
+    "convert.ListActionWorkflows": [
+      "ep-280"
+    ],
+    "convert.GetActionWorkflow": [
+      "ep-281"
+    ],
+    "actions_service.EnableOrDisableWorkflow": [
+      "ep-282",
+      "ep-284"
+    ],
+    "actions_service.DispatchActionWorkflow": [
+      "ep-283"
+    ],
+    "actions_service.RerunWorkflowRunJobs": [
+      "ep-287",
+      "ep-288",
+      "ep-289"
+    ],
+    "actions_service.GetFailedJobsForRerun": [
+      "ep-288"
+    ],
+    "convert.ToActionWorkflowRun": [
+      "ep-285",
+      "ep-286",
+      "ep-287"
+    ],
+    "convert.ToActionWorkflowJob": [
+      "ep-289",
+      "ep-290",
+      "ep-291",
+      "ep-292"
+    ],
+    "actions_service.DeleteRun": [
+      "ep-294"
+    ],
+    "actions_service.IsArtifactV4": [
+      "ep-296",
+      "ep-297",
+      "ep-298"
+    ],
+    "actions_service.DownloadArtifactV4ServeDirect": [
+      "ep-298"
+    ],
+    "convert.ToActionArtifact": [
+      "ep-293",
+      "ep-295",
+      "ep-296"
+    ],
+    "issue_service.CreateCommentReaction": [
+      "ep-301"
+    ],
+    "issue_service.CreateIssueReaction": [
+      "ep-304"
+    ],
+    "repo_service.DeleteBranch": [
+      "ep-307"
+    ],
+    "repo_service.CreateNewBranchFromCommit": [
+      "ep-308"
+    ],
+    "repo_service.UpdateBranch": [
+      "ep-310"
+    ],
+    "repo_service.RenameBranch": [
+      "ep-311"
+    ],
+    "convert.ToBranch": [
+      "ep-306",
+      "ep-308",
+      "ep-309"
+    ],
+    "pull_service.CreateOrUpdateProtectedBranch": [
+      "ep-314"
+    ],
+    "pull_service.CheckPRsForBaseBranch": [
+      "ep-315"
+    ],
+    "convert.ToBranchProtection": [
+      "ep-312",
+      "ep-313",
+      "ep-314",
+      "ep-315"
+    ],
+    "repository.MergeUpstream": [
+      "ep-318"
+    ],
+    "issues_model.LockIssue": [
+      "ep-319"
+    ],
+    "issues_model.UnlockIssue": [
+      "ep-320"
+    ],
+    "webhook_service.PrepareWebhook": [
+      "ep-323"
+    ],
+    "repo_service.HasRepository": [
+      "ep-330",
+      "ep-331",
+      "ep-332"
+    ],
+    "repo_service.FindForks": [
+      "ep-333"
+    ],
+    "repo_service.ForkRepository": [
+      "ep-334"
+    ],
+    "asymkey_service": [
+      "ep-343"
+    ],
+    "release_service": [
+      "ep-345"
+    ],
+    "repo_service.CreateRepository": [
+      "ep-363",
+      "ep-365",
+      "ep-366"
+    ],
+    "repo_service.GenerateRepository": [
+      "ep-364"
+    ],
+    "repo_model.SearchRepository": [
+      "ep-362"
+    ],
+    "repo_service.DeleteRepository": [
+      "ep-370"
+    ],
+    "issue.ParseTemplatesFromDefaultBranch": [
+      "ep-371"
+    ],
+    "issue.GetTemplateConfigFromDefaultBranch": [
+      "ep-372",
+      "ep-373"
+    ],
+    "issues_model": [
+      "ep-376",
+      "ep-377",
+      "ep-378",
+      "ep-379",
+      "ep-380",
+      "ep-381"
+    ],
+    "repo_model": [
+      "ep-375"
+    ]
+  },
+  "database_tables_by_endpoint": {
+    "ep-001": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-002": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-003": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-004": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-005": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-006": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-007": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-008": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-009": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-010": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-011": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-012": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-013": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-014": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-015": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-016": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-017": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-018": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-019": {
+      "reads": [
+        "notification",
+        "repository",
+        "issue",
+        "user",
+        "comment"
+      ],
+      "writes": []
+    },
+    "ep-020": {
+      "reads": [
+        "notification",
+        "repository",
+        "issue",
+        "user",
+        "comment"
+      ],
+      "writes": [
+        "notification"
+      ]
+    },
+    "ep-021": {
+      "reads": [
+        "notification"
+      ],
+      "writes": []
+    },
+    "ep-022": {
+      "reads": [
+        "notification",
+        "repository",
+        "issue",
+        "user",
+        "comment"
+      ],
+      "writes": []
+    },
+    "ep-023": {
+      "reads": [
+        "notification",
+        "repository",
+        "issue",
+        "user",
+        "comment",
+        "access"
+      ],
+      "writes": [
+        "notification"
+      ]
+    },
+    "ep-024": {
+      "reads": [
+        "notification",
+        "repository",
+        "issue",
+        "user",
+        "comment",
+        "access"
+      ],
+      "writes": []
+    },
+    "ep-025": {
+      "reads": [
+        "notification",
+        "repository",
+        "issue",
+        "user",
+        "comment",
+        "access"
+      ],
+      "writes": [
+        "notification"
+      ]
+    },
+    "ep-026": {
+      "reads": [
+        "user",
+        "org_user"
+      ],
+      "writes": []
+    },
+    "ep-027": {
+      "reads": [
+        "user",
+        "org_user"
+      ],
+      "writes": []
+    },
+    "ep-028": {
+      "reads": [
+        "user",
+        "org_user",
+        "team",
+        "team_user"
+      ],
+      "writes": []
+    },
+    "ep-029": {
+      "reads": [
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-030": {
+      "reads": [
+        "user"
+      ],
+      "writes": [
+        "user",
+        "org_user",
+        "team",
+        "team_unit",
+        "team_user",
+        "user_redirect"
+      ]
+    },
+    "ep-031": {
+      "reads": [
+        "user",
+        "org_user"
+      ],
+      "writes": []
+    },
+    "ep-032": {
+      "reads": [
+        "user",
+        "team_user",
+        "team"
+      ],
+      "writes": [
+        "user",
+        "repository",
+        "user_redirect"
+      ]
+    },
+    "ep-033": {
+      "reads": [
+        "user",
+        "team_user",
+        "team"
+      ],
+      "writes": [
+        "user"
+      ]
+    },
+    "ep-034": {
+      "reads": [
+        "user",
+        "team_user",
+        "team",
+        "repository",
+        "package"
+      ],
+      "writes": [
+        "user",
+        "org_user",
+        "team",
+        "team_user",
+        "team_unit"
+      ]
+    },
+    "ep-035": {
+      "reads": [
+        "action",
+        "user",
+        "repository",
+        "issue",
+        "comment",
+        "team_user"
+      ],
+      "writes": []
+    },
+    "ep-036": {
+      "reads": [
+        "user",
+        "repository",
+        "team_user"
+      ],
+      "writes": [
+        "repository"
+      ]
+    },
+    "ep-037": {
+      "reads": [
+        "user",
+        "team_user"
+      ],
+      "writes": [
+        "user"
+      ]
+    },
+    "ep-038": {
+      "reads": [
+        "user",
+        "team_user"
+      ],
+      "writes": [
+        "user"
+      ]
+    },
+    "ep-039": {
+      "reads": [
+        "user",
+        "team_user",
+        "secret"
+      ],
+      "writes": []
+    },
+    "ep-040": {
+      "reads": [
+        "user",
+        "team_user",
+        "secret"
+      ],
+      "writes": [
+        "secret"
+      ]
+    },
+    "ep-041": {
+      "reads": [
+        "user",
+        "team_user",
+        "secret"
+      ],
+      "writes": [
+        "secret"
+      ]
+    },
+    "ep-042": {
+      "reads": [
+        "action_runner_token",
+        "user",
+        "team_user"
+      ],
+      "writes": [
+        "action_runner_token"
+      ]
+    },
+    "ep-043": {
+      "reads": [
+        "action_variable",
+        "user",
+        "team_user"
+      ],
+      "writes": []
+    },
+    "ep-044": {
+      "reads": [
+        "action_variable",
+        "user",
+        "team_user"
+      ],
+      "writes": []
+    },
+    "ep-045": {
+      "reads": [
+        "action_variable",
+        "user",
+        "team_user"
+      ],
+      "writes": [
+        "action_variable"
+      ]
+    },
+    "ep-046": {
+      "reads": [
+        "action_variable",
+        "user",
+        "team_user"
+      ],
+      "writes": [
+        "action_variable"
+      ]
+    },
+    "ep-047": {
+      "reads": [
+        "action_variable",
+        "user",
+        "team_user"
+      ],
+      "writes": [
+        "action_variable"
+      ]
+    },
+    "ep-048": {
+      "reads": [
+        "action_runner",
+        "user",
+        "team_user"
+      ],
+      "writes": []
+    },
+    "ep-049": {
+      "reads": [
+        "action_runner",
+        "user",
+        "team_user"
+      ],
+      "writes": []
+    },
+    "ep-050": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": [
+        "action_runner"
+      ]
+    },
+    "ep-051": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": [
+        "action_runner",
+        "action_tasks_version"
+      ]
+    },
+    "ep-052": {
+      "reads": [
+        "action_run_job",
+        "repository",
+        "action_run",
+        "action_task",
+        "action_task_step",
+        "action_runner"
+      ],
+      "writes": []
+    },
+    "ep-053": {
+      "reads": [
+        "action_run",
+        "repository",
+        "user",
+        "action_run_attempt"
+      ],
+      "writes": []
+    },
+    "ep-054": {
+      "reads": [
+        "team",
+        "team_unit"
+      ],
+      "writes": []
+    },
+    "ep-055": {
+      "reads": [
+        "team",
+        "team_user",
+        "team_unit",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-056": {
+      "reads": [
+        "team",
+        "team_user",
+        "team_unit",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-057": {
+      "reads": [
+        "user",
+        "team"
+      ],
+      "writes": [
+        "team",
+        "team_unit",
+        "user"
+      ]
+    },
+    "ep-058": {
+      "reads": [
+        "team",
+        "team_unit",
+        "repository"
+      ],
+      "writes": [
+        "team",
+        "team_unit",
+        "access"
+      ]
+    },
+    "ep-059": {
+      "reads": [
+        "team",
+        "user",
+        "protected_branch",
+        "repository"
+      ],
+      "writes": [
+        "team",
+        "team_user",
+        "team_unit",
+        "protected_branch",
+        "user",
+        "access"
+      ]
+    },
+    "ep-060": {
+      "reads": [
+        "team",
+        "org_user",
+        "user",
+        "team_user"
+      ],
+      "writes": []
+    },
+    "ep-061": {
+      "reads": [
+        "team",
+        "user",
+        "team_user"
+      ],
+      "writes": []
+    },
+    "ep-062": {
+      "reads": [
+        "team",
+        "user",
+        "user_blocking",
+        "team_user",
+        "org_user",
+        "repository"
+      ],
+      "writes": [
+        "org_user",
+        "team_user",
+        "team",
+        "user"
+      ]
+    },
+    "ep-063": {
+      "reads": [
+        "team",
+        "user",
+        "team_user",
+        "repository"
+      ],
+      "writes": [
+        "team_user",
+        "team",
+        "access",
+        "org_user"
+      ]
+    },
+    "ep-064": {
+      "reads": [
+        "team",
+        "team_repo",
+        "repository",
+        "access",
+        "team_user",
+        "org_user"
+      ],
+      "writes": []
+    },
+    "ep-065": {
+      "reads": [
+        "team",
+        "repository",
+        "team_repo",
+        "access",
+        "team_user",
+        "org_user"
+      ],
+      "writes": []
+    },
+    "ep-066": {
+      "reads": [
+        "team",
+        "repository",
+        "access",
+        "team_repo",
+        "team_user",
+        "org_user"
+      ],
+      "writes": [
+        "team_repo",
+        "team",
+        "access",
+        "watch"
+      ]
+    },
+    "ep-067": {
+      "reads": [
+        "team",
+        "repository",
+        "access",
+        "team_repo",
+        "team_user",
+        "org_user"
+      ],
+      "writes": [
+        "team_repo",
+        "team",
+        "access",
+        "watch",
+        "issue_watch"
+      ]
+    },
+    "ep-068": {
+      "reads": [
+        "user",
+        "org_user",
+        "team",
+        "team_unit",
+        "team_user"
+      ],
+      "writes": []
+    },
+    "ep-069": {
+      "reads": [
+        "team",
+        "team_user",
+        "org_user",
+        "user",
+        "repository",
+        "team_repo",
+        "action"
+      ],
+      "writes": []
+    },
+    "ep-070": {
+      "reads": [
+        "user",
+        "org_user"
+      ],
+      "writes": []
+    },
+    "ep-071": {
+      "reads": [
+        "user",
+        "org_user"
+      ],
+      "writes": []
+    },
+    "ep-072": {
+      "reads": [
+        "user",
+        "org_user"
+      ],
+      "writes": []
+    },
+    "ep-073": {
+      "reads": [
+        "user",
+        "org_user"
+      ],
+      "writes": []
+    },
+    "ep-074": {
+      "reads": [
+        "user",
+        "org_user",
+        "team",
+        "team_user"
+      ],
+      "writes": [
+        "org_user"
+      ]
+    },
+    "ep-075": {
+      "reads": [
+        "user",
+        "org_user",
+        "team",
+        "team_user"
+      ],
+      "writes": [
+        "org_user"
+      ]
+    },
+    "ep-076": {
+      "reads": [
+        "user",
+        "org_user",
+        "team",
+        "team_user",
+        "team_repo",
+        "repository"
+      ],
+      "writes": [
+        "org_user",
+        "user",
+        "access",
+        "watch",
+        "team_user",
+        "team"
+      ]
+    },
+    "ep-077": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": []
+    },
+    "ep-078": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": []
+    },
+    "ep-079": {
+      "reads": [],
+      "writes": [
+        "webhook"
+      ]
+    },
+    "ep-080": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": [
+        "webhook"
+      ]
+    },
+    "ep-081": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": [
+        "webhook",
+        "hook_task"
+      ]
+    },
+    "ep-082": {
+      "reads": [
+        "label"
+      ],
+      "writes": []
+    },
+    "ep-083": {
+      "reads": [],
+      "writes": [
+        "label"
+      ]
+    },
+    "ep-084": {
+      "reads": [
+        "label"
+      ],
+      "writes": []
+    },
+    "ep-085": {
+      "reads": [
+        "label"
+      ],
+      "writes": [
+        "label"
+      ]
+    },
+    "ep-086": {
+      "reads": [
+        "label"
+      ],
+      "writes": [
+        "label",
+        "issue_label",
+        "comment"
+      ]
+    },
+    "ep-087": {
+      "reads": [
+        "user_blocking",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-088": {
+      "reads": [
+        "user",
+        "user_blocking"
+      ],
+      "writes": []
+    },
+    "ep-089": {
+      "reads": [
+        "user",
+        "user_blocking",
+        "org_user",
+        "star",
+        "watch",
+        "issue_assignees",
+        "collaboration",
+        "repo_transfer"
+      ],
+      "writes": [
+        "user_blocking",
+        "follow",
+        "star",
+        "watch",
+        "issue_assignees",
+        "collaboration",
+        "repo_transfer"
+      ]
+    },
+    "ep-090": {
+      "reads": [
+        "user",
+        "user_blocking",
+        "org_user"
+      ],
+      "writes": [
+        "user_blocking"
+      ]
+    },
+    "ep-091": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": []
+    },
+    "ep-092": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": []
+    },
+    "ep-093": {
+      "reads": [],
+      "writes": [
+        "webhook"
+      ]
+    },
+    "ep-094": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": [
+        "webhook"
+      ]
+    },
+    "ep-095": {
+      "reads": [],
+      "writes": [
+        "webhook",
+        "hook_task"
+      ]
+    },
+    "ep-096": {
+      "reads": [
+        "user"
+      ],
+      "writes": [
+        "user",
+        "org_user",
+        "team",
+        "team_unit",
+        "team_user"
+      ]
+    },
+    "ep-097": {
+      "reads": [
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-098": {
+      "reads": [
+        "login_source",
+        "user",
+        "email_address"
+      ],
+      "writes": [
+        "user",
+        "email_address"
+      ]
+    },
+    "ep-099": {
+      "reads": [
+        "login_source",
+        "email_address"
+      ],
+      "writes": [
+        "user",
+        "email_address",
+        "auth_token"
+      ]
+    },
+    "ep-100": {
+      "reads": [
+        "repository",
+        "org_user",
+        "packages"
+      ],
+      "writes": [
+        "user",
+        "repository",
+        "watch",
+        "star",
+        "follow",
+        "public_key",
+        "gpg_key",
+        "access_token"
+      ]
+    },
+    "ep-101": {
+      "reads": [],
+      "writes": [
+        "public_key"
+      ]
+    },
+    "ep-102": {
+      "reads": [
+        "public_key"
+      ],
+      "writes": [
+        "public_key"
+      ]
+    },
+    "ep-103": {
+      "reads": [
+        "user",
+        "two_factor"
+      ],
+      "writes": []
+    },
+    "ep-104": {
+      "reads": [
+        "user"
+      ],
+      "writes": [
+        "user",
+        "repository",
+        "user_redirect"
+      ]
+    },
+    "ep-105": {
+      "reads": [
+        "action_run_job",
+        "action_run",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-106": {
+      "reads": [
+        "action_run",
+        "user",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-107": {
+      "reads": [
+        "user",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-108": {
+      "reads": [
+        "user",
+        "repository"
+      ],
+      "writes": [
+        "repository",
+        "branch",
+        "release"
+      ]
+    },
+    "ep-109": {
+      "reads": [
+        "user",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-110": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-111": {
+      "reads": [],
+      "writes": [
+        "notice"
+      ]
+    },
+    "ep-112": {
+      "reads": [
+        "repository"
+      ],
+      "writes": [
+        "repository"
+      ]
+    },
+    "ep-113": {
+      "reads": [
+        "action_runner_token"
+      ],
+      "writes": [
+        "action_runner_token"
+      ]
+    },
+    "ep-114": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": []
+    },
+    "ep-115": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": []
+    },
+    "ep-116": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": [
+        "action_runner"
+      ]
+    },
+    "ep-117": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": [
+        "action_runner",
+        "action_tasks_version"
+      ]
+    },
+    "ep-118": {
+      "reads": [
+        "email_address",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-119": {
+      "reads": [
+        "email_address",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-120": {
+      "reads": [
+        "user",
+        "badge",
+        "user_badge"
+      ],
+      "writes": []
+    },
+    "ep-121": {
+      "reads": [
+        "user",
+        "badge",
+        "user_badge"
+      ],
+      "writes": [
+        "user_badge"
+      ]
+    },
+    "ep-122": {
+      "reads": [
+        "user",
+        "user_badge",
+        "badge"
+      ],
+      "writes": [
+        "user_badge"
+      ]
+    },
+    "ep-123": {
+      "reads": [
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-124": {
+      "reads": [
+        "user",
+        "team_user",
+        "follow"
+      ],
+      "writes": []
+    },
+    "ep-125": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-126": {
+      "reads": [
+        "user",
+        "action"
+      ],
+      "writes": []
+    },
+    "ep-127": {
+      "reads": [
+        "user",
+        "action",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-128": {
+      "reads": [],
+      "writes": [
+        "user"
+      ]
+    },
+    "ep-129": {
+      "reads": [],
+      "writes": [
+        "user"
+      ]
+    },
+    "ep-130": {
+      "reads": [
+        "secret"
+      ],
+      "writes": [
+        "secret"
+      ]
+    },
+    "ep-131": {
+      "reads": [
+        "secret"
+      ],
+      "writes": [
+        "secret"
+      ]
+    },
+    "ep-132": {
+      "reads": [
+        "action_variable"
+      ],
+      "writes": [
+        "action_variable"
+      ]
+    },
+    "ep-133": {
+      "reads": [
+        "action_variable"
+      ],
+      "writes": [
+        "action_variable"
+      ]
+    },
+    "ep-134": {
+      "reads": [
+        "action_variable"
+      ],
+      "writes": [
+        "action_variable"
+      ]
+    },
+    "ep-135": {
+      "reads": [
+        "action_variable"
+      ],
+      "writes": []
+    },
+    "ep-136": {
+      "reads": [
+        "action_variable"
+      ],
+      "writes": []
+    },
+    "ep-137": {
+      "reads": [
+        "action_run",
+        "repository",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-138": {
+      "reads": [
+        "action_run_job",
+        "action_run",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-139": {
+      "reads": [
+        "user",
+        "follow"
+      ],
+      "writes": []
+    },
+    "ep-140": {
+      "reads": [
+        "user",
+        "follow"
+      ],
+      "writes": []
+    },
+    "ep-141": {
+      "reads": [
+        "user",
+        "follow"
+      ],
+      "writes": []
+    },
+    "ep-142": {
+      "reads": [
+        "follow",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-143": {
+      "reads": [
+        "follow"
+      ],
+      "writes": []
+    },
+    "ep-144": {
+      "reads": [
+        "user",
+        "follow"
+      ],
+      "writes": []
+    },
+    "ep-145": {
+      "reads": [
+        "follow",
+        "blocked_user"
+      ],
+      "writes": [
+        "follow",
+        "user"
+      ]
+    },
+    "ep-146": {
+      "reads": [
+        "follow"
+      ],
+      "writes": [
+        "follow",
+        "user"
+      ]
+    },
+    "ep-147": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": []
+    },
+    "ep-148": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": []
+    },
+    "ep-149": {
+      "reads": [],
+      "writes": [
+        "webhook"
+      ]
+    },
+    "ep-150": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": [
+        "webhook"
+      ]
+    },
+    "ep-151": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": [
+        "webhook",
+        "hook_task"
+      ]
+    },
+    "ep-152": {
+      "reads": [
+        "star",
+        "repository",
+        "repo_unit",
+        "collaboration"
+      ],
+      "writes": []
+    },
+    "ep-153": {
+      "reads": [
+        "star",
+        "repository",
+        "repo_unit",
+        "collaboration"
+      ],
+      "writes": []
+    },
+    "ep-154": {
+      "reads": [
+        "star"
+      ],
+      "writes": []
+    },
+    "ep-155": {
+      "reads": [
+        "user_blocking",
+        "star"
+      ],
+      "writes": [
+        "star",
+        "repository",
+        "user"
+      ]
+    },
+    "ep-156": {
+      "reads": [
+        "star"
+      ],
+      "writes": [
+        "star",
+        "repository",
+        "user"
+      ]
+    },
+    "ep-157": {
+      "reads": [
+        "public_key",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-158": {
+      "reads": [
+        "public_key",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-159": {
+      "reads": [
+        "public_key",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-160": {
+      "reads": [
+        "public_key"
+      ],
+      "writes": [
+        "public_key"
+      ]
+    },
+    "ep-161": {
+      "reads": [
+        "public_key",
+        "login_source"
+      ],
+      "writes": [
+        "public_key"
+      ]
+    },
+    "ep-162": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-163": {
+      "reads": [],
+      "writes": [
+        "user"
+      ]
+    },
+    "ep-164": {
+      "reads": [
+        "access_token"
+      ],
+      "writes": []
+    },
+    "ep-165": {
+      "reads": [
+        "access_token"
+      ],
+      "writes": [
+        "access_token"
+      ]
+    },
+    "ep-166": {
+      "reads": [
+        "access_token"
+      ],
+      "writes": [
+        "access_token"
+      ]
+    },
+    "ep-167": {
+      "reads": [],
+      "writes": [
+        "oauth2_application"
+      ]
+    },
+    "ep-168": {
+      "reads": [
+        "oauth2_application"
+      ],
+      "writes": []
+    },
+    "ep-169": {
+      "reads": [
+        "oauth2_application"
+      ],
+      "writes": [
+        "oauth2_application",
+        "oauth2_authorization_code",
+        "oauth2_grant"
+      ]
+    },
+    "ep-170": {
+      "reads": [
+        "oauth2_application"
+      ],
+      "writes": []
+    },
+    "ep-171": {
+      "reads": [
+        "oauth2_application"
+      ],
+      "writes": [
+        "oauth2_application"
+      ]
+    },
+    "ep-172": {
+      "reads": [
+        "repository",
+        "access"
+      ],
+      "writes": []
+    },
+    "ep-173": {
+      "reads": [
+        "repository",
+        "user",
+        "access"
+      ],
+      "writes": []
+    },
+    "ep-174": {
+      "reads": [
+        "repository",
+        "access"
+      ],
+      "writes": []
+    },
+    "ep-175": {
+      "reads": [
+        "action_runner_token"
+      ],
+      "writes": [
+        "action_runner_token"
+      ]
+    },
+    "ep-176": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": []
+    },
+    "ep-177": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": []
+    },
+    "ep-178": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": [
+        "action_runner"
+      ]
+    },
+    "ep-179": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": [
+        "action_runner",
+        "action_tasks_version"
+      ]
+    },
+    "ep-180": {
+      "reads": [
+        "email_address"
+      ],
+      "writes": []
+    },
+    "ep-181": {
+      "reads": [
+        "email_address"
+      ],
+      "writes": [
+        "email_address"
+      ]
+    },
+    "ep-182": {
+      "reads": [
+        "email_address"
+      ],
+      "writes": [
+        "email_address"
+      ]
+    },
+    "ep-183": {
+      "reads": [
+        "gpg_key"
+      ],
+      "writes": []
+    },
+    "ep-184": {
+      "reads": [
+        "gpg_key"
+      ],
+      "writes": []
+    },
+    "ep-185": {
+      "reads": [
+        "gpg_key"
+      ],
+      "writes": []
+    },
+    "ep-186": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-187": {
+      "reads": [
+        "gpg_key"
+      ],
+      "writes": [
+        "gpg_key"
+      ]
+    },
+    "ep-188": {
+      "reads": [
+        "gpg_key",
+        "email_address"
+      ],
+      "writes": [
+        "gpg_key",
+        "gpg_key_import"
+      ]
+    },
+    "ep-189": {
+      "reads": [
+        "gpg_key"
+      ],
+      "writes": [
+        "gpg_key",
+        "gpg_key_import"
+      ]
+    },
+    "ep-190": {
+      "reads": [
+        "user_blocking",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-191": {
+      "reads": [
+        "user",
+        "user_blocking"
+      ],
+      "writes": []
+    },
+    "ep-192": {
+      "reads": [
+        "user",
+        "user_blocking"
+      ],
+      "writes": [
+        "user_blocking",
+        "follow",
+        "star",
+        "watch",
+        "repository",
+        "issue_assignees",
+        "collaboration",
+        "repo_transfer"
+      ]
+    },
+    "ep-193": {
+      "reads": [
+        "user",
+        "user_blocking"
+      ],
+      "writes": [
+        "user_blocking"
+      ]
+    },
+    "ep-194": {
+      "reads": [
+        "repository",
+        "watch",
+        "repo_unit",
+        "collaboration",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-195": {
+      "reads": [
+        "repository",
+        "watch",
+        "repo_unit",
+        "collaboration",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-196": {
+      "reads": [
+        "watch"
+      ],
+      "writes": []
+    },
+    "ep-197": {
+      "reads": [
+        "watch",
+        "user_blocking"
+      ],
+      "writes": [
+        "watch",
+        "repository"
+      ]
+    },
+    "ep-198": {
+      "reads": [
+        "watch"
+      ],
+      "writes": [
+        "watch",
+        "repository"
+      ]
+    },
+    "ep-199": {
+      "reads": [
+        "package_version",
+        "package",
+        "user",
+        "repository",
+        "package_property",
+        "package_file",
+        "package_blob",
+        "access"
+      ],
+      "writes": []
+    },
+    "ep-200": {
+      "reads": [
+        "package_version",
+        "package",
+        "user",
+        "repository",
+        "package_property",
+        "package_file",
+        "package_blob",
+        "access"
+      ],
+      "writes": []
+    },
+    "ep-201": {
+      "reads": [
+        "package",
+        "package_version",
+        "user",
+        "repository",
+        "package_property",
+        "package_file",
+        "package_blob"
+      ],
+      "writes": [
+        "package",
+        "package_version",
+        "package_file",
+        "package_property"
+      ]
+    },
+    "ep-202": {
+      "reads": [
+        "package_version",
+        "package",
+        "package_file",
+        "package_blob",
+        "package_property"
+      ],
+      "writes": [
+        "package_version",
+        "package_file",
+        "package_property"
+      ]
+    },
+    "ep-203": {
+      "reads": [
+        "package_version",
+        "package_file",
+        "package_blob",
+        "package_property"
+      ],
+      "writes": []
+    },
+    "ep-204": {
+      "reads": [
+        "package",
+        "package_version",
+        "user",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-205": {
+      "reads": [
+        "package",
+        "package_version",
+        "user",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-206": {
+      "reads": [
+        "package",
+        "repository",
+        "access"
+      ],
+      "writes": [
+        "package"
+      ]
+    },
+    "ep-207": {
+      "reads": [
+        "package",
+        "repository",
+        "user",
+        "org_user"
+      ],
+      "writes": [
+        "package"
+      ]
+    },
+    "ep-208": {
+      "reads": [
+        "issue",
+        "repository",
+        "issue_dependency",
+        "repo_unit",
+        "access"
+      ],
+      "writes": []
+    },
+    "ep-209": {
+      "reads": [
+        "issue",
+        "repository",
+        "issue_dependency",
+        "repo_unit",
+        "access"
+      ],
+      "writes": [
+        "issue_dependency",
+        "comment"
+      ]
+    },
+    "ep-210": {
+      "reads": [
+        "issue",
+        "repository",
+        "repo_unit",
+        "access"
+      ],
+      "writes": [
+        "issue_dependency",
+        "comment"
+      ]
+    },
+    "ep-211": {
+      "reads": [
+        "issue",
+        "repository",
+        "issue_dependency",
+        "access"
+      ],
+      "writes": []
+    },
+    "ep-212": {
+      "reads": [
+        "issue",
+        "repository",
+        "issue_dependency",
+        "repo_unit",
+        "access"
+      ],
+      "writes": [
+        "issue_dependency",
+        "comment"
+      ]
+    },
+    "ep-213": {
+      "reads": [
+        "issue",
+        "repository",
+        "repo_unit",
+        "access"
+      ],
+      "writes": [
+        "issue_dependency",
+        "comment"
+      ]
+    },
+    "ep-214": {
+      "reads": [
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-215": {
+      "reads": [
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-216": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-217": {
+      "reads": [
+        "pull_request",
+        "issue",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-218": {
+      "reads": [
+        "issue",
+        "user",
+        "issue_watch"
+      ],
+      "writes": [
+        "issue_watch"
+      ]
+    },
+    "ep-219": {
+      "reads": [
+        "issue",
+        "user",
+        "issue_watch"
+      ],
+      "writes": [
+        "issue_watch"
+      ]
+    },
+    "ep-220": {
+      "reads": [
+        "issue",
+        "issue_watch",
+        "watch"
+      ],
+      "writes": []
+    },
+    "ep-221": {
+      "reads": [
+        "issue",
+        "issue_watch",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-222": {
+      "reads": [
+        "user",
+        "pull_request",
+        "issue",
+        "repository",
+        "label",
+        "milestone",
+        "review",
+        "branch"
+      ],
+      "writes": []
+    },
+    "ep-223": {
+      "reads": [
+        "pull_request",
+        "issue",
+        "repository",
+        "branch",
+        "review"
+      ],
+      "writes": []
+    },
+    "ep-224": {
+      "reads": [
+        "repository",
+        "pull_request",
+        "issue",
+        "branch",
+        "review"
+      ],
+      "writes": []
+    },
+    "ep-225": {
+      "reads": [
+        "pull_request",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-226": {
+      "reads": [
+        "pull_request",
+        "label",
+        "milestone",
+        "user"
+      ],
+      "writes": [
+        "issue",
+        "pull_request",
+        "issue_assignees"
+      ]
+    },
+    "ep-227": {
+      "reads": [
+        "pull_request",
+        "issue",
+        "label",
+        "milestone"
+      ],
+      "writes": [
+        "issue",
+        "pull_request",
+        "issue_label",
+        "issue_assignees"
+      ]
+    },
+    "ep-228": {
+      "reads": [
+        "pull_request"
+      ],
+      "writes": []
+    },
+    "ep-229": {
+      "reads": [
+        "pull_request",
+        "issue",
+        "protected_branch",
+        "issue_dependency"
+      ],
+      "writes": [
+        "pull_request",
+        "issue",
+        "pull_auto_merge"
+      ]
+    },
+    "ep-230": {
+      "reads": [
+        "pull_request",
+        "issue"
+      ],
+      "writes": []
+    },
+    "ep-231": {
+      "reads": [
+        "pull_request",
+        "pull_auto_merge"
+      ],
+      "writes": [
+        "pull_auto_merge",
+        "comment"
+      ]
+    },
+    "ep-232": {
+      "reads": [
+        "pull_request",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-233": {
+      "reads": [
+        "pull_request"
+      ],
+      "writes": []
+    },
+    "ep-234": {
+      "reads": [
+        "mirror"
+      ],
+      "writes": []
+    },
+    "ep-235": {
+      "reads": [
+        "push_mirror"
+      ],
+      "writes": [
+        "push_mirror"
+      ]
+    },
+    "ep-236": {
+      "reads": [
+        "push_mirror"
+      ],
+      "writes": []
+    },
+    "ep-237": {
+      "reads": [
+        "push_mirror"
+      ],
+      "writes": []
+    },
+    "ep-238": {
+      "reads": [],
+      "writes": [
+        "push_mirror"
+      ]
+    },
+    "ep-239": {
+      "reads": [],
+      "writes": [
+        "push_mirror"
+      ]
+    },
+    "ep-240": {
+      "reads": [
+        "release",
+        "repository",
+        "user",
+        "attachment"
+      ],
+      "writes": []
+    },
+    "ep-241": {
+      "reads": [
+        "release",
+        "repository",
+        "user",
+        "attachment"
+      ],
+      "writes": []
+    },
+    "ep-242": {
+      "reads": [
+        "release",
+        "repository",
+        "user",
+        "attachment"
+      ],
+      "writes": []
+    },
+    "ep-243": {
+      "reads": [
+        "release",
+        "protected_tag"
+      ],
+      "writes": [
+        "release"
+      ]
+    },
+    "ep-244": {
+      "reads": [
+        "release",
+        "repository",
+        "user",
+        "attachment"
+      ],
+      "writes": [
+        "release"
+      ]
+    },
+    "ep-245": {
+      "reads": [
+        "release",
+        "repository",
+        "user",
+        "attachment"
+      ],
+      "writes": [
+        "release",
+        "attachment"
+      ]
+    },
+    "ep-246": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-247": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-248": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-249": {
+      "reads": [
+        "branch",
+        "protected_branch"
+      ],
+      "writes": []
+    },
+    "ep-250": {
+      "reads": [
+        "collaboration",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-251": {
+      "reads": [
+        "user",
+        "collaboration"
+      ],
+      "writes": []
+    },
+    "ep-252": {
+      "reads": [
+        "user",
+        "collaboration",
+        "blocked_user"
+      ],
+      "writes": [
+        "collaboration",
+        "access"
+      ]
+    },
+    "ep-253": {
+      "reads": [
+        "user"
+      ],
+      "writes": [
+        "collaboration",
+        "access",
+        "watch",
+        "stopwatch",
+        "issue_watch",
+        "issue_assignees"
+      ]
+    },
+    "ep-254": {
+      "reads": [
+        "user",
+        "repo_unit",
+        "collaboration",
+        "access",
+        "team"
+      ],
+      "writes": []
+    },
+    "ep-255": {
+      "reads": [
+        "user",
+        "collaboration",
+        "team",
+        "team_user"
+      ],
+      "writes": []
+    },
+    "ep-256": {
+      "reads": [
+        "user",
+        "access",
+        "team",
+        "team_user"
+      ],
+      "writes": []
+    },
+    "ep-257": {
+      "reads": [
+        "issue",
+        "attachment"
+      ],
+      "writes": []
+    },
+    "ep-258": {
+      "reads": [
+        "issue",
+        "attachment",
+        "comment",
+        "label",
+        "milestone",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-259": {
+      "reads": [
+        "issue"
+      ],
+      "writes": [
+        "attachment",
+        "issue"
+      ]
+    },
+    "ep-260": {
+      "reads": [
+        "issue",
+        "attachment"
+      ],
+      "writes": [
+        "attachment"
+      ]
+    },
+    "ep-261": {
+      "reads": [
+        "issue",
+        "attachment"
+      ],
+      "writes": [
+        "attachment"
+      ]
+    },
+    "ep-262": {
+      "reads": [],
+      "writes": [
+        "repository"
+      ]
+    },
+    "ep-263": {
+      "reads": [],
+      "writes": [
+        "repository"
+      ]
+    },
+    "ep-264": {
+      "reads": [
+        "secret"
+      ],
+      "writes": []
+    },
+    "ep-265": {
+      "reads": [
+        "secret"
+      ],
+      "writes": [
+        "secret"
+      ]
+    },
+    "ep-266": {
+      "reads": [
+        "secret"
+      ],
+      "writes": [
+        "secret"
+      ]
+    },
+    "ep-267": {
+      "reads": [
+        "action_variable"
+      ],
+      "writes": []
+    },
+    "ep-268": {
+      "reads": [
+        "action_variable"
+      ],
+      "writes": [
+        "action_variable"
+      ]
+    },
+    "ep-269": {
+      "reads": [
+        "action_variable"
+      ],
+      "writes": [
+        "action_variable"
+      ]
+    },
+    "ep-270": {
+      "reads": [
+        "action_variable"
+      ],
+      "writes": [
+        "action_variable"
+      ]
+    },
+    "ep-271": {
+      "reads": [
+        "action_variable"
+      ],
+      "writes": []
+    },
+    "ep-272": {
+      "reads": [
+        "action_runner_token"
+      ],
+      "writes": [
+        "action_runner_token"
+      ]
+    },
+    "ep-273": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": []
+    },
+    "ep-274": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": []
+    },
+    "ep-275": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": [
+        "action_runner"
+      ]
+    },
+    "ep-276": {
+      "reads": [
+        "action_runner"
+      ],
+      "writes": [
+        "action_runner",
+        "action_tasks_version"
+      ]
+    },
+    "ep-277": {
+      "reads": [
+        "action_run_job",
+        "action_run",
+        "action_task",
+        "action_runner",
+        "action_task_step",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-278": {
+      "reads": [
+        "action_run",
+        "user",
+        "repository",
+        "action_run_attempt"
+      ],
+      "writes": []
+    },
+    "ep-279": {
+      "reads": [
+        "action_task",
+        "action_run_job",
+        "action_run",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-280": {
+      "reads": [
+        "repo_unit"
+      ],
+      "writes": []
+    },
+    "ep-281": {
+      "reads": [
+        "repo_unit"
+      ],
+      "writes": []
+    },
+    "ep-282": {
+      "reads": [
+        "repo_unit"
+      ],
+      "writes": [
+        "repo_unit"
+      ]
+    },
+    "ep-283": {
+      "reads": [
+        "repo_unit"
+      ],
+      "writes": [
+        "action_run",
+        "action_run_job",
+        "action_run_attempt"
+      ]
+    },
+    "ep-284": {
+      "reads": [
+        "repo_unit"
+      ],
+      "writes": [
+        "repo_unit"
+      ]
+    },
+    "ep-285": {
+      "reads": [
+        "action_run",
+        "action_run_attempt",
+        "repository",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-286": {
+      "reads": [
+        "action_run",
+        "action_run_attempt",
+        "repository",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-287": {
+      "reads": [
+        "action_run",
+        "action_run_attempt",
+        "action_run_job",
+        "action_variable"
+      ],
+      "writes": [
+        "action_run_attempt",
+        "action_run_job",
+        "action_run"
+      ]
+    },
+    "ep-288": {
+      "reads": [
+        "action_run",
+        "action_run_attempt",
+        "action_run_job",
+        "action_variable"
+      ],
+      "writes": [
+        "action_run_attempt",
+        "action_run_job",
+        "action_run"
+      ]
+    },
+    "ep-289": {
+      "reads": [
+        "action_run",
+        "action_run_attempt",
+        "action_run_job",
+        "action_variable"
+      ],
+      "writes": [
+        "action_run_attempt",
+        "action_run_job",
+        "action_run"
+      ]
+    },
+    "ep-290": {
+      "reads": [
+        "action_run",
+        "action_run_job",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-291": {
+      "reads": [
+        "action_run",
+        "action_run_attempt",
+        "action_run_job",
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-292": {
+      "reads": [
+        "action_run_job",
+        "action_run",
+        "action_task",
+        "action_task_step",
+        "action_runner"
+      ],
+      "writes": []
+    },
+    "ep-293": {
+      "reads": [
+        "action_artifact"
+      ],
+      "writes": []
+    },
+    "ep-294": {
+      "reads": [
+        "action_run",
+        "action_run_job",
+        "action_task",
+        "action_artifact"
+      ],
+      "writes": [
+        "action_run",
+        "action_run_attempt",
+        "action_run_job",
+        "action_task",
+        "action_task_step",
+        "action_task_output",
+        "action_artifact",
+        "action_runner"
+      ]
+    },
+    "ep-295": {
+      "reads": [
+        "action_artifact"
+      ],
+      "writes": []
+    },
+    "ep-296": {
+      "reads": [
+        "action_artifact"
+      ],
+      "writes": []
+    },
+    "ep-297": {
+      "reads": [
+        "action_artifact"
+      ],
+      "writes": [
+        "action_artifact"
+      ]
+    },
+    "ep-298": {
+      "reads": [
+        "action_artifact"
+      ],
+      "writes": []
+    },
+    "ep-299": {
+      "reads": [
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-300": {
+      "reads": [
+        "comment",
+        "issue",
+        "reaction",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-301": {
+      "reads": [
+        "comment",
+        "issue",
+        "user_blocking",
+        "reaction"
+      ],
+      "writes": [
+        "reaction"
+      ]
+    },
+    "ep-302": {
+      "reads": [
+        "comment",
+        "issue"
+      ],
+      "writes": [
+        "reaction"
+      ]
+    },
+    "ep-303": {
+      "reads": [
+        "issue",
+        "reaction",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-304": {
+      "reads": [
+        "issue",
+        "repository",
+        "user_blocking",
+        "reaction"
+      ],
+      "writes": [
+        "reaction"
+      ]
+    },
+    "ep-305": {
+      "reads": [
+        "issue"
+      ],
+      "writes": [
+        "reaction"
+      ]
+    },
+    "ep-306": {
+      "reads": [
+        "branch",
+        "protected_branch"
+      ],
+      "writes": []
+    },
+    "ep-307": {
+      "reads": [
+        "branch",
+        "protected_branch",
+        "repo_unit",
+        "access"
+      ],
+      "writes": [
+        "branch"
+      ]
+    },
+    "ep-308": {
+      "reads": [
+        "branch",
+        "protected_branch"
+      ],
+      "writes": []
+    },
+    "ep-309": {
+      "reads": [
+        "branch",
+        "protected_branch"
+      ],
+      "writes": []
+    },
+    "ep-310": {
+      "reads": [
+        "branch"
+      ],
+      "writes": []
+    },
+    "ep-311": {
+      "reads": [
+        "branch",
+        "protected_branch",
+        "access"
+      ],
+      "writes": [
+        "branch",
+        "repository"
+      ]
+    },
+    "ep-312": {
+      "reads": [
+        "protected_branch"
+      ],
+      "writes": []
+    },
+    "ep-313": {
+      "reads": [
+        "protected_branch"
+      ],
+      "writes": []
+    },
+    "ep-314": {
+      "reads": [
+        "protected_branch",
+        "user",
+        "team"
+      ],
+      "writes": [
+        "protected_branch"
+      ]
+    },
+    "ep-315": {
+      "reads": [
+        "protected_branch",
+        "user",
+        "team",
+        "branch",
+        "pull_request"
+      ],
+      "writes": [
+        "protected_branch"
+      ]
+    },
+    "ep-316": {
+      "reads": [
+        "protected_branch"
+      ],
+      "writes": [
+        "protected_branch"
+      ]
+    },
+    "ep-317": {
+      "reads": [],
+      "writes": [
+        "protected_branch"
+      ]
+    },
+    "ep-318": {
+      "reads": [
+        "repository"
+      ],
+      "writes": []
+    },
+    "ep-319": {
+      "reads": [
+        "issue"
+      ],
+      "writes": [
+        "issue",
+        "comment"
+      ]
+    },
+    "ep-320": {
+      "reads": [
+        "issue"
+      ],
+      "writes": [
+        "issue",
+        "comment"
+      ]
+    },
+    "ep-321": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": []
+    },
+    "ep-322": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": []
+    },
+    "ep-323": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": [
+        "hook_task"
+      ]
+    },
+    "ep-324": {
+      "reads": [],
+      "writes": [
+        "webhook"
+      ]
+    },
+    "ep-325": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": [
+        "webhook"
+      ]
+    },
+    "ep-326": {
+      "reads": [
+        "webhook"
+      ],
+      "writes": [
+        "webhook",
+        "hook_task"
+      ]
+    },
+    "ep-327": {
+      "reads": [
+        "star",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-328": {
+      "reads": [
+        "watch",
+        "user"
+      ],
+      "writes": []
+    },
+    "ep-329": {
+      "reads": [
+        "team",
+        "team_repo",
+        "team_unit"
+      ],
+      "writes": []
+    },
+    "ep-330": {
+      "reads": [
+        "team",
+        "team_repo",
+        "team_unit"
+      ],
+      "writes": []
+    },
+    "ep-331": {
+      "reads": [
+        "team",
+        "team_repo"
+      ],
+      "writes": [
+        "team_repo",
+        "team",
+        "access",
+        "watch"
+      ]
+    },
+    "ep-332": {
+      "reads": [
+        "team",
+        "team_repo",
+        "repository"
+      ],
+      "writes": [
+        "team_repo",
+        "team",
+        "access",
+        "watch",
+        "issue_watch"
+      ]
+    },
+    "ep-333": {
+      "reads": [
+        "repository",
+        "user",
+        "repo_unit",
+        "access"
+      ],
+      "writes": []
+    },
+    "ep-334": {
+      "reads": [
+        "user",
+        "repository",
+        "user_blocking"
+      ],
+      "writes": [
+        "repository",
+        "lfs_meta_object",
+        "branch",
+        "release"
+      ]
+    },
+    "ep-335": {
+      "reads": [
+        "issue",
+        "label",
+        "issue_label"
+      ],
+      "writes": []
+    },
+    "ep-336": {
+      "reads": [
+        "issue",
+        "label",
+        "issue_label"
+      ],
+      "writes": [
+        "issue_label",
+        "comment",
+        "label"
+      ]
+    },
+    "ep-337": {
+      "reads": [
+        "issue",
+        "label",
+        "repository",
+        "access"
+      ],
+      "writes": [
+        "issue_label",
+        "comment",
+        "label"
+      ]
+    },
+    "ep-338": {
+      "reads": [
+        "issue",
+        "label",
+        "issue_label",
+        "repository"
+      ],
+      "writes": [
+        "issue_label",
+        "comment",
+        "label"
+      ]
+    },
+    "ep-339": {
+      "reads": [
+        "issue",
+        "label",
+        "issue_label",
+        "repository",
+        "access"
+      ],
+      "writes": [
+        "issue_label",
+        "comment",
+        "label"
+      ]
+    },
+    "ep-340": {
+      "reads": [
+        "deploy_key",
+        "public_key"
+      ],
+      "writes": []
+    },
+    "ep-341": {
+      "reads": [
+        "deploy_key",
+        "public_key"
+      ],
+      "writes": []
+    },
+    "ep-342": {
+      "reads": [
+        "public_key",
+        "deploy_key"
+      ],
+      "writes": [
+        "public_key",
+        "deploy_key"
+      ]
+    },
+    "ep-343": {
+      "reads": [
+        "deploy_key",
+        "public_key"
+      ],
+      "writes": [
+        "deploy_key",
+        "public_key"
+      ]
+    },
+    "ep-344": {
+      "reads": [
+        "release",
+        "repository",
+        "user",
+        "attachment"
+      ],
+      "writes": []
+    },
+    "ep-345": {
+      "reads": [
+        "release"
+      ],
+      "writes": [
+        "release",
+        "attachment"
+      ]
+    },
+    "ep-346": {
+      "reads": [
+        "repo_license"
+      ],
+      "writes": []
+    },
+    "ep-347": {
+      "reads": [
+        "topic",
+        "repo_topic"
+      ],
+      "writes": []
+    },
+    "ep-348": {
+      "reads": [
+        "topic",
+        "repo_topic"
+      ],
+      "writes": [
+        "topic",
+        "repo_topic",
+        "repository"
+      ]
+    },
+    "ep-349": {
+      "reads": [
+        "topic",
+        "repo_topic"
+      ],
+      "writes": [
+        "topic",
+        "repo_topic",
+        "repository"
+      ]
+    },
+    "ep-350": {
+      "reads": [
+        "topic",
+        "repo_topic"
+      ],
+      "writes": [
+        "topic",
+        "repo_topic",
+        "repository"
+      ]
+    },
+    "ep-351": {
+      "reads": [
+        "topic"
+      ],
+      "writes": []
+    },
+    "ep-352": {
+      "reads": [
+        "release",
+        "attachment"
+      ],
+      "writes": []
+    },
+    "ep-353": {
+      "reads": [
+        "release",
+        "attachment"
+      ],
+      "writes": []
+    },
+    "ep-354": {
+      "reads": [
+        "release"
+      ],
+      "writes": [
+        "attachment"
+      ]
+    },
+    "ep-355": {
+      "reads": [
+        "release",
+        "attachment"
+      ],
+      "writes": [
+        "attachment"
+      ]
+    },
+    "ep-356": {
+      "reads": [
+        "release",
+        "attachment"
+      ],
+      "writes": [
+        "attachment"
+      ]
+    },
+    "ep-357": {
+      "reads": [
+        "label"
+      ],
+      "writes": []
+    },
+    "ep-358": {
+      "reads": [
+        "label"
+      ],
+      "writes": []
+    },
+    "ep-359": {
+      "reads": [],
+      "writes": [
+        "label"
+      ]
+    },
+    "ep-360": {
+      "reads": [
+        "label"
+      ],
+      "writes": [
+        "label"
+      ]
+    },
+    "ep-361": {
+      "reads": [
+        "label"
+      ],
+      "writes": [
+        "label",
+        "issue_label",
+        "comment"
+      ]
+    },
+    "ep-362": {
+      "reads": [
+        "repository",
+        "user",
+        "access"
+      ],
+      "writes": []
+    },
+    "ep-363": {
+      "reads": [
+        "repository"
+      ],
+      "writes": [
+        "repository",
+        "repo_unit",
+        "user"
+      ]
+    },
+    "ep-364": {
+      "reads": [
+        "user",
+        "repository"
+      ],
+      "writes": [
+        "repository",
+        "label",
+        "topic",
+        "protected_branch"
+      ]
+    },
+    "ep-365": {
+      "reads": [
+        "user"
+      ],
+      "writes": [
+        "repository",
+        "repo_unit",
+        "user"
+      ]
+    },
+    "ep-366": {
+      "reads": [
+        "user"
+      ],
+      "writes": [
+        "repository",
+        "repo_unit",
+        "user"
+      ]
+    },
+    "ep-367": {
+      "reads": [
+        "repository",
+        "repo_unit",
+        "language_stat",
+        "release",
+        "branch",
+        "mirror",
+        "repo_license"
+      ],
+      "writes": []
+    },
+    "ep-368": {
+      "reads": [
+        "repository",
+        "access",
+        "repo_unit",
+        "language_stat",
+        "release",
+        "branch"
+      ],
+      "writes": []
+    },
+    "ep-369": {
+      "reads": [
+        "repository",
+        "repo_unit",
+        "mirror"
+      ],
+      "writes": [
+        "repository",
+        "repo_unit",
+        "mirror"
+      ]
+    },
+    "ep-370": {
+      "reads": [
+        "repository",
+        "org_user"
+      ],
+      "writes": [
+        "repository"
+      ]
+    },
+    "ep-371": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-372": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-373": {
+      "reads": [],
+      "writes": []
+    },
+    "ep-374": {
+      "reads": [
+        "action"
+      ],
+      "writes": []
+    },
+    "ep-375": {
+      "reads": [
+        "language_stat"
+      ],
+      "writes": []
+    },
+    "ep-376": {
+      "reads": [
+        "issue",
+        "issue_pin"
+      ],
+      "writes": [
+        "issue_pin",
+        "comment"
+      ]
+    },
+    "ep-377": {
+      "reads": [
+        "issue"
+      ],
+      "writes": [
+        "issue_pin",
+        "comment"
+      ]
+    },
+    "ep-378": {
+      "reads": [
+        "issue",
+        "issue_pin"
+      ],
+      "writes": [
+        "issue_pin"
+      ]
+    },
+    "ep-379": {
+      "reads": [
+        "issue_pin",
+        "issue"
+      ],
+      "writes": []
+    },
+    "ep-380": {
+      "reads": [
+        "issue_pin",
+        "issue",
+        "pull_request"
+      ],
+      "writes": []
+    },
+    "ep-381": {
+      "reads": [
+        "issue_pin"
+      ],
+      "writes": []
+    }
+  },
+  "external_services_by_endpoint": {
+    "ep-004": [
+      "GPG binary"
+    ],
+    "ep-005": [
+      "GPG binary"
+    ],
+    "ep-009": [],
+    "ep-010": [],
+    "ep-011": [],
+    "ep-012": [],
+    "ep-013": [],
+    "ep-014": [],
+    "ep-015": [],
+    "ep-016": [],
+    "ep-017": [],
+    "ep-018": [],
+    "ep-019": [],
+    "ep-020": [],
+    "ep-021": [],
+    "ep-022": [],
+    "ep-023": [],
+    "ep-024": [],
+    "ep-025": [],
+    "ep-026": [],
+    "ep-027": [],
+    "ep-028": [],
+    "ep-035": [],
+    "ep-036": [],
+    "ep-037": [
+      "Avatar Storage Backend"
+    ],
+    "ep-038": [
+      "Avatar Storage Backend"
+    ],
+    "ep-039": [],
+    "ep-040": [],
+    "ep-041": [],
+    "ep-091": [],
+    "ep-092": [],
+    "ep-093": [],
+    "ep-094": [],
+    "ep-095": [],
+    "ep-096": [],
+    "ep-097": [],
+    "ep-098": [
+      "HaveIBeenPwned API"
+    ],
+    "ep-099": [
+      "HaveIBeenPwned API"
+    ],
+    "ep-100": [],
+    "ep-101": [],
+    "ep-102": [],
+    "ep-103": [],
+    "ep-104": [],
+    "ep-105": [],
+    "ep-106": [],
+    "ep-107": [],
+    "ep-108": [],
+    "ep-109": [],
+    "ep-110": [],
+    "ep-111": [],
+    "ep-112": [],
+    "ep-113": [],
+    "ep-128": [
+      "Avatar Storage"
+    ],
+    "ep-129": [
+      "Avatar Storage Backend"
+    ],
+    "ep-130": [],
+    "ep-131": [],
+    "ep-132": [],
+    "ep-133": [],
+    "ep-134": [],
+    "ep-220": [],
+    "ep-221": [],
+    "ep-222": [],
+    "ep-223": [],
+    "ep-224": [],
+    "ep-225": [],
+    "ep-234": [],
+    "ep-235": [
+      "Git Remote (Push Mirror Target)"
+    ],
+    "ep-236": [],
+    "ep-237": [],
+    "ep-238": [],
+    "ep-239": [],
+    "ep-240": [],
+    "ep-241": [],
+    "ep-242": [],
+    "ep-243": [
+      "Git Repository"
+    ],
+    "ep-244": [
+      "Git Repository"
+    ],
+    "ep-245": [
+      "Git Repository"
+    ],
+    "ep-259": [
+      "Object Storage (Attachments)"
+    ],
+    "ep-261": [
+      "Object Storage (Attachments)"
+    ],
+    "ep-262": [
+      "File Storage (RepoAvatars)"
+    ],
+    "ep-263": [
+      "File Storage (RepoAvatars)"
+    ],
+    "ep-293": [],
+    "ep-294": [
+      "Object Storage"
+    ],
+    "ep-295": [],
+    "ep-296": [],
+    "ep-297": [],
+    "ep-298": [
+      "Object Storage"
+    ],
+    "ep-334": [
+      "Git CLI"
+    ],
+    "ep-354": [
+      "Object Storage (Attachments)"
+    ],
+    "ep-356": [
+      "Object Storage (Attachments)"
+    ]
+  },
+  "config_properties_by_endpoint": {
+    "ep-001": [
+      "APP_VER"
+    ],
+    "ep-002": [
+      "repository.PREFERRED_LICENSES"
+    ],
+    "ep-003": [],
+    "ep-004": [
+      "repository.SIGNING_KEY",
+      "repository.SIGNING_FORMAT",
+      "git.HOME_PATH"
+    ],
+    "ep-005": [
+      "repository.SIGNING_KEY",
+      "repository.SIGNING_FORMAT",
+      "git.HOME_PATH"
+    ],
+    "ep-006": [
+      "repository.SIGNING_KEY",
+      "repository.SIGNING_FORMAT"
+    ],
+    "ep-007": [
+      "repository.SIGNING_KEY",
+      "repository.SIGNING_FORMAT"
+    ],
+    "ep-008": [
+      "server.APP_URL"
+    ],
+    "ep-009": [
+      "setting.AppSubURL"
+    ],
+    "ep-010": [],
+    "ep-011": [],
+    "ep-012": [
+      "setting.CustomPath"
+    ],
+    "ep-013": [
+      "setting.AppURL",
+      "setting.Repository.PreferredLicenses"
+    ],
+    "ep-014": [
+      "setting.AppURL",
+      "setting.CustomPath"
+    ],
+    "ep-015": [
+      "ui.DEFAULT_THEME",
+      "ui.REACTIONS",
+      "ui.CUSTOM_EMOJIS"
+    ],
+    "ep-016": [
+      "api.MAX_RESPONSE_ITEMS",
+      "api.DEFAULT_PAGING_NUM",
+      "api.DEFAULT_GIT_TREES_PER_PAGE",
+      "api.DEFAULT_MAX_BLOB_SIZE",
+      "api.DEFAULT_MAX_RESPONSE_SIZE"
+    ],
+    "ep-017": [
+      "mirror.ENABLED",
+      "repository.DISABLE_HTTP_GIT"
+    ],
+    "ep-018": [
+      "attachment.ENABLED",
+      "attachment.MAX_SIZE"
+    ],
+    "ep-019": [
+      "api.MAX_RESPONSE_ITEMS",
+      "api.DEFAULT_PAGING_NUM"
+    ],
+    "ep-020": [],
+    "ep-021": [],
+    "ep-022": [
+      "api.MAX_RESPONSE_ITEMS",
+      "api.DEFAULT_PAGING_NUM"
+    ],
+    "ep-023": [],
+    "ep-024": [],
+    "ep-025": [],
+    "ep-026": [
+      "api.default_paging_num",
+      "api.max_response_items"
+    ],
+    "ep-027": [
+      "api.default_paging_num",
+      "api.max_response_items"
+    ],
+    "ep-028": [],
+    "ep-029": [
+      "setting.API.DefaultPagingNum",
+      "setting.API.MaxResponseItems"
+    ],
+    "ep-030": [
+      "setting.Admin.DisableRegularOrgCreation",
+      "setting.Service.DefaultOrgMemberVisible"
+    ],
+    "ep-031": [],
+    "ep-032": [],
+    "ep-033": [],
+    "ep-034": [],
+    "ep-035": [],
+    "ep-036": [],
+    "ep-037": [
+      "AVATAR_MAX_WIDTH",
+      "AVATAR_MAX_HEIGHT",
+      "AVATAR_MAX_ORIGIN_SIZE",
+      "AVATAR_RENDERED_SIZE_FACTOR"
+    ],
+    "ep-038": [],
+    "ep-039": [],
+    "ep-040": [
+      "SECRET_KEY"
+    ],
+    "ep-041": [],
+    "ep-042": [],
+    "ep-043": [
+      "setting.API.DefaultPagingNum",
+      "setting.API.MaxResponseItems"
+    ],
+    "ep-044": [],
+    "ep-045": [],
+    "ep-046": [],
+    "ep-047": [],
+    "ep-048": [
+      "setting.API.DefaultPagingNum",
+      "setting.API.MaxResponseItems"
+    ],
+    "ep-049": [],
+    "ep-050": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-051": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-052": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-053": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-054": [],
+    "ep-055": [],
+    "ep-062": [
+      "service.AutoWatchNewRepos"
+    ],
+    "ep-066": [
+      "service.AUTO_WATCH_NEW_REPOS"
+    ],
+    "ep-070": [
+      "setting.API.DefaultPagingNum",
+      "setting.API.MaxResponseItems"
+    ],
+    "ep-071": [
+      "setting.API.DefaultPagingNum",
+      "setting.API.MaxResponseItems"
+    ],
+    "ep-077": [
+      "setting.API.DefaultPagingNum",
+      "setting.API.MaxResponseItems",
+      "setting.SecretKey"
+    ],
+    "ep-078": [
+      "setting.SecretKey"
+    ],
+    "ep-079": [
+      "setting.SecretKey"
+    ],
+    "ep-080": [
+      "setting.SecretKey"
+    ],
+    "ep-081": [],
+    "ep-082": [
+      "setting.API.DefaultPagingNum",
+      "setting.API.MaxResponseItems"
+    ],
+    "ep-083": [],
+    "ep-084": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-085": [],
+    "ep-086": [],
+    "ep-087": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-088": [],
+    "ep-089": [],
+    "ep-090": [],
+    "ep-091": [
+      "AppURL"
+    ],
+    "ep-092": [],
+    "ep-093": [],
+    "ep-094": [
+      "AppURL"
+    ],
+    "ep-095": [],
+    "ep-096": [
+      "Service.DefaultOrgMemberVisible"
+    ],
+    "ep-097": [],
+    "ep-098": [
+      "PasswordCheckPwn",
+      "MinPasswordLength"
+    ],
+    "ep-099": [
+      "MIN_PASSWORD_LENGTH",
+      "PASSWORD_CHECK_PWN"
+    ],
+    "ep-100": [
+      "USER_DELETE_WITH_COMMENTS_MAX_TIME"
+    ],
+    "ep-101": [],
+    "ep-102": [],
+    "ep-103": [],
+    "ep-104": [],
+    "ep-105": [],
+    "ep-106": [],
+    "ep-107": [
+      "repository.root_path",
+      "database.iterate_buffer_size"
+    ],
+    "ep-108": [
+      "repository.root_path"
+    ],
+    "ep-109": [
+      "repository.root_path"
+    ],
+    "ep-110": [],
+    "ep-111": [],
+    "ep-112": [
+      "repository.force_private"
+    ],
+    "ep-113": [],
+    "ep-114": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-115": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-116": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-117": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-123": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-124": [],
+    "ep-125": [],
+    "ep-126": [],
+    "ep-127": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-128": [
+      "Avatar.MaxWidth",
+      "Avatar.MaxHeight",
+      "Avatar.MaxOriginSize"
+    ],
+    "ep-129": [
+      "avatar.STORAGE_TYPE"
+    ],
+    "ep-130": [
+      "SECRET_KEY"
+    ],
+    "ep-131": [],
+    "ep-132": [],
+    "ep-133": [],
+    "ep-134": [],
+    "ep-135": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-136": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-137": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-138": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-139": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-140": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-141": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-142": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems"
+    ],
+    "ep-143": [],
+    "ep-144": [],
+    "ep-145": [],
+    "ep-146": [],
+    "ep-147": [
+      "API.DefaultPagingNum",
+      "API.MaxResponseItems",
+      "SecretKey"
+    ],
+    "ep-148": [
+      "SecretKey"
+    ],
+    "ep-149": [
+      "SecretKey"
+    ],
+    "ep-150": [
+      "setting.DisableWebhooks"
+    ],
+    "ep-151": [
+      "setting.DisableWebhooks"
+    ],
+    "ep-152": [
+      "setting.Repository.DisableStars"
+    ],
+    "ep-153": [
+      "setting.Repository.DisableStars"
+    ],
+    "ep-154": [
+      "setting.Repository.DisableStars"
+    ],
+    "ep-155": [
+      "setting.Repository.DisableStars"
+    ],
+    "ep-160": [
+      "admin.USER_DISABLED_FEATURES",
+      "admin.EXTERNAL_USER_DISABLE_FEATURES",
+      "ssh.MINIMUM_KEY_SIZE_CHECK"
+    ],
+    "ep-161": [
+      "admin.USER_DISABLED_FEATURES",
+      "admin.EXTERNAL_USER_DISABLE_FEATURES",
+      "ssh.START_BUILTIN_SERVER"
+    ],
+    "ep-167": [
+      "setting.OAuth2.CustomSchemes"
+    ],
+    "ep-169": [
+      "OAuth2.DefaultApplications"
+    ],
+    "ep-171": [
+      "OAuth2.DefaultApplications",
+      "OAuth2.CustomSchemes"
+    ],
+    "ep-176": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-177": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-178": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-179": [
+      "setting.PanicInDevOrTesting"
+    ],
+    "ep-181": [
+      "service.RegisterEmailConfirm"
+    ],
+    "ep-184": [],
+    "ep-185": [],
+    "ep-186": [],
+    "ep-187": [],
+    "ep-188": [
+      "admin.USER_DISABLED_FEATURES"
+    ],
+    "ep-189": [
+      "admin.USER_DISABLED_FEATURES"
+    ],
+    "ep-190": [
+      "setting.API.DefaultPagingNum",
+      "setting.API.MaxResponseItems"
+    ],
+    "ep-191": [],
+    "ep-192": [],
+    "ep-193": [],
+    "ep-194": [
+      "setting.API.DefaultPagingNum",
+      "setting.API.MaxResponseItems"
+    ],
+    "ep-195": [
+      "setting.API.DefaultPagingNum",
+      "setting.API.MaxResponseItems"
+    ],
+    "ep-197": [
+      "service.auto_watch_on_changes"
+    ],
+    "ep-199": [
+      "service.require_signin_view_strict"
+    ],
+    "ep-200": [
+      "service.require_signin_view_strict"
+    ],
+    "ep-201": [
+      "packages.limit_total_owner_count"
+    ],
+    "ep-202": [
+      "packages.ENABLED",
+      "service.REQUIRE_SIGNIN_VIEW"
+    ],
+    "ep-203": [
+      "packages.ENABLED",
+      "service.REQUIRE_SIGNIN_VIEW"
+    ],
+    "ep-204": [
+      "packages.ENABLED",
+      "service.REQUIRE_SIGNIN_VIEW"
+    ],
+    "ep-205": [
+      "packages.ENABLED",
+      "service.REQUIRE_SIGNIN_VIEW"
+    ],
+    "ep-206": [
+      "packages.ENABLED",
+      "service.REQUIRE_SIGNIN_VIEW"
+    ],
+    "ep-207": [
+      "packages.ENABLED",
+      "service.REQUIRE_SIGNIN_VIEW"
+    ],
+    "ep-208": [
+      "service.DEFAULT_ENABLE_DEPENDENCIES",
+      "api.DEFAULT_PAGING_NUM"
+    ],
+    "ep-209": [
+      "service.DEFAULT_ENABLE_DEPENDENCIES",
+      "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES"
+    ],
+    "ep-210": [
+      "service.DEFAULT_ENABLE_DEPENDENCIES",
+      "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES"
+    ],
+    "ep-211": [
+      "api.DEFAULT_PAGING_NUM"
+    ],
+    "ep-212": [
+      "service.DEFAULT_ENABLE_DEPENDENCIES",
+      "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES"
+    ],
+    "ep-213": [
+      "service.DEFAULT_ENABLE_DEPENDENCIES",
+      "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES"
+    ],
+    "ep-215": [
+      "git.CommitsRangeSize",
+      "api.SwaggerURL"
+    ],
+    "ep-220": [],
+    "ep-221": [
+      "API.DefaultPagingNum"
+    ],
+    "ep-222": [
+      "API.DefaultPagingNum"
+    ],
+    "ep-223": [
+      "setting.IsInTesting"
+    ],
+    "ep-224": [
+      "setting.IsInTesting"
+    ],
+    "ep-225": [],
+    "ep-229": [
+      "repository.PULL_REQUEST_DEFAULT_MERGE_STYLE"
+    ],
+    "ep-233": [
+      "git.MAX_GIT_DIFF_LINES",
+      "git.MAX_GIT_DIFF_LINE_CHARACTERS"
+    ],
+    "ep-234": [
+      "mirror.ENABLED"
+    ],
+    "ep-235": [
+      "mirror.ENABLED",
+      "git.TIMEOUT.MIRROR",
+      "lfs.START_SERVER"
+    ],
+    "ep-236": [
+      "mirror.ENABLED"
+    ],
+    "ep-237": [
+      "mirror.ENABLED"
+    ],
+    "ep-238": [
+      "mirror.ENABLED",
+      "mirror.MIN_INTERVAL"
+    ],
+    "ep-239": [
+      "mirror.ENABLED"
+    ],
+    "ep-240": [],
+    "ep-241": [],
+    "ep-242": [
+      "api.DEFAULT_PAGING_NUM",
+      "api.MAX_RESPONSE_ITEMS"
+    ],
+    "ep-243": [],
+    "ep-244": [],
+    "ep-245": [],
+    "ep-246": [
+      "api.DefaultGitTreesPerPage"
+    ],
+    "ep-247": [],
+    "ep-248": [],
+    "ep-249": [],
+    "ep-250": [
+      "api.DefaultPagingNum",
+      "api.MaxResponseItems"
+    ],
+    "ep-251": [],
+    "ep-252": [],
+    "ep-253": [],
+    "ep-259": [
+      "attachment.ALLOWED_TYPES",
+      "attachment.MAX_SIZE"
+    ],
+    "ep-260": [
+      "attachment.ALLOWED_TYPES"
+    ],
+    "ep-261": [],
+    "ep-262": [
+      "avatar.MAX_WIDTH",
+      "avatar.MAX_HEIGHT",
+      "avatar.MAX_ORIGIN_SIZE",
+      "avatar.RENDERED_SIZE_FACTOR"
+    ],
+    "ep-263": [],
+    "ep-264": [
+      "api.DEFAULT_PAGING_NUM"
+    ],
+    "ep-265": [],
+    "ep-266": [],
+    "ep-267": [],
+    "ep-268": [],
+    "ep-280": [
+      "actions.workflow_dirs"
+    ],
+    "ep-281": [
+      "actions.workflow_dirs"
+    ],
+    "ep-283": [
+      "actions.workflow_dirs"
+    ],
+    "ep-287": [
+      "actions.MAX_RERUN_ATTEMPTS"
+    ],
+    "ep-288": [
+      "actions.MAX_RERUN_ATTEMPTS"
+    ],
+    "ep-289": [
+      "actions.MAX_RERUN_ATTEMPTS"
+    ],
+    "ep-293": [],
+    "ep-294": [
+      "actions.artifact_storage.STORAGE_TYPE"
+    ],
+    "ep-295": [],
+    "ep-296": [],
+    "ep-297": [],
+    "ep-298": [
+      "actions.artifact_storage.SERVE_DIRECT",
+      "SECRET_KEY"
+    ],
+    "ep-300": [
+      "ui.REACTIONS"
+    ],
+    "ep-301": [
+      "ui.REACTIONS"
+    ],
+    "ep-303": [
+      "ui.REACTIONS"
+    ],
+    "ep-304": [
+      "ui.REACTIONS"
+    ],
+    "ep-331": [
+      "service.AUTO_WATCH_NEW_REPOS"
+    ],
+    "ep-342": [
+      "SSH.MinimumKeySizeCheck",
+      "SSH.MinimumKeySizes"
+    ],
+    "ep-343": [
+      "SSH.StartBuiltinServer",
+      "SSH.CreateAuthorizedKeysFile"
+    ],
+    "ep-352": [
+      "server.APP_URL"
+    ],
+    "ep-353": [
+      "server.APP_URL"
+    ],
+    "ep-354": [
+      "attachment.ENABLED",
+      "repository.release.ALLOWED_TYPES",
+      "repository.release.FILE_MAX_SIZE",
+      "server.APP_URL"
+    ],
+    "ep-355": [
+      "repository.release.ALLOWED_TYPES",
+      "server.APP_URL"
+    ],
+    "ep-356": [],
+    "ep-357": [],
+    "ep-358": [],
+    "ep-363": [
+      "repository.FORCE_PRIVATE"
+    ],
+    "ep-364": [
+      "repository.FORCE_PRIVATE"
+    ],
+    "ep-365": [
+      "repository.FORCE_PRIVATE"
+    ],
+    "ep-366": [
+      "repository.FORCE_PRIVATE"
+    ],
+    "ep-369": [
+      "repository.ForcePrivate",
+      "mirror.MinInterval"
+    ],
+    "ep-371": [
+      "repository.issue.MaxPinned"
+    ],
+    "ep-376": [
+      "repository.issue.MAX_PINNED"
+    ],
+    "ep-381": [
+      "repository.issue.MAX_PINNED"
+    ]
+  }
+}

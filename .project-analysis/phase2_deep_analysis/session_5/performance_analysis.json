@@ -1,0 +1,121 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-029",
+      "http_method": "GET",
+      "path": "/api/v1/orgs",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "COUNT + paginated SELECT on user table"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Consider caching org list for anonymous users since public org list changes infrequently",
+          "estimated_impact": "Reduce DB load for unauthenticated listing requests",
+          "implementation": "Add short TTL cache (30-60s) for public org list queries"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-030",
+      "http_method": "POST",
+      "path": "/api/v1/orgs",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem"],
+        "note": "1 SELECT (existence check) + 7 INSERTs in transaction + avatar generation"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-031",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT (org by name in middleware) + 1 SELECT (membership check for private orgs, conditional)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-032",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/rename",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem"],
+        "note": "2 SELECTs (middleware) + 1 SELECT (existence) + 1 UPDATE (repos) + 1 INSERT (redirect) + 1 UPDATE (user) + filesystem rename"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "Filesystem directory rename is performed inside the transaction commit path. If the filesystem is slow (NFS), this blocks the request.",
+          "impact": "Request latency increases with filesystem I/O time; transaction held open during rename",
+          "file_path": "services/user/user.go",
+          "line_number": 101,
+          "code_snippet": "if err = util.Rename(user_model.UserPath(oldUserName), user_model.UserPath(newUserName)); err != nil && !os.IsNotExist(err) {",
+          "recommendation": "Consider performing filesystem rename after transaction commit with rollback logic"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-033",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "2 SELECTs (middleware) + 1 UPDATE (email) + 1 UPDATE (other fields)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Email and other fields are updated in two separate UPDATE statements; could be combined into one",
+          "estimated_impact": "Save 1 DB round-trip per request",
+          "implementation": "Merge UpdateOrgEmailAddress into the UpdateUser call by including email in UpdateOptions"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-034",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}",
+      "resource_load": {
+        "operations_per_request": 12,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem", "object_storage"],
+        "note": "2 SELECTs (middleware) + 1 COUNT (repos) + 1 SELECT (packages) + 8 DELETEs in transaction + filesystem removal + avatar storage deletion"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "Filesystem removal (util.RemoveAll) and avatar storage deletion happen synchronously after the transaction commits",
+          "impact": "If storage is slow, request latency increases. However, since this is a rare destructive operation, impact is minimal.",
+          "file_path": "services/org/org.go",
+          "line_number": 87,
+          "code_snippet": "if err := util.RemoveAll(path); err != nil {\n\treturn fmt.Errorf(\"failed to RemoveAll %s: %w\", path, err)\n}",
+          "recommendation": "Consider async cleanup of filesystem/storage after successful DB deletion"
+        }
+      ],
+      "optimization_recommendations": []
+    }
+  ]
+}

@@ -1,0 +1,142 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 3,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "follow",
+      "entity_class": "user_model.Follow",
+      "file_path": "models/user/follow.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(follow) with follow_id"]},
+        {"name": "follow_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(follow) with user_id"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]}
+      ],
+      "indexes": [
+        {"name": "UQE_follow_follow", "columns": ["user_id", "follow_id"], "unique": true},
+        {"name": "IDX_follow_created_unix", "columns": ["created_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "follow_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "webhook",
+      "entity_class": "webhook.Webhook",
+      "file_path": "models/webhook/webhook.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "is_system_webhook", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "url", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "''", "constraints": ["NOT NULL DEFAULT ''"]},
+        {"name": "http_method", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "content_type", "type": "INTEGER", "code_type": "HookContentType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "secret", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "events", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_active", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "type", "type": "VARCHAR(16)", "code_type": "webhook_module.HookType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "meta", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "last_status", "type": "INTEGER", "code_type": "webhook_module.HookStatus", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "header_authorization_encrypted", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX updated"]}
+      ],
+      "indexes": [
+        {"name": "IDX_webhook_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "IDX_webhook_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "IDX_webhook_is_active", "columns": ["is_active"], "unique": false},
+        {"name": "IDX_webhook_created_unix", "columns": ["created_unix"], "unique": false},
+        {"name": "IDX_webhook_updated_unix", "columns": ["updated_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "user",
+      "entity_class": "user_model.User",
+      "file_path": "models/user/user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "num_followers", "type": "INTEGER", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_following", "type": "INTEGER", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": []
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-142",
+      "path": "/api/v1/users/{username}/following",
+      "operations": [
+        {"store_type": "database", "store_name": "user+follow", "operation": "SELECT", "method": "user_model.GetUserFollowing", "description": "join user and follow tables to get followed users"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-143",
+      "path": "/api/v1/user/following/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "follow", "operation": "SELECT", "method": "user_model.IsFollowing", "description": "check if follow record exists"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-144",
+      "path": "/api/v1/users/{username}/following/{target}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByPathParam", "description": "load target user"},
+        {"store_type": "database", "store_name": "follow", "operation": "SELECT", "method": "user_model.IsFollowing", "description": "check if follow record exists"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-145",
+      "path": "/api/v1/user/following/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "follow", "operation": "SELECT", "method": "user_model.IsFollowing", "description": "check if already following"},
+        {"store_type": "database", "store_name": "blocked_user", "operation": "SELECT", "method": "user_model.IsUserBlockedBy", "description": "check block status"},
+        {"store_type": "database", "store_name": "follow", "operation": "INSERT", "method": "user_model.FollowUser", "description": "insert follow record"},
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "user_model.FollowUser", "description": "increment follower/following counters"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-146",
+      "path": "/api/v1/user/following/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "follow", "operation": "SELECT", "method": "user_model.IsFollowing", "description": "check if currently following"},
+        {"store_type": "database", "store_name": "follow", "operation": "DELETE", "method": "user_model.UnfollowUser", "description": "delete follow record"},
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "user_model.UnfollowUser", "description": "decrement follower/following counters"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-147",
+      "path": "/api/v1/user/hooks",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "db.FindAndCount[webhook.Webhook]", "description": "list webhooks by owner_id with pagination"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-148",
+      "path": "/api/v1/user/hooks/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "webhook.GetWebhookByOwnerID", "description": "get webhook by id and owner_id"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-149",
+      "path": "/api/v1/user/hooks",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "INSERT", "method": "webhook.CreateWebhook", "description": "insert new webhook record"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,280 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-142",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/following",
+      "controller_class": "user",
+      "controller_method": "ListFollowing",
+      "description": "List the users that the given user is following",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": ["must exist as user"]}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["clamped to API.DefaultPagingNum..API.MaxResponseItems"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "user ID"},
+            {"name": "login", "type": "string", "description": "username"},
+            {"name": "full_name", "type": "string", "description": "full name"},
+            {"name": "email", "type": "string", "description": "email (may be placeholder)"},
+            {"name": "avatar_url", "type": "string", "description": "avatar URL"},
+            {"name": "followers_count", "type": "int", "description": "number of followers"},
+            {"name": "following_count", "type": "int", "description": "number of following"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "username does not exist"}
+        ]
+      },
+      "authentication": "optional (affects visibility filtering)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-143",
+      "http_method": "GET",
+      "path": "/api/v1/user/following/{username}",
+      "controller_class": "user",
+      "controller_method": "CheckMyFollowing",
+      "description": "Check whether a user is followed by the authenticated user",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": ["must exist as user"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "authentication token"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "user not found or not following"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-144",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/following/{target}",
+      "controller_class": "user",
+      "controller_method": "CheckFollowing",
+      "description": "Check if one user is following another user",
+      "request": {
+        "path_params": [
+          {"name": "username", "type": "string", "required": true, "validation": ["must exist as user"]},
+          {"name": "target", "type": "string", "required": true, "validation": ["must exist as user"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "user/target not found or not following"}
+        ]
+      },
+      "authentication": "optional",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-145",
+      "http_method": "PUT",
+      "path": "/api/v1/user/following/{username}",
+      "controller_class": "user",
+      "controller_method": "Follow",
+      "description": "Follow a user",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": ["must exist as user"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "authentication token"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "user is blocked by target or target is blocked by user"},
+          {"status_code": 404, "type": "notFound", "condition": "target user not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-146",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/following/{username}",
+      "controller_class": "user",
+      "controller_method": "Unfollow",
+      "description": "Unfollow a user",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": ["must exist as user"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "authentication token"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "target user not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-147",
+      "http_method": "GET",
+      "path": "/api/v1/user/hooks",
+      "controller_class": "user",
+      "controller_method": "ListHooks",
+      "description": "List the authenticated user's webhooks",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["clamped to API.DefaultPagingNum..API.MaxResponseItems"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "authentication token"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "webhook ID"},
+            {"name": "name", "type": "string", "description": "webhook name"},
+            {"name": "type", "type": "string", "description": "webhook type (gitea, slack, etc)"},
+            {"name": "active", "type": "bool", "description": "whether webhook is active"},
+            {"name": "config", "type": "map[string]string", "description": "webhook config (url, content_type)"},
+            {"name": "events", "type": "[]string", "description": "events that trigger this webhook"},
+            {"name": "authorization_header", "type": "string", "description": "auth header value"},
+            {"name": "updated_at", "type": "time.Time", "description": "last update time"},
+            {"name": "created_at", "type": "time.Time", "description": "creation time"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-148",
+      "http_method": "GET",
+      "path": "/api/v1/user/hooks/{id}",
+      "controller_class": "user",
+      "controller_method": "GetHook",
+      "description": "Get a specific webhook of the authenticated user",
+      "request": {
+        "path_params": [{"name": "id", "type": "int64", "required": true, "validation": ["must be valid webhook ID"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "authentication token"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "*api.Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "webhook ID"},
+            {"name": "name", "type": "string", "description": "webhook name"},
+            {"name": "type", "type": "string", "description": "webhook type"},
+            {"name": "active", "type": "bool", "description": "whether webhook is active"},
+            {"name": "config", "type": "map[string]string", "description": "webhook config"},
+            {"name": "events", "type": "[]string", "description": "events that trigger this webhook"},
+            {"name": "authorization_header", "type": "string", "description": "auth header value"},
+            {"name": "updated_at", "type": "time.Time", "description": "last update time"},
+            {"name": "created_at", "type": "time.Time", "description": "creation time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "webhook not found or not owned by user"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-149",
+      "http_method": "POST",
+      "path": "/api/v1/user/hooks",
+      "controller_class": "user",
+      "controller_method": "CreateHook",
+      "description": "Create a webhook for the authenticated user",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "authentication token"}],
+        "body": {
+          "type": "CreateHookOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "type", "type": "string", "required": true, "validation": ["must be valid hook type: dingtalk,discord,gitea,gogs,msteams,slack,telegram,feishu,wechatwork,packagist"], "description": "webhook type"},
+            {"name": "config", "type": "map[string]string", "required": true, "validation": ["must contain 'url' (valid URL) and 'content_type' (json|form)"], "description": "webhook config"},
+            {"name": "events", "type": "[]string", "required": false, "validation": ["defaults to ['push'] if empty"], "description": "events to trigger on"},
+            {"name": "branch_filter", "type": "string", "required": false, "validation": ["must be valid glob pattern"], "description": "branch filter pattern"},
+            {"name": "authorization_header", "type": "string", "required": false, "validation": [], "description": "auth header to send"},
+            {"name": "active", "type": "bool", "required": false, "validation": [], "description": "whether webhook is active"},
+            {"name": "name", "type": "string", "required": false, "validation": ["max 255 chars"], "description": "human-readable name"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "*api.Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "webhook ID"},
+            {"name": "name", "type": "string", "description": "webhook name"},
+            {"name": "type", "type": "string", "description": "webhook type"},
+            {"name": "active", "type": "bool", "description": "whether webhook is active"},
+            {"name": "config", "type": "map[string]string", "description": "webhook config"},
+            {"name": "events", "type": "[]string", "description": "events that trigger this webhook"},
+            {"name": "authorization_header", "type": "string", "description": "auth header value"},
+            {"name": "updated_at", "type": "time.Time", "description": "last update time"},
+            {"name": "created_at", "type": "time.Time", "description": "creation time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 422, "type": "unprocessableEntity", "condition": "invalid hook type, missing config url/content_type, invalid URL, invalid content_type"},
+          {"status_code": 400, "type": "badRequest", "condition": "invalid slack channel name (for slack type)"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

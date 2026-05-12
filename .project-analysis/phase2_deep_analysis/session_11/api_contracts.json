@@ -1,0 +1,239 @@
+{
+  "total_endpoints": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-070",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/members",
+      "controller_class": "org",
+      "controller_method": "ListMembers",
+      "description": "List an organization's members. If the doer is a member or admin, shows all members; otherwise shows only public members.",
+      "request": {
+        "path_params": [{"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware via GetOrgByName"]}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": ["clamped to 1..setting.API.MaxResponseItems"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token authentication (reqToken middleware)"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "user ID"},
+            {"name": "login", "type": "string", "description": "username"},
+            {"name": "full_name", "type": "string", "description": "full name"},
+            {"name": "email", "type": "string", "description": "email (may be placeholder if private)"},
+            {"name": "avatar_url", "type": "string", "description": "avatar URL"},
+            {"name": "html_url", "type": "string", "description": "profile URL"},
+            {"name": "created", "type": "time", "description": "creation time"},
+            {"name": "restricted", "type": "bool", "description": "is restricted user"},
+            {"name": "visibility", "type": "string", "description": "user visibility"},
+            {"name": "followers_count", "type": "int", "description": "follower count"},
+            {"name": "following_count", "type": "int", "description": "following count"},
+            {"name": "starred_repos_count", "type": "int", "description": "starred repos count"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Organization does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-071",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/public_members",
+      "controller_class": "org",
+      "controller_method": "ListPublicMembers",
+      "description": "List an organization's public members. Always shows only public members regardless of authentication.",
+      "request": {
+        "path_params": [{"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware via GetOrgByName"]}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": ["clamped to 1..setting.API.MaxResponseItems"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "user ID"},
+            {"name": "login", "type": "string", "description": "username"},
+            {"name": "full_name", "type": "string", "description": "full name"},
+            {"name": "email", "type": "string", "description": "email (may be placeholder if private)"},
+            {"name": "avatar_url", "type": "string", "description": "avatar URL"},
+            {"name": "html_url", "type": "string", "description": "profile URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Organization does not exist"}
+        ]
+      },
+      "authentication": "none",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-072",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/members/{username}",
+      "controller_class": "org",
+      "controller_method": "IsMember",
+      "description": "Check if a user is a member of an organization. Returns 204 if member, 303 redirect to public_members check if doer is not a member/admin, 404 if not a member.",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]},
+          {"name": "username", "type": "string", "required": true, "validation": ["resolved by GetContextUserByPathParam, supports redirects"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 303, "type": "redirect", "condition": "Doer is not a member/admin - redirects to public_members endpoint"},
+          {"status_code": 404, "type": "notFound", "condition": "User is not a member of the org (when doer is member/admin)"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-073",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "controller_class": "org",
+      "controller_method": "IsPublicMember",
+      "description": "Check if a user is a public member of an organization. Returns 204 if public member, 404 otherwise.",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]},
+          {"name": "username", "type": "string", "required": true, "validation": ["resolved by GetContextUserByPathParam, supports redirects"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "User is not a public member"}
+        ]
+      },
+      "authentication": "none",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-074",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "controller_class": "org",
+      "controller_method": "PublicizeMember",
+      "description": "Publicize a user's membership in an organization. Sets is_public=true on the org_user record.",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]},
+          {"name": "username", "type": "string", "required": true, "validation": ["resolved by GetContextUserByPathParam"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Doer is not the target user, not admin, and not org owner"},
+          {"status_code": 404, "type": "notFound", "condition": "Organization or user not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-075",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "controller_class": "org",
+      "controller_method": "ConcealMember",
+      "description": "Conceal a user's membership in an organization. Sets is_public=false on the org_user record.",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]},
+          {"name": "username", "type": "string", "required": true, "validation": ["resolved by GetContextUserByPathParam"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Doer is not the target user, not admin, and not org owner"},
+          {"status_code": 404, "type": "notFound", "condition": "Organization or user not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-076",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/members/{username}",
+      "controller_class": "org",
+      "controller_method": "DeleteMember",
+      "description": "Remove a member from an organization. Removes from all teams, deletes repo access, unwatches repos.",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]},
+          {"name": "username", "type": "string", "required": true, "validation": ["resolved by GetContextUserByPathParam"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Organization or user not found"},
+          {"status_code": 500, "type": "internal", "condition": "User is last org owner (ErrLastOrgOwner)"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

@@ -1,0 +1,167 @@
+{
+  "total_findings": 5,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-359",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/labels",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single DB insert",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-360",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single DB update",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-361",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Delete operations are wrapped in a transaction (db.WithTx)",
+          "recommendation": "Already handled correctly"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - transactional delete",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-362",
+      "http_method": "GET",
+      "path": "/api/v1/repos/search",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, only DB queries",
+          "recommendation": "Consider query timeout for very complex searches"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only endpoint",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-363",
+      "http_method": "POST",
+      "path": "/api/v1/user/repos",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Repository creation involves DB insert + git init. If git init fails after DB insert, cleanup is attempted via defer",
+          "recommendation": "Cleanup mechanism exists but verify it handles all edge cases"
+        }
+      ],
+      "non_atomic_operations": ["DB insert + git repo init - partial failure leaves orphan DB record until cleanup runs"],
+      "cascading_failure_risk": "Low - filesystem failure triggers cleanup",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-364",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{template_owner}/{template_repo}/generate",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Multi-step generation (DB + git + copy content + labels + topics). Defer cleanup on failure",
+          "recommendation": "Cleanup via defer handles partial failures"
+        }
+      ],
+      "non_atomic_operations": ["Multi-step: DB create → git init → copy content → copy labels/topics/hooks. Failure at any step triggers cleanup"],
+      "cascading_failure_risk": "Low - defer cleanup removes partial state",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-365",
+      "http_method": "POST",
+      "path": "/api/v1/org/{org}/repos",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Same as ep-366 - delegates to CreateOrgRepo",
+          "recommendation": "Same cleanup mechanism as ep-363"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Low",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-366",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/repos",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Repository creation involves DB + git init with defer cleanup",
+          "recommendation": "Existing cleanup mechanism is adequate"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Low",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Graceful shutdown via modules/graceful package",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in API rate limiting",
+      "recommendation": "Consider adding rate limiting for search endpoint"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": [],
+    "cascading_failure_paths": []
+  }
+}

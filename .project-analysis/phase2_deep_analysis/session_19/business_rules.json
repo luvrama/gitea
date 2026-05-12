@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "business_logic",
+      "description": "Avatar deletion uses a transaction to ensure DB and storage are consistent",
+      "location": {"class": "user_service", "method": "DeleteAvatar", "file_path": "services/user/avatar.go", "line_number": 51},
+      "condition": "Always (wrapped in db.WithTx)",
+      "action": "Updates user record and deletes storage file atomically",
+      "affected_endpoints": ["ep-129"],
+      "code_snippet": "return db.WithTx(ctx, func(ctx context.Context) error {"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "business_logic",
+      "description": "Missing avatar file on storage is treated as a warning, not an error",
+      "location": {"class": "user_service", "method": "DeleteAvatar", "file_path": "services/user/avatar.go", "line_number": 62},
+      "condition": "errors.Is(err, os.ErrNotExist)",
+      "action": "Logs warning and continues without error",
+      "affected_endpoints": ["ep-129"],
+      "code_snippet": "if !errors.Is(err, os.ErrNotExist) {"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Secret/variable names must match pattern ^[A-Z_][A-Z0-9_]*$ (case insensitive)",
+      "location": {"class": "secrets", "method": "ValidateName", "file_path": "services/secrets/validation.go", "line_number": 25},
+      "condition": "Name does not match namePattern regex",
+      "action": "Returns util.ErrInvalidArgument",
+      "affected_endpoints": ["ep-130", "ep-131", "ep-132", "ep-133", "ep-134"],
+      "code_snippet": "ret.namePattern = regexp.MustCompile(\"(?i)^[A-Z_][A-Z0-9_]*$\")"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Secret/variable names cannot start with GITEA_ or GITHUB_ prefix",
+      "location": {"class": "secrets", "method": "ValidateName", "file_path": "services/secrets/validation.go", "line_number": 26},
+      "condition": "Name matches forbiddenPrefixPattern",
+      "action": "Returns util.ErrInvalidArgument",
+      "affected_endpoints": ["ep-130", "ep-131", "ep-132", "ep-133", "ep-134"],
+      "code_snippet": "ret.forbiddenPrefixPattern = regexp.MustCompile(\"(?i)^GIT(EA|HUB)_\")"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Secret/variable name 'CI' is reserved and cannot be used",
+      "location": {"class": "secrets", "method": "ValidateName", "file_path": "services/secrets/validation.go", "line_number": 31},
+      "condition": "strings.EqualFold(name, \"CI\")",
+      "action": "Returns util.ErrInvalidArgument",
+      "affected_endpoints": ["ep-130", "ep-131", "ep-132", "ep-133", "ep-134"],
+      "code_snippet": "strings.EqualFold(name, \"CI\")"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "Secret data cannot exceed 65536 characters",
+      "location": {"class": "secret_model", "method": "InsertEncryptedSecret", "file_path": "models/secret/secret.go", "line_number": 75},
+      "condition": "len(data) > SecretDataMaxLength",
+      "action": "Returns util.ErrInvalidArgument with 'data too long'",
+      "affected_endpoints": ["ep-130"],
+      "code_snippet": "if len(data) > SecretDataMaxLength {"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Secret data is encrypted with setting.SecretKey before storage",
+      "location": {"class": "secret_model", "method": "InsertEncryptedSecret", "file_path": "models/secret/secret.go", "line_number": 79},
+      "condition": "Always on insert/update",
+      "action": "Encrypts data using secret_module.EncryptSecret",
+      "affected_endpoints": ["ep-130"],
+      "code_snippet": "encrypted, err := secret_module.EncryptSecret(setting.SecretKey, data)"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "Variable data cannot exceed 65536 runes",
+      "location": {"class": "actions_model", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 55},
+      "condition": "utf8.RuneCountInString(data) > VariableDataMaxLength",
+      "action": "Returns util.ErrInvalidArgument with 'data too long'",
+      "affected_endpoints": ["ep-132", "ep-133"],
+      "code_snippet": "if utf8.RuneCountInString(data) > VariableDataMaxLength {"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Variable names are uppercased before storage",
+      "location": {"class": "actions_model", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 60},
+      "condition": "Always on insert/update",
+      "action": "Name is converted to uppercase via strings.ToUpper",
+      "affected_endpoints": ["ep-132", "ep-133"],
+      "code_snippet": "Name: strings.ToUpper(name),"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Creating a variable that already exists returns 409 Conflict",
+      "location": {"class": "user", "method": "CreateVariable", "file_path": "routers/api/v1/user/action.go", "line_number": 126},
+      "condition": "v != nil && v.ID > 0",
+      "action": "Returns HTTP 409 with 'variable name already exists' message",
+      "affected_endpoints": ["ep-132"],
+      "code_snippet": "ctx.APIError(http.StatusConflict, util.NewAlreadyExistErrorf(...))"
+    }
+  ]
+}

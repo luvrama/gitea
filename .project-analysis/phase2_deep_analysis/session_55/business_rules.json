@@ -1,0 +1,85 @@
+{
+  "total_rules": 8,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Maximum pin limit check - cannot pin more issues than setting.Repository.Issue.MaxPinned (default 3)",
+      "location": {"class": "issues_model", "method": "PinIssue", "file_path": "models/issues/issue_pin.go", "line_number": 68},
+      "condition": "pinnedIssuesNum >= setting.Repository.Issue.MaxPinned",
+      "action": "Return ErrIssueMaxPinReached error",
+      "affected_endpoints": ["ep-376"],
+      "code_snippet": "if pinnedIssuesNum >= setting.Repository.Issue.MaxPinned {\n\treturn ErrIssueMaxPinReached\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Pin position must be >= 1",
+      "location": {"class": "issues_model", "method": "MovePin", "file_path": "models/issues/issue_pin.go", "line_number": 119},
+      "condition": "newPosition < 1",
+      "action": "Return error 'The Position can't be lower than 1'",
+      "affected_endpoints": ["ep-378"],
+      "code_snippet": "if newPosition < 1 {\n\treturn errors.New(\"The Position can't be lower than 1\")\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Pin order is assigned as max existing order + 1 when pinning",
+      "location": {"class": "issues_model", "method": "PinIssue", "file_path": "models/issues/issue_pin.go", "line_number": 76},
+      "condition": "Always when pinning",
+      "action": "New pin gets PinOrder = max(pin_order) + 1",
+      "affected_endpoints": ["ep-376"],
+      "code_snippet": "PinOrder: pinnedIssuesMaxPinOrder + 1,"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Unpinning creates a comment of type CommentTypeUnpin in issue history",
+      "location": {"class": "issues_model", "method": "UnpinIssue", "file_path": "models/issues/issue_pin.go", "line_number": 97},
+      "condition": "Pin record was deleted (cnt > 0)",
+      "action": "Create CommentTypeUnpin comment",
+      "affected_endpoints": ["ep-377"],
+      "code_snippet": "_, err = CreateComment(ctx, &CreateCommentOptions{\n\tType: CommentTypeUnpin,\n})"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Moving pin reorders other pins - shifts up or down depending on direction",
+      "location": {"class": "issues_model", "method": "MovePin", "file_path": "models/issues/issue_pin.go", "line_number": 130},
+      "condition": "issuePin.PinOrder > newPosition (moving to lower position)",
+      "action": "Increment pin_order for pins between newPosition and current position",
+      "affected_endpoints": ["ep-378"],
+      "code_snippet": "Exec(\"UPDATE issue_pin SET pin_order = pin_order + 1 WHERE ... pin_order >= ? AND pin_order < ?\")"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Pinned issues are separated by type (issues vs pull requests)",
+      "location": {"class": "issues_model", "method": "GetPinnedIssues", "file_path": "models/issues/issue_pin.go", "line_number": 155},
+      "condition": "Always",
+      "action": "Filter by is_pull flag when querying pins",
+      "affected_endpoints": ["ep-379", "ep-380", "ep-381"],
+      "code_snippet": "db.GetEngine(ctx).Where(\"repo_id = ? AND is_pull = ?\", repoID, isPull).Find(&pins)"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "IsNewPinAllowed compares current pin count against MaxPinned setting",
+      "location": {"class": "issues_model", "method": "IsNewPinAllowed", "file_path": "models/issues/issue_pin.go", "line_number": 185},
+      "condition": "Always",
+      "action": "Return maxPin < setting.Repository.Issue.MaxPinned",
+      "affected_endpoints": ["ep-381"],
+      "code_snippet": "return maxPin < setting.Repository.Issue.MaxPinned, nil"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Language stats response is a custom JSON object mapping language name to byte count",
+      "location": {"class": "repo", "method": "languageResponse.MarshalJSON", "file_path": "routers/api/v1/repo/language.go", "line_number": 17},
+      "condition": "Always",
+      "action": "Serialize as {\"Go\": 12345, \"Python\": 6789} format",
+      "affected_endpoints": ["ep-375"],
+      "code_snippet": "buf.WriteString(strconv.Quote(lang.Language))\nbuf.WriteString(\":\")\nbuf.WriteString(strconv.FormatInt(lang.Size, 10))"
+    }
+  ]
+}

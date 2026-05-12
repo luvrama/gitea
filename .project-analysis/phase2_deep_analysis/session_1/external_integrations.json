@@ -1,0 +1,26 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "GPG binary (gpg --export)",
+      "type": "process_exec",
+      "base_url": "local process",
+      "client_class": "process.GetManager().ExecDir",
+      "file_path": "services/asymkey/sign.go",
+      "http_library": "os/exec via modules/process",
+      "endpoints_called": [
+        {"method": "EXEC", "path": "gpg --export -a <keyID>", "request": {"type": "args", "key_fields": ["keyID"]}, "response": {"type": "stdout string", "key_fields": ["armored_key"]}, "purpose": "Export GPG public key in ASCII armor format"}
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": null
+      },
+      "authentication": "none",
+      "used_by_endpoints": ["ep-004", "ep-005"],
+      "config_keys": ["repository.SIGNING_KEY", "git.HOME_PATH"]
+    }
+  ]
+}

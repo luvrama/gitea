@@ -1,0 +1,121 @@
+{
+  "total_findings": 6,
+  "overall_risk": "medium",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-226",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "PR creation involves multiple steps (create issue, create PR, add assignees, push ref, sync divergence) in a transaction, but git push is outside the DB transaction",
+          "recommendation": "Git push failure after DB commit leaves orphaned PR record; add cleanup on push failure"
+        }
+      ],
+      "non_atomic_operations": ["Git push to base repo ref happens after DB transaction commits; failure leaves PR in DB without git ref"],
+      "cascading_failure_risk": "Git repo unavailability would cause PR creation to fail with 500",
+      "graceful_degradation": "Cleanup removes git ref on failure (best-effort)"
+    },
+    {
+      "endpoint_id": "ep-227",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Multiple mutations (title, body, deadline, assignees, milestone, labels, state, base) are not wrapped in a single transaction",
+          "recommendation": "Wrap all mutations in db.WithTx to prevent partial updates"
+        }
+      ],
+      "non_atomic_operations": ["Sequential field updates without transaction: title change succeeds but label change fails leaves partial state"],
+      "cascading_failure_risk": "Partial update on DB error",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-229",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Merge operation uses global lock and checks HasMerged before proceeding; safe against double-merge",
+          "recommendation": "Already handled correctly"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Git repo unavailability blocks all merges",
+      "graceful_degradation": "Returns appropriate error codes for each failure mode"
+    },
+    {
+      "endpoint_id": "ep-230",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/update",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses global lock; checks divergence before update (returns error if already up to date)",
+          "recommendation": "Already handled correctly"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Git repo unavailability blocks updates",
+      "graceful_degradation": "Returns conflict error on merge/rebase failure"
+    },
+    {
+      "endpoint_id": "ep-231",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Checks if auto-merge exists before deleting; returns 404 if not found",
+          "recommendation": "Already handled correctly"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "Returns 404 if no auto-merge scheduled"
+    },
+    {
+      "endpoint_id": "ep-232",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/commits",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Git repo unavailability returns 500",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {"status": "configured", "liveness": "/api/healthz", "readiness": "/api/healthz", "recommendation": null},
+    "graceful_shutdown": {"status": "configured", "detail": "graceful.GetManager() handles shutdown context", "recommendation": null},
+    "rate_limiting": {"status": "missing", "detail": "No per-endpoint rate limiting on API", "recommendation": "Add rate limiting for write endpoints like merge"},
+    "dead_letter_queues": {"status": "not_applicable", "detail": "pr_auto_merge queue retries internally"},
+    "single_points_of_failure": ["Git repository storage (local filesystem or NFS)"],
+    "cascading_failure_paths": ["Git storage down → all PR create/merge/update/commits/files endpoints fail"]
+  }
+}

@@ -1,0 +1,50 @@
+{
+  "endpoints_by_database_table": {},
+  "endpoints_by_external_service": {
+    "GPG binary": ["ep-004", "ep-005"]
+  },
+  "endpoints_by_config_property": {
+    "APP_VER": ["ep-001"],
+    "repository.SIGNING_KEY": ["ep-004", "ep-005", "ep-006", "ep-007"],
+    "repository.SIGNING_FORMAT": ["ep-004", "ep-005", "ep-006", "ep-007"],
+    "git.HOME_PATH": ["ep-004", "ep-005"],
+    "server.APP_URL": ["ep-008"],
+    "repository.PREFERRED_LICENSES": ["ep-002"]
+  },
+  "endpoints_by_model_class": {
+    "structs.ServerVersion": ["ep-001"],
+    "structs.MarkupOption": ["ep-008"],
+    "label.Label": ["ep-003"],
+    "api.LabelTemplate": ["ep-003"],
+    "git.SigningKey": ["ep-004", "ep-005", "ep-006", "ep-007"]
+  },
+  "endpoints_by_service_class": {
+    "asymkey_service.PublicSigningKey": ["ep-004", "ep-005", "ep-006", "ep-007"],
+    "common.RenderMarkup": ["ep-008"],
+    "convert.ToLabelTemplateList": ["ep-003"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-001": {"reads": [], "writes": []},
+    "ep-002": {"reads": [], "writes": []},
+    "ep-003": {"reads": [], "writes": []},
+    "ep-004": {"reads": [], "writes": []},
+    "ep-005": {"reads": [], "writes": []},
+    "ep-006": {"reads": [], "writes": []},
+    "ep-007": {"reads": [], "writes": []},
+    "ep-008": {"reads": [], "writes": []}
+  },
+  "external_services_by_endpoint": {
+    "ep-004": ["GPG binary"],
+    "ep-005": ["GPG binary"]
+  },
+  "config_properties_by_endpoint": {
+    "ep-001": ["APP_VER"],
+    "ep-002": ["repository.PREFERRED_LICENSES"],
+    "ep-003": [],
+    "ep-004": ["repository.SIGNING_KEY", "repository.SIGNING_FORMAT", "git.HOME_PATH"],
+    "ep-005": ["repository.SIGNING_KEY", "repository.SIGNING_FORMAT", "git.HOME_PATH"],
+    "ep-006": ["repository.SIGNING_KEY", "repository.SIGNING_FORMAT"],
+    "ep-007": ["repository.SIGNING_KEY", "repository.SIGNING_FORMAT"],
+    "ep-008": ["server.APP_URL"]
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "total_findings": 5,
+  "overall_risk": "low",
+  "dependency_resiliency": [
+    {
+      "dependency": "File Storage (RepoAvatars)",
+      "client_class": "storage.ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "used_by_endpoints": ["ep-262", "ep-263"],
+      "timeout": {
+        "status": "configured",
+        "value_ms": null,
+        "recommendation": "Timeout depends on storage backend configuration (minio client has defaults)"
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Storage operations are within a DB transaction; retry at storage level could cause issues"
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "Low priority - avatar operations are infrequent"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Not critical for avatar operations"
+      },
+      "fallback": {
+        "status": "configured",
+        "behavior": "If avatar upload fails, transaction rolls back; repo keeps old avatar or generated identicon",
+        "recommendation": "Current behavior is acceptable"
+      },
+      "idempotency": {
+        "safe_to_retry": true,
+        "reason": "Avatar upload is idempotent - same image produces same hash, re-upload is a no-op"
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-262", "ep-263"],
+        "impact": "Users cannot update/delete repo avatars; repos still function normally with existing or generated avatars"
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-262",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/avatar",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "DB update and storage write are in a transaction; if storage fails, DB rolls back",
+          "recommendation": "Current implementation handles this correctly with db.WithTx"
+        }
+      ],
+      "non_atomic_operations": ["Old avatar file deletion after new avatar save - if delete fails, orphan file remains but operation succeeds"],
+      "cascading_failure_risk": "None - avatar is cosmetic only",
+      "graceful_degradation": "Falls back to generated identicon if no custom avatar"
+    },
+    {
+      "endpoint_id": "ep-265",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "CreateOrUpdate pattern is inherently idempotent - safe to retry",
+          "recommendation": "No changes needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - secrets are only consumed by action runners at task execution time",
+      "graceful_degradation": "If secret creation fails, action runs will fail when trying to use the secret"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled by modules/graceful package",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting for these endpoints",
+      "recommendation": "Low priority for secret/variable management endpoints"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "These endpoints are synchronous CRUD operations"
+    },
+    "single_points_of_failure": [],
+    "cascading_failure_paths": []
+  }
+}

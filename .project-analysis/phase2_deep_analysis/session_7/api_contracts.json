@@ -1,0 +1,292 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-042",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/actions/runners/registration-token",
+      "controller_class": "org.Action",
+      "controller_method": "CreateRegistrationToken",
+      "description": "Get an organization's actions runner registration token",
+      "request": {
+        "path_params": [{"name": "org", "type": "string", "required": true, "validation": ["must be existing org name"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with organization scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "RegistrationToken",
+          "fields": [{"name": "token", "type": "string", "description": "Registration token string for runner registration"}]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Organization does not exist"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not org owner or site admin"},
+          {"status_code": 500, "type": "error", "condition": "Internal error creating/fetching token"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-043",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/variables",
+      "controller_class": "org.Action",
+      "controller_method": "ListVariables",
+      "description": "Get an org-level variables list",
+      "request": {
+        "path_params": [{"name": "org", "type": "string", "required": true, "validation": ["must be existing org name"]}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": ["max setting.API.MaxResponseItems"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with organization scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]ActionVariable",
+          "fields": [
+            {"name": "owner_id", "type": "int64", "description": "Owner ID of the variable"},
+            {"name": "repo_id", "type": "int64", "description": "Repo ID (0 for org-level)"},
+            {"name": "name", "type": "string", "description": "Variable name (uppercased)"},
+            {"name": "data", "type": "string", "description": "Variable value"},
+            {"name": "description", "type": "string", "description": "Variable description"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Organization does not exist"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not org owner or site admin"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-044",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "controller_class": "org.Action",
+      "controller_method": "GetVariable",
+      "description": "Get an org-level variable by name",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be existing org name"]},
+          {"name": "variablename", "type": "string", "required": true, "validation": ["variable name"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with organization scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionVariable",
+          "fields": [
+            {"name": "owner_id", "type": "int64", "description": "Owner ID"},
+            {"name": "repo_id", "type": "int64", "description": "Repo ID (0 for org-level)"},
+            {"name": "name", "type": "string", "description": "Variable name"},
+            {"name": "data", "type": "string", "description": "Variable value"},
+            {"name": "description", "type": "string", "description": "Variable description"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Variable or organization not found"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not org owner or site admin"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-045",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "controller_class": "org.Action",
+      "controller_method": "DeleteVariable",
+      "description": "Delete an org-level variable by name",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be existing org name"]},
+          {"name": "variablename", "type": "string", "required": true, "validation": ["variable name"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with organization scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid variable name"},
+          {"status_code": 404, "type": "notFound", "condition": "Variable or organization not found"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not org owner or site admin"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-046",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "controller_class": "org.Action",
+      "controller_method": "CreateVariable",
+      "description": "Create an org-level variable",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be existing org name"]},
+          {"name": "variablename", "type": "string", "required": true, "validation": ["must match ^[A-Z_][A-Z0-9_]*$, cannot start with GITEA_/GITHUB_, cannot be CI"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with organization scope"}],
+        "body": {
+          "type": "CreateVariableOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "value", "type": "string", "required": true, "validation": ["max 65536 runes"], "description": "Value of the variable"},
+            {"name": "description", "type": "string", "required": false, "validation": ["truncated to 4096 runes"], "description": "Description of the variable"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid variable name or data too long"},
+          {"status_code": 409, "type": "conflict", "condition": "Variable name already exists"},
+          {"status_code": 404, "type": "notFound", "condition": "Organization not found"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not org owner or site admin"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-047",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "controller_class": "org.Action",
+      "controller_method": "UpdateVariable",
+      "description": "Update an org-level variable",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be existing org name"]},
+          {"name": "variablename", "type": "string", "required": true, "validation": ["existing variable name"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with organization scope"}],
+        "body": {
+          "type": "UpdateVariableOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": false, "validation": ["if provided, must match naming rules"], "description": "New name for the variable (empty = keep current)"},
+            {"name": "value", "type": "string", "required": true, "validation": ["max 65536 runes"], "description": "New value for the variable"},
+            {"name": "description", "type": "string", "required": false, "validation": ["truncated to 4096 runes"], "description": "New description"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid variable name or data too long"},
+          {"status_code": 404, "type": "notFound", "condition": "Variable or organization not found"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not org owner or site admin"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-048",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runners",
+      "controller_class": "org.Action",
+      "controller_method": "ListRunners",
+      "description": "Get org-level runners list",
+      "request": {
+        "path_params": [{"name": "org", "type": "string", "required": true, "validation": ["must be existing org name"]}],
+        "query_params": [
+          {"name": "disabled", "type": "boolean", "required": false, "default": null, "validation": ["optional filter by disabled status"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with organization scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionRunnersResponse",
+          "fields": [
+            {"name": "total_count", "type": "int64", "description": "Total number of runners"},
+            {"name": "runners", "type": "[]ActionRunner", "description": "Array of runner objects"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Organization not found"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not org owner or site admin"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-049",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "controller_class": "org.Action",
+      "controller_method": "GetRunner",
+      "description": "Get a specific org-level runner by ID",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be existing org name"]},
+          {"name": "runner_id", "type": "integer", "required": true, "validation": ["must be valid runner ID"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with organization scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionRunner",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Runner ID"},
+            {"name": "name", "type": "string", "description": "Runner name"},
+            {"name": "status", "type": "string", "description": "online or offline"},
+            {"name": "busy", "type": "bool", "description": "Whether runner is actively running a job"},
+            {"name": "disabled", "type": "bool", "description": "Whether runner is disabled"},
+            {"name": "ephemeral", "type": "bool", "description": "Whether runner is ephemeral"},
+            {"name": "labels", "type": "[]ActionRunnerLabel", "description": "Runner labels"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Runner not found or not editable in this org context"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not org owner or site admin"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

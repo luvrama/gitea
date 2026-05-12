@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Branch must exist in DB (not deleted) before it can be retrieved",
+      "location": {"class": "repo", "method": "GetBranch", "file_path": "routers/api/v1/repo/branch.go", "line_number": 56},
+      "condition": "IsBranchExist returns false",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-306"],
+      "code_snippet": "exist, err := git_model.IsBranchExist(ctx, ctx.Repo.Repository.ID, branchName)"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Repository must not be empty for branch operations",
+      "location": {"class": "repo", "method": "DeleteBranch", "file_path": "routers/api/v1/repo/branch.go", "line_number": 100},
+      "condition": "ctx.Repo.Repository.IsEmpty",
+      "action": "Return 404 with message 'Git Repository is empty'",
+      "affected_endpoints": ["ep-307", "ep-308", "ep-310", "ep-311"],
+      "code_snippet": "if ctx.Repo.Repository.IsEmpty {"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Repository must not be a mirror for write branch operations",
+      "location": {"class": "repo", "method": "DeleteBranch", "file_path": "routers/api/v1/repo/branch.go", "line_number": 105},
+      "condition": "ctx.Repo.Repository.IsMirror",
+      "action": "Return 403 with message 'Git Repository is a mirror'",
+      "affected_endpoints": ["ep-307", "ep-308", "ep-310", "ep-311"],
+      "code_snippet": "if ctx.Repo.Repository.IsMirror {"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "authorization",
+      "description": "Cannot delete default branch or pull request target branch",
+      "location": {"class": "repo_service", "method": "CanDeleteBranch", "file_path": "services/repository/branch.go", "line_number": 310},
+      "condition": "branchName == repo.DefaultBranch || branchName == unitPRConfig.DefaultTargetBranch",
+      "action": "Return ErrBranchIsDefault error",
+      "affected_endpoints": ["ep-307"],
+      "code_snippet": "if branchName == repo.DefaultBranch || branchName == unitPRConfig.DefaultTargetBranch {"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "authorization",
+      "description": "Cannot delete a protected branch",
+      "location": {"class": "repo_service", "method": "CanDeleteBranch", "file_path": "services/repository/branch.go", "line_number": 323},
+      "condition": "git_model.IsBranchProtected returns true",
+      "action": "Return ErrBranchIsProtected error",
+      "affected_endpoints": ["ep-307"],
+      "code_snippet": "if isProtected { return git_model.ErrBranchIsProtected }"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "New branch name must not conflict with existing branches or tags",
+      "location": {"class": "repo_service", "method": "checkBranchName", "file_path": "services/repository/branch.go", "line_number": 195},
+      "condition": "Branch name matches existing branch or has path prefix conflict or matches tag",
+      "action": "Return ErrBranchAlreadyExists, ErrBranchNameConflict, or ErrTagAlreadyExists",
+      "affected_endpoints": ["ep-308"],
+      "code_snippet": "case branchRefName == name: return git_model.ErrBranchAlreadyExists{BranchName: name}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "If no branches in DB for non-empty repo, sync from git immediately",
+      "location": {"class": "repo", "method": "DeleteBranch", "file_path": "routers/api/v1/repo/branch.go", "line_number": 118},
+      "condition": "totalNumOfBranches == 0 for non-empty repo",
+      "action": "Call repo_module.SyncRepoBranches to populate DB",
+      "affected_endpoints": ["ep-307", "ep-309"],
+      "code_snippet": "if totalNumOfBranches == 0 { _, err = repo_module.SyncRepoBranches(ctx, ctx.Repo.Repository.ID, 0) }"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "UpdateBranch validates old commit ID matches current branch tip if provided",
+      "location": {"class": "repo_service", "method": "UpdateBranch", "file_path": "services/repository/branch.go", "line_number": 268},
+      "condition": "expectedOldCommitID != '' && expectedID.String() != branch.CommitID",
+      "action": "Return InvalidArgument error",
+      "affected_endpoints": ["ep-310"],
+      "code_snippet": "if expectedID.String() != branch.CommitID { return util.NewInvalidArgumentErrorf(...) }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "validation",
+      "description": "Force push requires explicit force parameter",
+      "location": {"class": "repo_service", "method": "UpdateBranch", "file_path": "services/repository/branch.go", "line_number": 285},
+      "condition": "isForcePush && !force",
+      "action": "Return InvalidArgument error requiring force confirmation",
+      "affected_endpoints": ["ep-310"],
+      "code_snippet": "if isForcePush && !force { return util.NewInvalidArgumentErrorf(\"Force push %s need a confirm force parameter\", branchName) }"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "authorization",
+      "description": "Only admins can rename default or protected branches",
+      "location": {"class": "repo_service", "method": "RenameBranch", "file_path": "services/repository/branch.go", "line_number": 237},
+      "condition": "isDefault && !perm.IsAdmin()",
+      "action": "Return ErrUserDoesNotHaveAccessToRepo",
+      "affected_endpoints": ["ep-311"],
+      "code_snippet": "if isDefault && !perm.IsAdmin() { return \"\", repo_model.ErrUserDoesNotHaveAccessToRepo{...} }"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "authorization",
+      "description": "Cannot rename to a branch name that is protected and user cannot push to",
+      "location": {"class": "repo_service", "method": "RenameBranch", "file_path": "services/repository/branch.go", "line_number": 253},
+      "condition": "rule != nil && !rule.CanUserPush(ctx, doer)",
+      "action": "Return ErrBranchIsProtected",
+      "affected_endpoints": ["ep-311"],
+      "code_snippet": "if rule != nil && !rule.CanUserPush(ctx, doer) { return \"\", git_model.ErrBranchIsProtected }"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "business_logic",
+      "description": "Renaming default branch also updates git HEAD, deletes scheduled actions, and cancels cron jobs",
+      "location": {"class": "repo_service", "method": "RenameBranch", "file_path": "services/repository/branch.go", "line_number": 258},
+      "condition": "isDefault (branch being renamed is the default branch)",
+      "action": "Delete schedule tasks, cancel previous jobs, set new default branch in git",
+      "affected_endpoints": ["ep-311"],
+      "code_snippet": "if isDefault { actions_model.DeleteScheduleTaskByRepo(ctx, repo.ID) }"
+    }
+  ]
+}

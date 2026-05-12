@@ -1,0 +1,181 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-050",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_runner"],
+        "note": "2 SELECTs (one redundant) + 1 DELETE"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "DeleteRunner re-fetches the runner by ID before deleting, even though it was already fetched by getRunnerByID",
+          "impact": "1 extra SELECT per delete request",
+          "file_path": "models/actions/runner.go",
+          "line_number": 243,
+          "code_snippet": "if _, err := GetRunnerByID(ctx, id); err != nil { return err }",
+          "recommendation": "Pass runner ID directly to DeleteByID without re-verification, or use the already-fetched runner"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-051",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_runner", "action_tasks_version"],
+        "note": "1 SELECT (get) + 1 UPDATE (disable) + 1 UPDATE (task version) + 1 SELECT (re-fetch for response)"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "After updating, GetRunner re-fetches the runner from DB instead of using the already-modified in-memory object",
+          "impact": "1 extra SELECT per update request",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "line_number": 139,
+          "code_snippet": "GetRunner(ctx, ownerID, repoID, runnerID)",
+          "recommendation": "Convert the already-updated runner object directly instead of re-fetching"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-052",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/jobs",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_run_job", "repository", "action_run", "action_task", "action_task_step", "action_runner"],
+        "note": "1 FindAndCount + 2 batch loads + N task loads + N step loads + N runner loads"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "convert.ToActionWorkflowJob loads task, steps, and runner individually per job in a loop",
+          "impact": "For a page of 20 jobs: up to 60 additional queries (task + steps + runner per job)",
+          "file_path": "services/convert/convert.go",
+          "line_number": 373,
+          "code_snippet": "task, _, err = db.GetByID[actions_model.ActionTask](ctx, effectiveTaskID)",
+          "recommendation": "Batch-load tasks, steps, and runners before the conversion loop using IN queries"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch-load action_task, action_task_step, and action_runner for all jobs in a single query each",
+          "estimated_impact": "Reduce queries from O(3N) to O(3) for the conversion phase",
+          "implementation": "Collect all effectiveTaskIDs, load tasks in batch, then load steps by task IDs, then load runners by runner IDs"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-053",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runs",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_run", "repository", "user", "action_run_attempt"],
+        "note": "1 FindAndCount + 3 batch loads + N attempt loads"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "ToActionWorkflowRun calls run.GetLatestAttempt per run, which queries action_run_attempt individually",
+          "impact": "For a page of 20 runs: 20 additional queries to action_run_attempt",
+          "file_path": "services/convert/convert.go",
+          "line_number": 269,
+          "code_snippet": "attempt, _, err = run.GetLatestAttempt(ctx)",
+          "recommendation": "Batch-load latest attempts for all runs before the conversion loop (TODO comment exists in code)"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch-load action_run_attempt records for all runs using IN(latest_attempt_id) query",
+          "estimated_impact": "Reduce N queries to 1 for attempt loading",
+          "implementation": "Collect all LatestAttemptID values, query action_run_attempt WHERE id IN (...), map back to runs"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-054",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/teams",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["team", "team_unit"],
+        "note": "1 FindAndCount + N LoadUnits"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "ToTeams calls LoadUnits per team individually in a loop",
+          "impact": "For a page of 20 teams: 20 additional queries to team_unit",
+          "file_path": "services/convert/convert.go",
+          "line_number": 733,
+          "code_snippet": "if err := t.LoadUnits(ctx); err != nil {",
+          "recommendation": "Batch-load team_unit records for all team IDs in a single query"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch-load team_unit for all teams using WHERE team_id IN (...)",
+          "estimated_impact": "Reduce N queries to 1 for unit loading",
+          "implementation": "Add a LoadUnitsForTeams batch method that queries all units at once and distributes to teams"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-055",
+      "http_method": "GET",
+      "path": "/api/v1/user/teams",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["team", "team_user", "team_unit", "user"],
+        "note": "1 FindAndCount (with JOIN) + N LoadUnits + M GetOrgByID (cached)"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "ToTeams calls LoadUnits per team individually, and GetOrgByID per unique org (mitigated by in-memory cache)",
+          "impact": "For a page of 20 teams across 5 orgs: 20 unit queries + 5 org queries",
+          "file_path": "services/convert/convert.go",
+          "line_number": 733,
+          "code_snippet": "if err := t.LoadUnits(ctx); err != nil {",
+          "recommendation": "Batch-load team_unit and orgs in bulk before the loop"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch-load team_unit and organizations for all teams",
+          "estimated_impact": "Reduce N+M queries to 2 queries",
+          "implementation": "Collect team IDs and org IDs, batch query team_unit and user table"
+        }
+      ]
+    }
+  ]
+}

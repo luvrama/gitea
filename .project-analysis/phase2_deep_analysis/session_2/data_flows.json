@@ -1,0 +1,321 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-009",
+      "http_method": "POST",
+      "path": "/api/v1/markdown",
+      "description": "Binds MarkdownOption from JSON body, determines render mode, delegates to common.RenderMarkup which parses URL context and renders markdown to HTML via appropriate render context",
+      "steps": [
+        {
+          "step": 1,
+          "component": "bind[MarkdownOption]",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "http.Request body (JSON)",
+          "output": "*MarkdownOption stored in context data",
+          "operations": ["Deserialize JSON body into MarkdownOption struct", "Validate binding"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "misc.Markdown",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/markup.go",
+          "input": "*MarkdownOption from context",
+          "output": "delegates to RenderMarkup",
+          "operations": ["Retrieve form via web.GetForm", "Compute mode: util.Iif(form.Wiki, 'wiki', form.Mode)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "common.RenderMarkup",
+          "type": "service",
+          "file_path": "routers/common/markup.go",
+          "input": "ctx.Base, ctx.Repo, mode, text, context, filePath(empty)",
+          "output": "HTML written to response writer",
+          "operations": [
+            "Parse urlPathContext to extract owner/repo/ref/treePath",
+            "Switch on mode: empty/markdown → NewRenderContextSimpleDocument + markdown.RenderRaw",
+            "gfm/file → NewRenderContextRepoFile + markup.Render",
+            "comment → NewRenderContextRepoComment + markup.Render",
+            "wiki → NewRenderContextRepoWiki + markup.Render",
+            "Set UseAbsoluteLink(true)"
+          ],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "markdown.RenderRaw / markup.Render",
+          "type": "utility",
+          "file_path": "modules/markup/markdown/markdown.go",
+          "input": "RenderContext + text reader",
+          "output": "Sanitized HTML to output writer",
+          "operations": ["Parse markdown via goldmark", "Sanitize HTML output via bluemonday policy", "Pipe-based streaming: render → sanitize → output"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": true
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "MarkdownOption (JSON)",
+          "to": "HTML string",
+          "component": "common.RenderMarkup",
+          "mappings": [
+            {"source_field": "Text", "target_field": "response body", "transformation": "computed"},
+            {"source_field": "Mode", "target_field": "render context type", "transformation": "computed"},
+            {"source_field": "Context", "target_field": "link resolution base", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "No token provided", "handler": "reqToken middleware", "response_code": 401, "response": "APIError"},
+        {"condition": "Invalid JSON binding", "handler": "bind middleware", "response_code": 422, "response": "APIError with field error"},
+        {"condition": "Unsupported render mode", "handler": "common.RenderMarkup default case", "response_code": 422, "response": "HTTP error: unsupported render mode"},
+        {"condition": "util.ErrInvalidArgument from markup.Render", "handler": "common.RenderMarkup", "response_code": 422, "response": "HTTP error with err message"},
+        {"condition": "Other render error", "handler": "common.RenderMarkup", "response_code": 500, "response": "HTTP error: failed to render markup"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-010",
+      "http_method": "POST",
+      "path": "/api/v1/markdown/raw",
+      "description": "Reads raw markdown from request body and renders to HTML without special link handling",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.MarkdownRaw",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/markup.go",
+          "input": "ctx.Req.Body (io.ReadCloser)",
+          "output": "HTML written to ctx.Resp",
+          "operations": ["Defer close request body", "Call markdown.RenderRaw with NewRenderContext"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "markdown.RenderRaw",
+          "type": "utility",
+          "file_path": "modules/markup/markdown/markdown.go",
+          "input": "RenderContext + request body reader",
+          "output": "Sanitized HTML to response writer",
+          "operations": ["Create pipe pair", "Goroutine: render markdown input to pipe writer", "Read from pipe, sanitize via SanitizeReader, write to output"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": true
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "raw text/plain body",
+          "to": "HTML string",
+          "component": "markdown.RenderRaw",
+          "mappings": [
+            {"source_field": "request body", "target_field": "response body", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "No token provided", "handler": "reqToken middleware", "response_code": 401, "response": "APIError"},
+        {"condition": "Render error", "handler": "misc.MarkdownRaw", "response_code": 500, "response": "APIError via ctx.APIErrorInternal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-011",
+      "http_method": "GET",
+      "path": "/api/v1/gitignore/templates",
+      "description": "Returns the pre-loaded list of gitignore template names from package-level variable",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.ListGitignoresTemplates",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/gitignore.go",
+          "input": "none",
+          "output": "JSON array of strings",
+          "operations": ["Return repo_module.Gitignores directly as JSON"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-012",
+      "http_method": "GET",
+      "path": "/api/v1/gitignore/templates/{name}",
+      "description": "Reads a specific gitignore template file from the layered asset filesystem and returns its content",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.GetGitignoreTemplateInfo",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/gitignore.go",
+          "input": "path param 'name'",
+          "output": "JSON GitignoreTemplateInfo",
+          "operations": ["Sanitize name via util.PathJoinRelX", "Read file via options.Gitignore(name)", "Return 404 if error", "Build GitignoreTemplateInfo response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "options.Gitignore",
+          "type": "utility",
+          "file_path": "modules/options/base.go",
+          "input": "sanitized name string",
+          "output": "[]byte file content",
+          "operations": ["Call AssetFS().ReadFile('gitignore', name)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "LayeredFS.ReadFile",
+          "type": "utility",
+          "file_path": "modules/assetfs/layered.go",
+          "input": "directory 'gitignore', filename",
+          "output": "[]byte or error",
+          "operations": ["Search layers (custom path first, then bindata) for the file", "Return first match"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]byte (file content)",
+          "to": "GitignoreTemplateInfo",
+          "component": "misc.GetGitignoreTemplateInfo",
+          "mappings": [
+            {"source_field": "name param", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "file bytes", "target_field": "Source", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "File not found in any layer", "handler": "misc.GetGitignoreTemplateInfo", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-013",
+      "http_method": "GET",
+      "path": "/api/v1/licenses",
+      "description": "Returns the pre-loaded list of license templates with metadata including API URLs",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.ListLicenseTemplates",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/licenses.go",
+          "input": "none",
+          "output": "JSON array of LicensesTemplateListEntry",
+          "operations": ["Iterate repo_module.Licenses", "Build response array with key, name, and URL for each license", "URL format: {AppURL}api/v1/licenses/{url-escaped-name}"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]string (license names)",
+          "to": "[]LicensesTemplateListEntry",
+          "component": "misc.ListLicenseTemplates",
+          "mappings": [
+            {"source_field": "license name", "target_field": "Key", "transformation": "direct_copy"},
+            {"source_field": "license name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "license name", "target_field": "URL", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-014",
+      "http_method": "GET",
+      "path": "/api/v1/licenses/{name}",
+      "description": "Reads a specific license template file and returns full details including the license body text",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.GetLicenseTemplateInfo",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/licenses.go",
+          "input": "path param 'name'",
+          "output": "JSON LicenseTemplateInfo",
+          "operations": ["Sanitize name via util.PathJoinRelX", "Read file via options.License(name)", "Return 404 if error", "Build LicenseTemplateInfo with static implementation text"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "options.License",
+          "type": "utility",
+          "file_path": "modules/options/base.go",
+          "input": "sanitized name string",
+          "output": "[]byte file content",
+          "operations": ["Call AssetFS().ReadFile('license', name)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "LayeredFS.ReadFile",
+          "type": "utility",
+          "file_path": "modules/assetfs/layered.go",
+          "input": "directory 'license', filename",
+          "output": "[]byte or error",
+          "operations": ["Search layers (custom path first, then bindata) for the file", "Return first match"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]byte (file content)",
+          "to": "LicenseTemplateInfo",
+          "component": "misc.GetLicenseTemplateInfo",
+          "mappings": [
+            {"source_field": "name param", "target_field": "Key", "transformation": "direct_copy"},
+            {"source_field": "name param", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "name param", "target_field": "URL", "transformation": "computed"},
+            {"source_field": "file bytes", "target_field": "Body", "transformation": "computed"},
+            {"source_field": "static string", "target_field": "Implementation", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "File not found in any layer", "handler": "misc.GetLicenseTemplateInfo", "response_code": 404, "response": "notFound"}
+      ]
+    }
+  ]
+}

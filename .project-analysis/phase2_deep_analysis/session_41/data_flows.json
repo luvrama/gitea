@@ -1,0 +1,430 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-277",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/jobs",
+      "description": "Lists all workflow jobs for a repository with optional status filtering and pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.ListWorkflowJobs",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext",
+          "output": "calls shared.ListJobs",
+          "operations": ["extract repoID from ctx.Repo.Repository.ID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListJobs",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/action.go",
+          "input": "ownerID=0, repoID, runID=0, runAttemptID=nil",
+          "output": "ActionWorkflowJobsResponse JSON",
+          "operations": ["parse status query params via convertToInternal", "build FindRunJobOptions", "call db.FindAndCount[ActionRunJob]", "load job attributes", "convert each job to API format"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run_job", "description": "find jobs by repo_id with optional status filter and pagination"},
+            {"operation": "SELECT", "table": "action_run", "description": "load run for each job via LoadAttributes"},
+            {"operation": "SELECT", "table": "repository", "description": "load repo for each run"},
+            {"operation": "SELECT", "table": "action_task", "description": "load task for job if effectiveTaskID != 0"},
+            {"operation": "SELECT", "table": "action_task_step", "description": "load steps for task"},
+            {"operation": "SELECT", "table": "action_runner", "description": "load runner name by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunJob",
+          "to": "api.ActionWorkflowJob",
+          "component": "convert.ToActionWorkflowJob",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status/Conclusion", "transformation": "computed"},
+            {"source_field": "RunsOn", "target_field": "Labels", "transformation": "direct_copy"},
+            {"source_field": "Run.CommitSHA", "target_field": "HeadSha", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "invalid status query param", "handler": "shared.ListJobs", "response_code": 400, "response": "error"},
+        {"condition": "db error", "handler": "shared.ListJobs", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-278",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs",
+      "description": "Lists all workflow runs for a repository with optional filtering by event, branch, status, actor, head_sha",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.ListWorkflowRuns",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext",
+          "output": "calls shared.ListRuns",
+          "operations": ["extract repoID from ctx.Repo.Repository.ID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListRuns",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/action.go",
+          "input": "ownerID=0, repoID",
+          "output": "ActionWorkflowRunsResponse JSON",
+          "operations": ["parse event/branch/status/actor/head_sha query params", "build FindRunOptions", "call db.FindAndCount[ActionRun]", "load trigger users", "load repos and owners", "convert each run to API format"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run", "description": "find runs by repo_id with optional filters and pagination"},
+            {"operation": "SELECT", "table": "user", "description": "load trigger user for each run"},
+            {"operation": "SELECT", "table": "repository", "description": "load repo for each run"},
+            {"operation": "SELECT", "table": "user", "description": "load repo owners"},
+            {"operation": "SELECT", "table": "user", "description": "lookup actor username if actor filter provided"},
+            {"operation": "SELECT", "table": "action_run_attempt", "description": "get latest attempt for each run"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRun",
+          "to": "api.ActionWorkflowRun",
+          "component": "convert.ToActionWorkflowRun",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Index", "target_field": "RunNumber", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status/Conclusion", "transformation": "computed"},
+            {"source_field": "TriggerEvent", "target_field": "Event", "transformation": "direct_copy"},
+            {"source_field": "CommitSHA", "target_field": "HeadSha", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "invalid status query param", "handler": "shared.ListRuns", "response_code": 400, "response": "error"},
+        {"condition": "actor user not found", "handler": "shared.ListRuns", "response_code": 500, "response": "internal error"},
+        {"condition": "db error", "handler": "shared.ListRuns", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-279",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/tasks",
+      "description": "List a repository's action tasks with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "ListActionTasks",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext",
+          "output": "ActionTaskResponse JSON",
+          "operations": ["get list options", "call db.FindAndCount[ActionTask] with repoID", "load task attributes", "convert each task to API format"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_task", "description": "find tasks by repo_id with pagination"},
+            {"operation": "SELECT", "table": "action_run_job", "description": "load job for each task via LoadAttributes"},
+            {"operation": "SELECT", "table": "action_run", "description": "load run for each job"},
+            {"operation": "SELECT", "table": "repository", "description": "load repo for each run"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionTask",
+          "to": "api.ActionTask",
+          "component": "convert.ToActionTask",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Job.Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Job.Run.PrettyRef()", "target_field": "HeadBranch", "transformation": "computed"},
+            {"source_field": "Status", "target_field": "Status", "transformation": "computed"},
+            {"source_field": "Job.Run.WorkflowID", "target_field": "WorkflowID", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "db error on find", "handler": "ListActionTasks", "response_code": 500, "response": "internal error"},
+        {"condition": "db error on LoadAttributes", "handler": "ListActionTasks", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-280",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows",
+      "description": "List repository workflows by reading workflow files from the default branch",
+      "steps": [
+        {
+          "step": 1,
+          "component": "ActionsListRepositoryWorkflows",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext",
+          "output": "ActionWorkflowResponse JSON",
+          "operations": ["call convert.ListActionWorkflows"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ListActionWorkflows",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "gitRepo, repo",
+          "output": "[]*api.ActionWorkflow",
+          "operations": ["get default branch commit from git", "call actions.ListWorkflows to find .yml/.yaml files", "for each entry call getActionWorkflowEntry"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repo_unit", "description": "MustGetUnit to check actions config for disabled state"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions.ListWorkflows",
+          "type": "utility",
+          "file_path": "modules/actions/workflows.go",
+          "input": "git.Commit",
+          "output": "folder string, git.Entries",
+          "operations": ["traverse commit tree for workflow dirs (.gitea/workflows, .github/workflows)", "filter entries by .yml/.yaml extension"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "git.TreeEntry",
+          "to": "api.ActionWorkflow",
+          "component": "convert.getActionWorkflowEntry",
+          "mappings": [
+            {"source_field": "entry.Name()", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "workflow.Name or entry.Name()", "target_field": "Name", "transformation": "computed"},
+            {"source_field": "folder + entry.Name()", "target_field": "Path", "transformation": "computed"},
+            {"source_field": "cfg.IsWorkflowDisabled()", "target_field": "State", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "git error getting branch commit", "handler": "ActionsListRepositoryWorkflows", "response_code": 500, "response": "internal error"},
+        {"condition": "git error listing tree entries", "handler": "ActionsListRepositoryWorkflows", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-281",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}",
+      "description": "Get a specific workflow by its filename from the default branch",
+      "steps": [
+        {
+          "step": 1,
+          "component": "ActionsGetWorkflow",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext with workflow_id path param",
+          "output": "ActionWorkflow JSON",
+          "operations": ["extract workflowID from path", "call convert.GetActionWorkflow"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.GetActionWorkflow",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "gitRepo, repo, workflowID",
+          "output": "*api.ActionWorkflow or error",
+          "operations": ["get default branch commit", "call actions.ListWorkflows", "find matching entry by name", "call getActionWorkflowEntry"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repo_unit", "description": "MustGetUnit to check actions config"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "git.TreeEntry",
+          "to": "api.ActionWorkflow",
+          "component": "convert.getActionWorkflowEntry",
+          "mappings": [
+            {"source_field": "entry.Name()", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "workflow.Name", "target_field": "Name", "transformation": "computed"},
+            {"source_field": "cfg.IsWorkflowDisabled()", "target_field": "State", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "workflow not found in entries", "handler": "ActionsGetWorkflow", "response_code": 404, "response": "notFound"},
+        {"condition": "git error", "handler": "ActionsGetWorkflow", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-282",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable",
+      "description": "Disable a workflow by updating the repo unit actions config",
+      "steps": [
+        {
+          "step": 1,
+          "component": "ActionsDisableWorkflow",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext with workflow_id path param",
+          "output": "204 No Content",
+          "operations": ["extract workflowID", "call actions_service.EnableOrDisableWorkflow(ctx, workflowID, false)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.EnableOrDisableWorkflow",
+          "type": "service",
+          "file_path": "services/actions/workflow.go",
+          "input": "ctx, workflowID, isEnable=false",
+          "output": "error",
+          "operations": ["call convert.GetActionWorkflow to verify workflow exists", "get repo unit config", "call cfg.DisableWorkflow(workflow.ID)", "call repo_model.UpdateRepoUnitConfig"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repo_unit", "description": "get actions unit config"},
+            {"operation": "UPDATE", "table": "repo_unit", "description": "update actions config with disabled workflow"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "workflow not found", "handler": "ActionsDisableWorkflow", "response_code": 404, "response": "notFound"},
+        {"condition": "db error updating config", "handler": "ActionsDisableWorkflow", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-283",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+      "description": "Create a workflow dispatch event to trigger a new workflow run",
+      "steps": [
+        {
+          "step": 1,
+          "component": "ActionsDispatchWorkflow",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext with workflow_id, CreateActionWorkflowDispatch body",
+          "output": "204 or 200 with RunDetails",
+          "operations": ["extract workflowID", "get form body", "validate ref not empty", "call actions_service.DispatchActionWorkflow with input processor callback"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.DispatchActionWorkflow",
+          "type": "service",
+          "file_path": "services/actions/workflow.go",
+          "input": "ctx, doer, repo, gitRepo, workflowID, ref, processInputs callback",
+          "output": "runID int64, error",
+          "operations": ["validate workflowID and ref not empty", "check workflow not disabled via repo unit config", "resolve ref to git commit (branch or tag)", "list workflows from commit", "find matching workflow entry", "read workflow content", "unmarshal YAML", "process inputs via callback", "build WorkflowDispatchPayload", "call PrepareRunAndInsert to create ActionRun and jobs"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repo_unit", "description": "check if workflow is disabled"},
+            {"operation": "INSERT", "table": "action_run", "description": "create new workflow run"},
+            {"operation": "INSERT", "table": "action_run_job", "description": "create jobs for the run"},
+            {"operation": "INSERT", "table": "action_run_attempt", "description": "create attempt for the run"},
+            {"operation": "UPDATE", "table": "action_tasks_version", "description": "increment task version to notify runners"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "CreateActionWorkflowDispatch + workflow YAML",
+          "to": "actions_model.ActionRun",
+          "component": "actions_service.DispatchActionWorkflow",
+          "mappings": [
+            {"source_field": "opt.Ref", "target_field": "Ref", "transformation": "computed"},
+            {"source_field": "commit.ID", "target_field": "CommitSHA", "transformation": "computed"},
+            {"source_field": "workflowID", "target_field": "WorkflowID", "transformation": "direct_copy"},
+            {"source_field": "doer.ID", "target_field": "TriggerUserID", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "ref is empty", "handler": "ActionsDispatchWorkflow", "response_code": 422, "response": "validationError"},
+        {"condition": "workflow is disabled", "handler": "ActionsDispatchWorkflow", "response_code": 403, "response": "forbidden"},
+        {"condition": "ref doesn't exist in git", "handler": "ActionsDispatchWorkflow", "response_code": 404, "response": "notFound"},
+        {"condition": "workflow file not found", "handler": "ActionsDispatchWorkflow", "response_code": 404, "response": "notFound"},
+        {"condition": "db error", "handler": "ActionsDispatchWorkflow", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-284",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable",
+      "description": "Enable a workflow by updating the repo unit actions config",
+      "steps": [
+        {
+          "step": 1,
+          "component": "ActionsEnableWorkflow",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext with workflow_id path param",
+          "output": "204 No Content",
+          "operations": ["extract workflowID", "call actions_service.EnableOrDisableWorkflow(ctx, workflowID, true)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.EnableOrDisableWorkflow",
+          "type": "service",
+          "file_path": "services/actions/workflow.go",
+          "input": "ctx, workflowID, isEnable=true",
+          "output": "error",
+          "operations": ["call convert.GetActionWorkflow to verify workflow exists", "get repo unit config", "call cfg.EnableWorkflow(workflow.ID)", "call repo_model.UpdateRepoUnitConfig"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repo_unit", "description": "get actions unit config"},
+            {"operation": "UPDATE", "table": "repo_unit", "description": "update actions config with enabled workflow"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "workflow not found", "handler": "ActionsEnableWorkflow", "response_code": 404, "response": "notFound"},
+        {"condition": "db error updating config", "handler": "ActionsEnableWorkflow", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

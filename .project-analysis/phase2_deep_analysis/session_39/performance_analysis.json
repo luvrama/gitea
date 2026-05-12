@@ -1,0 +1,123 @@
+{
+  "total_endpoints_analyzed": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-262",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/avatar",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "file_storage", "cpu (image processing)"],
+        "note": "Image processing is CPU-intensive for large images"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "Image processing (decode, crop, resize, encode) happens synchronously on request thread",
+          "impact": "Large images can block the request thread for significant time",
+          "file_path": "modules/avatar/avatar.go",
+          "line_number": 49,
+          "code_snippet": "func processAvatarImage(data []byte, maxOriginSize int64) ([]byte, error) {",
+          "recommendation": "Acceptable for avatar uploads which are infrequent; max dimensions are capped"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Avatar hash check prevents re-upload of same image",
+          "estimated_impact": "Already optimized - skips processing if same image",
+          "implementation": "Already implemented via hash comparison"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-263",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/avatar",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "file_storage"],
+        "note": "Simple delete operation"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-264",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "FindAndCount executes two queries (count + select)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Secrets list rarely changes, could benefit from short TTL cache",
+          "estimated_impact": "Minimal - secrets are not frequently listed",
+          "implementation": "Not needed for typical usage patterns"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-265",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "cpu (encryption)"],
+        "note": "Encryption of secret data adds CPU cost"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-266",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Simple find + delete"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-267",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single query by unique index"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-268",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Find by name then delete by ID"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

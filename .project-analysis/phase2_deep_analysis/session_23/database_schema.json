@@ -1,0 +1,120 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 3,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "star",
+      "entity_class": "repo_model.Star",
+      "file_path": "models/repo/star.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk", "autoincr"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]}
+      ],
+      "indexes": [
+        {"name": "UQE_star_s", "columns": ["uid", "repo_id"], "unique": true},
+        {"name": "IDX_star_created_unix", "columns": ["created_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "public_key",
+      "entity_class": "asymkey_model.PublicKey",
+      "file_path": "models/asymkey/ssh_key.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk", "autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "NOT NULL"]},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "fingerprint", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "NOT NULL"]},
+        {"name": "content", "type": "MEDIUMTEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "mode", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "2", "constraints": ["NOT NULL", "DEFAULT 2"]},
+        {"name": "type", "type": "INT", "code_type": "KeyType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "1", "constraints": ["NOT NULL", "DEFAULT 1"]},
+        {"name": "login_source_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL", "DEFAULT 0"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]},
+        {"name": "verified", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL", "DEFAULT false"]}
+      ],
+      "indexes": [
+        {"name": "IDX_public_key_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "IDX_public_key_fingerprint", "columns": ["fingerprint"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "many-to-one", "target_table": "login_source", "join_column": "login_source_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "login_source",
+      "entity_class": "auth.Source",
+      "file_path": "models/auth/source.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk", "autoincr"]}
+      ],
+      "indexes": [],
+      "relationships": []
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-156",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "operations": [
+        {"store_type": "database", "store_name": "star", "operation": "SELECT", "method": "repo_model.IsStaring", "description": "Check if star exists"},
+        {"store_type": "database", "store_name": "star", "operation": "DELETE", "method": "repo_model.StarRepo", "description": "Delete star record"},
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "repo_model.StarRepo", "description": "Decrement num_stars"},
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "repo_model.StarRepo", "description": "Decrement num_stars"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-157",
+      "path": "/api/v1/user/keys",
+      "operations": [
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "db.FindAndCount", "description": "List keys by owner with optional fingerprint filter"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-158",
+      "path": "/api/v1/users/{username}/keys",
+      "operations": [
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "db.FindAndCount", "description": "List keys by owner with optional fingerprint filter"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-159",
+      "path": "/api/v1/user/keys/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "asymkey_model.GetPublicKeyByID", "description": "Get key by primary key ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-160",
+      "path": "/api/v1/user/keys",
+      "operations": [
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "asymkey_model.AddPublicKey", "description": "Check fingerprint uniqueness"},
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "asymkey_model.AddPublicKey", "description": "Check name uniqueness for owner"},
+        {"store_type": "database", "store_name": "public_key", "operation": "INSERT", "method": "asymkey_model.AddPublicKey", "description": "Insert new key record"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-161",
+      "path": "/api/v1/user/keys/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "asymkey_model.PublicKeyIsExternallyManaged", "description": "Get key to check external management"},
+        {"store_type": "database", "store_name": "login_source", "operation": "SELECT", "method": "auth.GetSourceByID", "description": "Get auth source for external check"},
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "asymkey_service.DeletePublicKey", "description": "Get key for access check"},
+        {"store_type": "database", "store_name": "public_key", "operation": "DELETE", "method": "asymkey_service.DeletePublicKey", "description": "Delete key record"},
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "asymkey_service.RewriteAllPublicKeys", "description": "Read all keys to rewrite authorized_keys"}
+      ]
+    }
+  ]
+}

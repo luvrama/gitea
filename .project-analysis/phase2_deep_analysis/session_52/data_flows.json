@@ -1,0 +1,541 @@
+{
+  "total_flows": 7,
+  "flows": [
+    {
+      "endpoint_id": "ep-352",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "description": "Validates release belongs to repo, fetches attachment by ID, verifies attachment belongs to release",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetReleaseAttachment",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release_attachment.go",
+          "input": "APIContext with path params",
+          "output": "JSON response",
+          "operations": ["Extract releaseID and attachID from path"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.checkReleaseMatchRepo",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/release_attachment.go",
+          "input": "ctx, releaseID",
+          "output": "bool (success/failure)",
+          "operations": ["Get release by ID", "Verify release.RepoID matches ctx.Repo.Repository.ID", "Check draft access"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Get release by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_model.GetAttachmentByID",
+          "type": "repository",
+          "file_path": "models/repo/attachment.go",
+          "input": "ctx, attachID",
+          "output": "*Attachment",
+          "operations": ["SELECT attachment by primary key"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "attachment", "description": "Get attachment by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToAPIAttachment",
+          "type": "utility",
+          "file_path": "services/convert/attachment.go",
+          "input": "repo, attachment",
+          "output": "*api.Attachment",
+          "operations": ["Map model fields to API struct", "Generate download URL"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Attachment",
+          "to": "api.Attachment",
+          "component": "convert.ToAPIAttachment",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Size", "target_field": "size", "transformation": "direct_copy"},
+            {"source_field": "DownloadCount", "target_field": "download_count", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "created_at", "transformation": "computed"},
+            {"source_field": "UUID", "target_field": "uuid", "transformation": "direct_copy"},
+            {"source_field": "DownloadURL()", "target_field": "browser_download_url", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Release not found", "handler": "checkReleaseMatchRepo", "response_code": 404, "response": "notFound"},
+        {"condition": "Release repo mismatch", "handler": "checkReleaseMatchRepo", "response_code": 404, "response": "notFound"},
+        {"condition": "Draft release without write access", "handler": "checkReleaseMatchRepo", "response_code": 404, "response": "notFound"},
+        {"condition": "Attachment not found", "handler": "GetReleaseAttachment", "response_code": 404, "response": "notFound"},
+        {"condition": "Attachment not in release", "handler": "GetReleaseAttachment", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-353",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets",
+      "description": "Validates release, loads all attributes including attachments, returns attachment list",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListReleaseAttachments",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release_attachment.go",
+          "input": "APIContext with path params",
+          "output": "JSON array response",
+          "operations": ["Extract releaseID from path"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.GetReleaseByID",
+          "type": "repository",
+          "file_path": "models/repo/release.go",
+          "input": "ctx, releaseID",
+          "output": "*Release",
+          "operations": ["SELECT release by ID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Get release by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "release.LoadAttributes",
+          "type": "repository",
+          "file_path": "models/repo/release.go",
+          "input": "ctx",
+          "output": "error",
+          "operations": ["Load repo, publisher, and attachments for the release"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "attachment", "description": "Get all attachments for release"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToAPIRelease",
+          "type": "utility",
+          "file_path": "services/convert/release.go",
+          "input": "ctx, repo, release",
+          "output": "*api.Release (only .Attachments used)",
+          "operations": ["Convert release to API format", "Extract attachments array"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*repo_model.Attachment",
+          "to": "[]*api.Attachment",
+          "component": "convert.ToAPIRelease → Attachments",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Size", "target_field": "size", "transformation": "direct_copy"},
+            {"source_field": "DownloadCount", "target_field": "download_count", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "created_at", "transformation": "computed"},
+            {"source_field": "UUID", "target_field": "uuid", "transformation": "direct_copy"},
+            {"source_field": "DownloadURL()", "target_field": "browser_download_url", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Release not found", "handler": "ListReleaseAttachments", "response_code": 404, "response": "notFound"},
+        {"condition": "Release repo mismatch", "handler": "ListReleaseAttachments", "response_code": 404, "response": "notFound"},
+        {"condition": "Draft without write access", "handler": "ListReleaseAttachments", "response_code": 404, "response": "notFound"},
+        {"condition": "LoadAttributes fails", "handler": "ListReleaseAttachments", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-354",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets",
+      "description": "Uploads a file to a release, validates file type and size, stores in object storage",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateReleaseAttachment",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release_attachment.go",
+          "input": "APIContext with file upload",
+          "output": "JSON response (201)",
+          "operations": ["Check attachment enabled", "Extract file from request", "Determine filename"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.checkReleaseMatchRepo",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/release_attachment.go",
+          "input": "ctx, releaseID",
+          "output": "bool",
+          "operations": ["Validate release exists and belongs to repo"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Get release by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "attachment_service.UploadAttachmentForRelease",
+          "type": "service",
+          "file_path": "services/attachment/attachment.go",
+          "input": "ctx, uploaderFile, attachment model",
+          "output": "*Attachment, error",
+          "operations": ["Read first 1024 bytes for type detection", "Verify file type against allowed types", "Check file size limit", "Save to storage", "Insert DB record"],
+          "calls_external": true,
+          "database_ops": [{"operation": "INSERT", "table": "attachment", "description": "Create attachment record"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "storage.Attachments.Save",
+          "type": "utility",
+          "file_path": "modules/storage/storage.go",
+          "input": "relativePath, reader, size",
+          "output": "size, error",
+          "operations": ["Write file to configured storage backend"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "multipart file / octet-stream",
+          "to": "repo_model.Attachment",
+          "component": "attachment_service.uploadAttachment",
+          "mappings": [
+            {"source_field": "filename/name param", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "ctx.Doer.ID", "target_field": "UploaderID", "transformation": "direct_copy"},
+            {"source_field": "ctx.Repo.Repository.ID", "target_field": "RepoID", "transformation": "direct_copy"},
+            {"source_field": "releaseID", "target_field": "ReleaseID", "transformation": "direct_copy"},
+            {"source_field": "uuid.New()", "target_field": "UUID", "transformation": "computed"},
+            {"source_field": "file size", "target_field": "Size", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Attachments disabled", "handler": "CreateReleaseAttachment", "response_code": 404, "response": "notFound"},
+        {"condition": "Release not found", "handler": "checkReleaseMatchRepo", "response_code": 404, "response": "notFound"},
+        {"condition": "Empty filename", "handler": "CreateReleaseAttachment", "response_code": 400, "response": "error"},
+        {"condition": "Forbidden file type", "handler": "CreateReleaseAttachment", "response_code": 400, "response": "error"},
+        {"condition": "File too large", "handler": "CreateReleaseAttachment", "response_code": 413, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-355",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "description": "Updates the name of a release attachment, validates new name against allowed types",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.EditReleaseAttachment",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release_attachment.go",
+          "input": "APIContext with EditAttachmentOptions body",
+          "output": "JSON response (201)",
+          "operations": ["Parse form body", "Validate release", "Get attachment", "Update name"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.checkReleaseMatchRepo",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/release_attachment.go",
+          "input": "ctx, releaseID",
+          "output": "bool",
+          "operations": ["Validate release exists and belongs to repo"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Get release by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_model.GetAttachmentByID",
+          "type": "repository",
+          "file_path": "models/repo/attachment.go",
+          "input": "ctx, attachID",
+          "output": "*Attachment",
+          "operations": ["SELECT attachment by ID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "attachment", "description": "Get attachment by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "attachment_service.UpdateAttachment",
+          "type": "service",
+          "file_path": "services/attachment/attachment.go",
+          "input": "ctx, allowedTypes, attachment",
+          "output": "error",
+          "operations": ["Verify new name against allowed types", "Update attachment in DB"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "attachment", "description": "Update attachment name"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.EditAttachmentOptions",
+          "to": "repo_model.Attachment (updated)",
+          "component": "EditReleaseAttachment",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Release not found", "handler": "checkReleaseMatchRepo", "response_code": 404, "response": "notFound"},
+        {"condition": "Attachment not found", "handler": "EditReleaseAttachment", "response_code": 404, "response": "notFound"},
+        {"condition": "Attachment not in release", "handler": "EditReleaseAttachment", "response_code": 404, "response": "notFound"},
+        {"condition": "Forbidden file type for new name", "handler": "EditReleaseAttachment", "response_code": 422, "response": "validationError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-356",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "description": "Deletes a release attachment record and removes file from storage",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteReleaseAttachment",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release_attachment.go",
+          "input": "APIContext with path params",
+          "output": "204 No Content",
+          "operations": ["Validate release", "Get attachment", "Verify ownership", "Delete"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.checkReleaseMatchRepo",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/release_attachment.go",
+          "input": "ctx, releaseID",
+          "output": "bool",
+          "operations": ["Validate release exists and belongs to repo"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Get release by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_model.GetAttachmentByID",
+          "type": "repository",
+          "file_path": "models/repo/attachment.go",
+          "input": "ctx, attachID",
+          "output": "*Attachment",
+          "operations": ["SELECT attachment by ID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "attachment", "description": "Get attachment by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "repo_model.DeleteAttachment",
+          "type": "repository",
+          "file_path": "models/repo/attachment.go",
+          "input": "ctx, attachment, true",
+          "output": "error",
+          "operations": ["DELETE from DB", "Delete file from storage"],
+          "calls_external": true,
+          "database_ops": [{"operation": "DELETE", "table": "attachment", "description": "Delete attachment record"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Release not found", "handler": "checkReleaseMatchRepo", "response_code": 404, "response": "notFound"},
+        {"condition": "Attachment not found", "handler": "DeleteReleaseAttachment", "response_code": 404, "response": "notFound"},
+        {"condition": "Attachment not in release", "handler": "DeleteReleaseAttachment", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-357",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/labels",
+      "description": "Lists all labels for a repository with pagination and sort support",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListLabels",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/label.go",
+          "input": "APIContext",
+          "output": "JSON array response",
+          "operations": ["Get sort param", "Get list options"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetLabelsByRepoID",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "ctx, repoID, sortType, listOptions",
+          "output": "[]*Label",
+          "operations": ["SELECT labels WHERE repo_id=? with sort and pagination"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "label", "description": "Get labels by repo ID with sort and pagination"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issues_model.CountLabelsByRepoID",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "ctx, repoID",
+          "output": "int64",
+          "operations": ["COUNT labels WHERE repo_id=?"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "label", "description": "Count labels by repo ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToLabelList",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "labels, repo, nil",
+          "output": "[]*api.Label",
+          "operations": ["Convert each label to API format", "Generate URL"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "issues_model.Label",
+          "to": "api.Label",
+          "component": "convert.ToLabel",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Exclusive", "target_field": "exclusive", "transformation": "direct_copy"},
+            {"source_field": "IsArchived()", "target_field": "is_archived", "transformation": "computed"},
+            {"source_field": "Color", "target_field": "color", "transformation": "computed"},
+            {"source_field": "Description", "target_field": "description", "transformation": "direct_copy"},
+            {"source_field": "repo.APIURL()+/labels/ID", "target_field": "url", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error on list", "handler": "ListLabels", "response_code": 500, "response": "internal error"},
+        {"condition": "DB error on count", "handler": "ListLabels", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-358",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "description": "Gets a single label by ID or name from a repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetLabel",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/label.go",
+          "input": "APIContext with path param id",
+          "output": "JSON response",
+          "operations": ["Parse id param", "Determine if numeric or string", "Fetch label"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetLabelInRepoByID or GetLabelInRepoByName",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "ctx, repoID, labelID/labelName",
+          "output": "*Label",
+          "operations": ["SELECT label WHERE repo_id=? AND (id=? OR name=?)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "label", "description": "Get label by ID or name in repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToLabel",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "label, repo, nil",
+          "output": "*api.Label",
+          "operations": ["Convert label to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "issues_model.Label",
+          "to": "api.Label",
+          "component": "convert.ToLabel",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Exclusive", "target_field": "exclusive", "transformation": "direct_copy"},
+            {"source_field": "IsArchived()", "target_field": "is_archived", "transformation": "computed"},
+            {"source_field": "Color", "target_field": "color", "transformation": "computed"},
+            {"source_field": "Description", "target_field": "description", "transformation": "direct_copy"},
+            {"source_field": "repo.APIURL()+/labels/ID", "target_field": "url", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Label not found in repo", "handler": "GetLabel", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "GetLabel", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

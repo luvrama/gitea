@@ -1,0 +1,30 @@
+{
+  "total_patterns": 7,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic error", "status_code": 500, "response_type": "error JSON", "message_template": "internal server error"},
+      {"exception_type": "util.ErrNotExist", "status_code": 404, "response_type": "notFound JSON", "message_template": null}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-285", "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}", "error_scenarios": [
+      {"exception": "util.ErrNotExist", "trigger": "Run not found in repo", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "generic DB error", "trigger": "Database failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-287", "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun", "error_scenarios": [
+      {"exception": "util.ErrInvalidArgument", "trigger": "Run not done, workflow disabled, max attempts", "status_code": 400, "response": "error", "logged": false, "retryable": false},
+      {"exception": "util.ErrAlreadyExist", "trigger": "Concurrent rerun attempt", "status_code": 409, "response": "conflict", "logged": false, "retryable": true},
+      {"exception": "util.ErrNotExist", "trigger": "Run or template not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-290", "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs", "error_scenarios": [
+      {"exception": "invalid status", "trigger": "Invalid status query param", "status_code": 400, "response": "error", "logged": false, "retryable": false},
+      {"exception": "util.ErrNotExist", "trigger": "Run not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-292", "path": "/api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}", "error_scenarios": [
+      {"exception": "not found or wrong repo", "trigger": "Job doesn't exist or belongs to different repo", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "handleWorkflowRerunError", "file_path": "routers/api/v1/repo/action.go", "extends": "error handler function", "used_in": ["RerunWorkflowRun", "RerunFailedWorkflowRun", "RerunWorkflowJob"], "http_status": 0}
+  ]
+}

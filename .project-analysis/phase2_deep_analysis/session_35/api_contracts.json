@@ -1,0 +1,229 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-234",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/mirror-sync",
+      "controller_class": "repo",
+      "controller_method": "MirrorSync",
+      "description": "Adds a mirrored (pull) repository to the sync queue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token-based auth required"}],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 200, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User lacks write access to code unit"},
+          {"status_code": 400, "type": "error", "condition": "Mirror feature disabled or repo is not a mirror"},
+          {"status_code": 404, "type": "notFound", "condition": "Repo not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-235",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors-sync",
+      "controller_class": "repo",
+      "controller_method": "PushMirrorSync",
+      "description": "Syncs all push mirrors of a repository by triggering each one",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token-based auth, admin required"}],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 200, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Mirror feature disabled"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not repo admin"},
+          {"status_code": 404, "type": "notFound", "condition": "Repo not found or push mirrors not found"},
+          {"status_code": 500, "type": "error", "condition": "Error syncing a push mirror"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-236",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors",
+      "controller_class": "repo",
+      "controller_method": "ListPushMirrors",
+      "description": "Lists all push mirrors of a repository with pagination",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["clamped to API.MaxResponseItems"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token-based auth, admin required"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]PushMirror",
+          "fields": [
+            {"name": "repo_name", "type": "string", "description": "Source repository name"},
+            {"name": "remote_name", "type": "string", "description": "Git remote name"},
+            {"name": "remote_address", "type": "string", "description": "Remote URL being mirrored to"},
+            {"name": "created", "type": "datetime", "description": "Creation timestamp"},
+            {"name": "last_update", "type": "datetime", "description": "Last sync timestamp"},
+            {"name": "last_error", "type": "string", "description": "Last error message"},
+            {"name": "interval", "type": "string", "description": "Sync interval duration string"},
+            {"name": "sync_on_commit", "type": "boolean", "description": "Whether to sync on every commit"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Mirror feature disabled"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not repo admin"},
+          {"status_code": 404, "type": "notFound", "condition": "Repo not found or error fetching mirrors"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-237",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors/{name}",
+      "controller_class": "repo",
+      "controller_method": "GetPushMirrorByName",
+      "description": "Gets a specific push mirror by its remote name",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "name", "type": "string", "required": true, "validation": ["non-empty"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token-based auth, admin required"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "PushMirror",
+          "fields": [
+            {"name": "repo_name", "type": "string", "description": "Source repository name"},
+            {"name": "remote_name", "type": "string", "description": "Git remote name"},
+            {"name": "remote_address", "type": "string", "description": "Remote URL being mirrored to"},
+            {"name": "created", "type": "datetime", "description": "Creation timestamp"},
+            {"name": "last_update", "type": "datetime", "description": "Last sync timestamp"},
+            {"name": "last_error", "type": "string", "description": "Last error message"},
+            {"name": "interval", "type": "string", "description": "Sync interval duration string"},
+            {"name": "sync_on_commit", "type": "boolean", "description": "Whether to sync on every commit"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Mirror feature disabled"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not repo admin"},
+          {"status_code": 404, "type": "notFound", "condition": "Push mirror not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-238",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors",
+      "controller_class": "repo",
+      "controller_method": "AddPushMirror",
+      "description": "Creates a new push mirror for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token-based auth, admin required"}],
+        "body": {
+          "type": "CreatePushMirrorOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "remote_address", "type": "string", "required": true, "validation": ["valid URL, allowed by migration URL rules"], "description": "Remote repository URL to push to"},
+            {"name": "remote_username", "type": "string", "required": false, "validation": [], "description": "Username for remote auth"},
+            {"name": "remote_password", "type": "string", "required": false, "validation": [], "description": "Password for remote auth"},
+            {"name": "interval", "type": "string", "required": false, "validation": ["valid Go duration, >= Mirror.MinInterval or 0"], "description": "Sync interval (e.g. '8h0m0s')"},
+            {"name": "sync_on_commit", "type": "boolean", "required": false, "validation": [], "description": "Whether to sync on every commit"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "PushMirror",
+          "fields": [
+            {"name": "repo_name", "type": "string", "description": "Source repository name"},
+            {"name": "remote_name", "type": "string", "description": "Git remote name"},
+            {"name": "remote_address", "type": "string", "description": "Remote URL being mirrored to"},
+            {"name": "created", "type": "datetime", "description": "Creation timestamp"},
+            {"name": "last_update", "type": "datetime", "description": "Last sync timestamp"},
+            {"name": "last_error", "type": "string", "description": "Last error message"},
+            {"name": "interval", "type": "string", "description": "Sync interval duration string"},
+            {"name": "sync_on_commit", "type": "boolean", "description": "Whether to sync on every commit"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Mirror feature disabled, invalid interval, or invalid remote address"},
+          {"status_code": 401, "type": "error", "condition": "Permission denied for remote address"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not repo admin"},
+          {"status_code": 404, "type": "notFound", "condition": "Repo not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-239",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors/{name}",
+      "controller_class": "repo",
+      "controller_method": "DeletePushMirrorByRemoteName",
+      "description": "Deletes a push mirror from a repository by its remote name",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "name", "type": "string", "required": true, "validation": ["non-empty"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token-based auth, admin required"}],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 204, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Mirror feature disabled"},
+          {"status_code": 403, "type": "forbidden", "condition": "User is not repo admin"},
+          {"status_code": 404, "type": "notFound", "condition": "Push mirror not found or error deleting"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

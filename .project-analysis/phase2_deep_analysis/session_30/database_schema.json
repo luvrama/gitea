@@ -1,0 +1,172 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "package",
+      "entity_class": "packages_model.Package",
+      "file_path": "models/packages/package.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "type", "type": "VARCHAR", "code_type": "Type (string)", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "semver_compatible", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL"]},
+        {"name": "is_internal", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL"]}
+      ],
+      "indexes": [
+        {"name": "UQE_package_s", "columns": ["owner_id", "type", "lower_name"], "unique": true},
+        {"name": "IDX_package_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "IDX_package_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "IDX_package_type", "columns": ["type"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "one-to-many", "target_table": "package_version", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "package_version",
+      "entity_class": "packages_model.PackageVersion",
+      "file_path": "models/packages/package_version.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "package_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "creator_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL"]},
+        {"name": "version", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "lower_version", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "is_internal", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "false", "constraints": ["NOT NULL"]},
+        {"name": "metadata_json", "type": "LONGTEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "download_count", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL"]}
+      ],
+      "indexes": [
+        {"name": "UQE_package_version_s", "columns": ["package_id", "lower_version"], "unique": true},
+        {"name": "IDX_package_version_package_id", "columns": ["package_id"], "unique": false},
+        {"name": "IDX_package_version_created_unix", "columns": ["created_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "package", "join_column": "package_id"},
+        {"type": "one-to-many", "target_table": "package_file", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "package_file",
+      "entity_class": "packages_model.PackageFile",
+      "file_path": "models/packages/package_file.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "version_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "blob_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "composite_key", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "is_lead", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]}
+      ],
+      "indexes": [
+        {"name": "UQE_package_file_s", "columns": ["version_id", "lower_name", "composite_key"], "unique": true},
+        {"name": "IDX_package_file_version_id", "columns": ["version_id"], "unique": false},
+        {"name": "IDX_package_file_blob_id", "columns": ["blob_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "package_version", "join_column": "version_id"},
+        {"type": "many-to-one", "target_table": "package_blob", "join_column": "blob_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "package_blob",
+      "entity_class": "packages_model.PackageBlob",
+      "file_path": "models/packages/package_blob.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "size", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL"]},
+        {"name": "hash_md5", "type": "CHAR(32)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE(md5)", "NOT NULL"]},
+        {"name": "hash_sha1", "type": "CHAR(40)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE(sha1)", "NOT NULL"]},
+        {"name": "hash_sha256", "type": "CHAR(64)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE(sha256)", "NOT NULL"]},
+        {"name": "hash_sha512", "type": "CHAR(128)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE(sha512)", "NOT NULL"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]}
+      ],
+      "indexes": [
+        {"name": "UQE_package_blob_md5", "columns": ["hash_md5"], "unique": true},
+        {"name": "UQE_package_blob_sha1", "columns": ["hash_sha1"], "unique": true},
+        {"name": "UQE_package_blob_sha256", "columns": ["hash_sha256"], "unique": true},
+        {"name": "UQE_package_blob_sha512", "columns": ["hash_sha512"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "one-to-many", "target_table": "package_file", "join_column": "id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-202",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "operations": [
+        {"store_type": "database", "store_name": "package_version", "operation": "SELECT", "method": "PackageAssignmentAPI", "description": "Get version by name/version"},
+        {"store_type": "database", "store_name": "package_property", "operation": "DELETE", "method": "DeletePackageVersionAndReferences", "description": "Delete version properties"},
+        {"store_type": "database", "store_name": "package_property", "operation": "DELETE", "method": "DeletePackageVersionAndReferences", "description": "Delete file properties"},
+        {"store_type": "database", "store_name": "package_file", "operation": "DELETE", "method": "DeletePackageVersionAndReferences", "description": "Delete files"},
+        {"store_type": "database", "store_name": "package_version", "operation": "DELETE", "method": "DeletePackageVersionAndReferences", "description": "Delete version"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-203",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}/files",
+      "operations": [
+        {"store_type": "database", "store_name": "package_version", "operation": "SELECT", "method": "PackageAssignmentAPI", "description": "Get version"},
+        {"store_type": "database", "store_name": "package_file", "operation": "SELECT", "method": "GetPackageDescriptor", "description": "Get files for version"},
+        {"store_type": "database", "store_name": "package_blob", "operation": "SELECT", "method": "GetPackageDescriptor", "description": "Get blob for each file"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-204",
+      "path": "/api/v1/packages/{owner}/{type}/{name}",
+      "operations": [
+        {"store_type": "database", "store_name": "package", "operation": "SELECT", "method": "PackageAssignmentAPI", "description": "Get package by name"},
+        {"store_type": "database", "store_name": "package_version", "operation": "SELECT", "method": "SearchVersions", "description": "Search versions with pagination"},
+        {"store_type": "database", "store_name": "package", "operation": "SELECT", "method": "GetPackageDescriptors", "description": "Get package for each version"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-205",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/latest",
+      "operations": [
+        {"store_type": "database", "store_name": "package", "operation": "SELECT", "method": "PackageAssignmentAPI", "description": "Get package by name"},
+        {"store_type": "database", "store_name": "package_version", "operation": "SELECT", "method": "SearchLatestVersions", "description": "Get latest version via MAX(id)"},
+        {"store_type": "database", "store_name": "package", "operation": "SELECT", "method": "GetPackageDescriptor", "description": "Build descriptor"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-206",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/link/{repo_name}",
+      "operations": [
+        {"store_type": "database", "store_name": "package", "operation": "SELECT", "method": "GetPackageByName", "description": "Get package"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "GetRepositoryByName", "description": "Get repository"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "GetDoerRepoPermission", "description": "Check permissions"},
+        {"store_type": "database", "store_name": "package", "operation": "UPDATE", "method": "SetRepositoryLink", "description": "Set repo_id on package"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-207",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/unlink",
+      "operations": [
+        {"store_type": "database", "store_name": "package", "operation": "SELECT", "method": "GetPackageByName", "description": "Get package"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "GetRepositoryByID", "description": "Get linked repository"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "GetDoerRepoPermission", "description": "Check permissions"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByID", "description": "Get owner for org check"},
+        {"store_type": "database", "store_name": "package", "operation": "UPDATE", "method": "UnlinkRepository", "description": "Set repo_id=0"}
+      ]
+    }
+  ]
+}

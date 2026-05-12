@@ -1,0 +1,121 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-240",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "4 DB queries: release, repository, user, attachments"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-241",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/latest",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "4 DB queries: release, repository, user, attachments"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-242",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases",
+      "resource_load": {
+        "operations_per_request": "2 + 3*N (N = page size, up to 50)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 find + 1 count + N*(repo + user + attachments) per release. Repo load is cached after first but user and attachments are N+1"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "LoadAttributes is called in a loop for each release, causing separate queries for publisher and attachments per release",
+          "impact": "With default page size 30: up to 60 extra queries (30 user + 30 attachment queries). With max 50: up to 100 extra queries.",
+          "file_path": "routers/api/v1/repo/release.go",
+          "line_number": 152,
+          "code_snippet": "for i, release := range releases {\n\tif err := release.LoadAttributes(ctx); err != nil {",
+          "recommendation": "Batch load publishers and use GetReleaseAttachments with all releases at once (the function already supports batch)"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Use batch GetReleaseAttachments for all releases at once instead of per-release LoadAttributes",
+          "estimated_impact": "Reduce N attachment queries to 1 batch query",
+          "implementation": "Call GetReleaseAttachments(ctx, releases...) once after the Find, then batch-load publishers"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-243",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/releases",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Multiple DB queries + git tag creation (git CLI call)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-244",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Get release, get old release, update, reload, load attributes (repo+user+attachments)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-245",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "storage"],
+        "note": "Get release, update to tag, load attributes, delete attachments from DB and storage"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "Attachment file deletion from storage happens synchronously in the request path",
+          "impact": "If many attachments exist, storage deletion could slow the response",
+          "file_path": "services/release/release.go",
+          "line_number": 262,
+          "code_snippet": "for i := range rel.Attachments {\n\tattachment := rel.Attachments[i]\n\tif err := storage.Attachments.Delete(attachment.RelativePath()); err != nil {",
+          "recommendation": "Consider async deletion of attachment files via a background queue"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "async",
+          "description": "Move attachment file deletion to a background job",
+          "estimated_impact": "Faster DELETE response when releases have many attachments",
+          "implementation": "Queue attachment UUIDs for async deletion after DB records are removed"
+        }
+      ]
+    }
+  ]
+}

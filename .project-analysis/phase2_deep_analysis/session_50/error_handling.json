@@ -1,0 +1,37 @@
+{
+  "total_patterns": 8,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic error", "status_code": 500, "response_type": "APIError", "message_template": "internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "APIError", "message_template": "not found"},
+      {"exception_type": "validation", "status_code": 422, "response_type": "APIError", "message_template": "validation error"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-336", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels", "error_scenarios": [
+      {"exception": "ErrIssueNotExist", "trigger": "Invalid issue index", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "permission denied", "trigger": "No write access", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false},
+      {"exception": "invalid label type", "trigger": "Non-int/string in labels array", "status_code": 400, "response": "APIError", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-337", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels/{id}", "error_scenarios": [
+      {"exception": "ErrIssueNotExist", "trigger": "Invalid issue index", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "ErrLabelNotExist", "trigger": "Invalid label ID", "status_code": 422, "response": "validationError", "logged": false, "retryable": false},
+      {"exception": "permission denied", "trigger": "No write access", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-342", "path": "/api/v1/repos/{owner}/{repo}/keys", "error_scenarios": [
+      {"exception": "ErrSSHDisabled", "trigger": "SSH is disabled in config", "status_code": 422, "response": "SSH is disabled", "logged": false, "retryable": false},
+      {"exception": "ErrKeyUnableVerify", "trigger": "Cannot verify key content", "status_code": 422, "response": "Unable to verify key content", "logged": false, "retryable": false},
+      {"exception": "ErrDeployKeyAlreadyExist", "trigger": "Same key already added to repo", "status_code": 422, "response": "This key has already been added", "logged": false, "retryable": false},
+      {"exception": "ErrDeployKeyNameAlreadyUsed", "trigger": "Key name already used in repo", "status_code": 422, "response": "A key with the same name already exists", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-343", "path": "/api/v1/repos/{owner}/{repo}/keys/{id}", "error_scenarios": [
+      {"exception": "ErrKeyAccessDenied", "trigger": "Key belongs to different repo", "status_code": 403, "response": "You do not have access to this key", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrDeployKeyAlreadyExist", "file_path": "models/asymkey/error.go", "extends": "error", "used_in": ["checkDeployKey"], "http_status": 422},
+    {"class": "ErrDeployKeyNameAlreadyUsed", "file_path": "models/asymkey/error.go", "extends": "error", "used_in": ["checkDeployKey"], "http_status": 422},
+    {"class": "ErrKeyAlreadyExist", "file_path": "models/asymkey/error.go", "extends": "error", "used_in": ["AddDeployKey"], "http_status": 422},
+    {"class": "ErrKeyAccessDenied", "file_path": "models/asymkey/error.go", "extends": "error", "used_in": ["DeleteDeployKey"], "http_status": 403}
+  ]
+}

@@ -1,0 +1,410 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-156",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "description": "Unstar a repository for the authenticated user by deleting the star record and decrementing counters",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.Unstar",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/star.go",
+          "input": "APIContext with Doer and Repo.Repository",
+          "output": "204 No Content or error",
+          "operations": ["Call repo_model.StarRepo with star=false"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.StarRepo",
+          "type": "repository",
+          "file_path": "models/repo/star.go",
+          "input": "doer *User, repo *Repository, star=false",
+          "output": "error",
+          "operations": ["Begin transaction", "Check if user is starring repo", "If not starring, return nil", "Delete Star record", "Decrement repository.num_stars", "Decrement user.num_stars", "Commit transaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "star", "description": "Check if star record exists"},
+            {"operation": "DELETE", "table": "star", "description": "Delete star record by UID and RepoID"},
+            {"operation": "UPDATE", "table": "repository", "description": "Decrement num_stars by 1"},
+            {"operation": "UPDATE", "table": "user", "description": "Decrement num_stars by 1"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Database error during unstar", "handler": "user.Unstar", "response_code": 500, "response": "Internal server error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-157",
+      "http_method": "GET",
+      "path": "/api/v1/user/keys",
+      "description": "List the authenticated user's public SSH keys with optional fingerprint filter and pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListMyPublicKeys",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "APIContext with Doer",
+          "output": "JSON array of PublicKey",
+          "operations": ["Delegate to listPublicKeys with ctx.Doer"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.listPublicKeys",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "APIContext, user *User",
+          "output": "JSON array of PublicKey",
+          "operations": ["Read fingerprint query param", "Build FindPublicKeyOptions", "Call db.FindAndCount", "Convert each key to api.PublicKey", "Append private info if admin or owner", "Set pagination headers"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "public_key", "description": "Find keys by owner_id with optional fingerprint filter, paginated"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user.appendPrivateInformation",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "apiKey *api.PublicKey, key *PublicKey, defaultUser *User",
+          "output": "apiKey with KeyType, Owner, ReadOnly populated",
+          "operations": ["Determine key type (deploy/user/unknown)", "If user key and owner differs from default, fetch owner from DB", "Set ReadOnly based on key.Mode"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Fetch key owner if different from default user (conditional)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "asymkey_model.PublicKey",
+          "to": "api.PublicKey",
+          "component": "convert.ToPublicKey",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Content", "target_field": "Key", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Title", "transformation": "direct_copy"},
+            {"source_field": "Fingerprint", "target_field": "Fingerprint", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "Created", "transformation": "computed"},
+            {"source_field": "UpdatedUnix", "target_field": "Updated", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Database error during find", "handler": "user.listPublicKeys", "response_code": 500, "response": "Internal server error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-158",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/keys",
+      "description": "List the given user's public SSH keys with optional fingerprint filter and pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListPublicKeys",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "APIContext with ContextUser",
+          "output": "JSON array of PublicKey",
+          "operations": ["Delegate to listPublicKeys with ctx.ContextUser"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.listPublicKeys",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "APIContext, user *User",
+          "output": "JSON array of PublicKey",
+          "operations": ["Read fingerprint query param", "If fingerprint provided and username in path, restrict to user.ID", "If fingerprint provided without username, unrestricted search", "Call db.FindAndCount", "Convert each key to api.PublicKey", "Append private info if admin or owner"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "public_key", "description": "Find keys by owner_id with optional fingerprint filter, paginated"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user.appendPrivateInformation",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "apiKey *api.PublicKey, key *PublicKey, defaultUser *User",
+          "output": "apiKey with KeyType, Owner, ReadOnly populated",
+          "operations": ["Determine key type", "Fetch owner if needed", "Set ReadOnly"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Fetch key owner if different from context user (conditional)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "asymkey_model.PublicKey",
+          "to": "api.PublicKey",
+          "component": "convert.ToPublicKey",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Content", "target_field": "Key", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Title", "transformation": "direct_copy"},
+            {"source_field": "Fingerprint", "target_field": "Fingerprint", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "Created", "transformation": "computed"},
+            {"source_field": "UpdatedUnix", "target_field": "Updated", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Database error during find", "handler": "user.listPublicKeys", "response_code": 500, "response": "Internal server error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-159",
+      "http_method": "GET",
+      "path": "/api/v1/user/keys/{id}",
+      "description": "Get a single public key by its ID",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetPublicKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "APIContext with path param id",
+          "output": "JSON PublicKey or error",
+          "operations": ["Parse id from path", "Call GetPublicKeyByID", "Convert to api.PublicKey", "Append private info if admin or owner"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "public_key", "description": "Get key by primary key ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.appendPrivateInformation",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "apiKey, key, ctx.Doer",
+          "output": "apiKey with private fields",
+          "operations": ["Set key type", "Set owner", "Set read_only"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Fetch key owner if different from doer (conditional)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "asymkey_model.PublicKey",
+          "to": "api.PublicKey",
+          "component": "convert.ToPublicKey",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Content", "target_field": "Key", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Title", "transformation": "direct_copy"},
+            {"source_field": "Fingerprint", "target_field": "Fingerprint", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "Created", "transformation": "computed"},
+            {"source_field": "UpdatedUnix", "target_field": "Updated", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Key not found", "handler": "user.GetPublicKey", "response_code": 404, "response": "notFound"},
+        {"condition": "Database error", "handler": "user.GetPublicKey", "response_code": 500, "response": "Internal server error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-160",
+      "http_method": "POST",
+      "path": "/api/v1/user/keys",
+      "description": "Create a new public SSH key for the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.CreatePublicKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "APIContext with CreateKeyOption body",
+          "output": "201 with PublicKey JSON",
+          "operations": ["Parse form body", "Delegate to CreateUserPublicKey"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.CreateUserPublicKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "APIContext, CreateKeyOption, uid int64",
+          "output": "201 with PublicKey JSON or error",
+          "operations": ["Check if SSH key management is disabled for user", "Validate key string via CheckPublicKeyString", "Call AddPublicKey"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "asymkey_model.CheckPublicKeyString",
+          "type": "utility",
+          "file_path": "models/asymkey/ssh_key_parse.go",
+          "input": "key content string",
+          "output": "cleaned key content or error",
+          "operations": ["Parse key string", "Trim whitespace", "Validate single line", "If MinimumKeySizeCheck enabled, parse key type and length", "Validate against minimum key sizes"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "asymkey_model.AddPublicKey",
+          "type": "repository",
+          "file_path": "models/asymkey/ssh_key.go",
+          "input": "ownerID, name, content, authSourceID=0, verified=false",
+          "output": "*PublicKey or error",
+          "operations": ["Calculate fingerprint", "Begin transaction", "Check fingerprint uniqueness", "Check name uniqueness for owner", "Insert key record", "Append to authorized_keys file", "Commit transaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "public_key", "description": "Check fingerprint uniqueness"},
+            {"operation": "SELECT", "table": "public_key", "description": "Check name uniqueness for owner"},
+            {"operation": "INSERT", "table": "public_key", "description": "Insert new public key record"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.CreateKeyOption",
+          "to": "asymkey_model.PublicKey",
+          "component": "asymkey_model.AddPublicKey",
+          "mappings": [
+            {"source_field": "Title", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Key", "target_field": "Content", "transformation": "computed"}
+          ]
+        },
+        {
+          "from": "asymkey_model.PublicKey",
+          "to": "api.PublicKey",
+          "component": "convert.ToPublicKey",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Content", "target_field": "Key", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Title", "transformation": "direct_copy"},
+            {"source_field": "Fingerprint", "target_field": "Fingerprint", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "SSH key management disabled", "handler": "user.CreateUserPublicKey", "response_code": 404, "response": "Not Found"},
+        {"condition": "Invalid key content", "handler": "repo.HandleCheckKeyStringError", "response_code": 422, "response": "Unprocessable Entity"},
+        {"condition": "Key already exists (fingerprint)", "handler": "repo.HandleAddKeyError", "response_code": 422, "response": "Key content has been used"},
+        {"condition": "Key name already used", "handler": "repo.HandleAddKeyError", "response_code": 422, "response": "Key title has been used"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-161",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/keys/{id}",
+      "description": "Delete a public SSH key for the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.DeletePublicKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "APIContext with path param id",
+          "output": "204 No Content or error",
+          "operations": ["Check if SSH key management is disabled", "Parse id from path", "Check if key is externally managed", "Call asymkey_service.DeletePublicKey"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "asymkey_model.PublicKeyIsExternallyManaged",
+          "type": "repository",
+          "file_path": "models/asymkey/ssh_key.go",
+          "input": "key ID int64",
+          "output": "bool, error",
+          "operations": ["Get key by ID", "If LoginSourceID is 0, return false", "Get auth source by ID", "Check if source provides SSH keys"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "public_key", "description": "Get key by ID"},
+            {"operation": "SELECT", "table": "login_source", "description": "Get auth source to check if it provides SSH keys"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "asymkey_service.DeletePublicKey",
+          "type": "service",
+          "file_path": "services/asymkey/ssh_key.go",
+          "input": "doer *User, id int64",
+          "output": "error",
+          "operations": ["Get key by ID", "Check access (admin or owner)", "Delete key from DB", "Rewrite authorized_keys file"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "public_key", "description": "Get key by ID for access check"},
+            {"operation": "DELETE", "table": "public_key", "description": "Delete key record by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "asymkey_service.RewriteAllPublicKeys",
+          "type": "service",
+          "file_path": "services/asymkey/ssh_key_authorized_keys.go",
+          "input": "context",
+          "output": "error",
+          "operations": ["If builtin SSH server or no authorized_keys file, skip", "Acquire SSH op lock", "Rewrite entire authorized_keys file from DB"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "public_key", "description": "Read all keys to rewrite authorized_keys file"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "SSH key management disabled", "handler": "user.DeletePublicKey", "response_code": 404, "response": "Not Found"},
+        {"condition": "Key not found", "handler": "user.DeletePublicKey", "response_code": 404, "response": "notFound"},
+        {"condition": "Key is externally managed", "handler": "user.DeletePublicKey", "response_code": 403, "response": "SSH Key is externally managed"},
+        {"condition": "Access denied (not owner/admin)", "handler": "user.DeletePublicKey", "response_code": 403, "response": "You do not have access to this key"}
+      ]
+    }
+  ]
+}

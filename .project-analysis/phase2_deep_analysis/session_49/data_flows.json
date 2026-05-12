@@ -1,0 +1,457 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-330",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "description": "Check if a team is assigned to a repository by looking up team by name and checking team_repo relation",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.IsTeam",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/teams.go",
+          "input": "APIContext with repo and team path param",
+          "output": "api.Team or error",
+          "operations": ["check repo owner is organization", "call getTeamByParam"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.getTeamByParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/teams.go",
+          "input": "APIContext",
+          "output": "*organization.Team",
+          "operations": ["lookup team by org ID and team name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team", "description": "find team by org_id and lower_name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_service.HasRepository",
+          "type": "service",
+          "file_path": "services/repository/repo_team.go",
+          "input": "team, repoID",
+          "output": "bool",
+          "operations": ["check if team_repo relation exists"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_repo", "description": "check existence by org_id, team_id, repo_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToTeam",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*organization.Team",
+          "output": "*api.Team",
+          "operations": ["load team units", "convert to API format"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_unit", "description": "load team units"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "organization.Team",
+          "to": "api.Team",
+          "component": "convert.ToTeam",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "AccessMode", "target_field": "permission", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "repo not owned by org", "handler": "repo.IsTeam", "response_code": 405, "response": "error"},
+        {"condition": "team not found", "handler": "repo.getTeamByParam", "response_code": 404, "response": "notFound"},
+        {"condition": "team not assigned to repo", "handler": "repo.IsTeam", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-331",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "description": "Add a team to a repository with access recalculation and auto-watch",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.AddTeam",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/teams.go",
+          "input": "APIContext",
+          "output": "204 or error",
+          "operations": ["delegate to changeRepoTeam(ctx, true)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.changeRepoTeam",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/teams.go",
+          "input": "APIContext, add=true",
+          "output": "204 or error",
+          "operations": ["check org ownership", "check admin/owner permission", "get team", "check if already has repo", "call TeamAddRepository"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_service.TeamAddRepository",
+          "type": "service",
+          "file_path": "services/repository/repo_team.go",
+          "input": "team, repo",
+          "output": "error",
+          "operations": ["validate repo belongs to org", "check if already has team", "within transaction: insert team_repo, increment num_repos, recalculate access, auto-watch"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "team_repo", "description": "check if team already has repo"},
+            {"operation": "INSERT", "table": "team_repo", "description": "add team-repo relation"},
+            {"operation": "UPDATE", "table": "team", "description": "increment num_repos"},
+            {"operation": "DELETE/INSERT", "table": "access", "description": "recalculate team accesses"},
+            {"operation": "SELECT", "table": "team_user", "description": "load team members for auto-watch"},
+            {"operation": "INSERT", "table": "watch", "description": "auto-watch for team members"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "repo not owned by org", "handler": "changeRepoTeam", "response_code": 405, "response": "error"},
+        {"condition": "user not admin/owner", "handler": "changeRepoTeam", "response_code": 403, "response": "forbidden"},
+        {"condition": "team not found", "handler": "getTeamByParam", "response_code": 404, "response": "notFound"},
+        {"condition": "team already added", "handler": "changeRepoTeam", "response_code": 422, "response": "validationError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-332",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "description": "Remove a team from a repository with access recalculation and watch cleanup",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteTeam",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/teams.go",
+          "input": "APIContext",
+          "output": "204 or error",
+          "operations": ["delegate to changeRepoTeam(ctx, false)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.changeRepoTeam",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/teams.go",
+          "input": "APIContext, add=false",
+          "output": "204 or error",
+          "operations": ["check org ownership", "check admin/owner permission", "get team", "check if has repo", "call RemoveRepositoryFromTeam"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_service.RemoveRepositoryFromTeam",
+          "type": "service",
+          "file_path": "services/repository/repo_team.go",
+          "input": "team, repoID",
+          "output": "error",
+          "operations": ["check HasRepository", "skip if IncludesAllRepositories", "get repo by ID", "within transaction: remove team_repo, decrement num_repos, recalculate access, remove watches for members who lost access"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "team_repo", "description": "check team has repo"},
+            {"operation": "SELECT", "table": "repository", "description": "get repo by ID"},
+            {"operation": "DELETE", "table": "team_repo", "description": "remove team-repo relation"},
+            {"operation": "UPDATE", "table": "team", "description": "decrement num_repos"},
+            {"operation": "DELETE/INSERT", "table": "access", "description": "recalculate team accesses"},
+            {"operation": "SELECT", "table": "team_user", "description": "get team members"},
+            {"operation": "DELETE", "table": "watch", "description": "remove watches for members who lost access"},
+            {"operation": "DELETE", "table": "issue_watch", "description": "remove issue watches for members who lost access"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "repo not owned by org", "handler": "changeRepoTeam", "response_code": 405, "response": "error"},
+        {"condition": "user not admin/owner", "handler": "changeRepoTeam", "response_code": 403, "response": "forbidden"},
+        {"condition": "team not found", "handler": "getTeamByParam", "response_code": 404, "response": "notFound"},
+        {"condition": "team not assigned to repo", "handler": "changeRepoTeam", "response_code": 422, "response": "validationError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-333",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/forks",
+      "description": "List all forks of a repository with pagination and access control",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListForks",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/fork.go",
+          "input": "APIContext with repo",
+          "output": "[]api.Repository",
+          "operations": ["call FindForks", "load owners", "load units", "get permissions per fork", "convert to API"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_service.FindForks",
+          "type": "service",
+          "file_path": "services/repository/fork.go",
+          "input": "repo, doer, listOptions",
+          "output": "[]*repo_model.Repository, int64, error",
+          "operations": ["query repositories where fork_id=repo.ID with access control condition"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repository", "description": "find repos with fork_id matching, filtered by access"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_model.RepositoryList.LoadOwners",
+          "type": "repository",
+          "file_path": "models/repo/repo_list.go",
+          "input": "[]Repository",
+          "output": "error",
+          "operations": ["batch load owners for all fork repos"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "load owners for repos"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "access_model.GetDoerRepoPermission",
+          "type": "repository",
+          "file_path": "models/perm/access/repo_permission.go",
+          "input": "fork, doer",
+          "output": "Permission",
+          "operations": ["calculate permission for each fork"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "get access level per fork"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToRepo",
+          "type": "utility",
+          "file_path": "services/convert/repository.go",
+          "input": "repo, permission",
+          "output": "*api.Repository",
+          "operations": ["convert each fork to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Repository",
+          "to": "api.Repository",
+          "component": "convert.ToRepo",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Owner", "target_field": "owner", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "FindForks fails", "handler": "ListForks", "response_code": 500, "response": "internal error"},
+        {"condition": "LoadOwners fails", "handler": "ListForks", "response_code": 500, "response": "internal error"},
+        {"condition": "GetDoerRepoPermission fails", "handler": "ListForks", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-334",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/forks",
+      "description": "Fork a repository - creates a git clone, DB records, hooks, syncs branches/tags",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateFork",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/fork.go",
+          "input": "APIContext with CreateForkOption body",
+          "output": "api.Repository (202)",
+          "operations": ["parse form", "determine fork owner (user or org)", "call ForkRepository", "convert result"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.prepareDoerCreateRepoInOrg",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/fork.go",
+          "input": "orgName",
+          "output": "*organization.Organization",
+          "operations": ["get org by name", "check visibility", "check CanCreateOrgRepo permission"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "get org by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_service.ForkRepository",
+          "type": "service",
+          "file_path": "services/repository/fork.go",
+          "input": "doer, owner, ForkRepoOptions",
+          "output": "*repo_model.Repository, error",
+          "operations": [
+            "check user block", "check repo limit", "check existing fork",
+            "create repo in DB (transaction)", "increment fork count", "copy LFS",
+            "git clone bare", "update git repo", "create hooks",
+            "sync branches", "sync releases/tags", "update repo size",
+            "copy language stats", "copy license", "set status ready", "notify"
+          ],
+          "calls_external": true,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user_blocking", "description": "check user block"},
+            {"operation": "SELECT", "table": "repository", "description": "check existing fork"},
+            {"operation": "INSERT", "table": "repository", "description": "create fork repo record"},
+            {"operation": "UPDATE", "table": "repository", "description": "increment fork num on base"},
+            {"operation": "INSERT", "table": "lfs_meta_object", "description": "copy LFS objects"},
+            {"operation": "INSERT", "table": "branch", "description": "sync branches"},
+            {"operation": "INSERT", "table": "release", "description": "sync releases/tags"},
+            {"operation": "UPDATE", "table": "repository", "description": "set status ready"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Repository",
+          "to": "api.Repository",
+          "component": "convert.ToRepo",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "IsFork", "target_field": "fork", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "org not found", "handler": "prepareDoerCreateRepoInOrg", "response_code": 404, "response": "notFound"},
+        {"condition": "no permission to create in org", "handler": "prepareDoerCreateRepoInOrg", "response_code": 403, "response": "forbidden"},
+        {"condition": "fork already exists or repo limit", "handler": "CreateFork", "response_code": 409, "response": "conflict"},
+        {"condition": "user blocked", "handler": "CreateFork", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-335",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "description": "Get all labels assigned to an issue",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListIssueLabels",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_label.go",
+          "input": "APIContext with index path param",
+          "output": "[]api.Label",
+          "operations": ["get issue by index", "load attributes (includes labels)", "convert to API"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetIssueByIndex",
+          "type": "repository",
+          "file_path": "models/issues/issue.go",
+          "input": "repoID, index",
+          "output": "*Issue",
+          "operations": ["query issue by repo_id and index"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue", "description": "get issue by repo_id and index"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issue.LoadAttributes",
+          "type": "repository",
+          "file_path": "models/issues/issue.go",
+          "input": "*Issue",
+          "output": "error",
+          "operations": ["load repo, poster, labels, milestone, assignees, pull request, attachments"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "label", "description": "load labels via issue_label join"},
+            {"operation": "SELECT", "table": "repository", "description": "load repo"},
+            {"operation": "SELECT", "table": "user", "description": "load poster"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToLabelList",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "[]*issues_model.Label, repo, owner",
+          "output": "[]*api.Label",
+          "operations": ["convert each label to API format with URL"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "issues_model.Label",
+          "to": "api.Label",
+          "component": "convert.ToLabel",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Color", "target_field": "color", "transformation": "computed"},
+            {"source_field": "Exclusive", "target_field": "exclusive", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "issue not found", "handler": "ListIssueLabels", "response_code": 404, "response": "notFound"},
+        {"condition": "LoadAttributes fails", "handler": "ListIssueLabels", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "total_rules": 8,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "business_logic",
+      "description": "CheckIssueWatch falls back to repo watch mode and participation if no explicit issue_watch record exists",
+      "location": {"class": "issues_model", "method": "CheckIssueWatch", "file_path": "models/issues/issue_watch.go", "line_number": 73},
+      "condition": "No explicit issue_watch record exists for user+issue",
+      "action": "Check repo watch mode and whether user is a participant of the issue",
+      "affected_endpoints": ["ep-220"],
+      "code_snippet": "return repo_model.IsWatchMode(w.Mode) || IsUserParticipantsOfIssue(ctx, user, issue), nil"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "GetIssueWatchers only returns active, non-banned users",
+      "location": {"class": "issues_model", "method": "GetIssueWatchers", "file_path": "models/issues/issue_watch.go", "line_number": 97},
+      "condition": "Always applied when listing watchers",
+      "action": "Filter by user.is_active=true AND user.prohibit_login=false",
+      "affected_endpoints": ["ep-221"],
+      "code_snippet": "And(\"`user`.is_active = ?\", true).And(\"`user`.prohibit_login = ?\", false)"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "ListPullRequests validates poster username exists before querying",
+      "location": {"class": "repo", "method": "ListPullRequests", "file_path": "routers/api/v1/repo/pull.go", "line_number": 125},
+      "condition": "poster query param is provided",
+      "action": "Resolve username to user ID; return 400 if user not found",
+      "affected_endpoints": ["ep-222"],
+      "code_snippet": "if user_model.IsErrUserNotExist(err) { ctx.APIError(http.StatusBadRequest, err) }"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "GetPullRequest triggers merge check on view if PR status is 'checking'",
+      "location": {"class": "pull_service", "method": "StartPullRequestCheckOnView", "file_path": "services/pull/check.go", "line_number": 107},
+      "condition": "pr.Status == PullRequestStatusChecking",
+      "action": "Add PR to check queue with global lock to prevent duplicates",
+      "affected_endpoints": ["ep-223", "ep-224"],
+      "code_snippet": "if pr.Status == issues_model.PullRequestStatusChecking { ... AddPullRequestToCheckQueue(pr.ID) }"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "GetPullRequestByBaseHead supports cross-repo head format with colon separator",
+      "location": {"class": "repo", "method": "GetPullRequestByBaseHead", "file_path": "routers/api/v1/repo/pull.go", "line_number": 253},
+      "condition": "head param contains ':'",
+      "action": "Parse as owner:branch or owner/repo:branch and resolve head repo",
+      "affected_endpoints": ["ep-224"],
+      "code_snippet": "if strings.Contains(head, \":\") { split := strings.SplitN(head, \":\", 2) }"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "DownloadPullDiffOrPatch uses MergeBase...HeadRef as compare argument",
+      "location": {"class": "pull_service", "method": "DownloadDiffOrPatch", "file_path": "services/pull/patch.go", "line_number": 40},
+      "condition": "Always",
+      "action": "Constructs git compare arg as pr.MergeBase + '...' + pr.GetGitHeadRefName()",
+      "affected_endpoints": ["ep-225"],
+      "code_snippet": "compareArg := pr.MergeBase + \"...\" + pr.GetGitHeadRefName()"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "GetPullRequestByIndex rejects index < 1",
+      "location": {"class": "issues_model", "method": "GetPullRequestByIndex", "file_path": "models/issues/pull.go", "line_number": 534},
+      "condition": "index < 1",
+      "action": "Return ErrPullRequestNotExist immediately",
+      "affected_endpoints": ["ep-223", "ep-225"],
+      "code_snippet": "if index < 1 { return nil, ErrPullRequestNotExist{} }"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "ListPullRequests default state filter is 'open' (only open PRs shown unless specified)",
+      "location": {"class": "issues_model", "method": "listPullRequestStatement", "file_path": "models/issues/pull_list.go", "line_number": 42},
+      "condition": "state param is 'closed' or 'open'",
+      "action": "Filter by issue.is_closed accordingly; 'all' shows both",
+      "affected_endpoints": ["ep-222"],
+      "code_snippet": "switch opts.State { case \"closed\", \"open\": sess.And(\"issue.is_closed=?\", opts.State == \"closed\") }"
+    }
+  ]
+}

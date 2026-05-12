@@ -1,0 +1,37 @@
+{
+  "total_properties": 4,
+  "properties": [
+    {
+      "key": "PasswordCheckPwn",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/security.go",
+      "used_by": [{"class": "password", "method": "IsPwned", "file_path": "modules/auth/password/pwn.go", "usage": "Gate for HaveIBeenPwned API check", "impact": "If true, passwords are checked against breach database; if false, check is skipped"}],
+      "affected_endpoints": ["ep-098"]
+    },
+    {
+      "key": "MinPasswordLength",
+      "type": "Integer",
+      "default_value": "6",
+      "source_file": "modules/setting/security.go",
+      "used_by": [{"class": "admin", "method": "CreateUser", "file_path": "routers/api/v1/admin/user.go", "usage": "Minimum password length validation", "impact": "Passwords shorter than this value are rejected"}],
+      "affected_endpoints": ["ep-098"]
+    },
+    {
+      "key": "AppURL",
+      "type": "String",
+      "default_value": "http://localhost:3000/",
+      "source_file": "modules/setting/server.go",
+      "used_by": [{"class": "admin", "method": "ListHooks/EditHook", "file_path": "routers/api/v1/admin/hooks.go", "usage": "Base URL for webhook admin link generation", "impact": "Affects the URL field in hook API responses"}],
+      "affected_endpoints": ["ep-091", "ep-094"]
+    },
+    {
+      "key": "Service.DefaultOrgMemberVisible",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/service.go",
+      "used_by": [{"class": "organization", "method": "CreateOrganization", "file_path": "models/organization/org.go", "usage": "Sets IsPublic on org_user record for initial owner", "impact": "Controls whether org membership is public by default"}],
+      "affected_endpoints": ["ep-096"]
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "endpoints_by_database_table": {
+    "webhook": {"read": ["ep-325", "ep-326"], "write": ["ep-324", "ep-325", "ep-326"]},
+    "hook_task": {"read": [], "write": ["ep-326"]},
+    "star": {"read": ["ep-327"], "write": []},
+    "watch": {"read": ["ep-328"], "write": []},
+    "team": {"read": ["ep-329"], "write": []},
+    "team_repo": {"read": ["ep-329"], "write": []},
+    "team_unit": {"read": ["ep-329"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {},
+  "endpoints_by_model_class": {
+    "webhook.Webhook": ["ep-324", "ep-325", "ep-326"],
+    "user_model.User": ["ep-327", "ep-328"],
+    "organization.Team": ["ep-329"]
+  },
+  "endpoints_by_service_class": {
+    "webhook_service.ToHook": ["ep-324", "ep-325"],
+    "convert.ToUser": ["ep-327", "ep-328"],
+    "convert.ToTeams": ["ep-329"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-324": {"reads": [], "writes": ["webhook"]},
+    "ep-325": {"reads": ["webhook"], "writes": ["webhook"]},
+    "ep-326": {"reads": ["webhook"], "writes": ["webhook", "hook_task"]},
+    "ep-327": {"reads": ["star", "user"], "writes": []},
+    "ep-328": {"reads": ["watch", "user"], "writes": []},
+    "ep-329": {"reads": ["team", "team_repo", "team_unit"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {}
+}

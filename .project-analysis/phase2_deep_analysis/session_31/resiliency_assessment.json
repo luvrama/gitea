@@ -1,0 +1,152 @@
+{
+  "total_findings": 6,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-208",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only endpoint, no multi-step mutations",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - database only",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-209",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx to wrap existence check + insert + comment creation in a single transaction",
+          "recommendation": "None needed - properly transactional"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Duplicate creation returns ErrDependencyExists, preventing double-creation",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - database only",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-210",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx to wrap delete + comment creation in a single transaction",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - database only",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-211",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only endpoint",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - database only",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-212",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx for transactional create",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - database only",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-213",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx for transactional delete",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - database only",
+      "graceful_degradation": "Returns 500 on DB failure"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled by modules/graceful package",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting configured",
+      "recommendation": "Consider adding rate limiting for write endpoints"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": ["Database"],
+    "cascading_failure_paths": []
+  }
+}

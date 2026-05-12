@@ -1,0 +1,584 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-091",
+      "http_method": "GET",
+      "path": "/api/v1/admin/hooks",
+      "description": "Lists system/default webhooks with pagination, converting each to API format",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.ListHooks",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/hooks.go",
+          "input": "APIContext with query params (page, limit, type)",
+          "output": "JSON response []api.Hook",
+          "operations": ["Parse type filter (system/default/all)", "Build ListSystemWebhookOptions"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.GetListOptions",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/page.go",
+          "input": "APIContext",
+          "output": "db.ListOptions{Page, PageSize}",
+          "operations": ["Extract page and limit from query, apply defaults"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "webhook.GetGlobalWebhooks",
+          "type": "repository",
+          "file_path": "models/webhook/webhook_system.go",
+          "input": "ListSystemWebhookOptions",
+          "output": "([]*Webhook, int64, error)",
+          "operations": ["Query webhook table WHERE repo_id=0 AND owner_id=0 with optional is_system_webhook filter"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "webhook", "description": "Find global webhooks with count"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "webhook_service.ToHook",
+          "type": "service",
+          "file_path": "services/webhook/general.go",
+          "input": "repoLink string, *webhook.Webhook",
+          "output": "*api.Hook",
+          "operations": ["Build config map", "Decrypt authorization header", "Map to API struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*webhook.Webhook",
+          "to": "*api.Hook",
+          "component": "webhook_service.ToHook",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "URL", "target_field": "Config[url]", "transformation": "computed"},
+            {"source_field": "ContentType.Name()", "target_field": "Config[content_type]", "transformation": "computed"},
+            {"source_field": "IsActive", "target_field": "Active", "transformation": "direct_copy"},
+            {"source_field": "EventsArray()", "target_field": "Events", "transformation": "computed"},
+            {"source_field": "HeaderAuthorizationEncrypted", "target_field": "AuthorizationHeader", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB query fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "Header decryption fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-092",
+      "http_method": "GET",
+      "path": "/api/v1/admin/hooks/{id}",
+      "description": "Gets a single system/default webhook by ID",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.GetHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/hooks.go",
+          "input": "APIContext with path param id",
+          "output": "JSON response api.Hook",
+          "operations": ["Extract hookID from path"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "webhook.GetSystemOrDefaultWebhook",
+          "type": "repository",
+          "file_path": "models/webhook/webhook_system.go",
+          "input": "context, id int64",
+          "output": "(*Webhook, error)",
+          "operations": ["Query webhook WHERE id=? AND repo_id=0 AND owner_id=0"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "webhook", "description": "Get single global webhook by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "webhook_service.ToHook",
+          "type": "service",
+          "file_path": "services/webhook/general.go",
+          "input": "repoLink, *webhook.Webhook",
+          "output": "*api.Hook",
+          "operations": ["Convert to API format with decrypted auth header"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*webhook.Webhook",
+          "to": "*api.Hook",
+          "component": "webhook_service.ToHook",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "IsActive", "target_field": "Active", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Webhook not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-093",
+      "http_method": "POST",
+      "path": "/api/v1/admin/hooks",
+      "description": "Creates a new system or default webhook",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.CreateHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/hooks.go",
+          "input": "APIContext with CreateHookOption body",
+          "output": "JSON response api.Hook (201)",
+          "operations": ["Extract form from context", "Delegate to utils.AddSystemHook"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.AddSystemHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *CreateHookOption",
+          "output": "JSON 201 or error",
+          "operations": ["Call addHook with ownerID=0, repoID=0", "Convert result to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "utils.addHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *CreateHookOption, ownerID=0, repoID=0",
+          "output": "(*webhook.Webhook, bool)",
+          "operations": ["Validate hook type", "Validate url and content_type", "Parse is_system_webhook", "Build Webhook struct", "Encrypt auth header", "Handle Slack meta", "UpdateEvent", "Insert to DB"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "webhook", "description": "Create new webhook record"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*api.CreateHookOption",
+          "to": "*webhook.Webhook",
+          "component": "utils.addHook",
+          "mappings": [
+            {"source_field": "Config[url]", "target_field": "URL", "transformation": "direct_copy"},
+            {"source_field": "Config[content_type]", "target_field": "ContentType", "transformation": "computed"},
+            {"source_field": "Config[secret]", "target_field": "Secret", "transformation": "direct_copy"},
+            {"source_field": "Events", "target_field": "HookEvent.HookEvents", "transformation": "computed"},
+            {"source_field": "Active", "target_field": "IsActive", "transformation": "direct_copy"},
+            {"source_field": "Type", "target_field": "Type", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid hook type", "handler": "ctx.APIError", "response_code": 422, "response": "Invalid hook type"},
+        {"condition": "Missing url/content_type", "handler": "ctx.APIError", "response_code": 422, "response": "Missing config option"},
+        {"condition": "Invalid URL", "handler": "ctx.APIError", "response_code": 422, "response": "Invalid url"},
+        {"condition": "Invalid slack channel", "handler": "ctx.APIError", "response_code": 400, "response": "Invalid slack channel name"},
+        {"condition": "DB insert fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-094",
+      "http_method": "PATCH",
+      "path": "/api/v1/admin/hooks/{id}",
+      "description": "Updates an existing system/default webhook",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.EditHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/hooks.go",
+          "input": "APIContext with EditHookOption body and path param id",
+          "output": "JSON response api.Hook",
+          "operations": ["Extract form and hookID", "Delegate to utils.EditSystemHook"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.EditSystemHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *EditHookOption, hookID",
+          "output": "JSON 200 or error",
+          "operations": ["Fetch existing hook", "Call editHook", "Re-fetch updated hook", "Convert to API format"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "webhook", "description": "Get existing webhook"},
+            {"operation": "SELECT", "table": "webhook", "description": "Re-fetch after update"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "utils.editHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *EditHookOption, *webhook.Webhook",
+          "output": "bool (success)",
+          "operations": ["Validate URL if changed", "Validate content_type if changed", "Update Slack meta if applicable", "Update events", "Encrypt auth header", "UpdateEvent", "Set active/name", "Update in DB"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "webhook", "description": "Update webhook with all columns"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*api.EditHookOption",
+          "to": "*webhook.Webhook (mutated)",
+          "component": "utils.editHook",
+          "mappings": [
+            {"source_field": "Config[url]", "target_field": "URL", "transformation": "direct_copy"},
+            {"source_field": "Config[content_type]", "target_field": "ContentType", "transformation": "computed"},
+            {"source_field": "Events", "target_field": "HookEvents", "transformation": "computed"},
+            {"source_field": "Active", "target_field": "IsActive", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Hook not found", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "Invalid URL", "handler": "ctx.APIError", "response_code": 422, "response": "Invalid url"},
+        {"condition": "Invalid content type", "handler": "ctx.APIError", "response_code": 422, "response": "Invalid content type"},
+        {"condition": "DB update fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-095",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/hooks/{id}",
+      "description": "Deletes a system/default webhook and its hook tasks in a transaction",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.DeleteHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/hooks.go",
+          "input": "APIContext with path param id",
+          "output": "204 No Content",
+          "operations": ["Extract hookID", "Call DeleteDefaultSystemWebhook"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "webhook.DeleteDefaultSystemWebhook",
+          "type": "repository",
+          "file_path": "models/webhook/webhook_system.go",
+          "input": "context, id int64",
+          "output": "error",
+          "operations": ["Begin transaction", "DELETE webhook WHERE id=? AND repo_id=0 AND owner_id=0", "Check count>0", "DELETE hook_task WHERE hook_id=?", "Commit"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "DELETE", "table": "webhook", "description": "Delete the webhook record"},
+            {"operation": "DELETE", "table": "hook_task", "description": "Delete associated hook tasks"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Webhook not found (count=0)", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-096",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/orgs",
+      "description": "Creates an organization owned by the specified user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.CreateOrg",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/org.go",
+          "input": "APIContext with CreateOrgOption body and path param username",
+          "output": "JSON 201 api.Organization",
+          "operations": ["Extract form", "Set visibility", "Build Organization struct", "Call CreateOrganization"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "organization.CreateOrganization",
+          "type": "service",
+          "file_path": "models/organization/org.go",
+          "input": "context, *Organization, owner *User",
+          "output": "error",
+          "operations": ["Check owner.CanCreateOrganization()", "Validate username", "Check user not exists", "Begin transaction", "Delete user redirect", "Insert org", "Generate random avatar", "Insert org_user", "Insert owner team", "Insert team_unit entries", "Insert team_user", "Commit"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Check if org name already exists"},
+            {"operation": "DELETE", "table": "user_redirect", "description": "Remove any existing redirect"},
+            {"operation": "INSERT", "table": "user", "description": "Insert organization record"},
+            {"operation": "INSERT", "table": "org_user", "description": "Add owner as org member"},
+            {"operation": "INSERT", "table": "team", "description": "Create Owners team"},
+            {"operation": "INSERT", "table": "team_unit", "description": "Create team unit permissions"},
+            {"operation": "INSERT", "table": "team_user", "description": "Add owner to Owners team"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToOrganization",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "context, *Organization",
+          "output": "*api.Organization",
+          "operations": ["Map org fields to API struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*api.CreateOrgOption",
+          "to": "*organization.Organization",
+          "component": "admin.CreateOrg",
+          "mappings": [
+            {"source_field": "UserName", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "FullName", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"},
+            {"source_field": "Website", "target_field": "Website", "transformation": "direct_copy"},
+            {"source_field": "Location", "target_field": "Location", "transformation": "direct_copy"},
+            {"source_field": "Visibility", "target_field": "Visibility", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "User already exists with org name", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "Name reserved/invalid", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-097",
+      "http_method": "GET",
+      "path": "/api/v1/admin/orgs",
+      "description": "Lists all organizations with pagination, ordered alphabetically",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.GetAllOrgs",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/org.go",
+          "input": "APIContext with query params (page, limit)",
+          "output": "JSON 200 []api.Organization",
+          "operations": ["Get list options", "Search users with type=Organization", "Convert to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_model.SearchUsers",
+          "type": "repository",
+          "file_path": "models/user/search.go",
+          "input": "SearchUserOptions{Types:[Organization], Visible:[public,limited,private]}",
+          "output": "([]*User, int64, error)",
+          "operations": ["Build query with type=Organization condition", "Count total", "Apply pagination and ordering", "Fetch page of results"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT COUNT", "table": "user", "description": "Count organizations"},
+            {"operation": "SELECT", "table": "user", "description": "Fetch paginated organizations"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToOrganization",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "*Organization",
+          "output": "*api.Organization",
+          "operations": ["Map each org to API struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*user_model.User",
+          "to": "*api.Organization",
+          "component": "convert.ToOrganization",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "FullName", "transformation": "direct_copy"},
+            {"source_field": "Visibility", "target_field": "Visibility", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-098",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users",
+      "description": "Creates a new user account with password validation and optional email notification",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.CreateUser",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/user.go",
+          "input": "APIContext with CreateUserOption body",
+          "output": "JSON 201 api.User",
+          "operations": ["Extract form", "Build User struct", "Parse auth source", "Validate password", "Set overwrite options", "Call AdminCreateUser", "Send notification if requested"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "parseAuthSource",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/user.go",
+          "input": "APIContext, *User, sourceID",
+          "output": "sets u.LoginType and u.LoginSource",
+          "operations": ["If sourceID != 0, fetch auth source by ID", "Set login type and source on user"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "login_source", "description": "Get auth source by ID (if sourceID != 0)"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "password.IsPwned",
+          "type": "utility",
+          "file_path": "modules/auth/password/pwn.go",
+          "input": "context, password string",
+          "output": "error",
+          "operations": ["Check setting.PasswordCheckPwn", "SHA1 hash password", "Call HaveIBeenPwned API with prefix", "Parse response for match"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "user_model.AdminCreateUser",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "context, *User, *Meta, *CreateUserOverwriteOptions",
+          "output": "error",
+          "operations": ["Validate username", "Set system defaults", "Apply overwrite options", "Validate email (admin mode)", "Begin transaction", "Check user not exists", "Check email not used", "Hash password", "Delete user redirect", "Insert user", "Insert email_address", "Commit"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Check username not taken"},
+            {"operation": "SELECT", "table": "email_address", "description": "Check email not used"},
+            {"operation": "DELETE", "table": "user_redirect", "description": "Remove any existing redirect"},
+            {"operation": "INSERT", "table": "user", "description": "Create user record"},
+            {"operation": "INSERT", "table": "email_address", "description": "Create primary email record"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "mailer.SendRegisterNotifyMail",
+          "type": "service",
+          "file_path": "services/mailer/mail_user.go",
+          "input": "*User",
+          "output": "void (async via queue)",
+          "operations": ["Queue registration notification email"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": true
+        },
+        {
+          "step": 6,
+          "component": "convert.ToUser",
+          "type": "service",
+          "file_path": "services/convert/user.go",
+          "input": "context, *User, doer *User",
+          "output": "*api.User",
+          "operations": ["Convert user to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*api.CreateUserOption",
+          "to": "*user_model.User",
+          "component": "admin.CreateUser",
+          "mappings": [
+            {"source_field": "Username", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "FullName", "transformation": "direct_copy"},
+            {"source_field": "Email", "target_field": "Email", "transformation": "direct_copy"},
+            {"source_field": "Password", "target_field": "Passwd", "transformation": "direct_copy"},
+            {"source_field": "MustChangePassword", "target_field": "MustChangePassword", "transformation": "computed"},
+            {"source_field": "LoginName", "target_field": "LoginName", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Auth source not found", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "Password too short", "handler": "ctx.APIError", "response_code": 400, "response": "PasswordIsRequired"},
+        {"condition": "Password not complex", "handler": "ctx.APIError", "response_code": 400, "response": "PasswordComplexity"},
+        {"condition": "Password pwned", "handler": "ctx.APIError", "response_code": 400, "response": "PasswordPwned"},
+        {"condition": "User already exists", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "Email already used", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

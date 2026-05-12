@@ -1,0 +1,24 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [{"exception_type": "internal error", "status_code": 500, "response_type": "error JSON", "message_template": "Internal server error"}]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-324", "path": "/api/v1/repos/{owner}/{repo}/hooks", "error_scenarios": [
+      {"exception": "invalid hook type", "trigger": "Type not in registered webhook types", "status_code": 422, "response": "Invalid hook type: <type>", "logged": false, "retryable": false},
+      {"exception": "missing config", "trigger": "url or content_type missing from config", "status_code": 422, "response": "Missing config option: <name>", "logged": false, "retryable": false},
+      {"exception": "invalid url", "trigger": "URL fails validation", "status_code": 422, "response": "Invalid url", "logged": false, "retryable": false},
+      {"exception": "invalid slack channel", "trigger": "Slack channel name invalid", "status_code": 400, "response": "Invalid slack channel name", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-325", "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}", "error_scenarios": [
+      {"exception": "ErrWebhookNotExist", "trigger": "Hook ID not found for repo", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+      {"exception": "invalid url", "trigger": "Updated URL fails validation", "status_code": 422, "response": "Invalid url", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-326", "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}", "error_scenarios": [
+      {"exception": "ErrWebhookNotExist", "trigger": "Hook ID not found for repo", "status_code": 404, "response": "not found", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrWebhookNotExist", "file_path": "models/webhook/webhook.go", "extends": "util.ErrNotExist", "used_in": ["webhook.GetWebhookByRepoID", "webhook.DeleteWebhookByID"], "http_status": 404}
+  ]
+}

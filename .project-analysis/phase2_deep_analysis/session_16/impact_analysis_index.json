@@ -1,0 +1,63 @@
+{
+  "endpoints_by_database_table": {
+    "action_run": {"read": ["ep-106"], "write": []},
+    "action_runner_token": {"read": ["ep-113"], "write": ["ep-113"]},
+    "user": {"read": ["ep-106", "ep-107", "ep-108", "ep-109"], "write": []},
+    "repository": {"read": ["ep-106", "ep-107", "ep-108", "ep-109", "ep-112"], "write": ["ep-108", "ep-112"]},
+    "notice": {"read": [], "write": ["ep-111"]},
+    "branch": {"read": [], "write": ["ep-108"]},
+    "release": {"read": [], "write": ["ep-108"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "repository.force_private": ["ep-112"],
+    "repository.root_path": ["ep-107", "ep-108", "ep-109"],
+    "database.iterate_buffer_size": ["ep-107"]
+  },
+  "endpoints_by_model_class": {
+    "ActionRun": ["ep-106"],
+    "ActionRunnerToken": ["ep-113"],
+    "Repository": ["ep-107", "ep-108", "ep-109", "ep-112"],
+    "User": ["ep-106", "ep-107", "ep-108", "ep-109"]
+  },
+  "endpoints_by_service_class": {
+    "shared.ListRuns": ["ep-106"],
+    "repo_service.ListUnadoptedRepositories": ["ep-107"],
+    "repo_service.AdoptRepository": ["ep-108"],
+    "repo_service.DeleteUnadoptedRepository": ["ep-109"],
+    "cron.ListTasks": ["ep-110"],
+    "cron.GetTask": ["ep-111"],
+    "repo.CreateUserRepo": ["ep-112"],
+    "shared.GetRegistrationToken": ["ep-113"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-106": {"reads": ["action_run", "user", "repository"], "writes": []},
+    "ep-107": {"reads": ["user", "repository"], "writes": []},
+    "ep-108": {"reads": ["user", "repository"], "writes": ["repository", "branch", "release"]},
+    "ep-109": {"reads": ["user", "repository"], "writes": []},
+    "ep-110": {"reads": [], "writes": []},
+    "ep-111": {"reads": [], "writes": ["notice"]},
+    "ep-112": {"reads": ["repository"], "writes": ["repository"]},
+    "ep-113": {"reads": ["action_runner_token"], "writes": ["action_runner_token"]}
+  },
+  "external_services_by_endpoint": {
+    "ep-106": [],
+    "ep-107": [],
+    "ep-108": [],
+    "ep-109": [],
+    "ep-110": [],
+    "ep-111": [],
+    "ep-112": [],
+    "ep-113": []
+  },
+  "config_properties_by_endpoint": {
+    "ep-106": [],
+    "ep-107": ["repository.root_path", "database.iterate_buffer_size"],
+    "ep-108": ["repository.root_path"],
+    "ep-109": ["repository.root_path"],
+    "ep-110": [],
+    "ep-111": [],
+    "ep-112": ["repository.force_private"],
+    "ep-113": []
+  }
+}

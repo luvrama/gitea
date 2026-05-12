@@ -1,0 +1,51 @@
+{
+  "endpoints_by_database_table": {
+    "release": {"read": ["ep-240", "ep-241", "ep-242", "ep-243", "ep-244", "ep-245"], "write": ["ep-243", "ep-244", "ep-245"]},
+    "attachment": {"read": ["ep-240", "ep-241", "ep-242", "ep-244", "ep-245"], "write": ["ep-245"]},
+    "repository": {"read": ["ep-240", "ep-241", "ep-242", "ep-244", "ep-245"], "write": []},
+    "user": {"read": ["ep-240", "ep-241", "ep-242", "ep-244", "ep-245"], "write": []},
+    "protected_tag": {"read": ["ep-243", "ep-245"], "write": []}
+  },
+  "endpoints_by_external_service": {
+    "Git Repository": ["ep-243", "ep-244", "ep-245"]
+  },
+  "endpoints_by_config_property": {
+    "api.DEFAULT_PAGING_NUM": ["ep-242"],
+    "api.MAX_RESPONSE_ITEMS": ["ep-242"]
+  },
+  "endpoints_by_model_class": {
+    "repo_model.Release": ["ep-240", "ep-241", "ep-242", "ep-243", "ep-244", "ep-245"],
+    "repo_model.Attachment": ["ep-240", "ep-241", "ep-242", "ep-244", "ep-245"],
+    "git_model.ProtectedTag": ["ep-243", "ep-245"]
+  },
+  "endpoints_by_service_class": {
+    "release_service.CreateRelease": ["ep-243"],
+    "release_service.UpdateRelease": ["ep-243", "ep-244"],
+    "release_service.DeleteReleaseByID": ["ep-245"],
+    "convert.ToAPIRelease": ["ep-240", "ep-241", "ep-242", "ep-243", "ep-244"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-240": {"reads": ["release", "repository", "user", "attachment"], "writes": []},
+    "ep-241": {"reads": ["release", "repository", "user", "attachment"], "writes": []},
+    "ep-242": {"reads": ["release", "repository", "user", "attachment"], "writes": []},
+    "ep-243": {"reads": ["release", "protected_tag"], "writes": ["release"]},
+    "ep-244": {"reads": ["release", "repository", "user", "attachment"], "writes": ["release"]},
+    "ep-245": {"reads": ["release", "repository", "user", "attachment"], "writes": ["release", "attachment"]}
+  },
+  "external_services_by_endpoint": {
+    "ep-240": [],
+    "ep-241": [],
+    "ep-242": [],
+    "ep-243": ["Git Repository"],
+    "ep-244": ["Git Repository"],
+    "ep-245": ["Git Repository"]
+  },
+  "config_properties_by_endpoint": {
+    "ep-240": [],
+    "ep-241": [],
+    "ep-242": ["api.DEFAULT_PAGING_NUM", "api.MAX_RESPONSE_ITEMS"],
+    "ep-243": [],
+    "ep-244": [],
+    "ep-245": []
+  }
+}

@@ -1,0 +1,227 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-196",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "controller_class": "user",
+      "controller_method": "IsWatching",
+      "description": "Check if the current user is watching a repo",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user/org"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["must exist as repository"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "WatchInfo",
+          "fields": [
+            {"name": "subscribed", "type": "bool", "description": "Whether the repository is being watched"},
+            {"name": "ignored", "type": "bool", "description": "Whether notifications are ignored"},
+            {"name": "reason", "type": "any", "description": "Reason for watch status"},
+            {"name": "created_at", "type": "time.Time", "description": "When the watch was created"},
+            {"name": "url", "type": "string", "description": "URL for managing watch status"},
+            {"name": "repository_url", "type": "string", "description": "URL of the repository"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "User is not watching this repo or repo does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-197",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "controller_class": "user",
+      "controller_method": "Watch",
+      "description": "Watch a repo (subscribe to notifications)",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user/org"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["must exist as repository"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "WatchInfo",
+          "fields": [
+            {"name": "subscribed", "type": "bool", "description": "Whether the repository is being watched"},
+            {"name": "ignored", "type": "bool", "description": "Whether notifications are ignored"},
+            {"name": "reason", "type": "any", "description": "Reason for watch status"},
+            {"name": "created_at", "type": "time.Time", "description": "When the watch was created"},
+            {"name": "url", "type": "string", "description": "URL for managing watch status"},
+            {"name": "repository_url", "type": "string", "description": "URL of the repository"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User is blocked by repo owner"},
+          {"status_code": 404, "type": "notFound", "condition": "Repo does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-198",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "controller_class": "user",
+      "controller_method": "Unwatch",
+      "description": "Unwatch a repo (unsubscribe from notifications)",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user/org"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["must exist as repository"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repo does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-199",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}",
+      "controller_class": "packages",
+      "controller_method": "ListPackages",
+      "description": "Gets all packages of an owner",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user/org"]}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["configurable max"]},
+          {"name": "type", "type": "string", "required": false, "default": null, "validation": ["enum: alpine,cargo,chef,composer,conan,conda,container,cran,debian,generic,go,helm,maven,npm,nuget,pub,pypi,rpm,rubygems,swift,terraform,vagrant"]},
+          {"name": "q", "type": "string", "required": false, "default": null, "validation": ["name filter, LIKE search"]}
+        ],
+        "headers": [{"name": "Authorization", "required": false, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]Package",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Package version ID"},
+            {"name": "owner", "type": "User", "description": "Package owner"},
+            {"name": "repository", "type": "Repository", "description": "Linked repository if any"},
+            {"name": "creator", "type": "User", "description": "Package creator"},
+            {"name": "type", "type": "string", "description": "Package type"},
+            {"name": "name", "type": "string", "description": "Package name"},
+            {"name": "version", "type": "string", "description": "Package version"},
+            {"name": "html_url", "type": "string", "description": "HTML URL to view package"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation timestamp"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Owner does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-200",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "controller_class": "packages",
+      "controller_method": "GetPackage",
+      "description": "Gets a specific package version",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user/org"]},
+          {"name": "type", "type": "string", "required": true, "validation": ["valid package type"]},
+          {"name": "name", "type": "string", "required": true, "validation": ["must exist"]},
+          {"name": "version", "type": "string", "required": true, "validation": ["must exist"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": false, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "Package",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Package version ID"},
+            {"name": "owner", "type": "User", "description": "Package owner"},
+            {"name": "repository", "type": "Repository", "description": "Linked repository if any"},
+            {"name": "creator", "type": "User", "description": "Package creator"},
+            {"name": "type", "type": "string", "description": "Package type"},
+            {"name": "name", "type": "string", "description": "Package name"},
+            {"name": "version", "type": "string", "description": "Package version"},
+            {"name": "html_url", "type": "string", "description": "HTML URL to view package"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation timestamp"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Package or version does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-201",
+      "http_method": "DELETE",
+      "path": "/api/v1/packages/{owner}/{type}/{name}",
+      "controller_class": "packages",
+      "controller_method": "DeletePackage",
+      "description": "Delete a package and all its versions",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user/org"]},
+          {"name": "type", "type": "string", "required": true, "validation": ["valid package type"]},
+          {"name": "name", "type": "string", "required": true, "validation": ["must exist"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Package does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

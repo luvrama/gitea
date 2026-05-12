@@ -1,0 +1,229 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 7,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "user",
+      "entity_class": "user_model.User / organization.Organization",
+      "file_path": "models/user/user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE", "NOT NULL"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE", "NOT NULL"]},
+        {"name": "full_name", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "email", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "type", "type": "INT", "code_type": "UserType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "visibility", "type": "INT", "code_type": "structs.VisibleType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL DEFAULT 0"]},
+        {"name": "description", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "website", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "location", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_admin_change_team_access", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "num_teams", "type": "INT", "code_type": "int", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_members", "type": "INT", "code_type": "int", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "avatar", "type": "VARCHAR(2048)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "rands", "type": "VARCHAR(32)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "salt", "type": "VARCHAR(32)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_user_lower_name", "columns": ["lower_name"], "unique": true},
+        {"name": "UQE_user_name", "columns": ["name"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "one-to-many", "target_table": "org_user", "join_column": "id"},
+        {"type": "one-to-many", "target_table": "team", "join_column": "id"},
+        {"type": "one-to-many", "target_table": "repository", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "org_user",
+      "entity_class": "organization.OrgUser",
+      "file_path": "models/organization/org_user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "UNIQUE(s)"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "UNIQUE(s)"]},
+        {"name": "is_public", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]}
+      ],
+      "indexes": [
+        {"name": "IDX_org_user_uid", "columns": ["uid"], "unique": false},
+        {"name": "IDX_org_user_org_id", "columns": ["org_id"], "unique": false},
+        {"name": "UQE_org_user_s", "columns": ["uid", "org_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "team",
+      "entity_class": "organization.Team",
+      "file_path": "models/organization/team.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "authorize", "type": "INT", "code_type": "perm.AccessMode", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_repos", "type": "INT", "code_type": "int", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_members", "type": "INT", "code_type": "int", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "includes_all_repositories", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "can_create_org_repo", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]}
+      ],
+      "indexes": [
+        {"name": "IDX_team_org_id", "columns": ["org_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"},
+        {"type": "one-to-many", "target_table": "team_user", "join_column": "id"},
+        {"type": "one-to-many", "target_table": "team_unit", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "team_user",
+      "entity_class": "organization.TeamUser",
+      "file_path": "models/organization/team_user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "team_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]}
+      ],
+      "indexes": [
+        {"name": "IDX_team_user_org_id", "columns": ["org_id"], "unique": false},
+        {"name": "UQE_team_user_s", "columns": ["team_id", "uid"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "team", "join_column": "team_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "team_unit",
+      "entity_class": "organization.TeamUnit",
+      "file_path": "models/organization/team_unit.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "team_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "type", "type": "INT", "code_type": "unit.Type", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "access_mode", "type": "INT", "code_type": "perm.AccessMode", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_team_unit_org_id", "columns": ["org_id"], "unique": false},
+        {"name": "UQE_team_unit_s", "columns": ["team_id", "type"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "team", "join_column": "team_id"}
+      ]
+    },
+    {
+      "entity_id": "db-006",
+      "table_or_collection": "user_redirect",
+      "entity_class": "user_model.Redirect",
+      "file_path": "models/user/redirect.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "redirect_user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_user_redirect_lower_name", "columns": ["lower_name"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "redirect_user_id"}
+      ]
+    },
+    {
+      "entity_id": "db-007",
+      "table_or_collection": "repository",
+      "entity_class": "repo_model.Repository",
+      "file_path": "models/repo/repo.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "owner_name", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_repository_owner_id", "columns": ["owner_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-029",
+      "path": "/api/v1/orgs",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.SearchUsers", "description": "Count and fetch organizations with visibility filter"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-030",
+      "path": "/api/v1/orgs",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.IsUserExist", "description": "Check username availability"},
+        {"store_type": "database", "store_name": "user_redirect", "operation": "DELETE", "method": "user_model.DeleteUserRedirect", "description": "Remove existing redirect"},
+        {"store_type": "database", "store_name": "user", "operation": "INSERT", "method": "db.Insert", "description": "Insert organization"},
+        {"store_type": "database", "store_name": "org_user", "operation": "INSERT", "method": "db.Insert", "description": "Add creator as member"},
+        {"store_type": "database", "store_name": "team", "operation": "INSERT", "method": "db.Insert", "description": "Create Owners team"},
+        {"store_type": "database", "store_name": "team_unit", "operation": "INSERT", "method": "db.Insert", "description": "Create team units"},
+        {"store_type": "database", "store_name": "team_user", "operation": "INSERT", "method": "db.Insert", "description": "Add creator to Owners team"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-031",
+      "path": "/api/v1/orgs/{org}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "organization.GetOrgByName", "description": "Resolve org by name (middleware)"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "organization.IsOrganizationMember", "description": "Check membership for private orgs"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-032",
+      "path": "/api/v1/orgs/{org}/rename",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "organization.GetOrgByName", "description": "Resolve org (middleware)"},
+        {"store_type": "database", "store_name": "team_user+team", "operation": "SELECT", "method": "organization.IsOrganizationOwner", "description": "Check ownership (middleware)"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.IsUserExist", "description": "Check new name availability"},
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "repo_model.UpdateRepositoryOwnerName", "description": "Update repo owner names"},
+        {"store_type": "database", "store_name": "user_redirect", "operation": "INSERT", "method": "user_model.NewUserRedirect", "description": "Create redirect"},
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "user_model.UpdateUserCols", "description": "Update name columns"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-033",
+      "path": "/api/v1/orgs/{org}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "organization.GetOrgByName", "description": "Resolve org (middleware)"},
+        {"store_type": "database", "store_name": "team_user+team", "operation": "SELECT", "method": "organization.IsOrganizationOwner", "description": "Check ownership (middleware)"},
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "org.UpdateOrgEmailAddress", "description": "Update email"},
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "user_service.UpdateUser", "description": "Update other fields"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-034",
+      "path": "/api/v1/orgs/{org}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "organization.GetOrgByName", "description": "Resolve org (middleware)"},
+        {"store_type": "database", "store_name": "team_user+team", "operation": "SELECT", "method": "organization.IsOrganizationOwner", "description": "Check ownership (middleware)"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "repo_model.CountRepositories", "description": "Check if org has repos"},
+        {"store_type": "database", "store_name": "package", "operation": "SELECT", "method": "packages_model.HasOwnerPackages", "description": "Check if org has packages"},
+        {"store_type": "database", "store_name": "team", "operation": "DELETE", "method": "db.DeleteBeans", "description": "Delete all teams"},
+        {"store_type": "database", "store_name": "org_user", "operation": "DELETE", "method": "db.DeleteBeans", "description": "Delete all memberships"},
+        {"store_type": "database", "store_name": "team_user", "operation": "DELETE", "method": "db.DeleteBeans", "description": "Delete all team memberships"},
+        {"store_type": "database", "store_name": "team_unit", "operation": "DELETE", "method": "db.DeleteBeans", "description": "Delete all team units"},
+        {"store_type": "database", "store_name": "user", "operation": "DELETE", "method": "db.GetEngine.Delete", "description": "Delete org record"}
+      ]
+    }
+  ]
+}

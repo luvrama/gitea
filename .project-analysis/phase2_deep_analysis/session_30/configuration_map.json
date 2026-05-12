@@ -1,0 +1,29 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "packages.ENABLED",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/packages.go",
+      "used_by": [{"class": "setting", "method": "loadPackagesFrom", "file_path": "modules/setting/packages.go", "usage": "Enable/disable package registry", "impact": "If false, all package endpoints are disabled"}],
+      "affected_endpoints": ["ep-202", "ep-203", "ep-204", "ep-205", "ep-206", "ep-207"]
+    },
+    {
+      "key": "packages.LIMIT_TOTAL_OWNER_COUNT",
+      "type": "Integer",
+      "default_value": "-1 (no limit)",
+      "source_file": "modules/setting/packages.go",
+      "used_by": [{"class": "packages_service", "method": "CheckCountQuotaExceeded", "file_path": "services/packages/packages.go", "usage": "Limit total package versions per owner", "impact": "Prevents creation of new versions if exceeded"}],
+      "affected_endpoints": []
+    },
+    {
+      "key": "service.REQUIRE_SIGNIN_VIEW",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/service.go",
+      "used_by": [{"class": "context", "method": "determineAccessMode", "file_path": "services/context/package.go", "usage": "If strict, unauthenticated users get AccessModeNone", "impact": "Blocks anonymous access to packages"}],
+      "affected_endpoints": ["ep-202", "ep-203", "ep-204", "ep-205", "ep-206", "ep-207"]
+    }
+  ]
+}

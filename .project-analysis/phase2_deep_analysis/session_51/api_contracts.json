@@ -1,0 +1,287 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-344",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "controller_class": "repo",
+      "controller_method": "GetReleaseByTag",
+      "description": "Get a single release of a repository by tag name",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "tag", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Release",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Release ID"},
+            {"name": "tag_name", "type": "string", "description": "Tag name"},
+            {"name": "target_commitish", "type": "string", "description": "Target branch/commit"},
+            {"name": "name", "type": "string", "description": "Release title"},
+            {"name": "body", "type": "string", "description": "Release note"},
+            {"name": "url", "type": "string", "description": "API URL"},
+            {"name": "html_url", "type": "string", "description": "HTML URL"},
+            {"name": "tarball_url", "type": "string", "description": "Tar download URL"},
+            {"name": "zipball_url", "type": "string", "description": "Zip download URL"},
+            {"name": "upload_url", "type": "string", "description": "Upload URL for assets"},
+            {"name": "draft", "type": "bool", "description": "Is draft"},
+            {"name": "prerelease", "type": "bool", "description": "Is prerelease"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation time"},
+            {"name": "published_at", "type": "time.Time", "description": "Publish time"},
+            {"name": "author", "type": "api.User", "description": "Publisher user"},
+            {"name": "assets", "type": "[]api.Attachment", "description": "Release attachments"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Release not found or is a tag-only record or draft without write access"}
+        ]
+      },
+      "authentication": "optional (required for draft access)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-345",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "controller_class": "repo",
+      "controller_method": "DeleteReleaseByTag",
+      "description": "Delete a release from a repository by tag name",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "tag", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Release not found or is a tag-only record"},
+          {"status_code": 422, "type": "validationError", "condition": "Tag name is protected"}
+        ]
+      },
+      "authentication": "bearer (write access to releases required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-346",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/licenses",
+      "controller_class": "repo",
+      "controller_method": "GetLicenses",
+      "description": "Get the detected licenses for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]string",
+          "fields": [
+            {"name": "[]", "type": "string", "description": "List of license identifiers"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "optional (repo access required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-347",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/topics",
+      "controller_class": "repo",
+      "controller_method": "ListTopics",
+      "description": "Get list of topics that a repository has",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "TopicNames",
+          "fields": [
+            {"name": "topics", "type": "[]string", "description": "List of topic names"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "optional (repo access required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-348",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/topics",
+      "controller_class": "repo",
+      "controller_method": "UpdateTopics",
+      "description": "Replace list of topics for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "api.RepoTopicOptions",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "topics", "type": "[]string", "required": true, "validation": ["max 25 topics", "each topic: max 35 chars, matches ^[a-z0-9][-.a-z0-9]*$"], "description": "List of topic names to set"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 422, "type": "invalidTopicsError", "condition": "Invalid topic names or exceeding max 25 topics"}
+        ]
+      },
+      "authentication": "bearer (write access required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-349",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/topics/{topic}",
+      "controller_class": "repo",
+      "controller_method": "AddTopic",
+      "description": "Add a topic to a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "topic", "type": "string", "required": true, "validation": ["max 35 chars", "matches ^[a-z0-9][-.a-z0-9]*$"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 422, "type": "invalidTopicsError", "condition": "Invalid topic name or exceeding max 25 topics per repo"}
+        ]
+      },
+      "authentication": "bearer (write access required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-350",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/topics/{topic}",
+      "controller_class": "repo",
+      "controller_method": "DeleteTopic",
+      "description": "Delete a topic from a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "topic", "type": "string", "required": true, "validation": ["max 35 chars", "matches ^[a-z0-9][-.a-z0-9]*$"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Topic not found on repo"},
+          {"status_code": 422, "type": "invalidTopicsError", "condition": "Invalid topic name format"}
+        ]
+      },
+      "authentication": "bearer (write access required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-351",
+      "http_method": "GET",
+      "path": "/api/v1/topics/search",
+      "controller_class": "repo",
+      "controller_method": "TopicSearch",
+      "description": "Search topics via keyword",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "q", "type": "string", "required": true, "default": null, "validation": []},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "TopicListResponse",
+          "fields": [
+            {"name": "topics", "type": "[]api.TopicResponse", "description": "List of matching topics with id, name, repo_count, created, updated"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Access denied"},
+          {"status_code": 404, "type": "notFound", "condition": "Not found"}
+        ]
+      },
+      "authentication": "optional",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

@@ -1,0 +1,161 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-234",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/mirror-sync",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "queue"],
+        "note": "1 DB read + 1 queue push (async)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-235",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors-sync",
+      "resource_load": {
+        "operations_per_request": "2 + N*3 (N = number of push mirrors)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git", "network"],
+        "note": "1 DB read for list + N*(1 DB read + 1 git push + 1 DB update)"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "synchronous_blocking",
+          "description": "Push mirror sync is done synchronously in the HTTP request handler, blocking the request thread for each mirror's git push operation",
+          "impact": "Request can block for minutes if there are multiple push mirrors or slow remotes. Timeout = git.TIMEOUT.MIRROR * N mirrors",
+          "file_path": "routers/api/v1/repo/mirror.go",
+          "line_number": 97,
+          "code_snippet": "for _, mirror := range pushMirrors {\n\tok := mirror_service.SyncPushMirror(ctx, mirror.ID)",
+          "recommendation": "Queue push mirror syncs asynchronously like pull mirror sync does, rather than blocking the HTTP request"
+        },
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Each SyncPushMirror call loads the push mirror by ID again from DB, even though it was already loaded in the list",
+          "impact": "N additional SELECT queries where N = number of push mirrors",
+          "file_path": "services/mirror/mirror_push.go",
+          "line_number": 82,
+          "code_snippet": "m, exist, err := db.GetByID[repo_model.PushMirror](ctx, mirrorID)",
+          "recommendation": "Pass the already-loaded PushMirror object directly instead of re-fetching by ID"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "async",
+          "description": "Make push mirror sync asynchronous by queuing each mirror sync",
+          "estimated_impact": "Reduce request latency from O(N * timeout) to O(1)",
+          "implementation": "Use AddPushMirrorToQueue for each mirror instead of calling SyncPushMirror directly"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-236",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors",
+      "resource_load": {
+        "operations_per_request": "2 + N",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 count query + 1 paginated select + N GetRepository calls in ToPushMirror"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "ToPushMirror calls GetRepository for each push mirror to get repo name, but repo is already available in ctx.Repo.Repository",
+          "impact": "N additional SELECT queries on repository table (likely cached by XORM session)",
+          "file_path": "services/convert/mirror.go",
+          "line_number": 15,
+          "code_snippet": "repo := pm.GetRepository(ctx)",
+          "recommendation": "Set pm.Repo = ctx.Repo.Repository before calling ToPushMirror to avoid redundant lookups"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Pre-set Repo field on PushMirror objects before conversion",
+          "estimated_impact": "Eliminate N redundant repository lookups",
+          "implementation": "Set mirror.Repo = ctx.Repo.Repository in the loop before calling convert.ToPushMirror"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-237",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors/{name}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT push_mirror + 1 GetRepository in ToPushMirror"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-238",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git", "network"],
+        "note": "1 INSERT + 1 git remote add + git config adds + DNS lookup for URL validation"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_timeout",
+          "description": "IsMigrateURLAllowed performs DNS lookup (net.LookupIP) without explicit timeout",
+          "impact": "DNS resolution could hang if DNS server is unresponsive, blocking the request",
+          "file_path": "services/migrations/migrate.go",
+          "line_number": 90,
+          "code_snippet": "addrList, _ := net.LookupIP(hostName)",
+          "recommendation": "Use a context-aware DNS resolver with timeout"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-239",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors/{name}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 DELETE query"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "writes_on_reads",
+          "description": "Delete does not remove the git remote from the repository, leaving orphaned git config",
+          "impact": "Git config accumulates stale remote entries over time",
+          "file_path": "routers/api/v1/repo/mirror.go",
+          "line_number": 232,
+          "code_snippet": "err := repo_model.DeletePushMirrors(ctx, repo_model.PushMirrorOptions{RepoID: ctx.Repo.Repository.ID, RemoteName: remoteName})",
+          "recommendation": "Call RemovePushMirrorRemote to clean up git remote config before deleting DB record"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Add git remote cleanup on delete",
+          "estimated_impact": "Prevent git config bloat from orphaned remotes",
+          "implementation": "Call mirror_service.RemovePushMirrorRemote before repo_model.DeletePushMirrors"
+        }
+      ]
+    }
+  ]
+}

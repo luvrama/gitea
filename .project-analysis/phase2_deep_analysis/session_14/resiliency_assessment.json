@@ -1,0 +1,200 @@
+{
+  "total_findings": 6,
+  "overall_risk": "medium",
+  "dependency_resiliency": [
+    {
+      "dependency": "HaveIBeenPwned API",
+      "client_class": "pwn.Client",
+      "file_path": "modules/auth/password/pwn/pwn.go",
+      "used_by_endpoints": ["ep-098"],
+      "timeout": {
+        "status": "missing",
+        "value_ms": null,
+        "recommendation": "Add 5000ms timeout to the http.Client used in pwn.New(). Replace http.DefaultClient with &http.Client{Timeout: 5*time.Second}"
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Add single retry with 1s backoff for transient network errors"
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "Consider circuit breaker if this API is called frequently; for admin-only user creation, may not be critical"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Not critical for admin-only endpoint"
+      },
+      "fallback": {
+        "status": "configured",
+        "behavior": "On API failure, error is wrapped as ErrIsPwnedRequest and logged; user creation is rejected with 400. The check can be disabled via PasswordCheckPwn=false config.",
+        "recommendation": "Consider allowing user creation to proceed with a warning when the API is unreachable, rather than blocking"
+      },
+      "idempotency": {
+        "safe_to_retry": true,
+        "reason": "GET request to read-only API, no side effects"
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-098"],
+        "impact": "If HaveIBeenPwned is down and PasswordCheckPwn=true, all admin user creation requests fail with 400"
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-091",
+      "http_method": "GET",
+      "path": "/api/v1/admin/hooks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - only depends on database",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-092",
+      "http_method": "GET",
+      "path": "/api/v1/admin/hooks/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - only depends on database",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-093",
+      "http_method": "POST",
+      "path": "/api/v1/admin/hooks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single DB insert",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-094",
+      "http_method": "PATCH",
+      "path": "/api/v1/admin/hooks/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "EditSystemHook does SELECT, then editHook (UPDATE), then re-SELECT. If concurrent modification occurs between operations, stale data could be returned. However, this is admin-only and unlikely to have concurrent access.",
+          "recommendation": "Acceptable risk for admin endpoint"
+        }
+      ],
+      "non_atomic_operations": ["SELECT + UPDATE + SELECT without transaction wrapper"],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-095",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/hooks/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - transactional delete",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-096",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/orgs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - all operations in single transaction",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-097",
+      "http_method": "GET",
+      "path": "/api/v1/admin/orgs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only DB query",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-098",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users",
+      "risk_level": "medium",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "HaveIBeenPwned API call uses http.DefaultClient with no timeout. Request can hang indefinitely.",
+          "recommendation": "Set Timeout: 5*time.Second on the HTTP client"
+        },
+        {
+          "pattern": "retry",
+          "status": "missing",
+          "severity": "low",
+          "detail": "No retry logic for transient network failures to HaveIBeenPwned",
+          "recommendation": "Add single retry with backoff for network errors"
+        },
+        {
+          "pattern": "circuit_breaker",
+          "status": "missing",
+          "severity": "low",
+          "detail": "No circuit breaker for HaveIBeenPwned API",
+          "recommendation": "Low priority for admin-only endpoint; consider if bulk user creation is common"
+        },
+        {
+          "pattern": "fallback",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Fallback exists: PasswordCheckPwn config can disable the check entirely. When API fails, error is logged and user creation is rejected.",
+          "recommendation": "Consider graceful degradation: allow creation with warning when API is unreachable"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "HaveIBeenPwned down → all admin user creation blocked (if PasswordCheckPwn=true)",
+      "graceful_degradation": "Can be disabled via PasswordCheckPwn=false config"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses modules/graceful for graceful shutdown with signal handling",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No rate limiting on admin API endpoints",
+      "recommendation": "Admin endpoints are protected by auth; rate limiting is low priority"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "These endpoints are synchronous; mailer uses internal queue"
+    },
+    "single_points_of_failure": [
+      "HaveIBeenPwned API (for user creation with PasswordCheckPwn=true)"
+    ],
+    "cascading_failure_paths": [
+      "HaveIBeenPwned API down → ep-098 user creation fails with 400"
+    ]
+  }
+}

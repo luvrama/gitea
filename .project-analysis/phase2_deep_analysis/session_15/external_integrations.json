@@ -1,0 +1,26 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "HaveIBeenPwned API",
+      "type": "http_api",
+      "base_url": "https://api.pwnedpasswords.com",
+      "client_class": "password.IsPwned",
+      "file_path": "modules/auth/password/pwn/pwn.go",
+      "http_library": "net/http",
+      "endpoints_called": [
+        {"method": "GET", "path": "/range/{hash_prefix}", "request": {"type": "string", "key_fields": ["sha1_prefix"]}, "response": {"type": "text/plain", "key_fields": ["hash_suffixes"]}, "purpose": "Check if password has been compromised"}
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": "If request fails, error is returned but treated as non-blocking in some contexts"
+      },
+      "authentication": "none",
+      "used_by_endpoints": ["ep-099"],
+      "config_keys": ["PASSWORD_CHECK_PWN"]
+    }
+  ]
+}

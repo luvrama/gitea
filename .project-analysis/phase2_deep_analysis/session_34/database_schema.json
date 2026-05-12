@@ -1,0 +1,151 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL",
+  "total_tables_or_collections": 7,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "pull_request",
+      "entity_class": "issues_model.PullRequest",
+      "file_path": "models/issues/pull.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "type", "type": "INT", "code_type": "PullRequestType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "status", "type": "INT", "code_type": "PullRequestStatus", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "conflicted_files", "type": "TEXT", "code_type": "[]string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["JSON"]},
+        {"name": "commits_ahead", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "commits_behind", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "index", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "head_repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "base_repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "head_branch", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "base_branch", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "merge_base", "type": "VARCHAR(64)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "allow_maintainer_edit", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL"]},
+        {"name": "has_merged", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "merged_commit_id", "type": "VARCHAR(64)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "merger_id", "type": "BIGINT", "code_type": "int64", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "merged_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "flow", "type": "INT", "code_type": "PullRequestFlow", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL"]}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "head_repo_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "base_repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "pull_auto_merge",
+      "entity_class": "pull_model.AutoMerge",
+      "file_path": "models/pull/automerge.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "pull_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "doer_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "NOT NULL"]},
+        {"name": "merge_style", "type": "VARCHAR(30)", "code_type": "repo_model.MergeStyle", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "message", "type": "LONGTEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "delete_branch_after_merge", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "pull_request", "join_column": "pull_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "doer_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "issue",
+      "entity_class": "issues_model.Issue",
+      "file_path": "models/issues/issue.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "title", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "poster_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "content", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "milestone_id", "type": "BIGINT", "code_type": "int64", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "is_pull", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_closed", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "deadline_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "content_version", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "one-to-one", "target_table": "pull_request", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "protected_branch",
+      "entity_class": "git_model.ProtectedBranch",
+      "file_path": "models/git/protected_branch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "rule_name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "require_signed_commits", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "block_admin_merge_override", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [{"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "label",
+      "entity_class": "issues_model.Label",
+      "file_path": "models/issues/label.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [{"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}]
+    },
+    {
+      "entity_id": "db-006",
+      "table_or_collection": "milestone",
+      "entity_class": "issues_model.Milestone",
+      "file_path": "models/issues/milestone.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [{"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}]
+    },
+    {
+      "entity_id": "db-007",
+      "table_or_collection": "issue_dependency",
+      "entity_class": "issues_model.IssueDependency",
+      "file_path": "models/issues/dependency.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "dependency_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [{"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"}]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [
+    {"queue_id": "mq-001", "name": "pr_auto_merge", "technology": "internal queue (levelqueue/channel/redis)", "message_type": "string (pullID_sha)", "description": "Queue for auto-merge checks when checks succeed"}
+  ],
+  "operations_by_endpoint": [
+    {"endpoint_id": "ep-226", "path": "/api/v1/repos/{owner}/{repo}/pulls", "operations": [{"store_type": "database", "store_name": "pull_request", "operation": "SELECT", "method": "issues_model.GetUnmergedPullRequest", "description": "Check existing PR"}, {"store_type": "database", "store_name": "issue", "operation": "INSERT", "method": "pull_service.NewPullRequest", "description": "Create issue"}, {"store_type": "database", "store_name": "pull_request", "operation": "INSERT", "method": "pull_service.NewPullRequest", "description": "Create PR"}]},
+    {"endpoint_id": "ep-227", "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}", "operations": [{"store_type": "database", "store_name": "pull_request", "operation": "SELECT", "method": "issues_model.GetPullRequestByIndex", "description": "Get PR"}, {"store_type": "database", "store_name": "issue", "operation": "UPDATE", "method": "issue_service.ChangeTitle/ChangeContent", "description": "Update issue fields"}, {"store_type": "database", "store_name": "pull_request", "operation": "UPDATE", "method": "pull_service.ChangeTargetBranch", "description": "Update base branch"}]},
+    {"endpoint_id": "ep-228", "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge", "operations": [{"store_type": "database", "store_name": "pull_request", "operation": "SELECT", "method": "issues_model.GetPullRequestByIndex", "description": "Get PR"}]},
+    {"endpoint_id": "ep-229", "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge", "operations": [{"store_type": "database", "store_name": "pull_request", "operation": "SELECT", "method": "issues_model.GetPullRequestByIndex", "description": "Get PR"}, {"store_type": "database", "store_name": "pull_request", "operation": "UPDATE", "method": "pull_service.Merge", "description": "Set merged"}, {"store_type": "database", "store_name": "pull_auto_merge", "operation": "INSERT", "method": "automerge.ScheduleAutoMerge", "description": "Schedule auto-merge"}, {"store_type": "message_queue", "store_name": "pr_auto_merge", "operation": "PUBLISH", "method": "automergequeue.StartPRCheckAndAutoMerge", "description": "Queue auto-merge check"}]},
+    {"endpoint_id": "ep-230", "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/update", "operations": [{"store_type": "database", "store_name": "pull_request", "operation": "SELECT", "method": "issues_model.GetPullRequestByIndex", "description": "Get PR"}]},
+    {"endpoint_id": "ep-231", "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge", "operations": [{"store_type": "database", "store_name": "pull_request", "operation": "SELECT", "method": "issues_model.GetPullRequestByIndex", "description": "Get PR"}, {"store_type": "database", "store_name": "pull_auto_merge", "operation": "SELECT", "method": "pull_model.GetScheduledMergeByPullID", "description": "Get scheduled merge"}, {"store_type": "database", "store_name": "pull_auto_merge", "operation": "DELETE", "method": "automerge.RemoveScheduledAutoMerge", "description": "Remove scheduled merge"}]},
+    {"endpoint_id": "ep-232", "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/commits", "operations": [{"store_type": "database", "store_name": "pull_request", "operation": "SELECT", "method": "issues_model.GetPullRequestByIndex", "description": "Get PR"}, {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "convert.ToCommit", "description": "Resolve commit authors"}]},
+    {"endpoint_id": "ep-233", "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/files", "operations": [{"store_type": "database", "store_name": "pull_request", "operation": "SELECT", "method": "issues_model.GetPullRequestByIndex", "description": "Get PR"}]}
+  ]
+}

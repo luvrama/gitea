@@ -1,0 +1,651 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-208",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "description": "Lists all issues that block the given issue, with permission-based visibility filtering",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetIssueDependencies",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext with owner/repo/index path params",
+          "output": "JSON array of issues",
+          "operations": ["Check dependencies enabled on repo", "Get issue by index", "Check read permission"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "Repository.IsDependenciesEnabled",
+          "type": "service",
+          "file_path": "models/repo/issue.go",
+          "input": "context",
+          "output": "bool",
+          "operations": ["Get repo unit TypeIssues", "Return IssuesConfig().EnableDependencies or default"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repo_unit", "description": "Get issues unit config"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issues_model.GetIssueByIndex",
+          "type": "repository",
+          "file_path": "models/issues/issue.go",
+          "input": "repoID, index",
+          "output": "*Issue",
+          "operations": ["Query issue by repo_id and index"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue", "description": "Get issue by repo_id and index"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "Issue.BlockedByDependencies",
+          "type": "repository",
+          "file_path": "models/issues/issue.go",
+          "input": "context, ListOptions",
+          "output": "[]*DependencyInfo, total, error",
+          "operations": ["JOIN issue + repository + issue_dependency", "Paginate results", "Set Issue.Repo for each"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue JOIN repository JOIN issue_dependency", "description": "Get all blocking issues with repo info, paginated"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "access_model.GetDoerRepoPermission",
+          "type": "service",
+          "file_path": "models/perm/access/repo_permission.go",
+          "input": "repo, user",
+          "output": "Permission",
+          "operations": ["Get permission for each unique repo (cached in map)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "Get user access level for repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 6,
+          "component": "convert.ToAPIIssueList",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "[]*Issue",
+          "output": "[]*api.Issue",
+          "operations": ["Convert each issue to API format, loading labels/assignees/milestone"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue/label/milestone/user", "description": "Load related data for each issue"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "issues_model.DependencyInfo",
+          "to": "*api.Issue",
+          "component": "convert.ToAPIIssueList",
+          "mappings": [
+            {"source_field": "Issue.ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Issue.Index", "target_field": "index", "transformation": "direct_copy"},
+            {"source_field": "Issue.Title", "target_field": "title", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Dependencies disabled on repo", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Issue not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "No read permission on issue", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-209",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "description": "Creates a dependency: makes the URL issue depend on the body issue",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateIssueDependency",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext with path params and IssueMeta body",
+          "output": "JSON Issue",
+          "operations": ["Get target from URL", "Get dependency from form", "Get permissions", "Create dependency"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.getParamsIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext",
+          "output": "*Issue (target)",
+          "operations": ["Get issue by repo ID and index from URL path"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue", "description": "Get target issue by index"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo.getFormIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext, *IssueMeta",
+          "output": "*Issue (dependency)",
+          "operations": ["Check cross-repo setting", "Get repo by owner/name if different", "Get issue by index"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Get dependency repo if cross-repo"},
+            {"operation": "SELECT", "table": "issue", "description": "Get dependency issue by index"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "repo.getPermissionForRepo",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext, *Repository",
+          "output": "*Permission",
+          "operations": ["Return ctx.Repo.Permission if same repo, else GetDoerRepoPermission"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "Get permission for dependency repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "repo.createIssueDependency",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "target, dependency, targetPerm, dependencyPerm",
+          "output": "void (writes to ctx on error)",
+          "operations": ["Check archived", "Check dependencies enabled", "Check write on target", "Check read on dependency"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 6,
+          "component": "issues_model.CreateIssueDependency",
+          "type": "repository",
+          "file_path": "models/issues/dependency.go",
+          "input": "user, issue, dep",
+          "output": "error",
+          "operations": ["Check exists", "Check circular", "Insert dependency", "Create comments on both issues"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue_dependency", "description": "Check if dependency already exists"},
+            {"operation": "SELECT", "table": "issue_dependency", "description": "Check circular dependency"},
+            {"operation": "INSERT", "table": "issue_dependency", "description": "Create the dependency record"},
+            {"operation": "INSERT", "table": "comment", "description": "Add dependency comment to both issues"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 7,
+          "component": "convert.ToAPIIssue",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "*Issue (target)",
+          "output": "*api.Issue",
+          "operations": ["Convert target issue to API format"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue/label/user", "description": "Load related data"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.IssueMeta",
+          "to": "*issues_model.Issue",
+          "component": "repo.getFormIssue",
+          "mappings": [
+            {"source_field": "Index", "target_field": "Index", "transformation": "direct_copy"},
+            {"source_field": "Owner+Name", "target_field": "Repo", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Cross-repo deps disabled", "handler": "ctx.JSON(400)", "response_code": 400, "response": "CrossRepositoryDependencies not enabled"},
+        {"condition": "Repo archived or deps disabled", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "No write perm on target", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Circular dependency", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-210",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "description": "Removes a dependency from the URL issue",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.RemoveIssueDependency",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext with path params and IssueMeta body",
+          "output": "JSON Issue",
+          "operations": ["Get target from URL", "Get dependency from form", "Get permissions", "Remove dependency"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.getParamsIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext",
+          "output": "*Issue",
+          "operations": ["Get issue by repo ID and index"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue", "description": "Get target issue"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo.getFormIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext, *IssueMeta",
+          "output": "*Issue",
+          "operations": ["Resolve dependency issue from form"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Get dependency repo if cross-repo"},
+            {"operation": "SELECT", "table": "issue", "description": "Get dependency issue"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "repo.removeIssueDependency",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "target, dependency, targetPerm, dependencyPerm",
+          "output": "void",
+          "operations": ["Check archived", "Check deps enabled", "Check write on target", "Check read on dependency"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "issues_model.RemoveIssueDependency",
+          "type": "repository",
+          "file_path": "models/issues/dependency.go",
+          "input": "user, issue, dep, DependencyTypeBlockedBy",
+          "output": "error",
+          "operations": ["Delete issue_dependency record", "Check affected rows", "Create comments on both issues"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "DELETE", "table": "issue_dependency", "description": "Remove the dependency record"},
+            {"operation": "INSERT", "table": "comment", "description": "Add removal comment to both issues"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 6,
+          "component": "convert.ToAPIIssue",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "*Issue (target)",
+          "output": "*api.Issue",
+          "operations": ["Convert to API format"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue/label/user", "description": "Load related data"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.IssueMeta",
+          "to": "*issues_model.Issue",
+          "component": "repo.getFormIssue",
+          "mappings": [
+            {"source_field": "Index", "target_field": "Index", "transformation": "direct_copy"},
+            {"source_field": "Owner+Name", "target_field": "Repo", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Cross-repo deps disabled", "handler": "ctx.JSON(400)", "response_code": 400, "response": "CrossRepositoryDependencies not enabled"},
+        {"condition": "Dependency not exists", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-211",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "description": "Lists issues that are blocked by this issue (this issue blocks them)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetIssueBlocks",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext with path params and page/limit query",
+          "output": "JSON array of issues",
+          "operations": ["Get issue from params", "Check read permission", "Get blocking deps", "Filter by permission", "Manual pagination"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.getParamsIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext",
+          "output": "*Issue",
+          "operations": ["Get issue by repo ID and index"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue", "description": "Get issue by index"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "Issue.BlockingDependencies",
+          "type": "repository",
+          "file_path": "models/issues/issue.go",
+          "input": "context",
+          "output": "[]*DependencyInfo",
+          "operations": ["JOIN issue + repository + issue_dependency WHERE dependency_id = issue.ID", "No pagination at DB level"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue JOIN repository JOIN issue_dependency", "description": "Get ALL issues blocked by this issue (unbounded)"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "access_model.GetDoerRepoPermission",
+          "type": "service",
+          "file_path": "models/perm/access/repo_permission.go",
+          "input": "repo, user",
+          "output": "Permission",
+          "operations": ["Get permission for each unique repo in results"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "Get user permission per repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToAPIIssueList",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "[]*Issue (filtered)",
+          "output": "[]*api.Issue",
+          "operations": ["Convert filtered issues to API format"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue/label/user", "description": "Load related data for each issue"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "issues_model.DependencyInfo",
+          "to": "*api.Issue",
+          "component": "convert.ToAPIIssueList",
+          "mappings": [
+            {"source_field": "Issue.ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Issue.Index", "target_field": "index", "transformation": "direct_copy"},
+            {"source_field": "Issue.Title", "target_field": "title", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "No read permission", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-212",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "description": "Makes the body issue depend on the URL issue (URL issue blocks body issue)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateIssueBlocking",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext with path params and IssueMeta body",
+          "output": "JSON Issue (the blocker/URL issue)",
+          "operations": ["Get dependency (URL issue)", "Get target (form issue)", "Get target perm", "Create dependency"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.getParamsIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext",
+          "output": "*Issue (dependency/blocker)",
+          "operations": ["Get issue by index from URL"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue", "description": "Get blocker issue"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo.getFormIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext, *IssueMeta",
+          "output": "*Issue (target)",
+          "operations": ["Resolve target issue from form body"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Get target repo if cross-repo"},
+            {"operation": "SELECT", "table": "issue", "description": "Get target issue"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "repo.createIssueDependency",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "target, dependency, targetPerm, ctx.Repo.Permission",
+          "output": "void",
+          "operations": ["Check target repo archived/deps enabled", "Check write on target", "Check read on dependency"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "issues_model.CreateIssueDependency",
+          "type": "repository",
+          "file_path": "models/issues/dependency.go",
+          "input": "user, target, dependency",
+          "output": "error",
+          "operations": ["Check exists", "Check circular", "Insert", "Create comments"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue_dependency", "description": "Check exists"},
+            {"operation": "SELECT", "table": "issue_dependency", "description": "Check circular"},
+            {"operation": "INSERT", "table": "issue_dependency", "description": "Create dependency"},
+            {"operation": "INSERT", "table": "comment", "description": "Add comments to both issues"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 6,
+          "component": "convert.ToAPIIssue",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "*Issue (dependency/blocker)",
+          "output": "*api.Issue",
+          "operations": ["Convert blocker issue to API format"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue/label/user", "description": "Load related data"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.IssueMeta",
+          "to": "*issues_model.Issue",
+          "component": "repo.getFormIssue",
+          "mappings": [
+            {"source_field": "Index", "target_field": "Index", "transformation": "direct_copy"},
+            {"source_field": "Owner+Name", "target_field": "Repo", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Cross-repo deps disabled", "handler": "ctx.JSON(400)", "response_code": 400, "response": "CrossRepositoryDependencies not enabled"},
+        {"condition": "Target repo archived/deps disabled", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Circular dependency", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-213",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "description": "Removes a blocking relationship: the URL issue no longer blocks the body issue",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.RemoveIssueBlocking",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext with path params and IssueMeta body",
+          "output": "JSON Issue (the blocker/URL issue)",
+          "operations": ["Get dependency (URL issue)", "Get target (form issue)", "Get target perm", "Remove dependency"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.getParamsIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext",
+          "output": "*Issue (dependency/blocker)",
+          "operations": ["Get issue by index from URL"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue", "description": "Get blocker issue"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo.getFormIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "APIContext, *IssueMeta",
+          "output": "*Issue (target)",
+          "operations": ["Resolve target issue from form body"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Get target repo if cross-repo"},
+            {"operation": "SELECT", "table": "issue", "description": "Get target issue"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "repo.removeIssueDependency",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "input": "target, dependency, targetPerm, ctx.Repo.Permission",
+          "output": "void",
+          "operations": ["Check target repo archived/deps enabled", "Check write on target", "Check read on dependency"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "issues_model.RemoveIssueDependency",
+          "type": "repository",
+          "file_path": "models/issues/dependency.go",
+          "input": "user, target, dependency, DependencyTypeBlockedBy",
+          "output": "error",
+          "operations": ["Delete issue_dependency record", "Check affected rows", "Create comments"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "DELETE", "table": "issue_dependency", "description": "Remove dependency record"},
+            {"operation": "INSERT", "table": "comment", "description": "Add removal comments to both issues"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 6,
+          "component": "convert.ToAPIIssue",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "*Issue (dependency/blocker)",
+          "output": "*api.Issue",
+          "operations": ["Convert blocker issue to API format"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue/label/user", "description": "Load related data"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.IssueMeta",
+          "to": "*issues_model.Issue",
+          "component": "repo.getFormIssue",
+          "mappings": [
+            {"source_field": "Index", "target_field": "Index", "transformation": "direct_copy"},
+            {"source_field": "Owner+Name", "target_field": "Repo", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Cross-repo deps disabled", "handler": "ctx.JSON(400)", "response_code": 400, "response": "CrossRepositoryDependencies not enabled"},
+        {"condition": "Dependency not exists", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

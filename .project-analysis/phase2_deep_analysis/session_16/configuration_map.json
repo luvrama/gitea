@@ -1,0 +1,29 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "repository.force_private",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "repo", "method": "CreateUserRepo", "file_path": "routers/api/v1/repo/repo.go", "usage": "OR'd with user's private flag", "impact": "Forces all new repos to be private"}],
+      "affected_endpoints": ["ep-112"]
+    },
+    {
+      "key": "repository.root_path",
+      "type": "String",
+      "default_value": "data/gitea-repositories",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "repo_service", "method": "ListUnadoptedRepositories", "file_path": "services/repository/adopt.go", "usage": "Root directory for filesystem walk", "impact": "Determines where to look for unadopted repos"}],
+      "affected_endpoints": ["ep-107", "ep-108", "ep-109"]
+    },
+    {
+      "key": "database.iterate_buffer_size",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/database.go",
+      "used_by": [{"class": "repo_service", "method": "ListUnadoptedRepositories", "file_path": "services/repository/adopt.go", "usage": "Batch size for checking repos against DB", "impact": "Controls memory usage during filesystem walk"}],
+      "affected_endpoints": ["ep-107"]
+    }
+  ]
+}

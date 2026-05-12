@@ -1,0 +1,44 @@
+{
+  "endpoints_by_database_table": {
+    "issue_dependency": {"read": ["ep-208", "ep-211"], "write": ["ep-209", "ep-210", "ep-212", "ep-213"]},
+    "issue": {"read": ["ep-208", "ep-209", "ep-210", "ep-211", "ep-212", "ep-213"], "write": []},
+    "repository": {"read": ["ep-208", "ep-209", "ep-210", "ep-211", "ep-212", "ep-213"], "write": []},
+    "comment": {"read": [], "write": ["ep-209", "ep-210", "ep-212", "ep-213"]},
+    "repo_unit": {"read": ["ep-208", "ep-209", "ep-210", "ep-212", "ep-213"], "write": []},
+    "access": {"read": ["ep-208", "ep-209", "ep-210", "ep-211", "ep-212", "ep-213"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "service.DEFAULT_ENABLE_DEPENDENCIES": ["ep-208", "ep-209", "ep-210", "ep-212", "ep-213"],
+    "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES": ["ep-209", "ep-210", "ep-212", "ep-213"],
+    "api.DEFAULT_PAGING_NUM": ["ep-208", "ep-211"]
+  },
+  "endpoints_by_model_class": {
+    "IssueDependency": ["ep-208", "ep-209", "ep-210", "ep-211", "ep-212", "ep-213"],
+    "Issue": ["ep-208", "ep-209", "ep-210", "ep-211", "ep-212", "ep-213"],
+    "DependencyInfo": ["ep-208", "ep-211"],
+    "IssueMeta": ["ep-209", "ep-210", "ep-212", "ep-213"]
+  },
+  "endpoints_by_service_class": {
+    "convert.ToAPIIssue": ["ep-209", "ep-210", "ep-212", "ep-213"],
+    "convert.ToAPIIssueList": ["ep-208", "ep-211"],
+    "access_model.GetDoerRepoPermission": ["ep-208", "ep-209", "ep-210", "ep-211", "ep-212", "ep-213"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-208": {"reads": ["issue", "repository", "issue_dependency", "repo_unit", "access"], "writes": []},
+    "ep-209": {"reads": ["issue", "repository", "issue_dependency", "repo_unit", "access"], "writes": ["issue_dependency", "comment"]},
+    "ep-210": {"reads": ["issue", "repository", "repo_unit", "access"], "writes": ["issue_dependency", "comment"]},
+    "ep-211": {"reads": ["issue", "repository", "issue_dependency", "access"], "writes": []},
+    "ep-212": {"reads": ["issue", "repository", "issue_dependency", "repo_unit", "access"], "writes": ["issue_dependency", "comment"]},
+    "ep-213": {"reads": ["issue", "repository", "repo_unit", "access"], "writes": ["issue_dependency", "comment"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-208": ["service.DEFAULT_ENABLE_DEPENDENCIES", "api.DEFAULT_PAGING_NUM"],
+    "ep-209": ["service.DEFAULT_ENABLE_DEPENDENCIES", "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES"],
+    "ep-210": ["service.DEFAULT_ENABLE_DEPENDENCIES", "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES"],
+    "ep-211": ["api.DEFAULT_PAGING_NUM"],
+    "ep-212": ["service.DEFAULT_ENABLE_DEPENDENCIES", "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES"],
+    "ep-213": ["service.DEFAULT_ENABLE_DEPENDENCIES", "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES"]
+  }
+}

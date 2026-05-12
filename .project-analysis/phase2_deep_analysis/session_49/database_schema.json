@@ -1,0 +1,220 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL",
+  "total_tables_or_collections": 7,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "team",
+      "entity_class": "organization.Team",
+      "file_path": "models/organization/team.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "authorize", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_repos", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_members", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "includes_all_repositories", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "can_create_org_repo", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_team_org_id", "columns": ["org_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"},
+        {"type": "many-to-many", "target_table": "repository", "join_column": "team_repo"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "team_repo",
+      "entity_class": "organization.TeamRepo",
+      "file_path": "models/organization/team_repo.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "team_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]}
+      ],
+      "indexes": [
+        {"name": "UQE_team_repo_s", "columns": ["team_id", "repo_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "team", "join_column": "team_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "repository",
+      "entity_class": "repo_model.Repository",
+      "file_path": "models/repo/repo.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "fork_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "is_fork", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "num_forks", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_repository_fork_id", "columns": ["fork_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "one-to-many", "target_table": "repository", "join_column": "fork_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "issue",
+      "entity_class": "issues_model.Issue",
+      "file_path": "models/issues/issue.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "index", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "is_pull", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_issue_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "UQE_issue_repo_index", "columns": ["repo_id", "index"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-many", "target_table": "label", "join_column": "issue_label"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "label",
+      "entity_class": "issues_model.Label",
+      "file_path": "models/issues/label.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "exclusive", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "color", "type": "VARCHAR(7)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_label_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_label_org_id", "columns": ["org_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-many", "target_table": "issue", "join_column": "issue_label"}
+      ]
+    },
+    {
+      "entity_id": "db-006",
+      "table_or_collection": "issue_label",
+      "entity_class": "issues_model.IssueLabel",
+      "file_path": "models/issues/issue_label.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "label_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_issue_label", "columns": ["issue_id", "label_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "label", "join_column": "label_id"}
+      ]
+    },
+    {
+      "entity_id": "db-007",
+      "table_or_collection": "team_unit",
+      "entity_class": "organization.TeamUnit",
+      "file_path": "models/organization/team_unit.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "team_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "type", "type": "INT", "code_type": "unit.Type", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "access_mode", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_team_unit_team_id", "columns": ["team_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "team", "join_column": "team_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-330",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "operations": [
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "organization.GetTeam", "description": "find team by org_id and lower_name"},
+        {"store_type": "database", "store_name": "team_repo", "operation": "SELECT", "method": "organization.HasTeamRepo", "description": "check team-repo relation"},
+        {"store_type": "database", "store_name": "team_unit", "operation": "SELECT", "method": "team.LoadUnits", "description": "load team units for conversion"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-331",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "operations": [
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "organization.GetTeam", "description": "find team by name"},
+        {"store_type": "database", "store_name": "team_repo", "operation": "SELECT", "method": "organization.HasTeamRepo", "description": "check if already assigned"},
+        {"store_type": "database", "store_name": "team_repo", "operation": "INSERT", "method": "organization.AddTeamRepo", "description": "add team-repo relation"},
+        {"store_type": "database", "store_name": "team", "operation": "UPDATE", "method": "organization.IncrTeamRepoNum", "description": "increment num_repos"},
+        {"store_type": "database", "store_name": "access", "operation": "DELETE/INSERT", "method": "access_model.RecalculateTeamAccesses", "description": "recalculate access"},
+        {"store_type": "database", "store_name": "watch", "operation": "INSERT", "method": "repo_model.WatchRepo", "description": "auto-watch for team members"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-332",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "operations": [
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "organization.GetTeam", "description": "find team by name"},
+        {"store_type": "database", "store_name": "team_repo", "operation": "SELECT", "method": "organization.HasTeamRepo", "description": "check if assigned"},
+        {"store_type": "database", "store_name": "team_repo", "operation": "DELETE", "method": "organization.RemoveTeamRepo", "description": "remove team-repo relation"},
+        {"store_type": "database", "store_name": "team", "operation": "UPDATE", "method": "repo_service.removeRepositoryFromTeam", "description": "decrement num_repos"},
+        {"store_type": "database", "store_name": "access", "operation": "DELETE/INSERT", "method": "access_model.RecalculateTeamAccesses", "description": "recalculate access"},
+        {"store_type": "database", "store_name": "watch", "operation": "DELETE", "method": "repo_model.WatchRepo", "description": "remove watches for members who lost access"},
+        {"store_type": "database", "store_name": "issue_watch", "operation": "DELETE", "method": "issues_model.RemoveIssueWatchersByRepoID", "description": "remove issue watches"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-333",
+      "path": "/api/v1/repos/{owner}/{repo}/forks",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "repo_service.FindForks", "description": "find repos with fork_id=repo.ID"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "RepositoryList.LoadOwners", "description": "load owners"},
+        {"store_type": "database", "store_name": "repo_unit", "operation": "SELECT", "method": "RepositoryList.LoadUnits", "description": "load units"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "access_model.GetDoerRepoPermission", "description": "get permission per fork"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-334",
+      "path": "/api/v1/repos/{owner}/{repo}/forks",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "organization.GetOrgByName", "description": "get org if specified"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "repo_model.GetUserFork", "description": "check existing fork"},
+        {"store_type": "database", "store_name": "repository", "operation": "INSERT", "method": "createRepositoryInDB", "description": "create fork repo"},
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "repo_model.IncrementRepoForkNum", "description": "increment fork count"},
+        {"store_type": "database", "store_name": "lfs_meta_object", "operation": "INSERT", "method": "git_model.CopyLFS", "description": "copy LFS objects"},
+        {"store_type": "database", "store_name": "branch", "operation": "INSERT", "method": "repo_module.SyncRepoBranchesWithRepo", "description": "sync branches"},
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "repo_model.UpdateRepositoryColsWithAutoTime", "description": "set status ready"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-335",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "get issue by repo_id and index"},
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issue.LoadAttributes", "description": "load labels via issue_label join"}
+      ]
+    }
+  ]
+}

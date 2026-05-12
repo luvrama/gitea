@@ -1,0 +1,41 @@
+{
+  "endpoints_by_database_table": {
+    "webhook": {"read": ["ep-077", "ep-078", "ep-080"], "write": ["ep-079", "ep-080", "ep-081"]},
+    "hook_task": {"read": [], "write": ["ep-081"]},
+    "label": {"read": ["ep-082"], "write": ["ep-083"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "setting.API.DefaultPagingNum": ["ep-077", "ep-082"],
+    "setting.API.MaxResponseItems": ["ep-077", "ep-082"],
+    "setting.SecretKey": ["ep-077", "ep-078", "ep-079", "ep-080"]
+  },
+  "endpoints_by_model_class": {
+    "webhook.Webhook": ["ep-077", "ep-078", "ep-079", "ep-080", "ep-081"],
+    "issues_model.Label": ["ep-082", "ep-083"]
+  },
+  "endpoints_by_service_class": {
+    "webhook_service.ToHook": ["ep-077", "ep-078", "ep-079", "ep-080"],
+    "convert.ToLabel": ["ep-082", "ep-083"],
+    "convert.ToLabelList": ["ep-082"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-077": {"reads": ["webhook"], "writes": []},
+    "ep-078": {"reads": ["webhook"], "writes": []},
+    "ep-079": {"reads": [], "writes": ["webhook"]},
+    "ep-080": {"reads": ["webhook"], "writes": ["webhook"]},
+    "ep-081": {"reads": ["webhook"], "writes": ["webhook", "hook_task"]},
+    "ep-082": {"reads": ["label"], "writes": []},
+    "ep-083": {"reads": [], "writes": ["label"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-077": ["setting.API.DefaultPagingNum", "setting.API.MaxResponseItems", "setting.SecretKey"],
+    "ep-078": ["setting.SecretKey"],
+    "ep-079": ["setting.SecretKey"],
+    "ep-080": ["setting.SecretKey"],
+    "ep-081": [],
+    "ep-082": ["setting.API.DefaultPagingNum", "setting.API.MaxResponseItems"],
+    "ep-083": []
+  }
+}

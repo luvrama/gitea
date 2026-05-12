@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "SHA must be a valid git ref pattern",
+      "location": {"class": "repo", "method": "GetNote", "file_path": "routers/api/v1/repo/notes.go", "line_number": 50},
+      "condition": "!git.IsValidRefPattern(sha)",
+      "action": "Return 422 validation error",
+      "affected_endpoints": ["ep-299"],
+      "code_snippet": "if !git.IsValidRefPattern(sha) {\n\tctx.APIError(http.StatusUnprocessableEntity, \"no valid ref or sha: \"+sha)\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "authorization",
+      "description": "User must have read permission for issues or pulls to view comment reactions",
+      "location": {"class": "repo", "method": "GetIssueCommentReactions", "file_path": "routers/api/v1/repo/issue_reaction.go", "line_number": 66},
+      "condition": "!ctx.Repo.Permission.CanReadIssuesOrPulls(comment.Issue.IsPull)",
+      "action": "Return 403 forbidden",
+      "affected_endpoints": ["ep-300"],
+      "code_snippet": "if !ctx.Repo.Permission.CanReadIssuesOrPulls(comment.Issue.IsPull) {\n\tctx.APIError(http.StatusForbidden, errors.New(\"no permission to get reactions\"))\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Comment must belong to the same repository",
+      "location": {"class": "repo", "method": "GetIssueCommentReactions", "file_path": "routers/api/v1/repo/issue_reaction.go", "line_number": 61},
+      "condition": "comment.Issue.RepoID != ctx.Repo.Repository.ID",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-300", "ep-301", "ep-302"],
+      "code_snippet": "if comment.Issue.RepoID != ctx.Repo.Repository.ID {\n\tctx.APIErrorNotFound()\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "authorization",
+      "description": "Cannot add/remove reaction on locked issue without write permission",
+      "location": {"class": "repo", "method": "changeIssueCommentReaction", "file_path": "routers/api/v1/repo/issue_reaction.go", "line_number": 163},
+      "condition": "comment.Issue.IsLocked && !ctx.Repo.Permission.CanWriteIssuesOrPulls(comment.Issue.IsPull)",
+      "action": "Return 403 forbidden",
+      "affected_endpoints": ["ep-301", "ep-302"],
+      "code_snippet": "if comment.Issue.IsLocked && !ctx.Repo.Permission.CanWriteIssuesOrPulls(comment.Issue.IsPull) {\n\tctx.APIError(http.StatusForbidden, errors.New(\"no permission to change reaction\"))\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Reaction type must be in the allowed reactions list",
+      "location": {"class": "issues_model", "method": "CreateReaction", "file_path": "models/issues/reaction.go", "line_number": 175},
+      "condition": "!setting.UI.ReactionsLookup.Contains(opts.Type)",
+      "action": "Return ErrForbiddenIssueReaction",
+      "affected_endpoints": ["ep-301", "ep-304"],
+      "code_snippet": "if !setting.UI.ReactionsLookup.Contains(opts.Type) {\n\treturn nil, ErrForbiddenIssueReaction{opts.Type}\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "If reaction already exists, return existing reaction with 200 instead of error",
+      "location": {"class": "repo", "method": "changeIssueCommentReaction", "file_path": "routers/api/v1/repo/issue_reaction.go", "line_number": 172},
+      "condition": "issues_model.IsErrReactionAlreadyExist(err)",
+      "action": "Return 200 with existing reaction data",
+      "affected_endpoints": ["ep-301", "ep-304"],
+      "code_snippet": "} else if issues_model.IsErrReactionAlreadyExist(err) {\n\tctx.JSON(http.StatusOK, api.Reaction{...})\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Blocked users cannot create reactions",
+      "location": {"class": "issue_service", "method": "CreateCommentReaction", "file_path": "services/issue/reaction.go", "line_number": 38},
+      "condition": "user_model.IsUserBlockedBy(ctx, doer, comment.Issue.PosterID, comment.Issue.Repo.OwnerID, comment.PosterID)",
+      "action": "Return user_model.ErrBlockedUser",
+      "affected_endpoints": ["ep-301", "ep-304"],
+      "code_snippet": "if user_model.IsUserBlockedBy(ctx, doer, ...) {\n\treturn nil, user_model.ErrBlockedUser\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "authorization",
+      "description": "Cannot add/remove reaction on locked issue without write permission (issue-level)",
+      "location": {"class": "repo", "method": "changeIssueReaction", "file_path": "routers/api/v1/repo/issue_reaction.go", "line_number": 283},
+      "condition": "issue.IsLocked && !ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull)",
+      "action": "Return 403 forbidden",
+      "affected_endpoints": ["ep-304", "ep-305"],
+      "code_snippet": "if issue.IsLocked && !ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull) {\n\tctx.APIError(http.StatusForbidden, errors.New(\"no permission to change reaction\"))\n}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "FindReactions filters by allowed reaction types from settings",
+      "location": {"class": "issues_model", "method": "FindReactions", "file_path": "models/issues/reaction.go", "line_number": 137},
+      "condition": "always applied",
+      "action": "Only reactions with types in setting.UI.Reactions are returned",
+      "affected_endpoints": ["ep-300", "ep-303"],
+      "code_snippet": "In(\"reaction.`type`\", setting.UI.Reactions)"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "authorization",
+      "description": "Admin users bypass block checks",
+      "location": {"class": "user_model", "method": "IsUserBlockedBy", "file_path": "models/user/block.go", "line_number": 53},
+      "condition": "blockee.IsAdmin",
+      "action": "Return false (not blocked)",
+      "affected_endpoints": ["ep-301", "ep-304"],
+      "code_snippet": "if blockee.IsAdmin {\n\treturn false\n}"
+    }
+  ]
+}

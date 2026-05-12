@@ -1,0 +1,290 @@
+{
+  "total_endpoints": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-077",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "controller_class": "org",
+      "controller_method": "ListHooks",
+      "description": "List an organization's webhooks",
+      "request": {
+        "path_params": [{"name": "org", "type": "string", "required": true, "validation": []}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min:1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["max:setting.API.MaxResponseItems"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Webhook ID"},
+            {"name": "name", "type": "string", "description": "Webhook name"},
+            {"name": "type", "type": "string", "description": "Hook type (gitea, slack, etc)"},
+            {"name": "branch_filter", "type": "string", "description": "Branch filter pattern"},
+            {"name": "config", "type": "map[string]string", "description": "Config with url, content_type"},
+            {"name": "events", "type": "[]string", "description": "Events array"},
+            {"name": "authorization_header", "type": "string", "description": "Decrypted auth header"},
+            {"name": "active", "type": "bool", "description": "Whether hook is active"},
+            {"name": "updated_at", "type": "time.Time", "description": "Last update time"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Organization not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-078",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "controller_class": "org",
+      "controller_method": "GetHook",
+      "description": "Get a single organization webhook by ID",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "*api.Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Webhook ID"},
+            {"name": "name", "type": "string", "description": "Webhook name"},
+            {"name": "type", "type": "string", "description": "Hook type"},
+            {"name": "config", "type": "map[string]string", "description": "Config with url, content_type"},
+            {"name": "events", "type": "[]string", "description": "Events array"},
+            {"name": "active", "type": "bool", "description": "Whether hook is active"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Webhook not found or does not belong to org"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-079",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "controller_class": "org",
+      "controller_method": "CreateHook",
+      "description": "Create a webhook for an organization",
+      "request": {
+        "path_params": [{"name": "org", "type": "string", "required": true, "validation": []}],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "CreateHookOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "type", "type": "string", "required": true, "validation": ["Required", "enum:dingtalk,discord,gitea,gogs,msteams,slack,telegram,feishu,wechatwork,packagist"], "description": "Hook type"},
+            {"name": "config", "type": "map[string]string", "required": true, "validation": ["Required", "must contain url and content_type"], "description": "Config map"},
+            {"name": "events", "type": "[]string", "required": false, "validation": [], "description": "Events to trigger on"},
+            {"name": "branch_filter", "type": "string", "required": false, "validation": ["GlobPattern"], "description": "Branch filter"},
+            {"name": "authorization_header", "type": "string", "required": false, "validation": [], "description": "Auth header"},
+            {"name": "active", "type": "bool", "required": false, "validation": [], "description": "Whether active"},
+            {"name": "name", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Hook name"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "*api.Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "New webhook ID"},
+            {"name": "type", "type": "string", "description": "Hook type"},
+            {"name": "config", "type": "map[string]string", "description": "Config"},
+            {"name": "events", "type": "[]string", "description": "Events"},
+            {"name": "active", "type": "bool", "description": "Active status"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Organization not found"},
+          {"status_code": 422, "type": "unprocessableEntity", "condition": "Invalid hook type, missing config, invalid URL or content_type"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-080",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "controller_class": "org",
+      "controller_method": "EditHook",
+      "description": "Update an organization webhook",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "EditHookOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "config", "type": "map[string]string", "required": false, "validation": [], "description": "Config map with url, content_type"},
+            {"name": "events", "type": "[]string", "required": false, "validation": [], "description": "Events to trigger on"},
+            {"name": "branch_filter", "type": "string", "required": false, "validation": ["GlobPattern"], "description": "Branch filter"},
+            {"name": "authorization_header", "type": "string", "required": false, "validation": [], "description": "Auth header"},
+            {"name": "active", "type": "*bool", "required": false, "validation": [], "description": "Whether active"},
+            {"name": "name", "type": "*string", "required": false, "validation": ["MaxSize(255)"], "description": "Hook name"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "*api.Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Webhook ID"},
+            {"name": "type", "type": "string", "description": "Hook type"},
+            {"name": "config", "type": "map[string]string", "description": "Updated config"},
+            {"name": "events", "type": "[]string", "description": "Updated events"},
+            {"name": "active", "type": "bool", "description": "Active status"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Webhook not found or does not belong to org"},
+          {"status_code": 422, "type": "unprocessableEntity", "condition": "Invalid URL or content_type"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-081",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "controller_class": "org",
+      "controller_method": "DeleteHook",
+      "description": "Delete an organization webhook",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Webhook not found or does not belong to org"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-082",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/labels",
+      "controller_class": "org",
+      "controller_method": "ListLabels",
+      "description": "List an organization's labels",
+      "request": {
+        "path_params": [{"name": "org", "type": "string", "required": true, "validation": []}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min:1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["max:setting.API.MaxResponseItems"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.Label",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Label ID"},
+            {"name": "name", "type": "string", "description": "Label name"},
+            {"name": "exclusive", "type": "bool", "description": "Whether label is exclusive"},
+            {"name": "is_archived", "type": "bool", "description": "Whether label is archived"},
+            {"name": "color", "type": "string", "description": "Color hex without #"},
+            {"name": "description", "type": "string", "description": "Label description"},
+            {"name": "url", "type": "string", "description": "API URL for label"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Organization not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-083",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/labels",
+      "controller_class": "org",
+      "controller_method": "CreateLabel",
+      "description": "Create a label for an organization",
+      "request": {
+        "path_params": [{"name": "org", "type": "string", "required": true, "validation": []}],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "CreateLabelOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": true, "validation": ["Required"], "description": "Label name"},
+            {"name": "exclusive", "type": "bool", "required": false, "validation": [], "description": "Whether exclusive"},
+            {"name": "color", "type": "string", "required": true, "validation": ["Required", "valid hex color"], "description": "Color (e.g. #00aabb)"},
+            {"name": "description", "type": "string", "required": false, "validation": [], "description": "Label description"},
+            {"name": "is_archived", "type": "bool", "required": false, "validation": [], "description": "Whether archived"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "*api.Label",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "New label ID"},
+            {"name": "name", "type": "string", "description": "Label name"},
+            {"name": "exclusive", "type": "bool", "description": "Whether exclusive"},
+            {"name": "color", "type": "string", "description": "Color hex without #"},
+            {"name": "description", "type": "string", "description": "Label description"},
+            {"name": "url", "type": "string", "description": "API URL for label"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Organization not found"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid color format"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

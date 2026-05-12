@@ -1,0 +1,26 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "Avatar Storage Backend",
+      "type": "cloud_service",
+      "base_url": "configured via setting.Avatar.Storage",
+      "client_class": "ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "http_library": "storage abstraction (local/minio/azure)",
+      "endpoints_called": [
+        {"method": "DELETE", "path": "<avatar_relative_path>", "request": {"type": "string", "key_fields": ["path"]}, "response": {"type": "error", "key_fields": []}, "purpose": "Delete avatar file from storage"}
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": "Logs warning if file doesn't exist (ErrNotExist), otherwise propagates error"
+      },
+      "authentication": "none",
+      "used_by_endpoints": ["ep-129"],
+      "config_keys": ["avatar.STORAGE_TYPE", "avatar.PATH"]
+    }
+  ]
+}

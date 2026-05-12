@@ -1,0 +1,151 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "issue_dependency",
+      "entity_class": "IssueDependency",
+      "file_path": "models/issues/dependency.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL", "UNIQUE(issue_dependency)"]},
+        {"name": "dependency_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL", "UNIQUE(issue_dependency)"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_issue_dependency_issue_dependency", "columns": ["issue_id", "dependency_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "issue", "join_column": "dependency_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "issue",
+      "entity_class": "Issue",
+      "file_path": "models/issues/issue.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "index", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "title", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_closed", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_pull", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_issue_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "UQE_issue_repo_index", "columns": ["repo_id", "index"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "repository",
+      "entity_class": "Repository",
+      "file_path": "models/repo/repo.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "owner_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_archived", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": []
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "comment",
+      "entity_class": "Comment",
+      "file_path": "models/issues/comment.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "type", "type": "INT", "code_type": "CommentType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "dependent_issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-208",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "operations": [
+        {"store_type": "database", "store_name": "repo_unit", "operation": "SELECT", "method": "Repository.IsDependenciesEnabled", "description": "Check if dependencies enabled"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get issue by index"},
+        {"store_type": "database", "store_name": "issue+repository+issue_dependency", "operation": "SELECT", "method": "Issue.BlockedByDependencies", "description": "Get blocking issues with pagination"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "GetDoerRepoPermission", "description": "Get permission per unique repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-209",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get target issue"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "GetRepositoryByOwnerAndName", "description": "Get dependency repo (cross-repo)"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get dependency issue"},
+        {"store_type": "database", "store_name": "issue_dependency", "operation": "SELECT", "method": "issueDepExists", "description": "Check if dependency exists"},
+        {"store_type": "database", "store_name": "issue_dependency", "operation": "SELECT", "method": "issueDepExists", "description": "Check circular dependency"},
+        {"store_type": "database", "store_name": "issue_dependency", "operation": "INSERT", "method": "CreateIssueDependency", "description": "Insert dependency record"},
+        {"store_type": "database", "store_name": "comment", "operation": "INSERT", "method": "createIssueDependencyComment", "description": "Add comments to both issues"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-210",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get target issue"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "GetRepositoryByOwnerAndName", "description": "Get dependency repo (cross-repo)"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get dependency issue"},
+        {"store_type": "database", "store_name": "issue_dependency", "operation": "DELETE", "method": "RemoveIssueDependency", "description": "Delete dependency record"},
+        {"store_type": "database", "store_name": "comment", "operation": "INSERT", "method": "createIssueDependencyComment", "description": "Add removal comments"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-211",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get issue by index"},
+        {"store_type": "database", "store_name": "issue+repository+issue_dependency", "operation": "SELECT", "method": "Issue.BlockingDependencies", "description": "Get ALL issues blocked by this issue (unbounded)"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "GetDoerRepoPermission", "description": "Get permission per unique repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-212",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get blocker issue"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "GetRepositoryByOwnerAndName", "description": "Get target repo (cross-repo)"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get target issue"},
+        {"store_type": "database", "store_name": "issue_dependency", "operation": "SELECT", "method": "issueDepExists", "description": "Check exists"},
+        {"store_type": "database", "store_name": "issue_dependency", "operation": "SELECT", "method": "issueDepExists", "description": "Check circular"},
+        {"store_type": "database", "store_name": "issue_dependency", "operation": "INSERT", "method": "CreateIssueDependency", "description": "Insert dependency"},
+        {"store_type": "database", "store_name": "comment", "operation": "INSERT", "method": "createIssueDependencyComment", "description": "Add comments"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-213",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get blocker issue"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "GetRepositoryByOwnerAndName", "description": "Get target repo (cross-repo)"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get target issue"},
+        {"store_type": "database", "store_name": "issue_dependency", "operation": "DELETE", "method": "RemoveIssueDependency", "description": "Delete dependency"},
+        {"store_type": "database", "store_name": "comment", "operation": "INSERT", "method": "createIssueDependencyComment", "description": "Add removal comments"}
+      ]
+    }
+  ]
+}

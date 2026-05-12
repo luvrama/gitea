@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Status filter must be a valid workflow status string",
+      "location": {"class": "shared", "method": "convertToInternal", "file_path": "routers/api/v1/shared/action.go", "line_number": 68},
+      "condition": "status string not in valid set (pending, queued, in_progress, completed, failure, success, skipped, cancelled, etc.)",
+      "action": "return 400 error with invalid status message",
+      "affected_endpoints": ["ep-277", "ep-278"],
+      "code_snippet": "default:\n\treturn nil, fmt.Errorf(\"invalid status %s\", s)"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "business_logic",
+      "description": "Actor filter resolves username to user ID for run filtering",
+      "location": {"class": "shared", "method": "ListRuns", "file_path": "routers/api/v1/shared/action.go", "line_number": 131},
+      "condition": "actor query param is provided",
+      "action": "lookup user by name and use their ID as TriggerUserID filter",
+      "affected_endpoints": ["ep-278"],
+      "code_snippet": "user, err := user_model.GetUserByName(ctx, actor)\nopts.TriggerUserID = user.ID"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Branch filter is converted to full ref format for matching",
+      "location": {"class": "shared", "method": "ListRuns", "file_path": "routers/api/v1/shared/action.go", "line_number": 120},
+      "condition": "branch query param is provided",
+      "action": "convert branch name to refs/heads/branch format",
+      "affected_endpoints": ["ep-278"],
+      "code_snippet": "opts.Ref = string(git.RefNameFromBranch(branch))"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Workflow listing reads from default branch commit only",
+      "location": {"class": "convert", "method": "ListActionWorkflows", "file_path": "services/convert/convert.go", "line_number": 490},
+      "condition": "always",
+      "action": "get default branch commit and list workflow files from it",
+      "affected_endpoints": ["ep-280", "ep-281"],
+      "code_snippet": "defaultBranchCommit, err := gitrepo.GetBranchCommit(repo.DefaultBranch)"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "state_transition",
+      "description": "Workflow state is determined by repo unit actions config",
+      "location": {"class": "convert", "method": "getActionWorkflowEntry", "file_path": "services/convert/convert.go", "line_number": 470},
+      "condition": "cfg.IsWorkflowDisabled(entry.Name())",
+      "action": "set state to 'disabled_manually', otherwise 'active'",
+      "affected_endpoints": ["ep-280", "ep-281", "ep-282", "ep-284"],
+      "code_snippet": "if cfg.IsWorkflowDisabled(entry.Name()) {\n\tstate = \"disabled_manually\"\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "authorization",
+      "description": "Workflow dispatch checks if workflow is disabled before execution",
+      "location": {"class": "actions_service", "method": "DispatchActionWorkflow", "file_path": "services/actions/workflow.go", "line_number": 62},
+      "condition": "cfg.IsWorkflowDisabled(workflowID)",
+      "action": "return permission denied error",
+      "affected_endpoints": ["ep-283"],
+      "code_snippet": "if cfg.IsWorkflowDisabled(workflowID) {\n\treturn 0, util.NewPermissionDeniedErrorf(\"workflow is disabled\")"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "Workflow dispatch requires non-empty ref parameter",
+      "location": {"class": "repo", "method": "ActionsDispatchWorkflow", "file_path": "routers/api/v1/repo/action.go", "line_number": 530},
+      "condition": "opt.Ref == \"\"",
+      "action": "return 422 unprocessable entity error",
+      "affected_endpoints": ["ep-283"],
+      "code_snippet": "if opt.Ref == \"\" {\n\tctx.APIError(http.StatusUnprocessableEntity, ...)"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Workflow dispatch resolves ref as tag first, then branch",
+      "location": {"class": "actions_service", "method": "DispatchActionWorkflow", "file_path": "services/actions/workflow.go", "line_number": 72},
+      "condition": "ref is provided",
+      "action": "if ref is tag format get tag commit, if branch format get branch commit, otherwise try as branch name",
+      "affected_endpoints": ["ep-283"],
+      "code_snippet": "if refName.IsTag() {\n\trunTargetCommit, err = gitRepo.GetTagCommit(refName.TagName())\n} else if refName.IsBranch() {"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Workflow dispatch supports both JSON and form-urlencoded inputs",
+      "location": {"class": "repo", "method": "ActionsDispatchWorkflow", "file_path": "routers/api/v1/repo/action.go", "line_number": 536},
+      "condition": "Content-Type contains form-urlencoded",
+      "action": "read inputs from form fields inputs[name] instead of JSON body",
+      "affected_endpoints": ["ep-283"],
+      "code_snippet": "if strings.Contains(ctx.Req.Header.Get(\"Content-Type\"), \"form-urlencoded\") {"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Workflow dispatch optionally returns run details when return_run_details=true",
+      "location": {"class": "repo", "method": "ActionsDispatchWorkflow", "file_path": "routers/api/v1/repo/action.go", "line_number": 558},
+      "condition": "ctx.FormBool(\"return_run_details\") is true",
+      "action": "return 200 with RunDetails (runID, HTMLURL, RunURL) instead of 204",
+      "affected_endpoints": ["ep-283"],
+      "code_snippet": "if !ctx.FormBool(\"return_run_details\") {\n\tctx.Status(http.StatusNoContent)\n\treturn\n}"
+    }
+  ]
+}

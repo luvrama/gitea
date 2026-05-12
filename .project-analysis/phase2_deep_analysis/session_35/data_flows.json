@@ -1,0 +1,302 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-234",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/mirror-sync",
+      "description": "Validates repo is a pull mirror and adds it to the mirror sync queue",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.MirrorSync",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/mirror.go",
+          "input": "APIContext with repo loaded",
+          "output": "HTTP 200 or error",
+          "operations": ["Check write permission on code unit", "Check mirror feature enabled", "Verify repo is a pull mirror"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "mirror", "description": "GetMirrorByRepoID to verify repo is a pull mirror"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "mirror_service.AddPullMirrorToQueue",
+          "type": "service",
+          "file_path": "services/mirror/queue.go",
+          "input": "repoID int64",
+          "output": "void (async push to queue)",
+          "operations": ["Push SyncRequest{PullMirrorType, repoID} to mirror queue in goroutine"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": true
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User lacks write access to code unit", "handler": "middleware reqRepoWriter", "response_code": 403, "response": "forbidden"},
+        {"condition": "Mirror.Enabled is false", "handler": "repo.MirrorSync", "response_code": 400, "response": "Mirror feature is disabled"},
+        {"condition": "No mirror record for repo", "handler": "repo.MirrorSync", "response_code": 400, "response": "Repository is not a mirror"},
+        {"condition": "DB error on GetMirrorByRepoID", "handler": "repo.MirrorSync", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-235",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors-sync",
+      "description": "Fetches all push mirrors for the repo and triggers sync for each one synchronously",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.PushMirrorSync",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/mirror.go",
+          "input": "APIContext with repo loaded",
+          "output": "HTTP 200 or error",
+          "operations": ["Check mirror feature enabled", "Fetch all push mirrors for repo"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "push_mirror", "description": "GetPushMirrorsByRepoID with no pagination (empty ListOptions)"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "mirror_service.SyncPushMirror",
+          "type": "service",
+          "file_path": "services/mirror/mirror_push.go",
+          "input": "ctx, mirrorID int64",
+          "output": "bool (success)",
+          "operations": ["Load push mirror by ID", "Get repository", "Run git push to remote", "Optionally sync LFS objects", "Update last_update timestamp"],
+          "calls_external": true,
+          "database_ops": [
+            {"operation": "SELECT", "table": "push_mirror", "description": "GetByID to load mirror"},
+            {"operation": "UPDATE", "table": "push_mirror", "description": "UpdatePushMirror to save last_update and last_error"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Mirror.Enabled is false", "handler": "repo.PushMirrorSync", "response_code": 400, "response": "Mirror feature is disabled"},
+        {"condition": "Error fetching push mirrors", "handler": "repo.PushMirrorSync", "response_code": 404, "response": "error"},
+        {"condition": "SyncPushMirror returns false", "handler": "repo.PushMirrorSync", "response_code": 500, "response": "error occurred when syncing push mirror"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-236",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors",
+      "description": "Lists all push mirrors for a repository with pagination, converting to API response",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListPushMirrors",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/mirror.go",
+          "input": "APIContext with repo loaded",
+          "output": "JSON array of PushMirror",
+          "operations": ["Check mirror feature enabled", "Get list options from query params", "Fetch push mirrors with pagination"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "push_mirror", "description": "GetPushMirrorsByRepoID with pagination (FindAndCount)"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToPushMirror",
+          "type": "utility",
+          "file_path": "services/convert/mirror.go",
+          "input": "repo_model.PushMirror",
+          "output": "api.PushMirror",
+          "operations": ["Get repository from push mirror", "Map fields to API struct"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repository", "description": "GetRepository if not already loaded (per mirror)"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.PushMirror",
+          "to": "api.PushMirror",
+          "component": "convert.ToPushMirror",
+          "mappings": [
+            {"source_field": "Repo.Name", "target_field": "RepoName", "transformation": "direct_copy"},
+            {"source_field": "RemoteName", "target_field": "RemoteName", "transformation": "direct_copy"},
+            {"source_field": "RemoteAddress", "target_field": "RemoteAddress", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "CreatedUnix", "transformation": "computed"},
+            {"source_field": "LastUpdateUnix", "target_field": "LastUpdateUnix", "transformation": "computed"},
+            {"source_field": "LastError", "target_field": "LastError", "transformation": "direct_copy"},
+            {"source_field": "Interval", "target_field": "Interval", "transformation": "computed"},
+            {"source_field": "SyncOnCommit", "target_field": "SyncOnCommit", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Mirror.Enabled is false", "handler": "repo.ListPushMirrors", "response_code": 400, "response": "Mirror feature is disabled"},
+        {"condition": "Error fetching push mirrors", "handler": "repo.ListPushMirrors", "response_code": 404, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-237",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors/{name}",
+      "description": "Gets a single push mirror by its remote name using DB query with conditions",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetPushMirrorByName",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/mirror.go",
+          "input": "APIContext with repo loaded, path param 'name'",
+          "output": "JSON PushMirror or error",
+          "operations": ["Check mirror feature enabled", "Extract name from path", "Query push_mirror by repo_id + remote_name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "push_mirror", "description": "db.Get with PushMirrorOptions{RepoID, RemoteName} conditions"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToPushMirror",
+          "type": "utility",
+          "file_path": "services/convert/mirror.go",
+          "input": "repo_model.PushMirror",
+          "output": "api.PushMirror",
+          "operations": ["Get repository from push mirror", "Map fields to API struct"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repository", "description": "GetRepository if not already loaded"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.PushMirror",
+          "to": "api.PushMirror",
+          "component": "convert.ToPushMirror",
+          "mappings": [
+            {"source_field": "Repo.Name", "target_field": "RepoName", "transformation": "direct_copy"},
+            {"source_field": "RemoteName", "target_field": "RemoteName", "transformation": "direct_copy"},
+            {"source_field": "RemoteAddress", "target_field": "RemoteAddress", "transformation": "direct_copy"},
+            {"source_field": "Interval", "target_field": "Interval", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Mirror.Enabled is false", "handler": "repo.GetPushMirrorByName", "response_code": 400, "response": "Mirror feature is disabled"},
+        {"condition": "DB error", "handler": "repo.GetPushMirrorByName", "response_code": 500, "response": "internal error"},
+        {"condition": "Push mirror not found", "handler": "repo.GetPushMirrorByName", "response_code": 404, "response": "not found"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-238",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors",
+      "description": "Creates a new push mirror: validates URL, inserts DB record, registers git remote",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.AddPushMirror",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/mirror.go",
+          "input": "APIContext, CreatePushMirrorOption form",
+          "output": "delegates to CreatePushMirror",
+          "operations": ["Check mirror feature enabled", "Extract form body"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.CreatePushMirror",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/mirror.go",
+          "input": "APIContext, *api.CreatePushMirrorOption",
+          "output": "JSON PushMirror or error",
+          "operations": ["Parse interval duration", "Validate interval >= MinInterval or 0", "Parse remote address with credentials", "Validate URL via IsMigrateURLAllowed", "Sanitize URL", "Generate random remote suffix", "Insert push_mirror record", "Register git remote via AddPushMirrorRemote"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "push_mirror", "description": "Insert new push mirror record"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "mirror_service.AddPushMirrorRemote",
+          "type": "service",
+          "file_path": "services/mirror/mirror_push.go",
+          "input": "ctx, *PushMirror, address string",
+          "output": "error",
+          "operations": ["Add git remote with mirror push option", "Configure push refspecs for heads and tags", "If wiki exists, add wiki remote too"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToPushMirror",
+          "type": "utility",
+          "file_path": "services/convert/mirror.go",
+          "input": "repo_model.PushMirror",
+          "output": "api.PushMirror",
+          "operations": ["Convert to API response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.CreatePushMirrorOption",
+          "to": "repo_model.PushMirror",
+          "component": "repo.CreatePushMirror",
+          "mappings": [
+            {"source_field": "Interval", "target_field": "Interval", "transformation": "computed"},
+            {"source_field": "SyncOnCommit", "target_field": "SyncOnCommit", "transformation": "direct_copy"},
+            {"source_field": "RemoteAddress", "target_field": "RemoteAddress", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Mirror.Enabled is false", "handler": "repo.AddPushMirror", "response_code": 400, "response": "Mirror feature is disabled"},
+        {"condition": "Invalid interval or < MinInterval", "handler": "repo.CreatePushMirror", "response_code": 400, "response": "error"},
+        {"condition": "Invalid remote URL", "handler": "HandleRemoteAddressError", "response_code": 400, "response": "Invalid mirror protocol/URL"},
+        {"condition": "Permission denied for URL", "handler": "HandleRemoteAddressError", "response_code": 401, "response": "Permission denied"},
+        {"condition": "DB insert fails", "handler": "repo.CreatePushMirror", "response_code": 500, "response": "internal error"},
+        {"condition": "AddPushMirrorRemote fails", "handler": "repo.CreatePushMirror", "response_code": 500, "response": "internal error (after cleanup)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-239",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors/{name}",
+      "description": "Deletes a push mirror from the database by repo ID and remote name",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeletePushMirrorByRemoteName",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/mirror.go",
+          "input": "APIContext with repo loaded, path param 'name'",
+          "output": "HTTP 204 or error",
+          "operations": ["Check mirror feature enabled", "Extract remote name from path", "Delete push mirror records matching repo_id + remote_name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "DELETE", "table": "push_mirror", "description": "DeletePushMirrors with PushMirrorOptions{RepoID, RemoteName}"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Mirror.Enabled is false", "handler": "repo.DeletePushMirrorByRemoteName", "response_code": 400, "response": "Mirror feature is disabled"},
+        {"condition": "Error deleting (e.g. not found)", "handler": "repo.DeletePushMirrorByRemoteName", "response_code": 404, "response": "error"}
+      ]
+    }
+  ]
+}

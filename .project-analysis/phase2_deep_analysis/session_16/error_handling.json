@@ -1,0 +1,26 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "any error", "status_code": 500, "response_type": "JSON error", "message_template": "APIErrorInternal"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "APIErrorNotFound"},
+      {"exception_type": "bad request", "status_code": 400, "response_type": "JSON error", "message_template": "APIError"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-106", "path": "/api/v1/admin/actions/runs", "error_scenarios": [
+      {"exception": "invalid status", "trigger": "Unknown status string in query", "status_code": 400, "response": "error with message", "logged": false, "retryable": true},
+      {"exception": "user not found", "trigger": "Actor username doesn't exist", "status_code": 500, "response": "internal error", "logged": true, "retryable": false},
+      {"exception": "db error", "trigger": "Database query failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-108", "path": "/api/v1/admin/unadopted/{owner}/{repo}", "error_scenarios": [
+      {"exception": "ErrUserNotExist", "trigger": "Owner username not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "already adopted or not on disk", "trigger": "Repo in DB or not on filesystem", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "adoption failure", "trigger": "Git operations or DB insert fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "repo_model.ErrReachLimitOfRepo", "file_path": "models/repo/repo.go", "extends": "error", "used_in": ["repo_service.AdoptRepository"], "http_status": 500},
+    {"class": "repo_model.ErrRepoAlreadyExist", "file_path": "models/repo/repo.go", "extends": "error", "used_in": ["repo.CreateUserRepo"], "http_status": 409}
+  ]
+}

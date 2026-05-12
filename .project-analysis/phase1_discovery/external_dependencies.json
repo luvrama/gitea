@@ -1,0 +1,531 @@
+{
+  "libraries": {
+    "total": 70,
+    "items": [
+      {
+        "name": "code.gitea.io/actions-proto-go",
+        "version": "v0.4.1",
+        "purpose": "Actions protocol definitions (protobuf)"
+      },
+      {
+        "name": "code.gitea.io/sdk/gitea",
+        "version": "v0.25.0",
+        "purpose": "Gitea SDK client"
+      },
+      {
+        "name": "connectrpc.com/connect",
+        "version": "v1.19.2",
+        "purpose": "Connect RPC framework"
+      },
+      {
+        "name": "gitea.com/go-chi/binding",
+        "version": "v0.0.0-20260414",
+        "purpose": "Request binding middleware"
+      },
+      {
+        "name": "gitea.com/go-chi/cache",
+        "version": "v0.2.1",
+        "purpose": "Caching middleware"
+      },
+      {
+        "name": "gitea.com/go-chi/captcha",
+        "version": "v0.0.0-20240315",
+        "purpose": "CAPTCHA middleware"
+      },
+      {
+        "name": "gitea.com/go-chi/session",
+        "version": "v0.0.0-20251124",
+        "purpose": "Session management"
+      },
+      {
+        "name": "gitea.com/lunny/levelqueue",
+        "version": "v0.4.2",
+        "purpose": "LevelDB-based queue"
+      },
+      {
+        "name": "github.com/42wim/httpsig",
+        "version": "v1.2.4",
+        "purpose": "HTTP signature authentication"
+      },
+      {
+        "name": "github.com/42wim/sshsig",
+        "version": "v0.0.0-20260317",
+        "purpose": "SSH signature verification"
+      },
+      {
+        "name": "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob",
+        "version": "v1.6.3",
+        "purpose": "Azure Blob Storage client"
+      },
+      {
+        "name": "github.com/ProtonMail/go-crypto",
+        "version": "v1.4.1",
+        "purpose": "Cryptographic operations (OpenPGP)"
+      },
+      {
+        "name": "github.com/PuerkitoBio/goquery",
+        "version": "v1.12.0",
+        "purpose": "HTML parsing/querying"
+      },
+      {
+        "name": "github.com/alecthomas/chroma/v2",
+        "version": "v2.24.1",
+        "purpose": "Syntax highlighting"
+      },
+      {
+        "name": "github.com/aws/aws-sdk-go-v2/credentials",
+        "version": "v1.19.16",
+        "purpose": "AWS credentials"
+      },
+      {
+        "name": "github.com/aws/aws-sdk-go-v2/service/codecommit",
+        "version": "v1.33.14",
+        "purpose": "AWS CodeCommit migration"
+      },
+      {
+        "name": "github.com/blevesearch/bleve/v2",
+        "version": "v2.6.0",
+        "purpose": "Full-text search indexing"
+      },
+      {
+        "name": "github.com/caddyserver/certmagic",
+        "version": "v0.25.3",
+        "purpose": "Automatic HTTPS/TLS certificates"
+      },
+      {
+        "name": "github.com/go-chi/chi/v5",
+        "version": "v5.2.5",
+        "purpose": "HTTP router framework"
+      },
+      {
+        "name": "github.com/go-chi/cors",
+        "version": "v1.2.2",
+        "purpose": "CORS middleware"
+      },
+      {
+        "name": "github.com/go-co-op/gocron/v2",
+        "version": "v2.21.1",
+        "purpose": "Cron job scheduler"
+      },
+      {
+        "name": "github.com/go-enry/go-enry/v2",
+        "version": "v2.9.6",
+        "purpose": "Programming language detection"
+      },
+      {
+        "name": "github.com/go-git/go-git/v5",
+        "version": "v5.19.0",
+        "purpose": "Pure Go git implementation"
+      },
+      {
+        "name": "github.com/go-ldap/ldap/v3",
+        "version": "v3.4.13",
+        "purpose": "LDAP authentication client"
+      },
+      {
+        "name": "github.com/go-redsync/redsync/v4",
+        "version": "v4.16.0",
+        "purpose": "Redis distributed locking"
+      },
+      {
+        "name": "github.com/go-sql-driver/mysql",
+        "version": "v1.10.0",
+        "purpose": "MySQL database driver"
+      },
+      {
+        "name": "github.com/go-webauthn/webauthn",
+        "version": "v0.17.2",
+        "purpose": "WebAuthn/FIDO2 authentication"
+      },
+      {
+        "name": "github.com/golang-jwt/jwt/v5",
+        "version": "v5.3.1",
+        "purpose": "JWT token handling"
+      },
+      {
+        "name": "github.com/google/go-github/v85",
+        "version": "v85.0.0",
+        "purpose": "GitHub API client (migration)"
+      },
+      {
+        "name": "github.com/google/uuid",
+        "version": "v1.6.0",
+        "purpose": "UUID generation"
+      },
+      {
+        "name": "github.com/gorilla/feeds",
+        "version": "v1.2.0",
+        "purpose": "RSS/Atom feed generation"
+      },
+      {
+        "name": "github.com/gorilla/sessions",
+        "version": "v1.4.0",
+        "purpose": "HTTP session management"
+      },
+      {
+        "name": "github.com/hashicorp/golang-lru/v2",
+        "version": "v2.0.7",
+        "purpose": "LRU cache"
+      },
+      {
+        "name": "github.com/lib/pq",
+        "version": "v1.12.3",
+        "purpose": "PostgreSQL database driver"
+      },
+      {
+        "name": "github.com/markbates/goth",
+        "version": "v1.82.0",
+        "purpose": "OAuth2 provider integration"
+      },
+      {
+        "name": "github.com/mattn/go-sqlite3",
+        "version": "v1.14.44",
+        "purpose": "SQLite3 database driver"
+      },
+      {
+        "name": "github.com/meilisearch/meilisearch-go",
+        "version": "v0.36.2",
+        "purpose": "Meilisearch client (search indexing)"
+      },
+      {
+        "name": "github.com/microcosm-cc/bluemonday",
+        "version": "v1.0.27",
+        "purpose": "HTML sanitization"
+      },
+      {
+        "name": "github.com/microsoft/go-mssqldb",
+        "version": "v1.9.7",
+        "purpose": "MSSQL database driver"
+      },
+      {
+        "name": "github.com/minio/minio-go/v7",
+        "version": "v7.1.0",
+        "purpose": "S3-compatible object storage client"
+      },
+      {
+        "name": "github.com/opencontainers/go-digest",
+        "version": "v1.0.0",
+        "purpose": "OCI container digest handling"
+      },
+      {
+        "name": "github.com/opencontainers/image-spec",
+        "version": "v1.1.1",
+        "purpose": "OCI container image spec"
+      },
+      {
+        "name": "github.com/pquerna/otp",
+        "version": "v1.5.0",
+        "purpose": "TOTP/HOTP two-factor auth"
+      },
+      {
+        "name": "github.com/prometheus/client_golang",
+        "version": "v1.23.2",
+        "purpose": "Prometheus metrics"
+      },
+      {
+        "name": "github.com/redis/go-redis/v9",
+        "version": "v9.19.0",
+        "purpose": "Redis client"
+      },
+      {
+        "name": "github.com/robfig/cron/v3",
+        "version": "v3.0.1",
+        "purpose": "Cron expression parsing"
+      },
+      {
+        "name": "github.com/stretchr/testify",
+        "version": "v1.11.1",
+        "purpose": "Testing assertions"
+      },
+      {
+        "name": "github.com/syndtr/goleveldb",
+        "version": "v1.0.0",
+        "purpose": "LevelDB storage engine"
+      },
+      {
+        "name": "github.com/urfave/cli/v3",
+        "version": "v3.6.1",
+        "purpose": "CLI framework"
+      },
+      {
+        "name": "github.com/wneessen/go-mail",
+        "version": "v0.7.2",
+        "purpose": "Email/SMTP client"
+      },
+      {
+        "name": "github.com/yuin/goldmark",
+        "version": "v1.8.2",
+        "purpose": "Markdown rendering"
+      },
+      {
+        "name": "gitlab.com/gitlab-org/api/client-go/v2",
+        "version": "v2.24.1",
+        "purpose": "GitLab API client (migration)"
+      },
+      {
+        "name": "golang.org/x/crypto",
+        "version": "v0.50.0",
+        "purpose": "Cryptographic primitives"
+      },
+      {
+        "name": "golang.org/x/oauth2",
+        "version": "v0.36.0",
+        "purpose": "OAuth2 client"
+      },
+      {
+        "name": "golang.org/x/net",
+        "version": "v0.53.0",
+        "purpose": "Network utilities"
+      },
+      {
+        "name": "google.golang.org/grpc",
+        "version": "v1.81.0",
+        "purpose": "gRPC framework"
+      },
+      {
+        "name": "google.golang.org/protobuf",
+        "version": "v1.36.11",
+        "purpose": "Protocol Buffers"
+      },
+      {
+        "name": "xorm.io/xorm",
+        "version": "v1.3.11",
+        "purpose": "ORM database framework"
+      },
+      {
+        "name": "xorm.io/builder",
+        "version": "v0.3.13",
+        "purpose": "SQL query builder"
+      },
+      {
+        "name": "modernc.org/sqlite",
+        "version": "v1.50.0",
+        "purpose": "Pure Go SQLite driver"
+      },
+      {
+        "name": "github.com/emersion/go-imap",
+        "version": "v1.2.1",
+        "purpose": "IMAP email client"
+      },
+      {
+        "name": "github.com/gliderlabs/ssh",
+        "version": "v0.3.8",
+        "purpose": "SSH server"
+      },
+      {
+        "name": "github.com/editorconfig/editorconfig-core-go/v2",
+        "version": "v2.6.4",
+        "purpose": "EditorConfig support"
+      },
+      {
+        "name": "github.com/klauspost/compress",
+        "version": "v1.18.6",
+        "purpose": "Compression algorithms"
+      },
+      {
+        "name": "github.com/niklasfasching/go-org",
+        "version": "v1.9.1",
+        "purpose": "Org-mode file rendering"
+      },
+      {
+        "name": "github.com/google/licenseclassifier/v2",
+        "version": "v2.0.0",
+        "purpose": "License detection"
+      },
+      {
+        "name": "github.com/msteinert/pam/v2",
+        "version": "v2.1.0",
+        "purpose": "PAM authentication"
+      },
+      {
+        "name": "github.com/quasoft/websspi",
+        "version": "v1.1.2",
+        "purpose": "Windows SSPI authentication"
+      },
+      {
+        "name": "github.com/sassoftware/go-rpmutils",
+        "version": "v0.4.0",
+        "purpose": "RPM package handling"
+      },
+      {
+        "name": "github.com/yohcop/openid-go",
+        "version": "v1.0.1",
+        "purpose": "OpenID authentication"
+      }
+    ]
+  },
+  "external_apis": [
+    {
+      "id": "ext-001",
+      "name": "GitHub API",
+      "base_url": "https://api.github.com",
+      "client_class": "services/migrations/github.go",
+      "file_path": "services/migrations/github.go",
+      "http_library": "github.com/google/go-github/v85"
+    },
+    {
+      "id": "ext-002",
+      "name": "GitLab API",
+      "base_url": "configurable",
+      "client_class": "services/migrations/gitlab.go",
+      "file_path": "services/migrations/gitlab.go",
+      "http_library": "gitlab.com/gitlab-org/api/client-go/v2"
+    },
+    {
+      "id": "ext-003",
+      "name": "Gitea API (migration source)",
+      "base_url": "configurable",
+      "client_class": "services/migrations/gitea_downloader.go",
+      "file_path": "services/migrations/gitea_downloader.go",
+      "http_library": "code.gitea.io/sdk/gitea"
+    },
+    {
+      "id": "ext-004",
+      "name": "AWS CodeCommit",
+      "base_url": "AWS SDK",
+      "client_class": "services/migrations/codebase.go",
+      "file_path": "services/migrations/codebase.go",
+      "http_library": "github.com/aws/aws-sdk-go-v2"
+    },
+    {
+      "id": "ext-005",
+      "name": "OneDev API",
+      "base_url": "configurable",
+      "client_class": "services/migrations/onedev.go",
+      "file_path": "services/migrations/onedev.go",
+      "http_library": "modules/httplib"
+    },
+    {
+      "id": "ext-006",
+      "name": "LDAP Server",
+      "base_url": "configurable",
+      "client_class": "services/auth",
+      "file_path": "services/auth/",
+      "http_library": "github.com/go-ldap/ldap/v3"
+    },
+    {
+      "id": "ext-007",
+      "name": "SMTP/Email Server",
+      "base_url": "configurable",
+      "client_class": "services/mailer/mail.go",
+      "file_path": "services/mailer/mail.go",
+      "http_library": "github.com/wneessen/go-mail"
+    },
+    {
+      "id": "ext-008",
+      "name": "MinIO/S3 Object Storage",
+      "base_url": "configurable",
+      "client_class": "modules/storage/minio.go",
+      "file_path": "modules/storage/minio.go",
+      "http_library": "github.com/minio/minio-go/v7"
+    },
+    {
+      "id": "ext-009",
+      "name": "Azure Blob Storage",
+      "base_url": "configurable",
+      "client_class": "modules/storage/azureblob.go",
+      "file_path": "modules/storage/azureblob.go",
+      "http_library": "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+    },
+    {
+      "id": "ext-010",
+      "name": "Meilisearch",
+      "base_url": "configurable",
+      "client_class": "modules/indexer",
+      "file_path": "modules/indexer/",
+      "http_library": "github.com/meilisearch/meilisearch-go"
+    },
+    {
+      "id": "ext-011",
+      "name": "DingTalk Webhook",
+      "base_url": "configurable",
+      "client_class": "services/webhook/dingtalk.go",
+      "file_path": "services/webhook/dingtalk.go",
+      "http_library": "modules/httplib"
+    },
+    {
+      "id": "ext-012",
+      "name": "Slack Webhook",
+      "base_url": "configurable",
+      "client_class": "services/webhook/slack.go",
+      "file_path": "services/webhook/slack.go",
+      "http_library": "modules/httplib"
+    },
+    {
+      "id": "ext-013",
+      "name": "Discord Webhook",
+      "base_url": "configurable",
+      "client_class": "services/webhook/discord.go",
+      "file_path": "services/webhook/discord.go",
+      "http_library": "modules/httplib"
+    },
+    {
+      "id": "ext-014",
+      "name": "Telegram Bot API",
+      "base_url": "https://api.telegram.org",
+      "client_class": "services/webhook/telegram.go",
+      "file_path": "services/webhook/telegram.go",
+      "http_library": "modules/httplib"
+    },
+    {
+      "id": "ext-015",
+      "name": "Matrix Protocol",
+      "base_url": "configurable",
+      "client_class": "services/webhook/matrix.go",
+      "file_path": "services/webhook/matrix.go",
+      "http_library": "modules/httplib"
+    },
+    {
+      "id": "ext-016",
+      "name": "Microsoft Teams Webhook",
+      "base_url": "configurable",
+      "client_class": "services/webhook/msteams.go",
+      "file_path": "services/webhook/msteams.go",
+      "http_library": "modules/httplib"
+    },
+    {
+      "id": "ext-017",
+      "name": "Feishu/Lark Webhook",
+      "base_url": "configurable",
+      "client_class": "services/webhook/feishu.go",
+      "file_path": "services/webhook/feishu.go",
+      "http_library": "modules/httplib"
+    }
+  ],
+  "message_queues": [
+    {
+      "type": "Internal (LevelDB/Redis/Channel-based)",
+      "topics_or_queues": [
+        "push_update",
+        "issue_indexer",
+        "repo_indexer",
+        "notification",
+        "task",
+        "mirror",
+        "pr_patch_checker"
+      ],
+      "producers": [
+        "services/*"
+      ],
+      "consumers": [
+        "modules/queue/workerqueue.go"
+      ]
+    }
+  ],
+  "caches": [
+    {
+      "type": "Redis",
+      "usage_classes": [
+        "gitea.com/go-chi/cache",
+        "modules/queue/base_redis.go",
+        "github.com/go-redsync/redsync/v4"
+      ]
+    },
+    {
+      "type": "in-memory (LRU)",
+      "usage_classes": [
+        "github.com/hashicorp/golang-lru/v2"
+      ]
+    }
+  ]
+}

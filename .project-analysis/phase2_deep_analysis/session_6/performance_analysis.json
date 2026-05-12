@@ -1,0 +1,155 @@
+{
+  "total_endpoints_analyzed": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-035",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/activities/feeds",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 org resolve + 1 membership check + 1 action query + 4 batch loads + N permission checks in convert layer"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "convert.ToActivity calls GetDoerRepoPermission for each action in the result set",
+          "impact": "For a page of 20 results, adds 20 extra DB queries (permission checks) on top of the batch-loaded data",
+          "file_path": "services/convert/activity.go",
+          "line_number": 17,
+          "code_snippet": "p, err := access_model.GetDoerRepoPermission(ctx, ac.Repo, doer)",
+          "recommendation": "Batch-load permissions for all unique repos in the action list before converting"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch permission checks for unique repos in activity list",
+          "estimated_impact": "Reduce N+1 permission queries to 1 batch query for unique repos",
+          "implementation": "Collect unique repo IDs from actions, batch-load permissions, pass map to ToActivity"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-036",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/repos",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Synchronous: 1 org resolve + 1 ownership check + 1 ID query. Background: N*(SELECT+DELETE cascade) per repo"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "GetOrgRepositoryIDs loads ALL repo IDs without pagination",
+          "impact": "For orgs with thousands of repos, loads all IDs into memory at once",
+          "file_path": "models/repo/org_repo.go",
+          "line_number": 26,
+          "code_snippet": "err := db.GetEngine(ctx).Table(\"repository\").Where(\"owner_id = ?\", orgID).Cols(\"id\").Find(&repoIDs)",
+          "recommendation": "Acceptable since only IDs are loaded (not full objects), but could add a safety limit"
+        },
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Background deletion loops through repos one-by-one: GetRepositoryByID then DeleteRepository",
+          "impact": "Each repo deletion involves multiple cascading DB operations; N repos = N*many queries",
+          "file_path": "routers/api/v1/org/org.go",
+          "line_number": 517,
+          "code_snippet": "for _, repoID := range repoIDs { repo, err := repo_model.GetRepositoryByID(ctx, repoID)",
+          "recommendation": "Acceptable for background processing; individual deletion ensures partial progress on failure"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "async",
+          "description": "Already uses async background deletion - good pattern",
+          "estimated_impact": "Request returns immediately (202), deletion happens in background",
+          "implementation": "Already implemented correctly"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-037",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/avatar",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "storage"],
+        "note": "1 org resolve + 1 ownership check + 1 DB update + 1 storage write + CPU for image processing"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "Image processing (decode, crop, resize) happens synchronously on request thread",
+          "impact": "Large images (up to 4096x4096) could consume significant CPU and memory during processing",
+          "file_path": "modules/avatar/avatar.go",
+          "line_number": 73,
+          "code_snippet": "img, _, err := image.Decode(bytes.NewReader(data))",
+          "recommendation": "Acceptable for avatar uploads which are infrequent; MaxWidth/MaxHeight limits bound the worst case"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-038",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/avatar",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "storage"],
+        "note": "1 org resolve + 1 ownership check + 1 DB update + 1 storage delete"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-039",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/secrets",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 org resolve + 1 ownership check + 1 paginated secret query"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-040",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/actions/secrets/{secretname}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 org resolve + 1 ownership check + 1 SELECT (find existing) + 1 INSERT or UPDATE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-041",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/actions/secrets/{secretname}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 org resolve + 1 ownership check + 1 SELECT (find by name) + 1 DELETE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

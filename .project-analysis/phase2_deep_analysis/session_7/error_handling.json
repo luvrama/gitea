@@ -1,0 +1,49 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "util.ErrNotExist", "status_code": 404, "response_type": "error JSON", "message_template": "not found"},
+        {"exception_type": "util.ErrInvalidArgument", "status_code": 400, "response_type": "error JSON", "message_template": "invalid argument"},
+        {"exception_type": "generic error", "status_code": 500, "response_type": "error JSON", "message_template": "internal server error"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-042",
+      "path": "/api/v1/orgs/{org}/actions/runners/registration-token",
+      "error_scenarios": [
+        {"exception": "util.ErrNotExist", "trigger": "No existing token found", "status_code": 200, "response": "Creates new token (not an error)", "logged": false, "retryable": true},
+        {"exception": "DB error", "trigger": "Database failure on insert/select", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-046",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "error_scenarios": [
+        {"exception": "util.ErrInvalidArgument", "trigger": "Invalid variable name format", "status_code": 400, "response": "error", "logged": false, "retryable": false},
+        {"exception": "AlreadyExistError", "trigger": "Variable with same name exists", "status_code": 409, "response": "conflict", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-047",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "error_scenarios": [
+        {"exception": "util.ErrNotExist", "trigger": "Variable not found by name", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+        {"exception": "util.ErrInvalidArgument", "trigger": "Invalid new name or data too long", "status_code": 400, "response": "error", "logged": false, "retryable": false}
+      ]
+    }
+  ],
+  "custom_exceptions": [
+    {
+      "class": "util.ErrNotExist",
+      "file_path": "modules/util/error.go",
+      "extends": "error",
+      "used_in": ["actions_service.GetVariable", "actions_model.GetRunnerByID", "actions_model.GetLatestRunnerToken"],
+      "http_status": 404
+    }
+  ]
+}

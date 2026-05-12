@@ -1,0 +1,1577 @@
+{
+  "namespace": "analysis",
+  "entries": [
+    {
+      "id": "l_mp27ehdh_scho",
+      "content": "Gitea's signing key endpoints (ep-004 through ep-007) all share the same handler function getSigningKey in routers/api/v1/misc/signing.go. The GPG variant calls gpg --export via process.GetManager().ExecDir with timeout=-1 (no timeout). The SSH variant reads the key file directly with os.ReadFile. Both use git.GetSigningKey() which may execute multiple git config --global --get commands. The swagger annotations in signing.go document multiple endpoints in a single function comment block.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s1",
+      "createdAt": "2026-05-12T05:42:13.877Z",
+      "usedCount": 12,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp27ehdj_qnrx",
+      "content": "Gitea's miscellaneous API endpoints (version, templates, signing keys, markup) are all in routers/api/v1/misc/ and are mostly stateless - they read from in-memory variables (AppVer, LabelTemplateFiles, Gitignores, Licenses), filesystem (template files, SSH keys), or external processes (gpg). None of these endpoints touch the database. The modules/repository/init.go pre-loads template lists at startup into package-level variables.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s1",
+      "createdAt": "2026-05-12T05:42:13.879Z",
+      "usedCount": 12,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp27ehdj_p0d0",
+      "content": "Gitea's common.RenderMarkup in routers/common/markup.go is shared between the web UI and API. It parses a URL path context string to extract owner/repo/ref/treePath for link resolution. The mode parameter controls which RenderContext factory is used (NewRenderContextSimpleDocument, NewRenderContextRepoFile, NewRenderContextRepoComment, NewRenderContextRepoWiki). The deprecated Wiki bool field overrides the Mode field via util.Iif.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s1",
+      "createdAt": "2026-05-12T05:42:13.879Z",
+      "usedCount": 12,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp27nbtb_7n0t",
+      "content": "Gitea's markdown/markup rendering endpoints (ep-009, ep-010) use a pipe-based streaming architecture: input → goroutine renders markdown → pipe → SanitizeReader → output. The MarkdownRaw endpoint reads directly from ctx.Req.Body with no size limit, while the Markdown endpoint uses bind() which parses the full JSON body into memory first. Neither has an explicit rendering timeout.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s2",
+      "createdAt": "2026-05-12T05:49:06.575Z",
+      "usedCount": 11,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp27nbtb_3fc4",
+      "content": "Gitea's miscellaneous API endpoints (gitignore, licenses, label templates) use a two-tier data loading pattern: 1) At startup, LoadRepoConfig() populates package-level variables (Gitignores, Licenses slices) by listing files from the layered asset filesystem. 2) At request time, individual file content is read on-demand via options.Gitignore(name)/options.License(name) which calls AssetFS().ReadFile(). The list endpoints return pre-loaded data (zero cost), while detail endpoints do filesystem I/O per request.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s2",
+      "createdAt": "2026-05-12T05:49:06.575Z",
+      "usedCount": 10,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp27nbtc_lef6",
+      "content": "Gitea's layered asset filesystem (modules/assetfs) searches custom path first, then bindata. The options.AssetFS() function creates this layered FS with CustomAssets() (from setting.CustomPath/options/) as the first layer. This means administrators can override any built-in template (gitignore, license, label, readme) by placing files in the custom directory without modifying bindata.",
+      "type": "experience",
+      "confidence": 0.7,
+      "source": "int-phase2-s2",
+      "createdAt": "2026-05-12T05:49:06.576Z",
+      "usedCount": 9,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp27y98e_lh7w",
+      "content": "Gitea's notification convert layer (services/convert/notification.go) introduces N+1 queries that aren't visible from the handler code alone. The batch-loading in NotificationList.LoadAttributes is good, but ToNotificationThread then calls GetIndividualUserRepoPermission and Issue.GetLastComment per notification, negating the batch optimization. Always trace through the full convert/serialization path when assessing performance.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s3",
+      "createdAt": "2026-05-12T05:57:36.446Z",
+      "usedCount": 11,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp27y98f_4qut",
+      "content": "Gitea's settings API endpoints (routers/api/v1/settings/settings.go) are pure in-memory reads from package-level variables in modules/setting/. They have zero I/O, no authentication, and no database access. The setting values are loaded once at startup from app.ini and never change during runtime. These are the simplest possible endpoints to analyze.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s3",
+      "createdAt": "2026-05-12T05:57:36.447Z",
+      "usedCount": 8,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp27y98g_5ygu",
+      "content": "Gitea's PUT /notifications endpoint (ReadNotifications) has a critical unbounded query pattern: it calls db.Find without ListOptions (no pagination), meaning ALL matching notifications are loaded. Combined with the per-item update loop (SetNotificationStatus in a for loop), this creates O(N) database round-trips where N is unbounded. The ReadRepoNotifications endpoint has the same pattern. This is a common anti-pattern in \"mark all as read\" operations.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s3",
+      "createdAt": "2026-05-12T05:57:36.448Z",
+      "usedCount": 10,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp288xd6_4qj2",
+      "content": "Gitea's notification \"mark all as read\" endpoints (both user-level ep-020 and repo-level ep-023) share the same critical anti-pattern: they use db.Find WITHOUT ListOptions (no pagination), then loop through results calling SetNotificationStatus individually. SetNotificationStatus itself re-fetches the notification by ID before updating, adding a redundant SELECT. The convert layer (ToNotificationThread) adds further hidden N+1 via GetIndividualUserRepoPermission and Issue.GetLastComment per notification. Total cost: ~8 DB queries per notification with no upper bound on N.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s4",
+      "createdAt": "2026-05-12T06:05:54.282Z",
+      "usedCount": 9,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp288xd8_ji4n",
+      "content": "Gitea's organization endpoints use a shared listUserOrgs helper that accepts the target user as parameter. The visibility filtering is handled by DoerViewOtherVisibility(doer, other) which returns the maximum visibility level the doer can see for the other user's orgs: Private (if admin or self), Limited (if authenticated), Public (if anonymous). This is passed as IncludeVisibility to FindOrgOptions which filters via user.visibility <= ? condition.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s4",
+      "createdAt": "2026-05-12T06:05:54.284Z",
+      "usedCount": 12,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp288xd8_yslk",
+      "content": "Gitea's context.UserAssignmentAPI() middleware resolves the {username} path parameter into ctx.ContextUser. It handles user redirects (renamed users) transparently. The middleware is applied at the route group level, so all endpoints under /users/{username}/... get the resolved user automatically. The {org} path parameter in nested routes like /users/{username}/orgs/{org}/permissions is NOT resolved by middleware - it's resolved manually in the handler via user.GetUserByPathParam(ctx, \"org\").",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s4",
+      "createdAt": "2026-05-12T06:05:54.284Z",
+      "usedCount": 13,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp288xd9_xxp8",
+      "content": "middleware - it's resolved manually in the handler via user.GetUserByPathParam(ctx, \"org\").",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s4",
+      "createdAt": "2026-05-12T06:05:54.285Z",
+      "usedCount": 11,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp28l4vw_w0yy",
+      "content": "Gitea's organization model is a type alias of User (type Organization user_model.User) stored in the same user table with type=1 (UserTypeOrganization). The orgAssignment(true) middleware resolves the {org} path parameter by querying GetOrgByName which filters by lower_name AND type=UserTypeOrganization. It also handles user redirects transparently for renamed orgs via LookupUserRedirect. The reqOrgOwnership() middleware checks ownership by joining team_user and team tables looking for authorize=AccessModeOwner.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s5",
+      "createdAt": "2026-05-12T06:15:23.900Z",
+      "usedCount": 13,
+      "lastUsedAt": "2026-05-12T14:51:07.985Z"
+    },
+    {
+      "id": "l_mp28l4vx_8bze",
+      "content": "Gitea's org CRUD endpoints split email updates from other field updates into two separate DB operations (UpdateOrgEmailAddress + UpdateUser). This is because email validation has special domain-checking logic in user_model.ValidateEmail that other fields don't need. The two operations are NOT wrapped in a transaction, meaning partial updates are possible if the second UPDATE fails.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s5",
+      "createdAt": "2026-05-12T06:15:23.901Z",
+      "usedCount": 1,
+      "lastUsedAt": "2026-05-12T06:15:23.908Z"
+    },
+    {
+      "id": "l_mp28l4vy_xyov",
+      "content": "Gitea's user_service.RenameUser has a special fast path for capitalization-only changes (strings.EqualFold(newUserName, u.Name)). In this case, it skips the full transaction, redirect creation, and filesystem rename - just updating the name column and repository owner names. This is important because the full rename path involves filesystem I/O that can fail independently of the DB transaction.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s5",
+      "createdAt": "2026-05-12T06:15:23.902Z",
+      "usedCount": 6,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp28l4vy_gav0",
+      "content": "orgAssignment middleware\"]}\u001b[K",
+      "type": "rule",
+      "confidence": 1,
+      "source": "int-phase2-s5",
+      "createdAt": "2026-05-12T06:15:23.902Z",
+      "usedCount": 8,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp28xefg_qtog",
+      "content": "Gitea's convert.ToActivities has an N+1 pattern where GetDoerRepoPermission is called per action item. The batch-loading in ActionList.LoadAttributes is good (loads users, repos, issues, comments in bulk), but the permission check in the convert layer undoes this optimization. This pattern repeats across activity feed endpoints (org, user, team, repo feeds all use the same ToActivities converter).",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s6",
+      "createdAt": "2026-05-12T06:24:56.140Z",
+      "usedCount": 8,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp28xefh_az1p",
+      "content": "Gitea's org action endpoints (secrets, variables, runners) use a shared route registration function addActionsRoutes that accepts middleware functions and an actions_service.API interface implementation. The org, repo, and user action endpoints all share the same route structure but with different middleware (reqOrgOwnership vs reqOwner vs reqRepoReader). The Action struct in each package implements the same interface.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s6",
+      "createdAt": "2026-05-12T06:24:56.141Z",
+      "usedCount": 9,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp28xefh_hxt6",
+      "content": "Gitea's DeleteOrgRepos endpoint uses an excellent async deletion pattern: it loads only repo IDs synchronously (lightweight), returns 202 Accepted immediately, then spawns a background goroutine using graceful.GetManager().ShutdownContext() to ensure the deletion can continue even if the HTTP request is cancelled, but will stop cleanly on server shutdown. Individual failures are logged as system notices and don't stop other deletions.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s6",
+      "createdAt": "2026-05-12T06:24:56.141Z",
+      "usedCount": 6,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp28xefi_5v52",
+      "content": "orgAssignment(true) middleware\"]}],\u001b[K",
+      "type": "rule",
+      "confidence": 1,
+      "source": "int-phase2-s6",
+      "createdAt": "2026-05-12T06:24:56.142Z",
+      "usedCount": 7,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp28xefk_p0e5",
+      "content": "orgAssignment(true) middleware\"]},\u001b[K",
+      "type": "rule",
+      "confidence": 0.7999999999999999,
+      "source": "int-phase2-s6",
+      "createdAt": "2026-05-12T06:24:56.144Z",
+      "usedCount": 6,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp299awh_qvz9",
+      "content": "Gitea's addActionsRoutes is a closure defined inside the route registration function (api.go line 888) that provides a reusable route structure for actions endpoints (secrets, variables, runners, jobs, runs). It takes two middleware functions (reqReaderCheck for read-only endpoints like jobs/runs, reqOwnerCheck for write endpoints like secrets/variables/runners) and an actions.API interface implementation. This same pattern is used for org, repo, user, and admin action routes with different middleware and implementations.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s7",
+      "createdAt": "2026-05-12T06:34:11.441Z",
+      "usedCount": 9,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp299awi_4mj1",
+      "content": "Gitea's actions-related code follows a clear layering: routers/api/v1/org/action.go (org-specific handlers) → routers/api/v1/shared/runners.go (shared handler logic reused across org/repo/user/admin) → services/actions/variables.go (business logic) → models/actions/variable.go (data access). The shared package is key for understanding how the same runner/token operations work across different ownership contexts (ownerID/repoID patterns).",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s7",
+      "createdAt": "2026-05-12T06:34:11.442Z",
+      "usedCount": 9,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp299awj_ji5k",
+      "content": "Gitea's variable name validation uses services/secrets/validation.go which is shared between secrets and variables. The regex ^[A-Z_][A-Z0-9_]*$ is case-insensitive ((?i) flag), and names starting with GITEA_ or GITHUB_ are forbidden, as is the name \"CI\". Variable names are always stored uppercased via strings.ToUpper() in the model layer.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s7",
+      "createdAt": "2026-05-12T06:34:11.443Z",
+      "usedCount": 8,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp29kopi_p70d",
+      "content": "Gitea's convert layer (services/convert/convert.go) has a consistent N+1 pattern across multiple entity types: ToActionWorkflowJob loads task/steps/runner per job, ToActionWorkflowRun loads latest attempt per run, and ToTeams loads units per team. The code has a TODO comment acknowledging the attempt loading issue (\"TODO: load run attempts in batch\"). The ToTeams function mitigates org loading with an in-memory map cache but doesn't batch team_unit loading. These are all candidates for batch-loading optimization.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s8",
+      "createdAt": "2026-05-12T06:43:02.550Z",
+      "usedCount": 8,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp29kopk_dlzt",
+      "content": "Gitea's shared action handlers (routers/api/v1/shared/action.go) use a JOIN-based approach for org/user-level filtering: FindRunOptions and FindRunJobOptions implement ToJoins() which adds INNER JOIN repository ON repository.owner_id = ? when OwnerID is set. This is because action_run and action_run_job don't directly store owner_id - they store repo_id, and the owner relationship is through the repository table.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s8",
+      "createdAt": "2026-05-12T06:43:02.552Z",
+      "usedCount": 2,
+      "lastUsedAt": "2026-05-12T09:29:25.359Z"
+    },
+    {
+      "id": "l_mp29kopn_6blo",
+      "content": "orgAssignment middleware\"]},\u001b[K",
+      "type": "rule",
+      "confidence": 1,
+      "source": "int-phase2-s8",
+      "createdAt": "2026-05-12T06:43:02.555Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp29yw6x_6ss4",
+      "content": "Gitea's team operations (create/edit/delete/add member/remove member) all use db.WithTx for transactional safety, but the access recalculation pattern inside transactions is consistently O(N) per repo. The RecalculateTeamAccesses and RecalculateUserAccess functions are called in per-repo loops within transactions, creating potentially long-running transactions for teams with many repositories. This is a systemic pattern across all team mutation endpoints in services/org/team.go.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s9",
+      "createdAt": "2026-05-12T06:54:05.433Z",
+      "usedCount": 6,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp29yw6y_jq0s",
+      "content": "Gitea's team API endpoints use a two-layer middleware pattern: orgAssignment(false, true) resolves the team from {teamid} path param, then reqTeamMembership() or reqOrgOwnership() handles authorization. The orgAssignment function's boolean args control whether to resolve org (arg 1) or team (arg 2). For team-scoped routes under /teams/{teamid}, only the team is resolved (false, true), and the org ownership check uses team.OrgID rather than a path-resolved org.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s9",
+      "createdAt": "2026-05-12T06:54:05.434Z",
+      "usedCount": 2,
+      "lastUsedAt": "2026-05-12T07:58:34.479Z"
+    },
+    {
+      "id": "l_mp29yw6z_crim",
+      "content": "Gitea's AddTeamMember has a fire-and-forget goroutine pattern for auto-watching repos (controlled by setting.Service.AutoWatchNewRepos). The goroutine uses graceful.GetManager().ShutdownContext() to ensure it completes during graceful shutdown. Errors in the goroutine are only logged, never propagated. This pattern means the 204 response is returned before all side effects complete.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s9",
+      "createdAt": "2026-05-12T06:54:05.435Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T06:54:05.435Z"
+    },
+    {
+      "id": "l_mp2aaz86_09dt",
+      "content": "Gitea's team-related API endpoints under /teams/{teamid} use orgAssignment(false, true) middleware which loads the team by ID but NOT the org. The org is accessed indirectly via ctx.Org.Team.OrgID. The reqTeamMembership() middleware checks org ownership OR team membership, with different error codes: 403 for org members who aren't team members, 404 for non-org-members.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s10",
+      "createdAt": "2026-05-12T07:03:29.238Z",
+      "usedCount": 6,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2aaz87_eqdu",
+      "content": "In Gitea, the services/repository/repo_team.go file contains the business logic for team-repository operations (add/remove). These operations use db.WithTx for transactional consistency and include side effects like recalculating access permissions and managing watch subscriptions.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s10",
+      "createdAt": "2026-05-12T07:03:29.239Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:03:29.239Z"
+    },
+    {
+      "id": "l_mp2aaz88_in72",
+      "content": "Gitea's team repo listing (GetTeamRepos) has an N+1 query pattern where GetDoerRepoPermission is called per-repo in a loop. Similarly, RemoveRepositoryFromTeam checks HasAnyUnitAccess per-member. These are common patterns across the codebase where batch operations would significantly improve performance.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s10",
+      "createdAt": "2026-05-12T07:03:29.240Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:03:29.240Z"
+    },
+    {
+      "id": "l_mp2aaz89_y3fy",
+      "content": "Gitea's SearchTeam endpoint returns a non-standard response format {ok: bool, data: []*Team} instead of the typical array response used by other list endpoints. It also uses a custom error format {ok: false, error: \"...\"} instead of the standard ctx.APIErrorInternal pattern.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s10",
+      "createdAt": "2026-05-12T07:03:29.241Z",
+      "usedCount": 6,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2al6je_4j3w",
+      "content": "Gitea's org member endpoints have a unique 303 redirect pattern in IsMember: when the doer is not an org member/admin, instead of returning 403, it redirects to the public_members check endpoint. This is an information-hiding pattern to prevent non-members from learning about private membership.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s11",
+      "createdAt": "2026-05-12T07:11:25.274Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2al6je_sohx",
+      "content": "Gitea's checkCanChangeOrgUserStatus helper in routers/api/v1/org/member.go implements a three-tier authorization check (self → admin → org owner) without using middleware, because the reqOrgMembership middleware only checks basic membership, not the fine-grained \"can change this specific user's status\" logic.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s11",
+      "createdAt": "2026-05-12T07:11:25.274Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:11:25.274Z"
+    },
+    {
+      "id": "l_mp2al6jf_zkef",
+      "content": "Gitea's RemoveOrgUser in services/org/user.go has a cascading deletion pattern within a single transaction: org_user deletion → repo unwatch → access deletion → team removal (per team) → per-team access recalculation (per repo). This creates O(teams × repos) queries within one transaction for users in large orgs.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s11",
+      "createdAt": "2026-05-12T07:11:25.275Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:11:25.275Z"
+    },
+    {
+      "id": "l_mp2al6jg_kdkf",
+      "content": "orgAssignment middleware via GetOrgByName\"]}],\u001b[K",
+      "type": "rule",
+      "confidence": 0.7999999999999999,
+      "source": "int-phase2-s11",
+      "createdAt": "2026-05-12T07:11:25.276Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2al6jh_bv17",
+      "content": "GetContextUserByPathParam, supports redirects\"]}\u001b[K",
+      "type": "rule",
+      "confidence": 0.7999999999999999,
+      "source": "int-phase2-s11",
+      "createdAt": "2026-05-12T07:11:25.277Z",
+      "usedCount": 6,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2al6jj_bl2j",
+      "content": "GetContextUserByPathParam\"]}\u001b[K",
+      "type": "rule",
+      "confidence": 0.8999999999999999,
+      "source": "int-phase2-s11",
+      "createdAt": "2026-05-12T07:11:25.279Z",
+      "usedCount": 6,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2avmac_4dfl",
+      "content": "Gitea's webhook edit pattern (EditOwnerHook) re-fetches the webhook from DB after update rather than returning the in-memory modified object. This is a common pattern across the codebase for ensuring AfterLoad hooks run (e.g., JSON unmarshaling of Events field in Webhook.AfterLoad). The re-fetch is intentional to ensure the HookEvent field is properly populated from the Events JSON column.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s12",
+      "createdAt": "2026-05-12T07:19:32.244Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2avmae_bh8e",
+      "content": "Gitea org hooks delegate to shared utility functions in routers/api/v1/utils/hook.go (ListOwnerHooks, GetOwnerHook, AddOwnerHook, EditOwnerHook, DeleteOwnerHook). These same utilities are reused by repo hooks and admin/system hooks, making the hook CRUD pattern highly consistent across all owner types.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s12",
+      "createdAt": "2026-05-12T07:19:32.246Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:19:32.246Z"
+    },
+    {
+      "id": "l_mp2avmaf_pbl3",
+      "content": "Gitea org blocks delegate to routers/api/v1/shared/block.go which provides ListBlocks, CheckUserBlock, BlockUser, UnblockUser. The actual business logic lives in services/user/block.go which handles cascading effects (unfollow, unstar, unwatch, unassign, remove collaborations, cancel transfers) all within a single DB transaction.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s12",
+      "createdAt": "2026-05-12T07:19:32.247Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:19:32.247Z"
+    },
+    {
+      "id": "l_mp2b811q_dum3",
+      "content": "In Gitea, the block/unblock user functionality uses a shared handler pattern: routers/api/v1/org/block.go delegates to routers/api/v1/shared/block.go which then calls services/user/block.go. The shared layer allows both user-level and org-level blocking to reuse the same logic. The BlockUser service function performs extensive cleanup (unfollows, unstars, unwatches, unassigns, removes collaborations, cancels transfers) all within a single database transaction.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s13",
+      "createdAt": "2026-05-12T07:29:11.246Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:29:11.246Z"
+    },
+    {
+      "id": "l_mp2b811r_756c",
+      "content": "Gitea's label GET endpoint (orgGetLabel) accepts the {id} path parameter as either a numeric ID or a string label name. It uses strconv.ParseInt to determine which lookup to use. This dual-mode lookup pattern is specific to label endpoints.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s13",
+      "createdAt": "2026-05-12T07:29:11.247Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2b811r_k59b",
+      "content": "The issues_model.DeleteLabel function silently returns nil (no error) if the label belongs to a different org than the one specified. This means the DELETE /orgs/{org}/labels/{id} endpoint returns 204 even if the label ID belongs to another org - it just doesn't delete anything. This is a potential security/correctness concern worth noting.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s13",
+      "createdAt": "2026-05-12T07:29:11.247Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:29:11.247Z"
+    },
+    {
+      "id": "l_mp2bkui2_v4d5",
+      "content": "In Gitea's admin API, the HaveIBeenPwned password check (modules/auth/password/pwn/pwn.go) uses http.DefaultClient with no timeout configured. This is a common pattern in the codebase where external HTTP calls lack explicit timeouts. The check is gated by setting.PasswordCheckPwn config flag.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s14",
+      "createdAt": "2026-05-12T07:39:09.290Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2bkui4_9vss",
+      "content": "Gitea admin API endpoints (routers/api/v1/admin/) delegate webhook CRUD to shared utilities in routers/api/v1/utils/hook.go. The addHook/editHook functions handle all webhook types (system, org, repo) with ownerID/repoID parameters distinguishing scope. System webhooks have repo_id=0 AND owner_id=0.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s14",
+      "createdAt": "2026-05-12T07:39:09.292Z",
+      "usedCount": 1,
+      "lastUsedAt": "2026-05-12T07:58:34.479Z"
+    },
+    {
+      "id": "l_mp2bkui5_mp0w",
+      "content": "Gitea's organization creation (models/organization/org.go CreateOrganization) is a well-structured transactional operation that creates 5+ records atomically: user record (as org), org_user, team (Owners), team_unit entries for all repo unit types, and team_user. The owner is always added to the Owners team with AccessModeOwner.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s14",
+      "createdAt": "2026-05-12T07:39:09.293Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:39:09.293Z"
+    },
+    {
+      "id": "l_mp2bwzhv_g9i7",
+      "content": "Gitea admin user endpoints (routers/api/v1/admin/user.go) delegate to services/user/ for business logic. The pattern is: controller parses form → calls service layer (UpdateAuth, UpdateUser, DeleteUser, RenameUser) → service handles DB operations. The user deletion with purge=true is notably complex: it disables the user first (outside transaction), then deletes repos/orgs/packages individually, then does final cleanup in a transaction.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s15",
+      "createdAt": "2026-05-12T07:48:35.635Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:48:35.635Z"
+    },
+    {
+      "id": "l_mp2bwzhx_v12b",
+      "content": "Gitea's asymkey_service.DeletePublicKey rewrites the entire authorized_keys file on every single key deletion via RewriteAllPublicKeys(). This is a known performance concern for instances with many SSH keys. The same pattern applies to RewriteAllPrincipalKeys.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s15",
+      "createdAt": "2026-05-12T07:48:35.637Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2bwzhy_618z",
+      "content": "Gitea's password pwned check (modules/auth/password/pwn/) calls the HaveIBeenPwned API without explicit timeout or circuit breaker. When PASSWORD_CHECK_PWN is enabled, this external dependency can block admin user edit operations if the API is slow/down.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s15",
+      "createdAt": "2026-05-12T07:48:35.638Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:48:35.638Z"
+    },
+    {
+      "id": "l_mp2c9j50_yppm",
+      "content": "Gitea admin endpoints (routers/api/v1/admin/) heavily delegate to shared helpers in routers/api/v1/shared/ for actions-related functionality (runners, jobs, runs). The shared package uses ownerID=0, repoID=0 convention to indicate global/admin scope. All admin routes are wrapped in a single middleware group with tokenRequiresScopes(auth_model.AccessTokenScopeCategoryAdmin), reqToken(), reqSiteAdmin().",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s16",
+      "createdAt": "2026-05-12T07:58:20.964Z",
+      "usedCount": 2,
+      "lastUsedAt": "2026-05-12T09:29:25.359Z"
+    },
+    {
+      "id": "l_mp2c9j52_c2tv",
+      "content": "Gitea's cron system stores tasks entirely in-memory (services/cron/tasks.go) using a global slice+map protected by sync.Mutex. The gocron scheduler runs tasks, but the task registry (GetTask, ListTasks) is custom. Task.Run() uses globallock.TryLock for distributed locking, meaning in multi-instance deployments only one instance runs a given cron task.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s16",
+      "createdAt": "2026-05-12T07:58:20.966Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2c9j53_u2kl",
+      "content": "The unadopted repository feature (services/repository/adopt.go) walks the filesystem at setting.RepoRootPath and compares against DB records. This is a potentially expensive operation with no caching - it does a full filepath.WalkDir on every API call. The code batches DB checks using setting.Database.IterateBufferSize.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s16",
+      "createdAt": "2026-05-12T07:58:20.967Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T07:58:20.967Z"
+    },
+    {
+      "id": "l_mp2ckmyr_7u47",
+      "content": "Gitea's admin runner endpoints (GET/DELETE/PATCH /admin/actions/runners/{runner_id}) all delegate to shared/runners.go with ownerID=0, repoID=0. The EditableInContext(0,0) check always returns true in admin context, meaning admins can manage any runner regardless of ownership. The model-layer DeleteRunner function redundantly re-fetches the runner by ID before deleting, even though the handler already validated its existence.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s17",
+      "createdAt": "2026-05-12T08:06:59.139Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2ckmyu_7wlu",
+      "content": "Gitea's admin email search (GET /admin/emails/search) delegates to GetAllEmails by setting a path param \"email\" to the query value \"q\" via ctx.SetPathParam. This is an unusual pattern where one handler manipulates context state and calls another handler directly rather than sharing a helper function.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s17",
+      "createdAt": "2026-05-12T08:06:59.142Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T08:06:59.142Z"
+    },
+    {
+      "id": "l_mp2ckmyv_xmij",
+      "content": "Gitea's user_model.AddUserBadges has an N+1 query pattern: within a transaction, it loops through each badge slug doing 3 queries per badge (SELECT badge by slug, EXISTS check on user_badge, INSERT user_badge). In contrast, RemoveUserBadges uses a single JOIN query to find all matching user_badge entries and then batch-deletes them by ID - a much more efficient pattern.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s17",
+      "createdAt": "2026-05-12T08:06:59.143Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T08:06:59.143Z"
+    },
+    {
+      "id": "l_mp2ckmyw_jan3",
+      "content": "UserAssignmentAPI middleware\"]}],\u001b[K",
+      "type": "rule",
+      "confidence": 1,
+      "source": "int-phase2-s17",
+      "createdAt": "2026-05-12T08:06:59.144Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2cwv84_vqiq",
+      "content": "In Gitea's user API endpoints (routers/api/v1/user/), the ctx.ContextUser is populated by the UserAssignmentAPI() middleware which resolves the {username} path param. The ctx.Doer is the authenticated user. The convert.ToUser() function controls field visibility based on whether the viewer is \"authed\" (self or admin) - private fields like is_admin, login_name, last_login are only shown to authed viewers.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s18",
+      "createdAt": "2026-05-12T08:16:29.716Z",
+      "usedCount": 1,
+      "lastUsedAt": "2026-05-12T09:29:25.359Z"
+    },
+    {
+      "id": "l_mp2cwv86_eblo",
+      "content": "Gitea's activities_model.GetFeeds uses a performance optimization: for page < 10, it uses FindAndCount directly; for page >= 10, it first queries only IDs then fetches full records in a second query. This is to avoid performance degradation with large offsets.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s18",
+      "createdAt": "2026-05-12T08:16:29.718Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2cwv87_ablr",
+      "content": "The convert.ToActivities function has an N+1 query pattern - it calls GetDoerRepoPermission for each action's repo individually. This is a common performance issue in Gitea's feed/activity endpoints that affects ep-127 and similar feed listing endpoints.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s18",
+      "createdAt": "2026-05-12T08:16:29.719Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T08:16:29.719Z"
+    },
+    {
+      "id": "l_mp2d5y1p_omkq",
+      "content": "Gitea's secret/variable endpoints share the same name validation logic in services/secrets/validation.go. The ValidateName function uses a compiled regex pattern (?i)^[A-Z_][A-Z0-9_]*$ and rejects GITEA_/GITHUB_ prefixes and the name \"CI\". This validation is used for both secrets (models/secret) and action variables (models/actions) via the shared service.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s19",
+      "createdAt": "2026-05-12T08:23:33.277Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2d5y1q_reyo",
+      "content": "Gitea's user-level action endpoints (secrets, variables, runners, workflow runs/jobs) are all in routers/api/v1/user/action.go. The service layer splits into services/secrets/ for secrets and services/actions/ for variables/runners. The model layer similarly splits: models/secret/secret.go for secrets and models/actions/variable.go for variables.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s19",
+      "createdAt": "2026-05-12T08:23:33.278Z",
+      "usedCount": 1,
+      "lastUsedAt": "2026-05-12T09:29:25.359Z"
+    },
+    {
+      "id": "l_mp2d5y1r_h2z4",
+      "content": "Gitea's avatar deletion in services/user/avatar.go wraps DB update + storage delete in a db.WithTx transaction. If the storage.Delete call fails with os.ErrNotExist, it logs a warning but doesn't error - this makes the operation idempotent. Other storage errors cause the transaction to roll back.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s19",
+      "createdAt": "2026-05-12T08:23:33.279Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T08:23:33.279Z"
+    },
+    {
+      "id": "l_mp2dfnvk_u4yw",
+      "content": "Gitea's shared action handlers (shared.ListRuns, shared.ListJobs) use INNER JOIN on repository table to filter by owner_id when ownerID != 0. The FindRunOptions.ToJoins() method adds the join dynamically. This pattern means owner-level queries always go through the repository table as an intermediary rather than having a direct owner_id column on action_run.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s20",
+      "createdAt": "2026-05-12T08:31:06.656Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2dfnvm_wfjd",
+      "content": "Gitea's user follower visibility filtering uses complex subqueries in isUserVisibleToViewerCond (models/user/user.go:1384) that check follow table, team_user table, and user visibility settings. Admin sees all, anonymous sees only public, signed-in users see non-private plus their own org members and followers.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s20",
+      "createdAt": "2026-05-12T08:31:06.658Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T08:31:06.658Z"
+    },
+    {
+      "id": "l_mp2dfnvn_uq1f",
+      "content": "Gitea action variables use a name validation pattern from services/secrets/validation.go that enforces: ^[A-Z_][A-Z0-9_]*$ (case insensitive), forbids GITEA_/GITHUB_ prefixes, and forbids the name \"CI\". Names are stored uppercase. The same ValidateName function is shared between secrets and variables.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s20",
+      "createdAt": "2026-05-12T08:31:06.659Z",
+      "usedCount": 1,
+      "lastUsedAt": "2026-05-12T09:29:25.359Z"
+    },
+    {
+      "id": "l_mp2dqbo1_fcy4",
+      "content": "In Gitea, user follow endpoints (routers/api/v1/user/follower.go) delegate directly to models/user/follow.go for DB operations. The Follow model uses a UNIQUE(user_id, follow_id) composite index. FollowUser/UnfollowUser are idempotent by design - they check existence before acting and return nil for no-ops.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s21",
+      "createdAt": "2026-05-12T08:39:24.049Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T08:39:24.049Z"
+    },
+    {
+      "id": "l_mp2dqbo4_jkti",
+      "content": "Gitea webhook CRUD for users/orgs is centralized in routers/api/v1/utils/hook.go with shared functions: ListOwnerHooks, GetOwnerHook, AddOwnerHook, EditOwnerHook, DeleteOwnerHook. The actual user/hook.go handlers are thin wrappers that pass ctx.Doer as the owner.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s21",
+      "createdAt": "2026-05-12T08:39:24.052Z",
+      "usedCount": 1,
+      "lastUsedAt": "2026-05-12T09:29:25.359Z"
+    },
+    {
+      "id": "l_mp2dqbo5_ra50",
+      "content": "Gitea's webhook.Webhook stores the authorization header encrypted via modules/secret using the app's SecretKey. The ToHook conversion function decrypts it synchronously for each webhook in list operations, which could be a concern for users with many webhooks.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s21",
+      "createdAt": "2026-05-12T08:39:24.053Z",
+      "usedCount": 5,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp2e0htd_kks7",
+      "content": "Gitea's starred repos endpoints (GET /user/starred, GET /users/{username}/starred) have a significant N+1 query pattern: getStarredRepos in routers/api/v1/user/star.go calls access_model.GetIndividualUserRepoPermission in a loop for each starred repo. This permission check itself does multiple queries (LoadUnits, IsCollaborator, LoadOwner). With default page sizes of ~50, this results in 150+ queries per request.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s22",
+      "createdAt": "2026-05-12T08:47:18.577Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T08:47:18.577Z"
+    },
+    {
+      "id": "l_mp2e0htf_miqg",
+      "content": "Gitea webhook CRUD operations for user/org/repo all share the same utility functions in routers/api/v1/utils/hook.go (EditOwnerHook, DeleteOwnerHook, AddOwnerHook, ListOwnerHooks). The actual webhook model operations are in models/webhook/webhook.go. The webhook_service.ToHook conversion function lives in services/webhook/general.go.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s22",
+      "createdAt": "2026-05-12T08:47:18.579Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T08:47:18.579Z"
+    },
+    {
+      "id": "l_mp2e0htg_831s",
+      "content": "Gitea star operations use a transactional pattern in models/repo/star.go - StarRepo wraps the star insert + counter updates (repository.num_stars, user.num_stars) in db.WithTx. The star check (IsStaring) is a simple existence check on the star table which has a unique composite index on (uid, repo_id).",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s22",
+      "createdAt": "2026-05-12T08:47:18.580Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T08:47:18.580Z"
+    },
+    {
+      "id": "l_mp2eaoe2_aso5",
+      "content": "Gitea's SSH key deletion (asymkey_service.DeletePublicKey) triggers a full rewrite of the authorized_keys file via RewriteAllPublicKeys, which acquires a global SSH op lock and reads ALL public keys from the DB. This is a known performance bottleneck for instances with many SSH keys. The builtin SSH server (setting.SSH.StartBuiltinServer=true) bypasses this entirely.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s23",
+      "createdAt": "2026-05-12T08:55:13.658Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T08:55:13.658Z"
+    },
+    {
+      "id": "l_mp2eaoe4_gvu6",
+      "content": "Gitea's user SSH key endpoints share a common listPublicKeys helper in routers/api/v1/user/key.go that handles both /user/keys and /users/{username}/keys. The appendPrivateInformation function conditionally adds owner/type/readonly fields only when the requester is admin or key owner. Key validation flows through asymkey_model.CheckPublicKeyString which enforces single-line format and optional minimum key size checks.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s23",
+      "createdAt": "2026-05-12T08:55:13.660Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T08:55:13.660Z"
+    },
+    {
+      "id": "l_mp2emivu_ebds",
+      "content": "Gitea's access token management endpoints (GET/POST/DELETE /users/{username}/tokens) require reqBasicOrRevProxyAuth() middleware - they cannot be accessed with token-only authentication. This is a security design choice to prevent token self-management via tokens (you need stronger auth to create/delete tokens).",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s24",
+      "createdAt": "2026-05-12T09:04:26.394Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:04:26.394Z"
+    },
+    {
+      "id": "l_mp2emivw_lk8h",
+      "content": "Gitea's OAuth2 application creation (CreateOAuth2Application + GenerateClientSecret) is non-atomic: the INSERT and the subsequent UPDATE for the bcrypt-hashed secret are separate DB operations without a wrapping transaction. If GenerateClientSecret fails, an app exists without a usable secret.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s24",
+      "createdAt": "2026-05-12T09:04:26.396Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:04:26.396Z"
+    },
+    {
+      "id": "l_mp2emivz_r9dj",
+      "content": "UserAssignmentAPI middleware\"]},\u001b[K",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s24",
+      "createdAt": "2026-05-12T09:04:26.399Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:04:26.399Z"
+    },
+    {
+      "id": "l_mp2eyf2g_u1mr",
+      "content": "Gitea's repo listing endpoints (listUserRepos, ListMyRepos) have a consistent N+1 query pattern where GetDoerRepoPermission is called per-repo in a loop. This affects ep-172, ep-173, ep-174 and likely all other repo-listing endpoints. The pattern is: query repos → loop repos → GetDoerRepoPermission(ctx, repo, doer) per iteration.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s25",
+      "createdAt": "2026-05-12T09:13:41.320Z",
+      "usedCount": 1,
+      "lastUsedAt": "2026-05-12T09:29:25.359Z"
+    },
+    {
+      "id": "l_mp2eyf2i_scdu",
+      "content": "Gitea's OAuth2 application CRUD is entirely in routers/api/v1/user/app.go with model logic in models/auth/oauth2.go. The UpdateOAuth2Application always regenerates the client secret (bcrypt hashed, gto_ prefixed base32 plaintext). Builtin apps (git-credential-oauth, git-credential-manager, tea) are locked and cannot be edited or deleted.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s25",
+      "createdAt": "2026-05-12T09:13:41.322Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:13:41.322Z"
+    },
+    {
+      "id": "l_mp2eyf2k_t866",
+      "content": "Gitea's runner management uses a shared package (routers/api/v1/shared/runners.go) that provides ListRunners, GetRunner, DeleteRunner, UpdateRunner, and GetRegistrationToken functions. These are called from user/org/repo/admin level handlers with different ownerID/repoID combinations to scope access.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s25",
+      "createdAt": "2026-05-12T09:13:41.324Z",
+      "usedCount": 1,
+      "lastUsedAt": "2026-05-12T09:29:25.359Z"
+    },
+    {
+      "id": "l_mp2f90s7_tmgr",
+      "content": "Gitea's user-level runner endpoints (GET/DELETE/PATCH /user/actions/runners) all delegate to shared functions in routers/api/v1/shared/runners.go which accept ownerID and repoID parameters. The same shared functions serve admin, org, repo, and user runner endpoints - only the ownerID/repoID values differ. The EditableInContext method on ActionRunner enforces ownership checks.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s26",
+      "createdAt": "2026-05-12T09:21:56.023Z",
+      "usedCount": 1,
+      "lastUsedAt": "2026-05-12T09:29:25.359Z"
+    },
+    {
+      "id": "l_mp2f90s9_lkjs",
+      "content": "Gitea's email add/delete operations in services/user/email.go iterate over email lists without wrapping in a transaction (no db.WithTx). This means partial failures leave inconsistent state - if adding 3 emails and the 2nd fails validation, the 1st is already inserted. This is a known pattern across several batch operations in the codebase.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s26",
+      "createdAt": "2026-05-12T09:21:56.025Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:21:56.025Z"
+    },
+    {
+      "id": "l_mp2f90sa_mwxl",
+      "content": "Gitea's GPG key listing uses a two-query pattern: first query fetches primary keys (where primary_key_id=''), then GPGKeyList.LoadSubKeys does a batch IN query to load all subkeys at once. This avoids N+1 queries for subkey loading.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s26",
+      "createdAt": "2026-05-12T09:21:56.026Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:21:56.026Z"
+    },
+    {
+      "id": "l_mp2ficj4_3zk8",
+      "content": "Gitea's GPG key verification token uses a time-based approach with 1-minute granularity: VerificationToken(user, 1) gives the current minute's token, VerificationToken(user, 0) gives the previous minute's token. Both are tried during verification to handle clock edge cases. The token is SHA256(truncated_time:user_created:user_name:user_email:user_id).",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s27",
+      "createdAt": "2026-05-12T09:29:11.152Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:29:11.152Z"
+    },
+    {
+      "id": "l_mp2ficj7_alt9",
+      "content": "Gitea's GPG key signature verification tries multiple line ending variants (token, token+\\n, token+\\r\\n for AddGPGKey; token, token+\\n, token+\\n\\n for VerifyGPGKey) to handle different GPG client behaviors when signing tokens.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s27",
+      "createdAt": "2026-05-12T09:29:11.155Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:29:11.155Z"
+    },
+    {
+      "id": "l_mp2ficj8_sj7e",
+      "content": "Gitea's GPGKeyList.LoadSubKeys uses a batch IN query pattern (WHERE primary_key_id IN (...)) to avoid N+1 when listing multiple keys. Individual key's LoadSubKeys uses a simple WHERE primary_key_id=? query. The list endpoint properly uses the batch variant.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s27",
+      "createdAt": "2026-05-12T09:29:11.156Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:29:11.156Z"
+    },
+    {
+      "id": "l_mp2fr6h2_j7qn",
+      "content": "Gitea's user blocking (PUT /user/blocks/{username}) performs extensive cleanup in a single DB transaction: unfollows, unstars, unwatches, unassigns issues, removes collaborations, and cancels repo transfers - all in both directions. Each cleanup type uses paginated loops with per-item operations (page size 25). The shared.BlockUser/UnblockUser functions in routers/api/v1/shared/block.go are reused by both user-level and org-level block endpoints with different blocker parameters.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s28",
+      "createdAt": "2026-05-12T09:36:03.206Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:36:03.206Z"
+    },
+    {
+      "id": "l_mp2fr6h4_imoq",
+      "content": "Gitea's subscription (watch) endpoints in routers/api/v1/user/watch.go use a shared helper function getWatchedRepos that exhibits the same N+1 query pattern seen in repo listing endpoints - GetIndividualUserRepoPermission is called per repo in a loop. The WatchedReposOptions in models/repo/user_repo.go uses a JOIN-based approach (INNER JOIN watch ON repository.id = watch.repo_id) with ToConds/ToJoins pattern for the db.FindAndCount generic.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s28",
+      "createdAt": "2026-05-12T09:36:03.208Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:36:03.208Z"
+    },
+    {
+      "id": "l_mp2g1q1h_vfoy",
+      "content": "Gitea's package API uses a PackageAssignmentAPI middleware that pre-loads the package descriptor into ctx.Package before the handler runs. When a version path param is present, it loads the full PackageDescriptor; when only type+name are present (no version), it loads a minimal descriptor with just Package and Owner. This means the handler for GetPackage doesn't need to do any DB lookups itself - it just converts the pre-loaded descriptor.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s29",
+      "createdAt": "2026-05-12T09:44:15.125Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:44:15.125Z"
+    },
+    {
+      "id": "l_mp2g1q1k_7zrl",
+      "content": "Gitea's package system uses a deferred blob deletion pattern (PACKAGE-DEFER-STORAGE-DELETE). When packages/versions are deleted via API, only DB records are removed in the transaction. The actual blob files in storage are cleaned up asynchronously by the cleanup_packages cron task. This prevents long-running delete operations and storage errors from blocking API responses.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s29",
+      "createdAt": "2026-05-12T09:44:15.128Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:44:15.128Z"
+    },
+    {
+      "id": "l_mp2g1q1m_y4jx",
+      "content": "Gitea's watch/subscription system uses a WatchMode enum (None=0, Normal=1, Dont=2, Auto=3) where \"Dont\" explicitly prevents auto-rewatch. When a user unwatches an auto-watched repo, the mode transitions to \"Dont\" rather than \"None\" to prevent the auto-watch mechanism from re-subscribing them on their next push.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s29",
+      "createdAt": "2026-05-12T09:44:15.130Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:44:15.130Z"
+    },
+    {
+      "id": "l_mp2gb9ow_kkp1",
+      "content": "Gitea's package API uses a middleware pattern (PackageAssignmentAPI) that pre-loads the full PackageDescriptor including files/blobs/properties before the handler runs. This means read endpoints like ListPackageFiles don't need any DB queries in the handler itself - all data is already in ctx.Package.Descriptor. The middleware behavior differs based on whether a \"version\" path param is present: with version it loads full descriptor, without version it only loads the Package model.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s30",
+      "createdAt": "2026-05-12T09:51:40.496Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:51:40.496Z"
+    },
+    {
+      "id": "l_mp2gb9ox_ybsw",
+      "content": "Gitea package link/unlink operations are in a separate file services/packages/package_update.go rather than the main packages.go. The main file handles creation/deletion while package_update.go handles repository linking. Both use util.ErrPermissionDenied and util.ErrInvalidArgument as sentinel errors that get mapped to HTTP 403/400 in the handler.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s30",
+      "createdAt": "2026-05-12T09:51:40.497Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:51:40.497Z"
+    },
+    {
+      "id": "l_mp2glxfq_7utd",
+      "content": "Gitea's issue dependency system uses two different pagination approaches: BlockedByDependencies uses proper DB-level pagination via SetSessionPagination, while BlockingDependencies loads ALL results and paginates manually in the handler. This inconsistency is a known performance anti-pattern in the codebase.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s31",
+      "createdAt": "2026-05-12T09:59:57.830Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:59:57.830Z"
+    },
+    {
+      "id": "l_mp2glxfs_2pd9",
+      "content": "Gitea's issue dependency endpoints (dependencies and blocks) share the same underlying createIssueDependency/removeIssueDependency helper functions but with swapped target/dependency roles. The \"blocks\" endpoints reverse the relationship: URL issue becomes the dependency (blocker) and form issue becomes the target.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s31",
+      "createdAt": "2026-05-12T09:59:57.832Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T09:59:57.832Z"
+    },
+    {
+      "id": "l_mp2gvhzo_yvwp",
+      "content": "Gitea's commit listing endpoint (GetAllCommits) has a significant N+1 pattern: for each commit in a page (up to 50), it spawns separate git subprocesses for file status (git diff-tree) and diff stats (git diff --shortstat). The userCache map mitigates DB lookups but git operations remain per-commit. The stat, files, and verification query params default to true when absent (empty string check), so clients must explicitly set them to false for performance.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s32",
+      "createdAt": "2026-05-12T10:07:24.372Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:07:24.373Z"
+    },
+    {
+      "id": "l_mp2gvhzr_cjde",
+      "content": "Gitea's issue subscription (watch) system uses a three-tier check: 1) explicit issue_watch record, 2) repo-level watch mode, 3) user participation in the issue. The setIssueSubscription helper is shared between PUT (subscribe) and DELETE (unsubscribe) with a boolean parameter, making both operations idempotent (returns 200 if already in desired state, 201 if changed).",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s32",
+      "createdAt": "2026-05-12T10:07:24.375Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:07:24.375Z"
+    },
+    {
+      "id": "l_mp2h6yfh_ea6t",
+      "content": "Gitea's ToAPIPullRequests conversion function (services/convert/pull.go) is extremely heavy for list endpoints - it opens a git repository, loads 8+ related tables (repos, issues, labels, posters, attachments, milestones, assignees, reviews), and iterates over PRs for branch SHA lookups. It uses a baseBranchCache map to avoid redundant branch queries within a single request, but there's no cross-request caching. The StartPullRequestCheckOnView function triggers a side-effect (queue task) on GET requests when PR status is \"checking\", using a global lock + unique queue to prevent duplicates.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s33",
+      "createdAt": "2026-05-12T10:16:18.893Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:16:18.893Z"
+    },
+    {
+      "id": "l_mp2h6yfj_f68a",
+      "content": "Gitea's issue subscription system uses a 3-tier watch resolution: 1) explicit issue_watch record (highest priority), 2) repository-level watch table mode, 3) implicit participation check. The GetIssueWatchers function JOINs with the user table to filter out inactive/banned users but doesn't return user data from the JOIN - requiring a separate GetUsersByIDs call.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s33",
+      "createdAt": "2026-05-12T10:16:18.895Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:16:18.895Z"
+    },
+    {
+      "id": "l_mp2hjdul_ird1",
+      "content": "Gitea's pull request merge endpoint (POST /pulls/{index}/merge) uses a global lock per PR ID (pull_working_{prID}) via globallock.Lock() to prevent concurrent merge/update operations on the same PR. The lock is acquired in both Merge() and Update() functions in services/pull/. This is a deliberate design choice for correctness, not a performance issue.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s34",
+      "createdAt": "2026-05-12T10:25:58.749Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:25:58.749Z"
+    },
+    {
+      "id": "l_mp2hjduo_nfy9",
+      "content": "Gitea's PR-related code has a clear separation: routers/api/v1/repo/pull.go handles all PR API endpoints (create, edit, merge, update, cancel auto-merge, get commits, get files). Business logic lives in services/pull/ (pull.go for creation, merge.go for merging, update.go for updating, check.go for merge checks). The services/automerge/automerge.go handles scheduled auto-merge via an internal queue (pr_auto_merge). The MergePullRequestForm struct uses a custom UnmarshalJSON for backward compatibility with both camelCase and snake_case field names.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s34",
+      "createdAt": "2026-05-12T10:25:58.752Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:25:58.752Z"
+    },
+    {
+      "id": "l_mp2hjduq_f8ut",
+      "content": "The GetPullRequestFiles endpoint (ep-233) has a known performance issue: it sets MaxFiles: -1 which loads ALL changed files into memory before applying pagination. The code has a FIXME comment acknowledging this. Similarly, GetPullRequestCommits loads all commits via ShowPrettyFormatLogToList before slicing for pagination. Both are candidates for server-side pagination optimization.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s34",
+      "createdAt": "2026-05-12T10:25:58.754Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:25:58.754Z"
+    },
+    {
+      "id": "l_mp2hsziw_q20f",
+      "content": "Gitea's push mirror sync endpoint (POST /push_mirrors-sync) is synchronous - it calls SyncPushMirror in a loop for each mirror, blocking the HTTP request. This contrasts with the pull mirror sync (POST /mirror-sync) which is async via queue. The SyncPushMirror function re-loads the mirror by ID from DB even when the caller already has the object loaded, creating an N+1 pattern.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s35",
+      "createdAt": "2026-05-12T10:33:26.744Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:33:26.744Z"
+    },
+    {
+      "id": "l_mp2hsziz_azxn",
+      "content": "Gitea mirror-related code is split across: routers/api/v1/repo/mirror.go (handlers), models/repo/pushmirror.go and models/repo/mirror.go (DB models), services/mirror/queue.go (queue management), services/mirror/mirror_push.go (push sync logic), services/convert/mirror.go (API conversion). The mirror queue is a unique queue (deduplicates by SyncRequest) backed by configurable storage (channel/levelqueue/redis).",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s35",
+      "createdAt": "2026-05-12T10:33:26.747Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:33:26.747Z"
+    },
+    {
+      "id": "l_mp2hszj0_c9v5",
+      "content": "Gitea's DeletePushMirrorByRemoteName only deletes the DB record but does NOT call RemovePushMirrorRemote to clean up the git remote config. This leaves orphaned git remotes in the repository. The AddPushMirror endpoint correctly handles the reverse case - if git remote registration fails after DB insert, it cleans up the DB record.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s35",
+      "createdAt": "2026-05-12T10:33:26.748Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:33:26.748Z"
+    },
+    {
+      "id": "l_mp2i2htw_jvng",
+      "content": "Gitea's release model uses a dual-purpose release table where is_tag=true records represent tags without releases. The API endpoints treat is_tag=true records as non-existent releases (404). When deleting a release with delTag=false, the record is converted back to a tag-only record rather than being deleted from the database.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s36",
+      "createdAt": "2026-05-12T10:40:50.372Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:40:50.372Z"
+    },
+    {
+      "id": "l_mp2i2htz_7ovk",
+      "content": "Gitea's LoadAttributes pattern on model objects (e.g., Release.LoadAttributes) loads related entities (repo, publisher, attachments) lazily. When called in a loop (as in ListReleases), this creates N+1 query patterns. However, GetReleaseAttachments already supports batch loading via variadic rels ...*Release parameter - it's just not used in the list endpoint.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s36",
+      "createdAt": "2026-05-12T10:40:50.375Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:40:50.375Z"
+    },
+    {
+      "id": "l_mp2idhyb_wawb",
+      "content": "In Gitea's API layer, the getAPIChangeRepoFileOptions generic function retrieves form data that was pre-processed by a middleware (ReqChangeRepoFileOptionsAndCheck). The middleware stores parsed options in ctx.Data[\"__APIChangeRepoFilesOptions\"]. This pattern means the actual validation (branch write permission check) happens before the handler runs, so errors from that check won't appear in the handler's error paths.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s37",
+      "createdAt": "2026-05-12T10:49:23.747Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:49:23.747Z"
+    },
+    {
+      "id": "l_mp2idhyc_2g53",
+      "content": "Gitea's git ref endpoints (ep-247, ep-248) use a shared internal function getGitRefsInternal that returns either a single Reference object or an array depending on whether the filter matches exactly one ref. This polymorphic response type is unusual and noted in the swagger as a TODO limitation.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s37",
+      "createdAt": "2026-05-12T10:49:23.748Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:49:23.748Z"
+    },
+    {
+      "id": "l_mp2iq7aq_2x6t",
+      "content": "Gitea's ListIssueAttachments endpoint (ep-258) uses issue.LoadAttributes() which loads ALL issue relations (comments, labels, milestones, reactions, etc.) then calls ToAPIIssue().Attachments to extract just the attachments. This is a significant over-fetch pattern - it should use issue.LoadAttachments(ctx) directly and return convert.ToAPIAttachments(). This pattern may exist in other \"list sub-resource\" endpoints that go through the full parent entity conversion.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s38",
+      "createdAt": "2026-05-12T10:59:16.466Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:59:16.467Z"
+    },
+    {
+      "id": "l_mp2iq7av_f77h",
+      "content": "Gitea's CreateIssueAttachment calls issue_service.ChangeContent with the same content (issue.Content, issue.ContentVersion) after uploading an attachment. This is a hack to trigger IssueChangeContent notifications - it doesn't actually change content but triggers the notification pipeline. This adds 2 unnecessary DB queries (LoadRepo + UPDATE issue) per attachment upload.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s38",
+      "createdAt": "2026-05-12T10:59:16.471Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:59:16.471Z"
+    },
+    {
+      "id": "l_mp2iq7ax_rn4y",
+      "content": "Gitea's attachment deletion in repo_model.DeleteAttachment is non-atomic: it first DELETEs the DB record, then attempts to delete the storage file. If storage deletion fails (e.g., S3 timeout), the DB record is already gone, leaving an orphaned file in storage. The code handles os.ErrNotExist gracefully but other storage errors will return an error after the DB delete has already committed.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s38",
+      "createdAt": "2026-05-12T10:59:16.473Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T10:59:16.473Z"
+    },
+    {
+      "id": "l_mp2izdc3_2bq5",
+      "content": "In Gitea, repo-level actions secrets use ownerID=0 and repoID=repoID pattern. The secret/variable name validation is shared between secrets and variables via services/secrets/validation.go ValidateName function. The Action struct in routers/api/v1/repo/action.go implements the actions_service.API interface and contains all actions-related endpoints (secrets, variables, runners, workflows, artifacts) in a single large file.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s39",
+      "createdAt": "2026-05-12T11:06:24.195Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:06:24.195Z"
+    },
+    {
+      "id": "l_mp2izdc5_gqvz",
+      "content": "Gitea's secret model uses a UNIQUE(owner_repo_name) composite index across owner_id, repo_id, and name columns. When repo_id is set, owner_id is forced to 0 to avoid ambiguity. The FindSecretsOptions.ToConds() method enforces this by always filtering on both owner_id and repo_id. Same pattern applies to action_variable table.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s39",
+      "createdAt": "2026-05-12T11:06:24.197Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:06:24.197Z"
+    },
+    {
+      "id": "l_mp2j7zat_40kc",
+      "content": "Gitea's repo-level actions endpoints (variables, runners) use a shared delegation pattern: the repo handler in routers/api/v1/repo/action.go delegates to routers/api/v1/shared/runners.go passing ownerID=0, repoID=ctx.Repo.Repository.ID. The shared layer handles the actual DB queries and access control via EditableInContext(ownerID, repoID). This same pattern is used for org-level and admin-level runners with different ownerID/repoID combinations.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s40",
+      "createdAt": "2026-05-12T11:13:05.909Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:13:05.909Z"
+    },
+    {
+      "id": "l_mp2j7zav_h7u0",
+      "content": "Gitea's action variables and runners follow a 3-level hierarchy: global (ownerID=0, repoID=0), org/user (ownerID>0, repoID=0), repo (ownerID=0, repoID>0). The constraint that both ownerID and repoID cannot be non-zero simultaneously is enforced at the model layer with automatic correction (ownerID set to 0 if repoID is set).",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s40",
+      "createdAt": "2026-05-12T11:13:05.911Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:13:05.911Z"
+    },
+    {
+      "id": "l_mp2jimly_f5xq",
+      "content": "Gitea's Actions API endpoints (workflow jobs, runs, tasks, workflows, dispatch) are all in routers/api/v1/repo/action.go. The shared listing logic (ListJobs, ListRuns) lives in routers/api/v1/shared/action.go and handles owner/repo-level filtering uniformly. The convert functions for actions (ToActionWorkflowRun, ToActionWorkflowJob, ToActionTask, ListActionWorkflows) are all in services/convert/convert.go. The workflow enable/disable/dispatch service logic is in services/actions/workflow.go.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s41",
+      "createdAt": "2026-05-12T11:21:22.678Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:21:22.678Z"
+    },
+    {
+      "id": "l_mp2jimm0_150d",
+      "content": "Gitea's workflow listing (ListActionWorkflows) reads workflow files from the git tree of the default branch commit. It iterates all .yml/.yaml files in the configured workflow directories (.gitea/workflows, .github/workflows). The workflow \"state\" (active/disabled_manually) is stored in the repo_unit table's JSON config field, not in the git tree itself. This means disabling a workflow is a DB operation, not a git operation.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s41",
+      "createdAt": "2026-05-12T11:21:22.680Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:21:22.680Z"
+    },
+    {
+      "id": "l_mp2jimm3_iroa",
+      "content": "The Actions API has a notable N+1 query pattern in ToActionWorkflowJob (loads task, steps, runner per job individually) and ToActionWorkflowRun (loads latest attempt per run individually). The code has a TODO comment acknowledging this: \"// TODO: load run attempts in batch\". These are the primary performance concerns for the list endpoints.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s41",
+      "createdAt": "2026-05-12T11:21:22.683Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:21:22.683Z"
+    },
+    {
+      "id": "l_mp2jtsxa_dmjo",
+      "content": "In Gitea's Actions API, workflow run endpoints (ep-285 to ep-292) follow a consistent pattern: getCurrentRepoActionRunByID is a shared helper that validates run ownership by repo_id. The rerun logic in services/actions/rerun.go uses a multi-transaction design (legacy backfill → plan build → plan exec) that is intentionally non-atomic but idempotent-safe. The ActionRunAttempt model was introduced later, so legacy runs (LatestAttemptID=0) get backfilled on first rerun.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s42",
+      "createdAt": "2026-05-12T11:30:04.078Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:30:04.078Z"
+    },
+    {
+      "id": "l_mp2jtsxd_nkn5",
+      "content": "Gitea's convert.ToActionWorkflowJob loads task and steps individually per job (N+1 pattern). This is a known performance concern for list endpoints like ListWorkflowRunJobs where up to 256 jobs could be returned. The ActionJobList.LoadAttributes only batch-loads runs and repos, not tasks/steps.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s42",
+      "createdAt": "2026-05-12T11:30:04.081Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:30:04.081Z"
+    },
+    {
+      "id": "l_mp2jtsxe_pqme",
+      "content": "The routers/api/v1/shared/action.go file contains shared logic (ListJobs, ListRuns) used by repo-level, org-level, and admin-level action endpoints. It uses ownerID/repoID=0 conventions to determine scope. The convertToInternal function maps GitHub-compatible status strings to internal Gitea status enums.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s42",
+      "createdAt": "2026-05-12T11:30:04.082Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:30:04.082Z"
+    },
+    {
+      "id": "l_mp2k5okg_3g8u",
+      "content": "Gitea's artifact system has a v3/v4 split: v4 artifacts are identified by content_encoding containing \"/\" (a MIME type like \"application/zip\"), while v3 artifacts use \"gzip\" or empty. The API endpoints only support v4 artifacts and return 404 for v3. The DeleteArtifact endpoint is a soft-delete (marks PendingDeletion) while DeleteRun is a hard-delete with non-atomic storage cleanup (DB transaction commits first, then storage files are deleted in a loop with errors only logged).",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s43",
+      "createdAt": "2026-05-12T11:39:18.304Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:39:18.304Z"
+    },
+    {
+      "id": "l_mp2k5okj_f410",
+      "content": "Gitea's artifact download uses a two-tier approach: if storage backend supports ServeDirect (Minio/Azure with SERVE_DIRECT=true), it generates a presigned URL and redirects. Otherwise, it builds an HMAC-SHA256 signed URL pointing back to the app's own /zip/raw endpoint with 60-minute expiry, which then reads from storage and streams to client. The signature uses setting.GetGeneralTokenSigningSecret() as the HMAC key.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s43",
+      "createdAt": "2026-05-12T11:39:18.307Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:39:18.307Z"
+    },
+    {
+      "id": "l_mp2kedt4_5wfv",
+      "content": "Gitea's reaction system uses a unique pattern for idempotent creates: when a reaction already exists, CreateReaction returns both the existing reaction AND an ErrReactionAlreadyExist error. The handler then returns HTTP 200 with the existing data instead of 201. This is a deliberate design choice for idempotency.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s44",
+      "createdAt": "2026-05-12T11:46:04.264Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:46:04.264Z"
+    },
+    {
+      "id": "l_mp2kedt7_yhlj",
+      "content": "Gitea's issue reactions are split across three layers: routers/api/v1/repo/issue_reaction.go (controller with shared helper functions changeIssueCommentReaction/changeIssueReaction), services/issue/reaction.go (thin service layer that adds block-checking), and models/issues/reaction.go (data access with transaction support). The FindReactions function always filters by setting.UI.Reactions to ensure only configured reaction types are returned.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s44",
+      "createdAt": "2026-05-12T11:46:04.267Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:46:04.267Z"
+    },
+    {
+      "id": "l_mp2kodzo_8284",
+      "content": "Gitea branch operations use a dual-storage pattern: branches are tracked both in git (source of truth) and in a branch DB table (for pagination/search). A sync mechanism (SyncRepoBranches) is triggered lazily when the DB has 0 branches for a non-empty repo. This means the first API call to list/delete branches on a repo that hasn't been accessed via the web UI may trigger a full sync.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s45",
+      "createdAt": "2026-05-12T11:53:51.060Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:53:51.060Z"
+    },
+    {
+      "id": "l_mp2kodzr_9ewv",
+      "content": "Gitea's branch API endpoints in routers/api/v1/repo/branch.go handle both branch CRUD and branch protection CRUD in the same file (~700 lines). The service layer in services/repository/branch.go contains the business logic including permission checks, while models/git/branch.go and models/git/protected_branch.go handle data access. The services/convert/convert.go file contains ToBranch and ToBranchProtection converters that also perform permission checks (N+1 pattern risk).",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s45",
+      "createdAt": "2026-05-12T11:53:51.063Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:53:51.063Z"
+    },
+    {
+      "id": "l_mp2kodzt_fu6n",
+      "content": "The ListBranches endpoint (ep-309) has an N+1 query pattern: for each branch in the paginated result, it calls GetBranchCommit individually and convert.ToBranch which does individual permission checks. This is a known performance concern for repos with many branches when using large page sizes.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s45",
+      "createdAt": "2026-05-12T11:53:51.065Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T11:53:51.065Z"
+    },
+    {
+      "id": "l_mp2ky7pz_qw24",
+      "content": "Gitea's branch protection system uses a branch_name column in the DB that actually stores the \"rule name\" (which can be a glob pattern). The IsRuleNameSpecial function checks for glob characters. Rules are sorted by priority first, then plain-name-first, then creation time. The ToBranchProtection converter makes 2 DB queries per rule (users with access + teams with access), creating an N+1 pattern when listing all rules.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s46",
+      "createdAt": "2026-05-12T12:01:29.495Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:01:29.495Z"
+    },
+    {
+      "id": "l_mp2ky7q2_0n39",
+      "content": "Gitea's branch protection write operations (create/edit) validate whitelist users by checking they have write access to the code unit (via updateUserWhitelist), and approval whitelist users only need read access to pull requests (via updateApprovalWhitelist). Users without sufficient access are silently dropped from whitelists rather than returning errors.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s46",
+      "createdAt": "2026-05-12T12:01:29.498Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:01:29.498Z"
+    },
+    {
+      "id": "l_mp2l743j_env2",
+      "content": "Gitea's MergeUpstream uses a \"fake PR\" pattern (creating a PullRequest with ID=-1) to reuse the existing merge infrastructure for syncing forks with upstream. This is explicitly noted as a hack in the code comments. The merge-upstream flow first attempts a fast-forward git push, and only falls back to the fake PR merge approach if the push fails.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s47",
+      "createdAt": "2026-05-12T12:08:24.703Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:08:24.703Z"
+    },
+    {
+      "id": "l_mp2l743m_z44k",
+      "content": "Gitea's webhook hook utility functions (AddRepoHook, EditRepoHook, GetRepoHook) are in routers/api/v1/utils/hook.go and are shared across repo, org, user, and admin webhook endpoints. The ToHook conversion function is in services/webhook/general.go (not in services/convert/) to avoid import cycles.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s47",
+      "createdAt": "2026-05-12T12:08:24.706Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:08:24.706Z"
+    },
+    {
+      "id": "l_mp2lggjc_o3l1",
+      "content": "In Gitea's webhook system, the EditRepoHook/EditOwnerHook pattern re-fetches the webhook from DB after update rather than returning the in-memory object. This is a deliberate pattern to ensure the response reflects the actual DB state (including any AfterLoad hooks that deserialize JSON events), but adds an extra SELECT per edit operation.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s48",
+      "createdAt": "2026-05-12T12:15:40.728Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:15:40.728Z"
+    },
+    {
+      "id": "l_mp2lggje_evu0",
+      "content": "Gitea's repo model functions (GetStargazers, GetRepoWatchers) have a dual path: when opts.Page > 0 they paginate, but when Page == 0 they return ALL results unbounded. The API layer typically passes page from query params via utils.GetListOptions, which defaults page to 1 when the framework's list options are used, but the model layer itself doesn't enforce limits.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s48",
+      "createdAt": "2026-05-12T12:15:40.730Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:15:40.730Z"
+    },
+    {
+      "id": "l_mp2lrgv8_du5r",
+      "content": "In Gitea's repo team management (routers/api/v1/repo/teams.go), the changeRepoTeam function has a bug: when repo is not owned by org, it calls ctx.APIError(http.StatusMethodNotAllowed, ...) but does NOT return, so execution continues. The return is missing after the error response for the org check in changeRepoTeam (line ~161), unlike the same check in IsTeam which does return.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s49",
+      "createdAt": "2026-05-12T12:24:14.372Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:24:14.372Z"
+    },
+    {
+      "id": "l_mp2lrgvb_12tm",
+      "content": "Gitea's fork creation (services/repository/fork.go) is a multi-step process with 8 phases: DB create → check storage → git clone → update git repo → create hooks → sync branches → update size/stats → set ready status. It uses a defer-based cleanup pattern where if any step fails, the partially created repo is cleaned up. The 10-minute timeout on git clone is hardcoded.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s49",
+      "createdAt": "2026-05-12T12:24:14.375Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:24:14.375Z"
+    },
+    {
+      "id": "l_mp2lrgvd_zo0o",
+      "content": "Gitea's issue label endpoints (routers/api/v1/repo/issue_label.go) use issue.LoadAttributes(ctx) which loads ALL issue relations (repo, poster, labels, milestone, assignees, pull request, attachments) even when only labels are needed. This is a common over-fetching pattern that could be optimized with targeted loading like issue.LoadLabels(ctx).",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s49",
+      "createdAt": "2026-05-12T12:24:14.377Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:24:14.377Z"
+    },
+    {
+      "id": "l_mp2m3x7z_bxps",
+      "content": "Gitea's issue label API uses reflect.ValueOf to determine if labels are integers or strings from the JSON []any array. The JSON unmarshaling turns integers into float64, so the code checks for reflect.Float64 (not Int). Labels can be specified by ID (integer) or name (string) but cannot be mixed in the same request.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s50",
+      "createdAt": "2026-05-12T12:33:55.439Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:33:55.439Z"
+    },
+    {
+      "id": "l_mp2m3x83_oq54",
+      "content": "Gitea's ClearIssueLabels has a double permission check pattern: the handler checks CanWriteIssuesOrPulls, then the model layer ClearIssueLabels also calls GetDoerRepoPermission and checks again. This is because the model function is also called from non-API contexts where the handler check doesn't exist. The service layer RemoveLabel has the same pattern.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s50",
+      "createdAt": "2026-05-12T12:33:55.443Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:33:55.443Z"
+    },
+    {
+      "id": "l_mp2m3x86_c9gm",
+      "content": "Gitea's deploy key deletion triggers RewriteAllPublicKeys which rewrites the entire authorized_keys file from scratch. This is gated by SSHOpLocker (a global mutex) and only runs when SSH.StartBuiltinServer is false and SSH.CreateAuthorizedKeysFile is true. For instances with many SSH keys, this is a significant performance concern on every key deletion.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s50",
+      "createdAt": "2026-05-12T12:33:55.446Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:33:55.446Z"
+    },
+    {
+      "id": "l_mp2me1kp_fkb3",
+      "content": "Gitea's release model uses an IsTag boolean to distinguish between tag-only records and actual releases. When a release is \"deleted\" without deleting the tag (delTag=false), it's not removed from the DB but instead marked as IsTag=true. This means the release table contains both releases and tags, and all release queries must filter on IsTag.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s51",
+      "createdAt": "2026-05-12T12:41:47.641Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:41:47.641Z"
+    },
+    {
+      "id": "l_mp2me1kr_f0rv",
+      "content": "Gitea's topic system uses a denormalized repo_count field on the topic table and a topics text array field on the repository table (synced via syncTopicsInRepository). Any topic add/remove must update both the join table and these denormalized fields within a transaction.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s51",
+      "createdAt": "2026-05-12T12:41:47.643Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:41:47.643Z"
+    },
+    {
+      "id": "l_mp2mo0oj_0yl6",
+      "content": "Gitea's release attachment endpoints use checkReleaseMatchRepo as a shared validation helper that checks: 1) release exists, 2) release belongs to repo, 3) draft access permissions. The canAccessReleaseDraft function has special logic for API tokens vs session-based auth - API tokens need explicit write:repository scope while session users just need CanWrite permission on the releases unit.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s52",
+      "createdAt": "2026-05-12T12:49:33.043Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:49:33.043Z"
+    },
+    {
+      "id": "l_mp2mo0om_6302",
+      "content": "Gitea's GetLabel endpoint (routers/api/v1/repo/label.go) supports dual lookup: if the path param parses as int64, it looks up by ID; otherwise it looks up by name. This is a common pattern in Gitea's API for user-friendly access.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s52",
+      "createdAt": "2026-05-12T12:49:33.046Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:49:33.046Z"
+    },
+    {
+      "id": "l_mp2mo0oo_byft",
+      "content": "Gitea's attachment upload service (services/attachment/attachment.go) uses a UploaderFile abstraction that handles both multipart/form-data (known size) and octet-stream (unknown size with MaxBytesReader). The UploadAttachmentForRelease uses different settings (repository.release.AllowedTypes/FileMaxSize) than UploadAttachmentForIssue (attachment.AllowedTypes/MaxSize).",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s52",
+      "createdAt": "2026-05-12T12:49:33.048Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T12:49:33.048Z"
+    },
+    {
+      "id": "l_mp2pnavn_dl9l",
+      "content": "Gitea's repo search endpoint (GET /repos/search) uses a non-standard response format with {ok: true, data: [...]} wrapper (SearchResults struct) instead of returning the array directly like other list endpoints. Error responses also use SearchError{OK: false, Error: \"...\"} instead of the standard APIError format.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s53",
+      "createdAt": "2026-05-12T14:12:58.451Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T14:12:58.451Z"
+    },
+    {
+      "id": "l_mp2pnavp_w8kh",
+      "content": "Gitea's prepareDoerCreateRepoInOrg helper function lives in routers/api/v1/repo/fork.go despite being used by CreateOrgRepo in repo.go. This is a shared helper for any operation that creates a repo in an org context (fork, create).",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s53",
+      "createdAt": "2026-05-12T14:12:58.453Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T14:12:58.453Z"
+    },
+    {
+      "id": "l_mp2pnavq_uhnd",
+      "content": "Gitea's label model updateLabelCols always recalculates num_issues and num_closed_issues via subqueries against issue_label table on every update, regardless of which fields actually changed. This is a known performance pattern in the codebase.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s53",
+      "createdAt": "2026-05-12T14:12:58.454Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T14:12:58.454Z"
+    },
+    {
+      "id": "l_mp2pxtn6_53yf",
+      "content": "Gitea's convert.ToRepo function performs 7+ separate DB queries per call (owner, units, base repo, release count, branch count, mirror, transfer, licenses). This is a known N+1-like pattern that affects all endpoints returning Repository objects. The function is at services/convert/repository.go and is the single most impactful conversion function in the API layer.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s54",
+      "createdAt": "2026-05-12T14:21:09.330Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T14:21:09.330Z"
+    },
+    {
+      "id": "l_mp2pxtn9_62hq",
+      "content": "Gitea's issue templates and issue config are read directly from the git tree (not from the database). The service at services/issue/template.go searches 8 candidate directories (ISSUE_TEMPLATE, .gitea/ISSUE_TEMPLATE, .github/ISSUE_TEMPLATE, .gitlab/ISSUE_TEMPLATE in both cases) and 4 config candidates. These endpoints have zero DB operations but rely on git tree traversal.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s54",
+      "createdAt": "2026-05-12T14:21:09.333Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T14:21:09.333Z"
+    },
+    {
+      "id": "l_mp2q8naq_zudf",
+      "content": "Gitea's issue pinning system uses a separate issue_pin table (not a column on the issue table) with a UNIQUE constraint on (repo_id, issue_id). Pin ordering is managed via a pin_order column, and the max pins per repo is controlled by setting.Repository.Issue.MaxPinned (default 3). Pins are separated by type (issues vs PRs) using an is_pull boolean column.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase2-s55",
+      "createdAt": "2026-05-12T14:29:34.322Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T14:29:34.322Z"
+    },
+    {
+      "id": "l_mp2q8nas_ffe3",
+      "content": "Gitea's languageResponse type uses a custom MarshalJSON() method to produce a flat JSON object {\"Go\": 12345} rather than an array of objects, which is unusual for Go API responses. The type is []*LanguageStat but serializes as a map.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase2-s55",
+      "createdAt": "2026-05-12T14:29:34.324Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T14:29:34.324Z"
+    },
+    {
+      "id": "l_mp2r3ayx_ezgc",
+      "content": "Gitea's Phase 2 analysis produced 55 sessions with 381 unique API endpoints. The performance_analysis.json files use performance_issues as the field name (not issues). The project has critical resiliency concerns: no timeouts, retries, or circuit breakers on git command execution, database operations, or object storage calls. N+1 query patterns are the dominant performance issue across the codebase.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase3-merge",
+      "createdAt": "2026-05-12T14:53:24.681Z",
+      "usedCount": 0,
+      "lastUsedAt": "2026-05-12T14:53:24.681Z"
+    }
+  ],
+  "updatedAt": "2026-05-12T14:53:24.681Z",
+  "consolidatedAt": null
+}

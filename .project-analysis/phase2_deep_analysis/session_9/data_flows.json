@@ -1,0 +1,585 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-056",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}",
+      "description": "Get team by ID with org details loaded",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(false, true)",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "teamid path param",
+          "output": "ctx.Org.Team",
+          "operations": ["GetTeamByID from team table"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team", "description": "get team by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqTeamMembership",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Team, ctx.Doer",
+          "output": "pass/fail",
+          "operations": ["Check if doer is org owner or team member"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "team", "description": "get owner team"},
+            {"operation": "SELECT", "table": "team_user", "description": "check team membership"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToTeam",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "organization.Team",
+          "output": "api.Team",
+          "operations": ["LoadUnits", "GetOrgByID", "build API response"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "team_unit", "description": "load team units"},
+            {"operation": "SELECT", "table": "user", "description": "get org by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "organization.Team",
+          "to": "api.Team",
+          "component": "convert.ToTeam",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "AccessMode", "target_field": "permission", "transformation": "computed"},
+            {"source_field": "Units", "target_field": "units_map", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "team not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "not team member or org owner", "handler": "reqTeamMembership", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-057",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/teams",
+      "description": "Create a new team in an organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true)",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "org path param",
+          "output": "ctx.Org.Organization",
+          "operations": ["GetOrgByName"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "get org by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Organization, ctx.Doer",
+          "output": "pass/fail",
+          "operations": ["Check if doer is org owner"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "team", "description": "get owner team"},
+            {"operation": "SELECT", "table": "team_user", "description": "check membership"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org.CreateTeam",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/team.go",
+          "input": "api.CreateTeamOption",
+          "output": "organization.Team",
+          "operations": ["Parse form", "Build team struct", "Attach units"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "org_service.NewTeam",
+          "type": "service",
+          "file_path": "services/org/team.go",
+          "input": "organization.Team",
+          "output": "error",
+          "operations": ["Validate name", "Check duplicate", "Insert team", "Insert units", "Add all repos if needed", "Update org num_teams"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "check org exists"},
+            {"operation": "SELECT", "table": "team", "description": "check duplicate name"},
+            {"operation": "INSERT", "table": "team", "description": "create team"},
+            {"operation": "INSERT", "table": "team_unit", "description": "create team units"},
+            {"operation": "UPDATE", "table": "user", "description": "increment num_teams"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToTeam",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "organization.Team",
+          "output": "api.Team",
+          "operations": ["LoadUnits", "GetOrgByID", "build response"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "team_unit", "description": "load units"},
+            {"operation": "SELECT", "table": "user", "description": "get org"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.CreateTeamOption",
+          "to": "organization.Team",
+          "component": "org.CreateTeam",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Permission", "target_field": "AccessMode", "transformation": "computed"},
+            {"source_field": "UnitsMap", "target_field": "Units", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "not org owner", "handler": "reqOrgOwnership", "response_code": 403, "response": "forbidden"},
+        {"condition": "team name exists", "handler": "org_service.NewTeam", "response_code": 422, "response": "validationError"},
+        {"condition": "empty units for non-admin", "handler": "CreateTeam", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-058",
+      "http_method": "PATCH",
+      "path": "/api/v1/teams/{id}",
+      "description": "Edit a team's properties",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(false, true)",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "teamid path param",
+          "output": "ctx.Org.Team",
+          "operations": ["GetTeamByID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team", "description": "get team by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Team.OrgID, ctx.Doer",
+          "output": "pass/fail",
+          "operations": ["Check org ownership via team's OrgID"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "team", "description": "get owner team"},
+            {"operation": "SELECT", "table": "team_user", "description": "check membership"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org.EditTeam",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/team.go",
+          "input": "api.EditTeamOption, ctx.Org.Team",
+          "output": "modified team",
+          "operations": ["LoadUnits", "Apply form changes", "Attach new units"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_unit", "description": "load existing units"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "org_service.UpdateTeam",
+          "type": "service",
+          "file_path": "services/org/team.go",
+          "input": "organization.Team, authChanged, includeAllChanged",
+          "output": "error",
+          "operations": ["Check duplicate name", "Update team", "Replace units", "Recalculate access if auth changed", "Add all repos if includeAll changed"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "team", "description": "check duplicate name"},
+            {"operation": "UPDATE", "table": "team", "description": "update team fields"},
+            {"operation": "DELETE", "table": "team_unit", "description": "remove old units"},
+            {"operation": "INSERT", "table": "team_unit", "description": "insert new units"},
+            {"operation": "SELECT", "table": "repository", "description": "get team repos (if auth changed)"},
+            {"operation": "UPDATE", "table": "access", "description": "recalculate access (if auth changed)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToTeam",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "organization.Team",
+          "output": "api.Team",
+          "operations": ["LoadUnits", "build response"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_unit", "description": "load units"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.EditTeamOption",
+          "to": "organization.Team",
+          "component": "org.EditTeam",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"},
+            {"source_field": "Permission", "target_field": "AccessMode", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "team not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "not org owner", "handler": "reqOrgOwnership", "response_code": 404, "response": "notFound"},
+        {"condition": "duplicate team name", "handler": "org_service.UpdateTeam", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-059",
+      "http_method": "DELETE",
+      "path": "/api/v1/teams/{id}",
+      "description": "Delete a team and clean up all references",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(false, true)",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "teamid path param",
+          "output": "ctx.Org.Team",
+          "operations": ["GetTeamByID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team", "description": "get team by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Team.OrgID, ctx.Doer",
+          "output": "pass/fail",
+          "operations": ["Check org ownership"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "team", "description": "get owner team"},
+            {"operation": "SELECT", "table": "team_user", "description": "check membership"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org_service.DeleteTeam",
+          "type": "service",
+          "file_path": "services/org/team.go",
+          "input": "organization.Team",
+          "output": "error",
+          "operations": ["Load members", "Update branch protections", "Remove all repos from team", "Delete team/team_user/team_unit/team_invite/reviews", "Remove invalid org users", "Decrement org num_teams"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "load team members"},
+            {"operation": "SELECT", "table": "protected_branch", "description": "find branch protections"},
+            {"operation": "UPDATE", "table": "protected_branch", "description": "remove team from protections"},
+            {"operation": "SELECT", "table": "repository", "description": "get team repos"},
+            {"operation": "UPDATE", "table": "access", "description": "recalculate access per repo"},
+            {"operation": "DELETE", "table": "team", "description": "delete team"},
+            {"operation": "DELETE", "table": "team_user", "description": "delete team users"},
+            {"operation": "DELETE", "table": "team_unit", "description": "delete team units"},
+            {"operation": "DELETE", "table": "team_invite", "description": "delete team invites"},
+            {"operation": "DELETE", "table": "review", "description": "delete team review requests"},
+            {"operation": "UPDATE", "table": "user", "description": "decrement num_teams"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "team not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "not org owner", "handler": "reqOrgOwnership", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-060",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/members",
+      "description": "List paginated team members",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(false, true)",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "teamid path param",
+          "output": "ctx.Org.Team",
+          "operations": ["GetTeamByID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team", "description": "get team by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.GetTeamMembers",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/team.go",
+          "input": "ctx.Org.Team",
+          "output": "[]api.User",
+          "operations": ["Check org membership", "Get paginated members", "Convert to API users"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "org_user", "description": "check if doer is org member"},
+            {"operation": "SELECT", "table": "user", "description": "get members via team_user subquery"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.User",
+          "to": "api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "team not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "not org member and not admin", "handler": "GetTeamMembers", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-061",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "description": "Check if a user is a member of a team",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(false, true)",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "teamid path param",
+          "output": "ctx.Org.Team",
+          "operations": ["GetTeamByID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team", "description": "get team by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.GetContextUserByPathParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/helper.go",
+          "input": "username path param",
+          "output": "user_model.User",
+          "operations": ["GetUserByName"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "get user by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "organization.IsUserInTeams",
+          "type": "repository",
+          "file_path": "models/organization/team_user.go",
+          "input": "userID, teamIDs",
+          "output": "bool",
+          "operations": ["Check team_user existence"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_user", "description": "check if user in team"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.User",
+          "to": "api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "team not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "user not found", "handler": "GetContextUserByPathParam", "response_code": 404, "response": "notFound"},
+        {"condition": "user not in team", "handler": "GetTeamMember", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-062",
+      "http_method": "PUT",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "description": "Add a user to a team",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(false, true)",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "teamid path param",
+          "output": "ctx.Org.Team",
+          "operations": ["GetTeamByID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team", "description": "get team by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.GetContextUserByPathParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/helper.go",
+          "input": "username path param",
+          "output": "user_model.User",
+          "operations": ["GetUserByName"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "get user by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org_service.AddTeamMember",
+          "type": "service",
+          "file_path": "services/org/team.go",
+          "input": "team, user",
+          "output": "error",
+          "operations": ["Check blocked", "Check already member", "Add org user", "Insert team_user", "Increment num_members", "Auto-watch repos (async)"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user_blocking", "description": "check if user blocked by org"},
+            {"operation": "SELECT", "table": "team_user", "description": "check already member"},
+            {"operation": "SELECT", "table": "org_user", "description": "check org membership"},
+            {"operation": "INSERT", "table": "org_user", "description": "add to org if needed"},
+            {"operation": "INSERT", "table": "team_user", "description": "add to team"},
+            {"operation": "UPDATE", "table": "team", "description": "increment num_members"},
+            {"operation": "SELECT", "table": "repository", "description": "get team repos for auto-watch"}
+          ],
+          "cache_ops": [],
+          "async": true
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "team not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "user not found", "handler": "GetContextUserByPathParam", "response_code": 404, "response": "notFound"},
+        {"condition": "user blocked by org", "handler": "AddTeamMember", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-063",
+      "http_method": "DELETE",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "description": "Remove a user from a team",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(false, true)",
+          "type": "controller",
+          "file_path": "routers/api/v1/api.go",
+          "input": "teamid path param",
+          "output": "ctx.Org.Team",
+          "operations": ["GetTeamByID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team", "description": "get team by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.GetContextUserByPathParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/helper.go",
+          "input": "username path param",
+          "output": "user_model.User",
+          "operations": ["GetUserByName"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "get user by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org_service.RemoveTeamMember",
+          "type": "service",
+          "file_path": "services/org/team.go",
+          "input": "team, user",
+          "output": "error",
+          "operations": ["Check membership", "Check last owner", "Get team repos", "Delete team_user", "Update num_members", "Recalculate access per repo", "Reconsider watches", "Reconsider issue assignments", "Remove invalid org user"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "team_user", "description": "check membership"},
+            {"operation": "SELECT", "table": "repository", "description": "get team repos"},
+            {"operation": "DELETE", "table": "team_user", "description": "remove from team"},
+            {"operation": "UPDATE", "table": "team", "description": "decrement num_members"},
+            {"operation": "UPDATE", "table": "access", "description": "recalculate access per repo"},
+            {"operation": "DELETE", "table": "watch", "description": "remove watches if no access"},
+            {"operation": "UPDATE", "table": "issue_assignees", "description": "reconsider assignments"},
+            {"operation": "SELECT", "table": "team_user", "description": "check remaining team memberships"},
+            {"operation": "DELETE", "table": "org_user", "description": "remove from org if no teams left"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "team not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "user not found", "handler": "GetContextUserByPathParam", "response_code": 404, "response": "notFound"},
+        {"condition": "last owner of org", "handler": "removeTeamMember", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,85 @@
+{
+  "total_rules": 8,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "business_logic",
+      "description": "User is considered watching a repo only if watch mode is Normal or Auto (not None or Dont)",
+      "location": {"class": "repo_model", "method": "IsWatchMode", "file_path": "models/repo/watch.go", "line_number": 57},
+      "condition": "mode != WatchModeNone && mode != WatchModeDont",
+      "action": "Return true indicating user is watching",
+      "affected_endpoints": ["ep-196"],
+      "code_snippet": "func IsWatchMode(mode WatchMode) bool {\n\treturn mode != WatchModeNone && mode != WatchModeDont\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "authorization",
+      "description": "User cannot watch a repo if they are blocked by the repo owner",
+      "location": {"class": "repo_model", "method": "WatchRepo", "file_path": "models/repo/watch.go", "line_number": 101},
+      "condition": "user_model.IsUserBlockedBy(ctx, doer, repo.OwnerID)",
+      "action": "Return ErrBlockedUser, results in 403 Forbidden",
+      "affected_endpoints": ["ep-197"],
+      "code_snippet": "if user_model.IsUserBlockedBy(ctx, doer, repo.OwnerID) {\n\treturn user_model.ErrBlockedUser\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "state_transition",
+      "description": "When unwatching, if current mode is WatchModeAuto, transition to WatchModeDont instead of WatchModeNone",
+      "location": {"class": "repo_model", "method": "WatchRepo", "file_path": "models/repo/watch.go", "line_number": 95},
+      "condition": "!doWatch && watch.Mode == WatchModeAuto",
+      "action": "Set mode to WatchModeDont to prevent auto-rewatch",
+      "affected_endpoints": ["ep-198"],
+      "code_snippet": "if !doWatch && watch.Mode == WatchModeAuto {\n\treturn watchRepoMode(ctx, watch, WatchModeDont)\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "state_transition",
+      "description": "Auto-watch mode is not overridden if user already has explicit watch or dont-watch",
+      "location": {"class": "repo_model", "method": "watchRepoMode", "file_path": "models/repo/watch.go", "line_number": 67},
+      "condition": "mode == WatchModeAuto && (watch.Mode == WatchModeDont || IsWatchMode(watch.Mode))",
+      "action": "Return nil without changing mode",
+      "affected_endpoints": ["ep-197"],
+      "code_snippet": "if mode == WatchModeAuto && (watch.Mode == WatchModeDont || IsWatchMode(watch.Mode)) {\n\treturn nil\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Repository num_watches counter is updated when watch mode transitions between watchable and non-watchable states",
+      "location": {"class": "repo_model", "method": "watchRepoMode", "file_path": "models/repo/watch.go", "line_number": 71},
+      "condition": "IsWatchMode(mode) != IsWatchMode(watch.Mode)",
+      "action": "Increment or decrement repository.num_watches by 1",
+      "affected_endpoints": ["ep-197", "ep-198"],
+      "code_snippet": "if repodiff != 0 {\n\t_, err = db.GetEngine(ctx).Exec(\"UPDATE `repository` SET num_watches = num_watches + ? WHERE id = ?\", repodiff, watch.RepoID)\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "authorization",
+      "description": "Package access mode is determined by owner type (org vs user) and doer relationship",
+      "location": {"class": "context", "method": "determineAccessMode", "file_path": "services/context/package.go", "line_number": 113},
+      "condition": "Owner is org: check team permissions; Owner is user: check if doer is owner or visibility is public/limited",
+      "action": "Set access mode from None to Owner based on relationship",
+      "affected_endpoints": ["ep-199", "ep-200", "ep-201"],
+      "code_snippet": "if doer.ID == pkgOwner.ID {\n\taccessMode = perm.AccessModeOwner\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Package listing filters out internal packages by default",
+      "location": {"class": "packages", "method": "ListPackages", "file_path": "routers/api/v1/packages/package.go", "line_number": 50},
+      "condition": "IsInternal: optional.Some(false) in search options",
+      "action": "Only non-internal packages are returned in API results",
+      "affected_endpoints": ["ep-199"],
+      "code_snippet": "IsInternal: optional.Some(false),"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Package deletion uses deferred blob cleanup - blobs are not deleted immediately from storage",
+      "location": {"class": "packages_service", "method": "RemovePackage", "file_path": "services/packages/packages.go", "line_number": 310},
+      "condition": "Always on package deletion",
+      "action": "Only DB records are deleted; blob files are cleaned up by cleanup_packages cron task",
+      "affected_endpoints": ["ep-201"],
+      "code_snippet": "// HINT: PACKAGE-DEFER-STORAGE-DELETE: Blobs are not deleted immediately"
+    }
+  ]
+}

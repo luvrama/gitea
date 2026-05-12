@@ -1,0 +1,212 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-184",
+      "http_method": "GET",
+      "path": "/api/v1/user/gpg_keys",
+      "controller_class": "user",
+      "controller_method": "ListMyGPGKeys",
+      "description": "List the authenticated user's GPG keys",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected by ToCorrectPageSize"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.GPGKey",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Key database ID"},
+            {"name": "primary_key_id", "type": "string", "description": "Primary key ID (empty for primary keys)"},
+            {"name": "key_id", "type": "string", "description": "GPG key ID"},
+            {"name": "public_key", "type": "string", "description": "Base64 encoded public key"},
+            {"name": "emails", "type": "[]*GPGKeyEmail", "description": "Associated emails"},
+            {"name": "subkeys", "type": "[]*GPGKey", "description": "Subkeys"},
+            {"name": "can_sign", "type": "bool", "description": "Key can sign"},
+            {"name": "can_encrypt_comms", "type": "bool", "description": "Key can encrypt comms"},
+            {"name": "can_encrypt_storage", "type": "bool", "description": "Key can encrypt storage"},
+            {"name": "can_certify", "type": "bool", "description": "Key can certify"},
+            {"name": "verified", "type": "bool", "description": "Key is verified"},
+            {"name": "created_at", "type": "datetime", "description": "Creation time"},
+            {"name": "expires_at", "type": "datetime", "description": "Expiry time"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-185",
+      "http_method": "GET",
+      "path": "/api/v1/user/gpg_keys/{id}",
+      "controller_class": "user",
+      "controller_method": "GetGPGKey",
+      "description": "Get a specific GPG key by ID for the authenticated user",
+      "request": {
+        "path_params": [{"name": "id", "type": "int64", "required": true, "validation": ["must be valid key ID owned by doer"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "*api.GPGKey",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Key database ID"},
+            {"name": "key_id", "type": "string", "description": "GPG key ID"},
+            {"name": "public_key", "type": "string", "description": "Base64 encoded public key"},
+            {"name": "subkeys", "type": "[]*GPGKey", "description": "Subkeys"},
+            {"name": "verified", "type": "bool", "description": "Key is verified"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Key does not exist or not owned by user"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-186",
+      "http_method": "GET",
+      "path": "/api/v1/user/gpg_key_token",
+      "controller_class": "user",
+      "controller_method": "GetVerificationToken",
+      "description": "Get a token to verify GPG key ownership via signature",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "string",
+          "fields": [{"name": "body", "type": "string", "description": "SHA256 hash token for signing"}]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "User not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-187",
+      "http_method": "POST",
+      "path": "/api/v1/user/gpg_key_verify",
+      "controller_class": "user",
+      "controller_method": "VerifyUserGPGKey",
+      "description": "Verify a GPG key by providing a signed token",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "VerifyGPGKeyOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "key_id", "type": "string", "required": true, "validation": ["Required binding"], "description": "GPG key ID to verify"},
+            {"name": "armored_signature", "type": "string", "required": true, "validation": ["Required binding"], "description": "Armored signature of the token"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "*api.GPGKey",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Key database ID"},
+            {"name": "verified", "type": "bool", "description": "Now true after verification"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Key ID not found or empty after trim"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid signature or token mismatch"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-188",
+      "http_method": "POST",
+      "path": "/api/v1/user/gpg_keys",
+      "controller_class": "user",
+      "controller_method": "CreateGPGKey",
+      "description": "Create a GPG key for the authenticated user",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "CreateGPGKeyOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "armored_public_key", "type": "string", "required": true, "validation": ["Required binding"], "description": "Armored GPG public key"},
+            {"name": "armored_signature", "type": "string", "required": false, "validation": [], "description": "Optional signature to verify key ownership"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "*api.GPGKey",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Key database ID"},
+            {"name": "key_id", "type": "string", "description": "GPG key ID"},
+            {"name": "verified", "type": "bool", "description": "True if signature provided and valid"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Feature disabled or no matching email found"},
+          {"status_code": 422, "type": "validationError", "condition": "Key ID already used, parse error, or invalid signature"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-189",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/gpg_keys/{id}",
+      "controller_class": "user",
+      "controller_method": "DeleteGPGKey",
+      "description": "Remove a GPG key belonging to the authenticated user",
+      "request": {
+        "path_params": [{"name": "id", "type": "int64", "required": true, "validation": ["must be valid key ID owned by doer"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Permission denied"},
+          {"status_code": 404, "type": "notFound", "condition": "Feature disabled for user's login type"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

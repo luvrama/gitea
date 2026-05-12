@@ -1,0 +1,145 @@
+{
+  "total_rules": 14,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Password must meet minimum length requirement",
+      "location": {"class": "user_service", "method": "UpdateAuth", "file_path": "services/user/update.go", "line_number": 175},
+      "condition": "len(password) < setting.MinPasswordLength",
+      "action": "Return ErrMinLength",
+      "affected_endpoints": ["ep-099"],
+      "code_snippet": "if len(password) < setting.MinPasswordLength {\n\treturn password_module.ErrMinLength\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Password must meet complexity requirements",
+      "location": {"class": "user_service", "method": "UpdateAuth", "file_path": "services/user/update.go", "line_number": 178},
+      "condition": "!password_module.IsComplexEnough(password)",
+      "action": "Return ErrComplexity",
+      "affected_endpoints": ["ep-099"],
+      "code_snippet": "if !password_module.IsComplexEnough(password) {\n\treturn password_module.ErrComplexity\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Password must not be in pwned database",
+      "location": {"class": "user_service", "method": "UpdateAuth", "file_path": "services/user/update.go", "line_number": 181},
+      "condition": "password_module.IsPwned(ctx, password) returns error",
+      "action": "Return pwned error",
+      "affected_endpoints": ["ep-099"],
+      "code_snippet": "if err := password_module.IsPwned(ctx, password); err != nil {\n\treturn err\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "authorization",
+      "description": "Cannot remove admin status from last admin user",
+      "location": {"class": "user_service", "method": "UpdateUser", "file_path": "services/user/update.go", "line_number": 131},
+      "condition": "IsAdmin=false and user_model.IsLastAdminUser(ctx, u)",
+      "action": "Return ErrDeleteLastAdminUser",
+      "affected_endpoints": ["ep-099"],
+      "code_snippet": "if !user_model.IsLastAdminUser(ctx, u) {\n\tu.IsAdmin = opts.IsAdmin.Value().FieldValue\n} else { return user_model.ErrDeleteLastAdminUser{UID: u.ID} }"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Password change deletes all auth tokens (forces re-login)",
+      "location": {"class": "user_service", "method": "UpdateAuth", "file_path": "services/user/update.go", "line_number": 196},
+      "condition": "Password was changed successfully",
+      "action": "Delete all auth tokens for user",
+      "affected_endpoints": ["ep-099"],
+      "code_snippet": "if deleteAuthTokens {\n\treturn auth_model.DeleteAuthTokensByUserID(ctx, u.ID)\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "Cannot delete a user that is an organization",
+      "location": {"class": "admin", "method": "DeleteUser", "file_path": "routers/api/v1/admin/user.go", "line_number": 233},
+      "condition": "ctx.ContextUser.IsOrganization()",
+      "action": "Return 422 error",
+      "affected_endpoints": ["ep-100"],
+      "code_snippet": "if ctx.ContextUser.IsOrganization() {\n\tctx.APIError(http.StatusUnprocessableEntity, ...)\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Admin cannot delete themselves",
+      "location": {"class": "admin", "method": "DeleteUser", "file_path": "routers/api/v1/admin/user.go", "line_number": 238},
+      "condition": "ctx.ContextUser.ID == ctx.Doer.ID",
+      "action": "Return 422 error",
+      "affected_endpoints": ["ep-100"],
+      "code_snippet": "if ctx.ContextUser.ID == ctx.Doer.ID {\n\tctx.APIError(http.StatusUnprocessableEntity, ...)\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Non-purge delete requires user to have no repos, orgs, or packages",
+      "location": {"class": "user_service", "method": "DeleteUser", "file_path": "services/user/user.go", "line_number": 155},
+      "condition": "count > 0 for repos/orgs/packages",
+      "action": "Return ErrUserOwnRepos/ErrUserHasOrgs/ErrUserOwnPackages",
+      "affected_endpoints": ["ep-100"],
+      "code_snippet": "if count > 0 {\n\treturn repo_model.ErrUserOwnRepos{UID: u.ID}\n}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Purge mode disables user immediately before deletion",
+      "location": {"class": "user_service", "method": "DeleteUser", "file_path": "services/user/user.go", "line_number": 109},
+      "condition": "purge == true",
+      "action": "Set IsActive=false, IsRestricted=true, IsAdmin=false, ProhibitLogin=true, clear password",
+      "affected_endpoints": ["ep-100"],
+      "code_snippet": "if err := user_model.UpdateUserCols(ctx, &user_model.User{\n\tID: u.ID, IsActive: false, IsRestricted: true, ...})"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "authorization",
+      "description": "Key deletion requires admin or key owner",
+      "location": {"class": "asymkey_service", "method": "DeletePublicKey", "file_path": "services/asymkey/ssh_key.go", "line_number": 20},
+      "condition": "!doer.IsAdmin && doer.ID != key.OwnerID",
+      "action": "Return ErrKeyAccessDenied",
+      "affected_endpoints": ["ep-102"],
+      "code_snippet": "if !doer.IsAdmin && doer.ID != key.OwnerID {\n\treturn asymkey_model.ErrKeyAccessDenied{...}\n}"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "validation",
+      "description": "Sort mode must be one of name, created, updated, id",
+      "location": {"class": "admin", "method": "SearchUsers", "file_path": "routers/api/v1/admin/user.go", "line_number": 355},
+      "condition": "sortMode not in AdminUserOrderByMap[sortOrder]",
+      "action": "Return 422 with invalid sort mode error",
+      "affected_endpoints": ["ep-103"],
+      "code_snippet": "if order, ok := searchModeMap[sortMode]; ok {\n\torderBy = order\n} else { ctx.APIError(http.StatusUnprocessableEntity, ...) }"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "validation",
+      "description": "Cannot rename a user that is an organization",
+      "location": {"class": "admin", "method": "RenameUser", "file_path": "routers/api/v1/admin/user.go", "line_number": 399},
+      "condition": "ctx.ContextUser.IsOrganization()",
+      "action": "Return 422 error",
+      "affected_endpoints": ["ep-104"],
+      "code_snippet": "if ctx.ContextUser.IsOrganization() {\n\tctx.APIError(http.StatusUnprocessableEntity, ...)\n}"
+    },
+    {
+      "rule_id": "br-013",
+      "category": "business_logic",
+      "description": "Rename creates redirect from old name to new name",
+      "location": {"class": "user_service", "method": "RenameUser", "file_path": "services/user/user.go", "line_number": 72},
+      "condition": "Rename is not capitalization-only",
+      "action": "Insert user_redirect record",
+      "affected_endpoints": ["ep-104"],
+      "code_snippet": "if err = user_model.NewUserRedirect(ctx, u.ID, oldUserName, newUserName); err != nil {\n\treturn err\n}"
+    },
+    {
+      "rule_id": "br-014",
+      "category": "business_logic",
+      "description": "Capitalization-only rename skips redirect and directory rename",
+      "location": {"class": "user_service", "method": "RenameUser", "file_path": "services/user/user.go", "line_number": 50},
+      "condition": "strings.EqualFold(newUserName, u.Name)",
+      "action": "Only update name column and repo owner names",
+      "affected_endpoints": ["ep-104"],
+      "code_snippet": "if onlyCapitalization {\n\tu.Name = newUserName\n\treturn repo_model.UpdateRepositoryOwnerNames(ctx, u.ID, newUserName)\n}"
+    }
+  ]
+}

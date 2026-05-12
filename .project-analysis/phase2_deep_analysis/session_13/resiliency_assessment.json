@@ -1,0 +1,148 @@
+{
+  "total_findings": 5,
+  "overall_risk": "medium",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-084",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single DB read",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-085",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single DB write",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-086",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Delete is wrapped in db.WithTx ensuring atomicity across label, issue_label, and comment tables",
+          "recommendation": "None needed - already transactional"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - transactional delete",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-087",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/blocks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-088",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-089",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "risk_level": "high",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "All cleanup operations run in a single transaction via db.WithTx, ensuring atomicity",
+          "recommendation": "Transaction is correct but long-running for users with many relationships"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "CanBlockUser checks if already blocked and returns false, preventing duplicate blocks",
+          "recommendation": "None needed"
+        },
+        {
+          "pattern": "cascading_failure",
+          "status": "not_applicable",
+          "severity": "medium",
+          "detail": "Long transaction could cause lock contention under high concurrency",
+          "recommendation": "Consider rate limiting block operations or breaking into smaller transactions"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Long transaction with many writes could cause lock contention",
+      "graceful_degradation": "none - operation fails entirely if any step fails (rolled back)"
+    },
+    {
+      "endpoint_id": "ep-090",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "CanUnblockUser checks if user is actually blocked before allowing unblock",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - simple delete in transaction",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled via modules/graceful package with SIGTERM handling",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting configured for these endpoints",
+      "recommendation": "Consider rate limiting the block endpoint (ep-089) due to its heavy transaction cost"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": [
+      "Database - all endpoints depend solely on the database"
+    ],
+    "cascading_failure_paths": []
+  }
+}

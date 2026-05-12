@@ -1,0 +1,294 @@
+{
+  "total_endpoints": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-352",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "controller_class": "repo",
+      "controller_method": "GetReleaseAttachment",
+      "description": "Get a single attachment of a release by its ID",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": []},
+          {"name": "attachment_id", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Attachment",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Attachment ID"},
+            {"name": "name", "type": "string", "description": "Filename"},
+            {"name": "size", "type": "int64", "description": "File size in bytes"},
+            {"name": "download_count", "type": "int64", "description": "Number of downloads"},
+            {"name": "created_at", "type": "time.Time", "description": "Upload timestamp"},
+            {"name": "uuid", "type": "string", "description": "Unique file identifier"},
+            {"name": "browser_download_url", "type": "string", "description": "Download URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Release or attachment not found, or attachment not in release, or draft release without write access"}
+        ]
+      },
+      "authentication": "token (optional for public repos)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-353",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets",
+      "controller_class": "repo",
+      "controller_method": "ListReleaseAttachments",
+      "description": "List all attachments of a release",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Attachment",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Attachment ID"},
+            {"name": "name", "type": "string", "description": "Filename"},
+            {"name": "size", "type": "int64", "description": "File size in bytes"},
+            {"name": "download_count", "type": "int64", "description": "Number of downloads"},
+            {"name": "created_at", "type": "time.Time", "description": "Upload timestamp"},
+            {"name": "uuid", "type": "string", "description": "Unique file identifier"},
+            {"name": "browser_download_url", "type": "string", "description": "Download URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Release not found, repo mismatch, or draft without write access"}
+        ]
+      },
+      "authentication": "token (optional for public repos)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-354",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets",
+      "controller_class": "repo",
+      "controller_method": "CreateReleaseAttachment",
+      "description": "Upload a file attachment to a release",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "name", "type": "string", "required": false, "default": null, "validation": ["used as filename if provided"]}
+        ],
+        "headers": [
+          {"name": "Content-Type", "required": true, "description": "multipart/form-data or application/octet-stream"}
+        ],
+        "body": {
+          "type": "file upload",
+          "content_type": "multipart/form-data or application/octet-stream",
+          "fields": [
+            {"name": "attachment", "type": "file", "required": false, "validation": ["file type must be in allowed types"], "description": "File to upload (multipart)"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.Attachment",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Attachment ID"},
+            {"name": "name", "type": "string", "description": "Filename"},
+            {"name": "size", "type": "int64", "description": "File size in bytes"},
+            {"name": "download_count", "type": "int64", "description": "Number of downloads"},
+            {"name": "created_at", "type": "time.Time", "description": "Upload timestamp"},
+            {"name": "uuid", "type": "string", "description": "Unique file identifier"},
+            {"name": "browser_download_url", "type": "string", "description": "Download URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Empty filename or forbidden file type"},
+          {"status_code": 404, "type": "notFound", "condition": "Attachments disabled, release not found, or draft without access"},
+          {"status_code": 413, "type": "error", "condition": "File exceeds max size limit"}
+        ]
+      },
+      "authentication": "token (write access required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-355",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "controller_class": "repo",
+      "controller_method": "EditReleaseAttachment",
+      "description": "Update the name of a release attachment",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": []},
+          {"name": "attachment_id", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "api.EditAttachmentOptions",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": false, "validation": ["new filename must pass allowed types check"], "description": "New filename for the attachment"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.Attachment",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Attachment ID"},
+            {"name": "name", "type": "string", "description": "Filename"},
+            {"name": "size", "type": "int64", "description": "File size in bytes"},
+            {"name": "download_count", "type": "int64", "description": "Number of downloads"},
+            {"name": "created_at", "type": "time.Time", "description": "Upload timestamp"},
+            {"name": "uuid", "type": "string", "description": "Unique file identifier"},
+            {"name": "browser_download_url", "type": "string", "description": "Download URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Release or attachment not found, or attachment not in release"},
+          {"status_code": 422, "type": "validationError", "condition": "New filename has forbidden file type"}
+        ]
+      },
+      "authentication": "token (write access required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-356",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "controller_class": "repo",
+      "controller_method": "DeleteReleaseAttachment",
+      "description": "Delete a release attachment and its file from storage",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": []},
+          {"name": "attachment_id", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Release or attachment not found, or attachment not in release"}
+        ]
+      },
+      "authentication": "token (write access required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-357",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/labels",
+      "controller_class": "repo",
+      "controller_method": "ListLabels",
+      "description": "Get all labels of a repository with pagination",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["minimum 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected to valid page size"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Label",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Label ID"},
+            {"name": "name", "type": "string", "description": "Label name"},
+            {"name": "exclusive", "type": "bool", "description": "Whether label is exclusive"},
+            {"name": "is_archived", "type": "bool", "description": "Whether label is archived"},
+            {"name": "color", "type": "string", "description": "Hex color without #"},
+            {"name": "description", "type": "string", "description": "Label description"},
+            {"name": "url", "type": "string", "description": "API URL for this label"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "token (optional for public repos)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-358",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "controller_class": "repo",
+      "controller_method": "GetLabel",
+      "description": "Get a single label by ID or name",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64) or string", "required": true, "validation": ["if parseable as int64, lookup by ID; otherwise lookup by name"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Label",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Label ID"},
+            {"name": "name", "type": "string", "description": "Label name"},
+            {"name": "exclusive", "type": "bool", "description": "Whether label is exclusive"},
+            {"name": "is_archived", "type": "bool", "description": "Whether label is archived"},
+            {"name": "color", "type": "string", "description": "Hex color without #"},
+            {"name": "description", "type": "string", "description": "Label description"},
+            {"name": "url", "type": "string", "description": "API URL for this label"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Label not found in repository"}
+        ]
+      },
+      "authentication": "token (optional for public repos)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

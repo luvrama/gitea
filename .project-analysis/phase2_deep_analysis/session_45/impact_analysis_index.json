@@ -1,0 +1,30 @@
+{
+  "endpoints_by_database_table": {
+    "branch": {"read": ["ep-306", "ep-307", "ep-308", "ep-309", "ep-310", "ep-311"], "write": ["ep-307", "ep-311"]},
+    "protected_branch": {"read": ["ep-306", "ep-307", "ep-308", "ep-309", "ep-311"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {},
+  "endpoints_by_model_class": {
+    "git_model.Branch": ["ep-306", "ep-307", "ep-308", "ep-309", "ep-310", "ep-311"],
+    "git_model.ProtectedBranch": ["ep-306", "ep-307", "ep-308", "ep-309", "ep-311"],
+    "api.Branch": ["ep-306", "ep-308", "ep-309"]
+  },
+  "endpoints_by_service_class": {
+    "repo_service.DeleteBranch": ["ep-307"],
+    "repo_service.CreateNewBranchFromCommit": ["ep-308"],
+    "repo_service.UpdateBranch": ["ep-310"],
+    "repo_service.RenameBranch": ["ep-311"],
+    "convert.ToBranch": ["ep-306", "ep-308", "ep-309"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-306": {"reads": ["branch", "protected_branch"], "writes": []},
+    "ep-307": {"reads": ["branch", "protected_branch", "repo_unit", "access"], "writes": ["branch"]},
+    "ep-308": {"reads": ["branch", "protected_branch"], "writes": []},
+    "ep-309": {"reads": ["branch", "protected_branch"], "writes": []},
+    "ep-310": {"reads": ["branch"], "writes": []},
+    "ep-311": {"reads": ["branch", "protected_branch", "access"], "writes": ["branch", "repository"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {}
+}

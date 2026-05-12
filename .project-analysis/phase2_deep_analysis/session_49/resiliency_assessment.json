@@ -1,0 +1,179 @@
+{
+  "total_findings": 8,
+  "overall_risk": "medium",
+  "dependency_resiliency": [
+    {
+      "dependency": "Git CLI (fork clone)",
+      "client_class": "gitrepo",
+      "file_path": "modules/gitrepo/clone.go",
+      "used_by_endpoints": ["ep-334"],
+      "timeout": {
+        "status": "configured",
+        "value_ms": 600000,
+        "recommendation": "10 minutes is very long; consider reducing or making configurable"
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Add retry for transient git clone failures (network issues)"
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "Not critical for git clone as it's a local operation"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Consider limiting concurrent fork operations to prevent resource exhaustion"
+      },
+      "fallback": {
+        "status": "configured",
+        "behavior": "Cleanup on failure: defer cleanupRepository(repo) removes partial state",
+        "recommendation": null
+      },
+      "idempotency": {
+        "safe_to_retry": false,
+        "reason": "Fork creates DB records first, then clones. Retry would fail on duplicate DB records."
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-334"],
+        "impact": "Fork creation fails; user gets 500 error. Cleanup removes partial state."
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-330",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - pure DB reads",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-331",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx for the core operation (add repo, recalculate access, auto-watch)",
+          "recommendation": "Already properly transactional"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - all operations are local DB",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-332",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx for the core operation (remove repo, recalculate, cleanup watches)",
+          "recommendation": "Already properly transactional"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - all operations are local DB",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-333",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/forks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - pure DB reads",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-334",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/forks",
+      "risk_level": "high",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "high",
+          "detail": "Multi-step operation: DB insert → git clone → sync branches. If clone fails after DB insert, cleanup runs but could leave partial state if cleanup fails.",
+          "recommendation": "The defer cleanup is good but consider idempotent cleanup or saga pattern"
+        },
+        {
+          "pattern": "timeout",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Git clone has 10-minute timeout which is very long for an HTTP request",
+          "recommendation": "Move to async processing since 202 is already returned"
+        },
+        {
+          "pattern": "bulkhead",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "No limit on concurrent fork operations; many simultaneous forks could exhaust disk I/O",
+          "recommendation": "Add concurrency limiter for fork operations"
+        }
+      ],
+      "non_atomic_operations": ["DB insert + git clone + branch sync - partial failure leaves cleanup to defer"],
+      "cascading_failure_risk": "High disk I/O from concurrent forks could slow all git operations",
+      "graceful_degradation": "Cleanup on failure removes partial state"
+    },
+    {
+      "endpoint_id": "ep-335",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - pure DB reads",
+      "graceful_degradation": "none needed"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Graceful shutdown via modules/graceful package",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in rate limiting for API endpoints",
+      "recommendation": "Add rate limiting especially for fork creation"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message flows in these endpoints"
+    },
+    "single_points_of_failure": [
+      "Database (single instance typical in small deployments)"
+    ],
+    "cascading_failure_paths": [
+      "Many concurrent fork requests → disk I/O saturation → all git operations slow down"
+    ]
+  }
+}

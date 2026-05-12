@@ -1,0 +1,391 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-312",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "description": "Fetches a branch protection rule by name and converts it to API response with whitelist usernames/teams",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetBranchProtection",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx with repo context, path param name",
+          "output": "api.BranchProtection JSON",
+          "operations": ["Extract bpName from path param", "Query protected branch rule by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "protected_branch", "description": "Get rule by repo_id and branch_name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "git_model.GetProtectedBranchRuleByName",
+          "type": "repository",
+          "file_path": "models/git/protected_branch.go",
+          "input": "ctx, repoID, ruleName",
+          "output": "*ProtectedBranch or nil",
+          "operations": ["SELECT from protected_branch WHERE repo_id=? AND branch_name=?"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "protected_branch", "description": "Get single rule by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToBranchProtection",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "ctx, *ProtectedBranch, *Repository",
+          "output": "*api.BranchProtection",
+          "operations": ["Get users with read access to PR unit", "Get teams with access to repo", "Map whitelist IDs to usernames/team names", "Build API response struct"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "access/collaboration", "description": "Get users with unit access"},
+            {"operation": "SELECT", "table": "team/team_unit", "description": "Get teams with access to repo"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "git_model.ProtectedBranch",
+          "to": "api.BranchProtection",
+          "component": "convert.ToBranchProtection",
+          "mappings": [
+            {"source_field": "RuleName", "target_field": "rule_name", "transformation": "direct_copy"},
+            {"source_field": "WhitelistUserIDs", "target_field": "push_whitelist_usernames", "transformation": "computed"},
+            {"source_field": "WhitelistTeamIDs", "target_field": "push_whitelist_teams", "transformation": "computed"},
+            {"source_field": "CanPush", "target_field": "enable_push", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "created_at", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error on GetProtectedBranchRuleByName", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "bp == nil || bp.RepoID != repo.ID", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-313",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections",
+      "description": "Lists all branch protection rules for a repository, sorted by priority",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListBranchProtections",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx with repo context",
+          "output": "[]api.BranchProtection JSON",
+          "operations": ["Find all protected branch rules for repo", "Convert each to API struct"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "protected_branch", "description": "Find all rules WHERE repo_id=? ORDER BY created_unix ASC"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "git_model.FindRepoProtectedBranchRules",
+          "type": "repository",
+          "file_path": "models/git/protected_branch_list.go",
+          "input": "ctx, repoID",
+          "output": "ProtectedBranchRules (sorted)",
+          "operations": ["SELECT all rules for repo", "Sort by priority then plain-name-first then created_unix"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "protected_branch", "description": "Get all rules for repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToBranchProtection (loop)",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "ctx, *ProtectedBranch, *Repository",
+          "output": "*api.BranchProtection",
+          "operations": ["For each rule: resolve whitelist IDs to names"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "access/collaboration", "description": "Get users with unit access (per rule)"},
+            {"operation": "SELECT", "table": "team/team_unit", "description": "Get teams with access (per rule)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]git_model.ProtectedBranch",
+          "to": "[]api.BranchProtection",
+          "component": "convert.ToBranchProtection",
+          "mappings": [
+            {"source_field": "each ProtectedBranch", "target_field": "each BranchProtection", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error on FindRepoProtectedBranchRules", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-314",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections",
+      "description": "Creates a new branch protection rule with whitelist options, then triggers PR checks for matching branches",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateBranchProtection",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx, CreateBranchProtectionOption form",
+          "output": "api.BranchProtection JSON (201)",
+          "operations": ["Validate rule_name not empty", "Check rule doesn't already exist", "Resolve whitelist usernames to IDs", "Resolve whitelist teams to IDs", "Create ProtectedBranch record", "Trigger PR checks"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "protected_branch", "description": "Check if rule already exists"},
+            {"operation": "SELECT", "table": "user", "description": "Resolve usernames to IDs (4 whitelist types)"},
+            {"operation": "SELECT", "table": "team", "description": "Resolve team names to IDs (4 whitelist types)"},
+            {"operation": "INSERT", "table": "protected_branch", "description": "Create new rule"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_model.GetUserIDsByNames",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "ctx, []string usernames, false",
+          "output": "[]int64 user IDs",
+          "operations": ["Look up each username and return IDs"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Get user IDs by names"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "organization.GetTeamIDsByNames",
+          "type": "repository",
+          "file_path": "models/organization/team.go",
+          "input": "ctx, orgID, []string teamNames, false",
+          "output": "[]int64 team IDs",
+          "operations": ["Look up each team name in org and return IDs"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team", "description": "Get team IDs by names in org"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "pull_service.CreateOrUpdateProtectedBranch",
+          "type": "service",
+          "file_path": "services/pull/protected_branch.go",
+          "input": "ctx, repo, protectBranch, whitelistOptions",
+          "output": "error",
+          "operations": ["Call UpdateProtectBranch to insert", "Check if plain rule matches existing branch", "If yes, check PRs for that branch", "If glob rule, find all matched branches and check PRs"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "protected_branch", "description": "Insert new rule with auto-priority"},
+            {"operation": "SELECT", "table": "branch", "description": "Check if branch exists"},
+            {"operation": "SELECT", "table": "pull_request", "description": "Get unmerged PRs for base branch"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "git_model.UpdateProtectBranch",
+          "type": "repository",
+          "file_path": "models/git/protected_branch.go",
+          "input": "ctx, repo, protectBranch, WhitelistOptions",
+          "output": "error",
+          "operations": ["Validate repo not archived", "Load owner", "Update user whitelists (filter by write access)", "Update team whitelists (filter by repo access)", "Auto-calculate priority if 0", "INSERT new record"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user/access", "description": "Validate whitelist users have write access"},
+            {"operation": "SELECT", "table": "team/team_repo", "description": "Validate whitelist teams have repo access"},
+            {"operation": "SELECT", "table": "protected_branch", "description": "Get MAX(priority) for auto-priority"},
+            {"operation": "INSERT", "table": "protected_branch", "description": "Insert new rule"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.CreateBranchProtectionOption",
+          "to": "git_model.ProtectedBranch",
+          "component": "repo.CreateBranchProtection",
+          "mappings": [
+            {"source_field": "RuleName", "target_field": "RuleName", "transformation": "direct_copy"},
+            {"source_field": "EnablePush", "target_field": "CanPush", "transformation": "direct_copy"},
+            {"source_field": "EnablePush && EnablePushWhitelist", "target_field": "EnableWhitelist", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Both rule_name and branch_name empty", "handler": "ctx.APIError", "response_code": 400, "response": "both rule_name and branch_name are empty"},
+        {"condition": "Rule already exists", "handler": "ctx.APIError", "response_code": 403, "response": "Branch protection already exist"},
+        {"condition": "User not found in whitelist", "handler": "ctx.APIError", "response_code": 422, "response": "user not exist"},
+        {"condition": "Team not found in whitelist", "handler": "ctx.APIError", "response_code": 422, "response": "team not exist"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-315",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "description": "Edits an existing branch protection rule, only updating fields that are set in the request",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.EditBranchProtection",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx, EditBranchProtectionOption form",
+          "output": "api.BranchProtection JSON (200)",
+          "operations": ["Load existing rule", "Apply non-nil fields from form", "Resolve whitelist changes", "Update in DB", "Check PRs for affected branches", "Reload and return"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "protected_branch", "description": "Get existing rule by name"},
+            {"operation": "SELECT", "table": "user", "description": "Resolve whitelist usernames"},
+            {"operation": "SELECT", "table": "team", "description": "Resolve whitelist teams"},
+            {"operation": "UPDATE", "table": "protected_branch", "description": "Update rule with all columns"},
+            {"operation": "SELECT", "table": "branch", "description": "Check if branch exists for PR check"},
+            {"operation": "SELECT", "table": "pull_request", "description": "Get unmerged PRs for base branch"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "git_model.UpdateProtectBranch",
+          "type": "repository",
+          "file_path": "models/git/protected_branch.go",
+          "input": "ctx, repo, protectBranch, WhitelistOptions",
+          "output": "error",
+          "operations": ["Validate repo not archived", "Update user/team whitelists", "UPDATE record by ID with AllCols"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "protected_branch", "description": "Update all columns by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "pull_service.CheckPRsForBaseBranch",
+          "type": "service",
+          "file_path": "services/pull/check.go",
+          "input": "ctx, baseRepo, baseBranchName",
+          "output": "error",
+          "operations": ["Get unmerged PRs for base branch", "Start immediate check for each PR"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "Get unmerged PRs by base info"}],
+          "cache_ops": [],
+          "async": true
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.EditBranchProtectionOption",
+          "to": "git_model.ProtectedBranch (partial update)",
+          "component": "repo.EditBranchProtection",
+          "mappings": [
+            {"source_field": "*EnablePush (if non-nil)", "target_field": "CanPush", "transformation": "computed"},
+            {"source_field": "*RequiredApprovals (if non-nil and >= 0)", "target_field": "RequiredApprovals", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Rule not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "User not found in whitelist", "handler": "ctx.APIError", "response_code": 422, "response": "user not exist"},
+        {"condition": "Team not found in whitelist", "handler": "ctx.APIError", "response_code": 422, "response": "team not exist"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-316",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "description": "Deletes a branch protection rule by name",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteBranchProtection",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx with repo context, path param name",
+          "output": "204 No Content",
+          "operations": ["Get rule by name", "Validate exists and belongs to repo", "Delete rule"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "protected_branch", "description": "Get rule by name"},
+            {"operation": "DELETE", "table": "protected_branch", "description": "Delete rule by repo_id and id"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "git_model.DeleteProtectedBranch",
+          "type": "repository",
+          "file_path": "models/git/protected_branch.go",
+          "input": "ctx, repo, ruleID",
+          "output": "error",
+          "operations": ["Check repo not archived", "DELETE WHERE repo_id=? AND id=?", "Verify affected rows == 1"],
+          "calls_external": false,
+          "database_ops": [{"operation": "DELETE", "table": "protected_branch", "description": "Delete single rule"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Rule not found or wrong repo", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "DB error on delete", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-317",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/priority",
+      "description": "Updates the priority ordering of branch protection rules within a transaction",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.UpdateBranchProtectionPriories",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "input": "ctx, UpdateBranchProtectionPriories form",
+          "output": "204 No Content",
+          "operations": ["Extract IDs from form", "Call model to update priorities"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "protected_branch", "description": "Update priority for each ID in order"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "git_model.UpdateProtectBranchPriorities",
+          "type": "repository",
+          "file_path": "models/git/protected_branch.go",
+          "input": "ctx, repo, []int64 ids",
+          "output": "error",
+          "operations": ["Within transaction: for each ID, UPDATE priority=incrementing value WHERE id=? AND repo_id=?"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "protected_branch", "description": "Set priority=1,2,3... for each ID in order, scoped to repo"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "DB error during transaction", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

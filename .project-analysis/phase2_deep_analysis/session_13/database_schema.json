@@ -1,0 +1,131 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 2,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "label",
+      "entity_class": "issues_model.Label",
+      "file_path": "models/issues/label.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "exclusive", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "exclusive_order", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["DEFAULT 0"]},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "color", "type": "VARCHAR(7)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["VARCHAR(7)"]},
+        {"name": "num_issues", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_closed_issues", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX updated"]},
+        {"name": "archived_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": "NULL", "constraints": ["DEFAULT NULL"]}
+      ],
+      "indexes": [
+        {"name": "idx_label_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_label_org_id", "columns": ["org_id"], "unique": false},
+        {"name": "idx_label_created_unix", "columns": ["created_unix"], "unique": false},
+        {"name": "idx_label_updated_unix", "columns": ["updated_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user (org)", "join_column": "org_id"},
+        {"type": "one-to-many", "target_table": "issue_label", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "user_blocking",
+      "entity_class": "user_model.Blocking",
+      "file_path": "models/user/block.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "blocker_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(block)"]},
+        {"name": "blockee_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(block)"]},
+        {"name": "note", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]}
+      ],
+      "indexes": [
+        {"name": "UQE_user_blocking_block", "columns": ["blocker_id", "blockee_id"], "unique": true},
+        {"name": "idx_user_blocking_created_unix", "columns": ["created_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "blocker_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "blockee_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-084",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelInOrgByID/GetLabelInOrgByName", "description": "Get label by ID or name within org"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-085",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelInOrgByID", "description": "Get existing label"},
+        {"store_type": "database", "store_name": "label", "operation": "UPDATE", "method": "issues_model.UpdateLabel", "description": "Update label fields and recalculate counts"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-086",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelByID", "description": "Get label to verify existence"},
+        {"store_type": "database", "store_name": "label", "operation": "DELETE", "method": "issues_model.DeleteLabel", "description": "Delete label record"},
+        {"store_type": "database", "store_name": "issue_label", "operation": "DELETE", "method": "issues_model.DeleteLabel", "description": "Delete issue-label associations"},
+        {"store_type": "database", "store_name": "comment", "operation": "DELETE", "method": "issues_model.DeleteLabel", "description": "Delete label-related comments"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-087",
+      "path": "/api/v1/orgs/{org}/blocks",
+      "operations": [
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.FindBlockings", "description": "Find blocking records with pagination"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "BlockingList.LoadAttributes", "description": "Batch load user records for blockees"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-088",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Get blockee user by name"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.GetBlocking", "description": "Check if blocking record exists"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-089",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Get blockee user by name"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.IsUserBlockedBy", "description": "Check existing block status"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "org.IsOrgMember", "description": "Check if blockee is org member"},
+        {"store_type": "database", "store_name": "follow", "operation": "DELETE", "method": "user_model.UnfollowUser", "description": "Remove mutual follows"},
+        {"store_type": "database", "store_name": "star", "operation": "DELETE", "method": "repo_model.StarRepo", "description": "Remove mutual stars"},
+        {"store_type": "database", "store_name": "watch", "operation": "DELETE", "method": "repo_model.WatchRepo", "description": "Remove mutual watches"},
+        {"store_type": "database", "store_name": "issue_assignees", "operation": "DELETE", "method": "issues_model.ToggleIssueAssignee", "description": "Remove mutual issue assignments"},
+        {"store_type": "database", "store_name": "collaboration", "operation": "DELETE", "method": "repo_service.DeleteCollaboration", "description": "Remove mutual collaborations"},
+        {"store_type": "database", "store_name": "repo_transfer", "operation": "DELETE", "method": "repo_service.CancelRepositoryTransfer", "description": "Cancel mutual transfers"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "INSERT", "method": "db.Insert", "description": "Create blocking record"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-090",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Get blockee user by name"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.IsUserBlockedBy", "description": "Check block exists for permission"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "org.IsOwnedBy", "description": "Check org ownership for permission"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.GetBlocking", "description": "Get blocking record"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "DELETE", "method": "db.DeleteByID", "description": "Delete blocking record"}
+      ]
+    }
+  ]
+}

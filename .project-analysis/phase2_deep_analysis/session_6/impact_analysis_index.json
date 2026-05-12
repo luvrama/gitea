@@ -1,0 +1,60 @@
+{
+  "endpoints_by_database_table": {
+    "action": {"read": ["ep-035"], "write": []},
+    "user": {"read": ["ep-035", "ep-036", "ep-037", "ep-038", "ep-039", "ep-040", "ep-041"], "write": ["ep-037", "ep-038"]},
+    "repository": {"read": ["ep-035", "ep-036"], "write": ["ep-036"]},
+    "secret": {"read": ["ep-039", "ep-040", "ep-041"], "write": ["ep-040", "ep-041"]},
+    "team_user": {"read": ["ep-035", "ep-036", "ep-037", "ep-038", "ep-039", "ep-040", "ep-041"], "write": []},
+    "issue": {"read": ["ep-035"], "write": []},
+    "comment": {"read": ["ep-035"], "write": []}
+  },
+  "endpoints_by_external_service": {
+    "Avatar Storage Backend": ["ep-037", "ep-038"]
+  },
+  "endpoints_by_config_property": {
+    "AVATAR_MAX_WIDTH": ["ep-037"],
+    "AVATAR_MAX_HEIGHT": ["ep-037"],
+    "AVATAR_MAX_ORIGIN_SIZE": ["ep-037"],
+    "AVATAR_RENDERED_SIZE_FACTOR": ["ep-037"],
+    "SECRET_KEY": ["ep-040"]
+  },
+  "endpoints_by_model_class": {
+    "activities_model.Action": ["ep-035"],
+    "secret_model.Secret": ["ep-039", "ep-040", "ep-041"],
+    "repo_model.Repository": ["ep-036"],
+    "user_model.User": ["ep-037", "ep-038"]
+  },
+  "endpoints_by_service_class": {
+    "feed_service": ["ep-035"],
+    "user_service": ["ep-037", "ep-038"],
+    "secret_service": ["ep-040", "ep-041"],
+    "repo_service": ["ep-036"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-035": {"reads": ["action", "user", "repository", "issue", "comment", "team_user"], "writes": []},
+    "ep-036": {"reads": ["user", "repository", "team_user"], "writes": ["repository"]},
+    "ep-037": {"reads": ["user", "team_user"], "writes": ["user"]},
+    "ep-038": {"reads": ["user", "team_user"], "writes": ["user"]},
+    "ep-039": {"reads": ["user", "team_user", "secret"], "writes": []},
+    "ep-040": {"reads": ["user", "team_user", "secret"], "writes": ["secret"]},
+    "ep-041": {"reads": ["user", "team_user", "secret"], "writes": ["secret"]}
+  },
+  "external_services_by_endpoint": {
+    "ep-035": [],
+    "ep-036": [],
+    "ep-037": ["Avatar Storage Backend"],
+    "ep-038": ["Avatar Storage Backend"],
+    "ep-039": [],
+    "ep-040": [],
+    "ep-041": []
+  },
+  "config_properties_by_endpoint": {
+    "ep-035": [],
+    "ep-036": [],
+    "ep-037": ["AVATAR_MAX_WIDTH", "AVATAR_MAX_HEIGHT", "AVATAR_MAX_ORIGIN_SIZE", "AVATAR_RENDERED_SIZE_FACTOR"],
+    "ep-038": [],
+    "ep-039": [],
+    "ep-040": ["SECRET_KEY"],
+    "ep-041": []
+  }
+}

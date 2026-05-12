@@ -1,0 +1,165 @@
+{
+  "total_findings": 5,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-246",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/trees/{sha}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies; git operations are local filesystem",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure git read operation",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-247",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/refs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure git read operation",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-248",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/refs/{ref}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure git read operation",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-249",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/diffpatch",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Multi-step operation (clone, apply, commit, push) uses temp repo with deferred cleanup. If push fails after commit, temp repo is cleaned up but no partial state persists.",
+          "recommendation": "Current design is safe - temp repo pattern ensures atomicity"
+        },
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "No explicit timeout on git apply or push operations. Large patches could block indefinitely.",
+          "recommendation": "Add context timeout for git operations (e.g., 5 minutes)"
+        }
+      ],
+      "non_atomic_operations": ["Clone + apply + commit + push sequence uses temp repo for atomicity"],
+      "cascading_failure_risk": "Disk space exhaustion if many concurrent patch operations create temp repos",
+      "graceful_degradation": "Temp repo cleanup via defer ensures no leaked state"
+    },
+    {
+      "endpoint_id": "ep-250",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only database operation",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-251",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only database operation",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-252",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Operation is idempotent - if collaboration already exists with same mode, it's a no-op. Safe to retry.",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - uses database transaction",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-253",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "If collaboration doesn't exist (has==0), returns nil without error. Safe to retry.",
+          "recommendation": "No action needed"
+        },
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "All cascade operations (delete collab, recalculate access, unwatch, unassign) are within a single transaction",
+          "recommendation": "No action needed - transaction ensures atomicity"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - all within transaction",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Graceful shutdown via modules/graceful package",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in rate limiting for API endpoints",
+      "recommendation": "Consider adding rate limiting middleware"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": [],
+    "cascading_failure_paths": []
+  }
+}

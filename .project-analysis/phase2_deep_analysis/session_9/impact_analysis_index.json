@@ -1,0 +1,46 @@
+{
+  "endpoints_by_database_table": {
+    "team": {"read": ["ep-056", "ep-057", "ep-058", "ep-059", "ep-060", "ep-061", "ep-062", "ep-063"], "write": ["ep-057", "ep-058", "ep-059", "ep-062", "ep-063"]},
+    "team_user": {"read": ["ep-056", "ep-060", "ep-061", "ep-062", "ep-063"], "write": ["ep-059", "ep-062", "ep-063"]},
+    "team_unit": {"read": ["ep-056", "ep-058"], "write": ["ep-057", "ep-058", "ep-059"]},
+    "user": {"read": ["ep-056", "ep-057", "ep-060", "ep-061", "ep-062", "ep-063"], "write": ["ep-057", "ep-059", "ep-062"]},
+    "org_user": {"read": ["ep-060", "ep-062", "ep-063"], "write": ["ep-062", "ep-063"]},
+    "user_blocking": {"read": ["ep-062"], "write": []},
+    "protected_branch": {"read": ["ep-059"], "write": ["ep-059"]},
+    "repository": {"read": ["ep-058", "ep-059", "ep-062", "ep-063"], "write": []},
+    "access": {"read": [], "write": ["ep-058", "ep-059", "ep-063"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "service.AutoWatchNewRepos": ["ep-062"]
+  },
+  "endpoints_by_model_class": {
+    "organization.Team": ["ep-056", "ep-057", "ep-058", "ep-059", "ep-060", "ep-061", "ep-062", "ep-063"],
+    "organization.TeamUser": ["ep-060", "ep-061", "ep-062", "ep-063"],
+    "organization.TeamUnit": ["ep-056", "ep-057", "ep-058", "ep-059"],
+    "user_model.User": ["ep-060", "ep-061", "ep-062", "ep-063"]
+  },
+  "endpoints_by_service_class": {
+    "org_service.NewTeam": ["ep-057"],
+    "org_service.UpdateTeam": ["ep-058"],
+    "org_service.DeleteTeam": ["ep-059"],
+    "org_service.AddTeamMember": ["ep-062"],
+    "org_service.RemoveTeamMember": ["ep-063"],
+    "convert.ToTeam": ["ep-056", "ep-057", "ep-058"],
+    "convert.ToUser": ["ep-060", "ep-061"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-056": {"reads": ["team", "team_user", "team_unit", "user"], "writes": []},
+    "ep-057": {"reads": ["user", "team"], "writes": ["team", "team_unit", "user"]},
+    "ep-058": {"reads": ["team", "team_unit", "repository"], "writes": ["team", "team_unit", "access"]},
+    "ep-059": {"reads": ["team", "user", "protected_branch", "repository"], "writes": ["team", "team_user", "team_unit", "protected_branch", "user", "access"]},
+    "ep-060": {"reads": ["team", "org_user", "user", "team_user"], "writes": []},
+    "ep-061": {"reads": ["team", "user", "team_user"], "writes": []},
+    "ep-062": {"reads": ["team", "user", "user_blocking", "team_user", "org_user", "repository"], "writes": ["org_user", "team_user", "team", "user"]},
+    "ep-063": {"reads": ["team", "user", "team_user", "repository"], "writes": ["team_user", "team", "access", "org_user"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-062": ["service.AutoWatchNewRepos"]
+  }
+}

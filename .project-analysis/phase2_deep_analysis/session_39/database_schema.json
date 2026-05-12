@@ -1,0 +1,107 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 2,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "secret",
+      "entity_class": "secret_model.Secret",
+      "file_path": "models/secret/secret.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(owner_repo_name)", "NOT NULL"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": ["UNIQUE(owner_repo_name)", "NOT NULL", "DEFAULT 0"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(owner_repo_name)", "NOT NULL"]},
+        {"name": "data", "type": "LONGTEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["encrypted"]},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created", "NOT NULL"]}
+      ],
+      "indexes": [
+        {"name": "UQE_secret_owner_repo_name", "columns": ["owner_id", "repo_id", "name"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "action_variable",
+      "entity_class": "actions_model.ActionVariable",
+      "file_path": "models/actions/variable.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["pk", "autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(owner_repo_name)"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(owner_repo_name)"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(owner_repo_name)", "NOT NULL"]},
+        {"name": "data", "type": "LONGTEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created", "NOT NULL"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_action_variable_owner_repo_name", "columns": ["owner_id", "repo_id", "name"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-262",
+      "path": "/api/v1/repos/{owner}/{repo}/avatar",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "repo_model.UpdateRepositoryColsNoAutoTime", "description": "Update avatar column"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-263",
+      "path": "/api/v1/repos/{owner}/{repo}/avatar",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "repo_model.UpdateRepositoryColsNoAutoTime", "description": "Clear avatar column"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-264",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets",
+      "operations": [
+        {"store_type": "database", "store_name": "secret", "operation": "SELECT", "method": "db.FindAndCount", "description": "List secrets with pagination"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-265",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}",
+      "operations": [
+        {"store_type": "database", "store_name": "secret", "operation": "SELECT", "method": "db.Find", "description": "Find existing secret by name"},
+        {"store_type": "database", "store_name": "secret", "operation": "INSERT", "method": "secret_model.InsertEncryptedSecret", "description": "Insert new secret if not exists"},
+        {"store_type": "database", "store_name": "secret", "operation": "UPDATE", "method": "secret_model.UpdateSecret", "description": "Update secret data if exists"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-266",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}",
+      "operations": [
+        {"store_type": "database", "store_name": "secret", "operation": "SELECT", "method": "db.Find", "description": "Find secret by name"},
+        {"store_type": "database", "store_name": "secret", "operation": "DELETE", "method": "db.DeleteByID", "description": "Delete secret by ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-267",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "actions_model.FindVariables", "description": "Find variable by repo_id and name"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-268",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "actions_model.FindVariables", "description": "Find variable by name"},
+        {"store_type": "database", "store_name": "action_variable", "operation": "DELETE", "method": "actions_model.DeleteVariable", "description": "Delete variable by ID"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,192 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 5,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "notification",
+      "entity_class": "activities_model.Notification",
+      "file_path": "models/activities/notification.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "status", "type": "SMALLINT", "code_type": "NotificationStatus (uint8)", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "source", "type": "SMALLINT", "code_type": "NotificationSource (uint8)", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "commit_id", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "comment_id", "type": "BIGINT", "code_type": "int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "updated_by", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]}
+      ],
+      "indexes": [
+        {"name": "u_s_uu", "columns": ["user_id", "status", "updated_unix"], "unique": false},
+        {"name": "idx_notification_user_id", "columns": ["user_id"], "unique": false},
+        {"name": "idx_notification_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_notification_status", "columns": ["status"], "unique": false},
+        {"name": "idx_notification_source", "columns": ["source"], "unique": false},
+        {"name": "idx_notification_issue_id", "columns": ["issue_id"], "unique": false},
+        {"name": "idx_notification_commit_id", "columns": ["commit_id"], "unique": false},
+        {"name": "idx_notification_updated_by", "columns": ["updated_by"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "comment", "join_column": "comment_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "org_user",
+      "entity_class": "organization.OrgUser",
+      "file_path": "models/organization/org_user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "is_public", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_org_user_s", "columns": ["uid", "org_id"], "unique": true},
+        {"name": "IDX_org_user_uid", "columns": ["uid"], "unique": false},
+        {"name": "IDX_org_user_org_id", "columns": ["org_id"], "unique": false},
+        {"name": "IDX_org_user_is_public", "columns": ["is_public"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "team",
+      "entity_class": "organization.Team",
+      "file_path": "models/organization/team.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "authorize", "type": "SMALLINT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "can_create_org_repo", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_team_org_id", "columns": ["org_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "team_user",
+      "entity_class": "organization.TeamUser",
+      "file_path": "models/organization/team_user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "team_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_team_user_uid", "columns": ["uid"], "unique": false},
+        {"name": "IDX_team_user_org_id", "columns": ["org_id"], "unique": false},
+        {"name": "IDX_team_user_team_id", "columns": ["team_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"},
+        {"type": "many-to-one", "target_table": "team", "join_column": "team_id"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "user",
+      "entity_class": "user_model.User / organization.Organization",
+      "file_path": "models/user/user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "type", "type": "INT", "code_type": "UserType", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "visibility", "type": "INT", "code_type": "structs.VisibleType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_user_name", "columns": ["name"], "unique": true},
+        {"name": "IDX_user_lower_name", "columns": ["lower_name"], "unique": true},
+        {"name": "IDX_user_type", "columns": ["type"], "unique": false}
+      ],
+      "relationships": []
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-023",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "operations": [
+        {"store_type": "database", "store_name": "notification", "operation": "SELECT", "method": "db.Find", "description": "Find all matching notifications (unbounded)"},
+        {"store_type": "database", "store_name": "notification", "operation": "SELECT", "method": "GetNotificationByID", "description": "Re-fetch each notification in loop"},
+        {"store_type": "database", "store_name": "notification", "operation": "UPDATE", "method": "SetNotificationStatus", "description": "Update status per notification"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "loadRepo", "description": "Load repo per notification"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "loadIssue", "description": "Load issue per notification"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "loadUser", "description": "Load user per notification"},
+        {"store_type": "database", "store_name": "comment", "operation": "SELECT", "method": "loadComment", "description": "Load comment per notification"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-024",
+      "path": "/api/v1/notifications/threads/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "notification", "operation": "SELECT", "method": "GetNotificationByID", "description": "Fetch notification by ID"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "loadRepo", "description": "Load repository"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "loadIssue", "description": "Load issue"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "loadUser", "description": "Load user"},
+        {"store_type": "database", "store_name": "comment", "operation": "SELECT", "method": "loadComment/GetLastComment", "description": "Load comment(s)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-025",
+      "path": "/api/v1/notifications/threads/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "notification", "operation": "SELECT", "method": "GetNotificationByID", "description": "Fetch notification (twice: getThread + SetNotificationStatus)"},
+        {"store_type": "database", "store_name": "notification", "operation": "UPDATE", "method": "SetNotificationStatus", "description": "Update status"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "loadRepo", "description": "Load repository"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "loadIssue", "description": "Load issue"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "loadUser", "description": "Load user"},
+        {"store_type": "database", "store_name": "comment", "operation": "SELECT", "method": "loadComment/GetLastComment", "description": "Load comment(s)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-026",
+      "path": "/api/v1/user/orgs",
+      "operations": [
+        {"store_type": "database", "store_name": "user (org_user join)", "operation": "SELECT", "method": "db.FindAndCount", "description": "Find orgs with pagination"},
+        {"store_type": "database", "store_name": "user", "operation": "COUNT", "method": "db.FindAndCount", "description": "Count total orgs"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-027",
+      "path": "/api/v1/users/{username}/orgs",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByName", "description": "Resolve username"},
+        {"store_type": "database", "store_name": "user (org_user join)", "operation": "SELECT", "method": "db.FindAndCount", "description": "Find orgs with pagination"},
+        {"store_type": "database", "store_name": "user", "operation": "COUNT", "method": "db.FindAndCount", "description": "Count total orgs"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-028",
+      "path": "/api/v1/users/{username}/orgs/{org}/permissions",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByName", "description": "Resolve username (middleware)"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByName", "description": "Resolve org name"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "IsOrganizationMember", "description": "Visibility check (if private org)"},
+        {"store_type": "database", "store_name": "team JOIN team_user", "operation": "SELECT", "method": "GetOrgUserMaxAuthorizeLevel", "description": "Get max authorize level"},
+        {"store_type": "database", "store_name": "team JOIN team_user", "operation": "SELECT", "method": "CanCreateOrgRepo", "description": "Check repo creation permission"}
+      ]
+    }
+  ]
+}

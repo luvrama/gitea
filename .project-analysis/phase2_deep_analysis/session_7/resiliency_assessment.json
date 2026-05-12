@@ -1,0 +1,151 @@
+{
+  "total_findings": 8,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-042",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/actions/runners/registration-token",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "NewRunnerToken uses db.WithTx to deactivate old tokens and insert new one atomically",
+          "recommendation": "No action needed - transaction ensures consistency"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - only depends on database",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-043",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/variables",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only database query",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-044",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single read query",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-045",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Delete is not idempotent - second call returns 404. But this is expected REST behavior.",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - only database",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-046",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "low",
+          "detail": "Existence check and insert are not in a transaction - race condition possible where two concurrent creates both pass the check",
+          "recommendation": "Rely on UNIQUE constraint to handle race condition; DB will reject duplicate. Current code handles this via 409 but the check-then-act is not atomic."
+        }
+      ],
+      "non_atomic_operations": ["Check existence then insert without transaction - TOCTOU race possible"],
+      "cascading_failure_risk": "None - only database",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-047",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "low",
+          "detail": "Get variable then update is not in a transaction - concurrent update could overwrite",
+          "recommendation": "Low risk since org ownership is required and concurrent admin operations are rare"
+        }
+      ],
+      "non_atomic_operations": ["Read-then-update without transaction"],
+      "cascading_failure_risk": "None - only database",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-048",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runners",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-049",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single read query",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": "Version endpoint serves as basic liveness check"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses graceful module for shutdown handling",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in rate limiting on API endpoints",
+      "recommendation": "Consider adding rate limiting via reverse proxy or middleware"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "These endpoints are synchronous database operations"
+    },
+    "single_points_of_failure": ["Database (all endpoints depend on it)"],
+    "cascading_failure_paths": []
+  }
+}

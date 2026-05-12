@@ -1,0 +1,118 @@
+{
+  "total_findings": 5,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-168",
+      "http_method": "GET",
+      "path": "/api/v1/user/applications/oauth2",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - only depends on database",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-169",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Delete operation uses db.WithTx for transactional consistency across oauth2_application, oauth2_authorization_code, and oauth2_grant tables",
+          "recommendation": "Already properly handled with transaction"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - transactional delete",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-171",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "UpdateOAuth2Application uses a transaction for the update, but GenerateClientSecret is called outside the transaction. If secret generation succeeds but the response fails to reach the client, the secret is lost.",
+          "recommendation": "Include GenerateClientSecret within the same transaction, or provide a separate endpoint to regenerate secrets"
+        }
+      ],
+      "non_atomic_operations": ["Update app fields in tx, then generate secret outside tx - if secret update succeeds but response fails, client never receives the new secret"],
+      "cascading_failure_risk": "Low - only affects the specific app being updated",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-172",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/repos",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, only database queries",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-175",
+      "http_method": "POST",
+      "path": "/api/v1/user/actions/runners/registration-token",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Calling this endpoint multiple times deactivates old tokens and creates new ones each time. This is safe but means previously issued tokens become invalid.",
+          "recommendation": "Current behavior is acceptable - returns existing active token if available"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled by modules/graceful package with SIGTERM handling",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting for API endpoints",
+      "recommendation": "Add rate limiting middleware for API endpoints"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": ["Database (single instance unless configured with replication)"],
+    "cascading_failure_paths": []
+  }
+}

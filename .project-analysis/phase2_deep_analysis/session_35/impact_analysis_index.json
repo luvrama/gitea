@@ -1,0 +1,51 @@
+{
+  "endpoints_by_database_table": {
+    "mirror": {"read": ["ep-234"], "write": []},
+    "push_mirror": {"read": ["ep-235", "ep-236", "ep-237"], "write": ["ep-235", "ep-238", "ep-239"]}
+  },
+  "endpoints_by_external_service": {
+    "Git Remote (Push Mirror Target)": ["ep-235"]
+  },
+  "endpoints_by_config_property": {
+    "mirror.ENABLED": ["ep-234", "ep-235", "ep-236", "ep-237", "ep-238", "ep-239"],
+    "mirror.MIN_INTERVAL": ["ep-238"],
+    "git.TIMEOUT.MIRROR": ["ep-235"],
+    "lfs.START_SERVER": ["ep-235"]
+  },
+  "endpoints_by_model_class": {
+    "repo_model.Mirror": ["ep-234"],
+    "repo_model.PushMirror": ["ep-235", "ep-236", "ep-237", "ep-238", "ep-239"],
+    "api.PushMirror": ["ep-236", "ep-237", "ep-238"],
+    "api.CreatePushMirrorOption": ["ep-238"]
+  },
+  "endpoints_by_service_class": {
+    "mirror_service.AddPullMirrorToQueue": ["ep-234"],
+    "mirror_service.SyncPushMirror": ["ep-235"],
+    "mirror_service.AddPushMirrorRemote": ["ep-238"],
+    "convert.ToPushMirror": ["ep-236", "ep-237", "ep-238"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-234": {"reads": ["mirror"], "writes": []},
+    "ep-235": {"reads": ["push_mirror"], "writes": ["push_mirror"]},
+    "ep-236": {"reads": ["push_mirror"], "writes": []},
+    "ep-237": {"reads": ["push_mirror"], "writes": []},
+    "ep-238": {"reads": [], "writes": ["push_mirror"]},
+    "ep-239": {"reads": [], "writes": ["push_mirror"]}
+  },
+  "external_services_by_endpoint": {
+    "ep-234": [],
+    "ep-235": ["Git Remote (Push Mirror Target)"],
+    "ep-236": [],
+    "ep-237": [],
+    "ep-238": [],
+    "ep-239": []
+  },
+  "config_properties_by_endpoint": {
+    "ep-234": ["mirror.ENABLED"],
+    "ep-235": ["mirror.ENABLED", "git.TIMEOUT.MIRROR", "lfs.START_SERVER"],
+    "ep-236": ["mirror.ENABLED"],
+    "ep-237": ["mirror.ENABLED"],
+    "ep-238": ["mirror.ENABLED", "mirror.MIN_INTERVAL"],
+    "ep-239": ["mirror.ENABLED"]
+  }
+}

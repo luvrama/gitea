@@ -1,0 +1,37 @@
+{
+  "total_properties": 4,
+  "properties": [
+    {
+      "key": "setting.API.DefaultPagingNum",
+      "type": "Integer",
+      "default_value": "20",
+      "source_file": "custom/conf/app.ini [api]",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Default page size when limit not specified", "impact": "Controls default number of results per page"}],
+      "affected_endpoints": ["ep-029"]
+    },
+    {
+      "key": "setting.API.MaxResponseItems",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "custom/conf/app.ini [api]",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Maximum allowed page size", "impact": "Caps the limit parameter to prevent excessive results"}],
+      "affected_endpoints": ["ep-029"]
+    },
+    {
+      "key": "setting.Admin.DisableRegularOrgCreation",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "custom/conf/app.ini [admin]",
+      "used_by": [{"class": "User", "method": "CanCreateOrganization", "file_path": "models/user/user.go", "usage": "If true, only admins can create orgs", "impact": "Non-admin users get 403 on POST /orgs"}],
+      "affected_endpoints": ["ep-030"]
+    },
+    {
+      "key": "setting.Service.DefaultOrgMemberVisible",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "custom/conf/app.ini [service]",
+      "used_by": [{"class": "organization", "method": "CreateOrganization", "file_path": "models/organization/org.go", "usage": "Sets initial is_public value for org_user record", "impact": "Controls whether new org members are publicly visible by default"}],
+      "affected_endpoints": ["ep-030"]
+    }
+  ]
+}

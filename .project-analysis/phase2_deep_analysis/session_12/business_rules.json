@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Hook type must be a registered webhook type (gitea, gogs, or registered requester)",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 84},
+      "condition": "!webhook_service.IsValidHookTaskType(form.Type)",
+      "action": "Return 422 with 'Invalid hook type' message",
+      "affected_endpoints": ["ep-079"],
+      "code_snippet": "if !webhook_service.IsValidHookTaskType(form.Type) {\n\tctx.APIError(http.StatusUnprocessableEntity, \"Invalid hook type: \"+form.Type)\n\treturn false"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Hook config must contain 'url' and 'content_type' keys",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 88},
+      "condition": "form.Config missing 'url' or 'content_type'",
+      "action": "Return 422 with 'Missing config option' message",
+      "affected_endpoints": ["ep-079"],
+      "code_snippet": "for _, name := range []string{\"url\", \"content_type\"} {\n\tif _, ok := form.Config[name]; !ok {\n\t\tctx.APIError(http.StatusUnprocessableEntity, \"Missing config option: \"+name)"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Hook content_type must be 'json' or 'form'",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 94},
+      "condition": "!webhook.IsValidHookContentType(form.Config[\"content_type\"])",
+      "action": "Return 422 with 'Invalid content type' message",
+      "affected_endpoints": ["ep-079", "ep-080"],
+      "code_snippet": "if !webhook.IsValidHookContentType(form.Config[\"content_type\"]) {\n\tctx.APIError(http.StatusUnprocessableEntity, \"Invalid content type\")"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Hook URL must be a valid URL",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 98},
+      "condition": "!validation.IsValidURL(form.Config[\"url\"])",
+      "action": "Return 422 with 'Invalid url' message",
+      "affected_endpoints": ["ep-079", "ep-080"],
+      "code_snippet": "if !validation.IsValidURL(form.Config[\"url\"]) {\n\tctx.APIError(http.StatusUnprocessableEntity, \"Invalid url\")"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Slack hooks require a valid channel name in config",
+      "location": {"class": "utils", "method": "addHook", "file_path": "routers/api/v1/utils/hook.go", "line_number": 175},
+      "condition": "w.Type == webhook_module.SLACK && channel missing or invalid",
+      "action": "Return 422 or 400 with channel error",
+      "affected_endpoints": ["ep-079"],
+      "code_snippet": "if !webhook_service.IsValidSlackChannel(channel) {\n\tctx.APIError(http.StatusBadRequest, \"Invalid slack channel name\")"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Default events to 'push' if no events specified",
+      "location": {"class": "utils", "method": "updateHookEvents", "file_path": "routers/api/v1/utils/hook.go", "line_number": 140},
+      "condition": "len(events) == 0",
+      "action": "Set events to [\"push\"]",
+      "affected_endpoints": ["ep-079", "ep-080"],
+      "code_snippet": "if len(events) == 0 {\n\tevents = []string{\"push\"}\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Authorization header is encrypted before storage using setting.SecretKey",
+      "location": {"class": "Webhook", "method": "SetHeaderAuthorization", "file_path": "models/webhook/webhook.go", "line_number": 186},
+      "condition": "cleartext != \"\"",
+      "action": "Encrypt with secret.EncryptSecret and store ciphertext",
+      "affected_endpoints": ["ep-079", "ep-080"],
+      "code_snippet": "ciphertext, err := secret.EncryptSecret(setting.SecretKey, cleartext)\nw.HeaderAuthorizationEncrypted = ciphertext"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Delete webhook also deletes all associated hook_task records in a transaction",
+      "location": {"class": "webhook", "method": "DeleteWebhookByID", "file_path": "models/webhook/webhook.go", "line_number": 262},
+      "condition": "Webhook deletion requested",
+      "action": "Delete webhook and all hook_task rows in transaction",
+      "affected_endpoints": ["ep-081"],
+      "code_snippet": "return db.WithTx(ctx, func(ctx context.Context) error {\n\tif count, err := db.DeleteByID[Webhook](ctx, id); ...\n\t} else if _, err = db.DeleteByBean(ctx, &HookTask{HookID: id}); ..."
+    },
+    {
+      "rule_id": "br-009",
+      "category": "validation",
+      "description": "Label color must be a valid 3 or 6 character hex color code",
+      "location": {"class": "label", "method": "NormalizeColor", "file_path": "modules/label/label.go", "line_number": 29},
+      "condition": "Color doesn't match hex pattern after normalization",
+      "action": "Return error 'invalid color'",
+      "affected_endpoints": ["ep-083"],
+      "code_snippet": "if !colorPattern().MatchString(color) {\n\treturn \"\", util.NewInvalidArgumentErrorf(\"invalid color: %s\", color)\n}"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Label color is stored with leading # and expanded from 3 to 6 chars",
+      "location": {"class": "label", "method": "NormalizeColor", "file_path": "modules/label/label.go", "line_number": 44},
+      "condition": "Color is 3-char shorthand (e.g. #abc)",
+      "action": "Expand to 6-char format (#aabbcc)",
+      "affected_endpoints": ["ep-083"],
+      "code_snippet": "if len(color) == 4 {\n\tcolor = fmt.Sprintf(\"#%c%c%c%c%c%c\", r, r, g, g, b, b)\n}"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "business_logic",
+      "description": "ToLabel strips leading # from color for API response",
+      "location": {"class": "convert", "method": "ToLabel", "file_path": "services/convert/issue.go", "line_number": 264},
+      "condition": "Always on conversion",
+      "action": "TrimLeft '#' from color string",
+      "affected_endpoints": ["ep-082", "ep-083"],
+      "code_snippet": "Color: strings.TrimLeft(label.Color, \"#\"),"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "authorization",
+      "description": "Webhook ownership verified by checking owner_id matches org before operations",
+      "location": {"class": "webhook", "method": "GetWebhookByOwnerID", "file_path": "models/webhook/webhook.go", "line_number": 237},
+      "condition": "Query includes WHERE id=? AND owner_id=?",
+      "action": "Return ErrWebhookNotExist if not found for that owner",
+      "affected_endpoints": ["ep-078", "ep-080", "ep-081"],
+      "code_snippet": "has, err := db.GetEngine(ctx).Where(\"id=? AND owner_id=?\", id, ownerID).Get(webhook)"
+    }
+  ]
+}

@@ -1,0 +1,510 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-106",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/runs",
+      "description": "Lists all workflow runs globally with optional filters for event, branch, status, actor, and head_sha",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.ListWorkflowRuns",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/action.go",
+          "input": "APIContext",
+          "output": "delegates to shared.ListRuns",
+          "operations": ["Delegates to shared.ListRuns(ctx, 0, 0)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListRuns",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/action.go",
+          "input": "APIContext, ownerID=0, repoID=0",
+          "output": "ActionWorkflowRunsResponse JSON",
+          "operations": [
+            "Parse query params: event, branch, status, actor, head_sha",
+            "Convert branch to git ref",
+            "Convert status strings to internal Status enums",
+            "Lookup actor user by name if provided",
+            "Build FindRunOptions",
+            "Call db.FindAndCount[ActionRun]",
+            "Load trigger users for all runs",
+            "Load repos for all runs",
+            "Load repo owners",
+            "Convert each run to API format"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run", "description": "Find runs with filters and pagination"},
+            {"operation": "SELECT", "table": "user", "description": "Load trigger users"},
+            {"operation": "SELECT", "table": "repository", "description": "Load repos for runs"},
+            {"operation": "SELECT", "table": "user", "description": "Load repo owners"},
+            {"operation": "SELECT", "table": "user", "description": "Lookup actor by name (if actor filter provided)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToActionWorkflowRun",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "ActionRun",
+          "output": "*api.ActionWorkflowRun",
+          "operations": ["Convert internal run model to API response struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRun",
+          "to": "api.ActionWorkflowRun",
+          "component": "convert.ToActionWorkflowRun",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "TriggerEvent", "target_field": "Event", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status", "transformation": "computed"},
+            {"source_field": "TriggerUser", "target_field": "Actor", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid status string", "handler": "shared.ListRuns", "response_code": 400, "response": "error"},
+        {"condition": "Actor username not found", "handler": "shared.ListRuns", "response_code": 500, "response": "internal error"},
+        {"condition": "DB query failure", "handler": "shared.ListRuns", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-107",
+      "http_method": "GET",
+      "path": "/api/v1/admin/unadopted",
+      "description": "Lists unadopted repositories by walking the filesystem and comparing against DB",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.ListUnadoptedRepositories",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/adopt.go",
+          "input": "APIContext",
+          "output": "JSON string array",
+          "operations": [
+            "Get list options from query params",
+            "Get query/pattern from form",
+            "Call repo_service.ListUnadoptedRepositories"
+          ],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_service.ListUnadoptedRepositories",
+          "type": "service",
+          "file_path": "services/repository/adopt.go",
+          "input": "context, query string, ListOptions",
+          "output": "([]string, int64, error)",
+          "operations": [
+            "Parse query into user/repo glob patterns",
+            "Walk RepoRootPath filesystem directory",
+            "For each user directory matching glob, collect .git repo names",
+            "Batch check repos against DB via GetUserRepositories",
+            "Return repos that exist on disk but not in DB"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetUserByName for each user directory"},
+            {"operation": "SELECT", "table": "repository", "description": "GetUserRepositories to check which repos are already adopted"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Filesystem walk error", "handler": "admin.ListUnadoptedRepositories", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-108",
+      "http_method": "POST",
+      "path": "/api/v1/admin/unadopted/{owner}/{repo}",
+      "description": "Adopts an unadopted git repository from disk into the database",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.AdoptRepository",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/adopt.go",
+          "input": "APIContext with path params",
+          "output": "204 No Content",
+          "operations": [
+            "Get owner username and repo name from path",
+            "Lookup user by name",
+            "Check repo does NOT exist in DB",
+            "Check git repo DOES exist on disk",
+            "Call repo_service.AdoptRepository"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetUserByName"},
+            {"operation": "SELECT", "table": "repository", "description": "IsRepositoryModelExist check"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_service.AdoptRepository",
+          "type": "service",
+          "file_path": "services/repository/adopt.go",
+          "input": "context, doer, owner, CreateRepoOptions",
+          "output": "(*repo_model.Repository, error)",
+          "operations": [
+            "Check user can create repo (limit check)",
+            "Create repository record in DB (transaction)",
+            "Adopt git repo: create delegate hooks, sync branches, sync releases",
+            "Update git repo after create",
+            "Set repository status to Ready",
+            "Send notification"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "repository", "description": "Create repository record"},
+            {"operation": "INSERT", "table": "branch", "description": "Sync branches from git"},
+            {"operation": "INSERT", "table": "release", "description": "Sync releases/tags from git"},
+            {"operation": "UPDATE", "table": "repository", "description": "Set status to Ready"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User not found", "handler": "admin.AdoptRepository", "response_code": 404, "response": "notFound"},
+        {"condition": "Repo already in DB or not on disk", "handler": "admin.AdoptRepository", "response_code": 404, "response": "notFound"},
+        {"condition": "Adoption failure", "handler": "admin.AdoptRepository", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-109",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/unadopted/{owner}/{repo}",
+      "description": "Deletes unadopted repository files from the filesystem",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.DeleteUnadoptedRepository",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/adopt.go",
+          "input": "APIContext with path params",
+          "output": "204 No Content",
+          "operations": [
+            "Get owner username and repo name from path",
+            "Lookup user by name",
+            "Check repo does NOT exist in DB",
+            "Check git repo DOES exist on disk",
+            "Call repo_service.DeleteUnadoptedRepository"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetUserByName"},
+            {"operation": "SELECT", "table": "repository", "description": "IsRepositoryModelExist check"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_service.DeleteUnadoptedRepository",
+          "type": "service",
+          "file_path": "services/repository/adopt.go",
+          "input": "context, doer, user, repoName",
+          "output": "error",
+          "operations": [
+            "Validate repo name is usable",
+            "Check git repo exists on disk",
+            "Check repo does NOT exist in DB",
+            "Delete git repository directory from storage"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "IsRepositoryModelExist check"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User not found", "handler": "admin.DeleteUnadoptedRepository", "response_code": 404, "response": "notFound"},
+        {"condition": "Repo already in DB or not on disk", "handler": "admin.DeleteUnadoptedRepository", "response_code": 404, "response": "notFound"},
+        {"condition": "Deletion failure", "handler": "admin.DeleteUnadoptedRepository", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-110",
+      "http_method": "GET",
+      "path": "/api/v1/admin/cron",
+      "description": "Lists all registered cron tasks with schedule and execution info from in-memory state",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.ListCronTasks",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/cron.go",
+          "input": "APIContext",
+          "output": "JSON array of Cron structs",
+          "operations": [
+            "Call cron.ListTasks() to get all tasks from scheduler",
+            "Get list options for pagination",
+            "Paginate in-memory slice with util.PaginateSlice",
+            "Convert TaskTableRow to structs.Cron"
+          ],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "cron.ListTasks",
+          "type": "service",
+          "file_path": "services/cron/cron.go",
+          "input": "none",
+          "output": "TaskTable",
+          "operations": [
+            "Get all jobs from gocron scheduler",
+            "Build map of job name to job",
+            "Lock tasks mutex",
+            "For each registered task, get schedule/next/prev from scheduler",
+            "Return TaskTable with all task info"
+          ],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "cron.TaskTableRow",
+          "to": "structs.Cron",
+          "component": "admin.ListCronTasks",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Spec", "target_field": "Schedule", "transformation": "direct_copy"},
+            {"source_field": "Next", "target_field": "Next", "transformation": "direct_copy"},
+            {"source_field": "Prev", "target_field": "Prev", "transformation": "direct_copy"},
+            {"source_field": "ExecTimes", "target_field": "ExecTimes", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-111",
+      "http_method": "POST",
+      "path": "/api/v1/admin/cron/{task}",
+      "description": "Triggers a named cron task to run immediately",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.PostCronTask",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/cron.go",
+          "input": "APIContext with task path param",
+          "output": "204 No Content",
+          "operations": [
+            "Get task name from path param",
+            "Call cron.GetTask(name)",
+            "If nil, return 404",
+            "Call task.Run()",
+            "Log trace message"
+          ],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": true
+        },
+        {
+          "step": 2,
+          "component": "cron.Task.Run",
+          "type": "service",
+          "file_path": "services/cron/tasks.go",
+          "input": "none (uses internal config)",
+          "output": "none (runs async)",
+          "operations": [
+            "Acquire global lock for task",
+            "Increment ExecTimes",
+            "Run task function in shutdown context",
+            "On error: set status to error/cancelled, create system notice",
+            "On success: set status to finished"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "notice", "description": "Create system notice on error or if DoNoticeOnSuccess"}
+          ],
+          "cache_ops": [],
+          "async": true
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Task name not found", "handler": "admin.PostCronTask", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-112",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/repos",
+      "description": "Creates a repository on behalf of a user (admin privilege)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.CreateRepo",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/repo.go",
+          "input": "APIContext with CreateRepoOption body",
+          "output": "delegates to repo.CreateUserRepo",
+          "operations": [
+            "Get form from context (CreateRepoOption)",
+            "Call repo.CreateUserRepo(ctx, ctx.ContextUser, form)"
+          ],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.CreateUserRepo",
+          "type": "service",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "APIContext, owner User, CreateRepoOption",
+          "output": "201 JSON Repository",
+          "operations": [
+            "Set default readme if auto_init and empty",
+            "Validate readme template exists",
+            "Call repo_service.CreateRepository with options",
+            "Reload repo from DB",
+            "Convert to API Repository response"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "repository", "description": "Create repository record"},
+            {"operation": "SELECT", "table": "repository", "description": "Reload repo after creation"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_service.CreateRepository",
+          "type": "service",
+          "file_path": "services/repository/create.go",
+          "input": "context, doer, owner, CreateRepoOptions",
+          "output": "(*repo_model.Repository, error)",
+          "operations": [
+            "Create repository in DB",
+            "Initialize git repository if auto_init",
+            "Create gitignore, license, readme files",
+            "Set up hooks and default branch"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "repository", "description": "Create repo record"},
+            {"operation": "INSERT", "table": "repo_unit", "description": "Create default repo units"},
+            {"operation": "INSERT", "table": "collaboration", "description": "Set up owner access"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.CreateRepoOption",
+          "to": "repo_service.CreateRepoOptions",
+          "component": "repo.CreateUserRepo",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"},
+            {"source_field": "Private", "target_field": "IsPrivate", "transformation": "computed"},
+            {"source_field": "AutoInit", "target_field": "AutoInit", "transformation": "direct_copy"},
+            {"source_field": "TrustModel", "target_field": "TrustModel", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid readme template", "handler": "repo.CreateUserRepo", "response_code": 400, "response": "error"},
+        {"condition": "Repo already exists", "handler": "repo.CreateUserRepo", "response_code": 409, "response": "error"},
+        {"condition": "Reserved name", "handler": "repo.CreateUserRepo", "response_code": 422, "response": "validationError"},
+        {"condition": "Permission denied", "handler": "repo.CreateUserRepo", "response_code": 403, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-113",
+      "http_method": "POST",
+      "path": "/api/v1/admin/actions/runners/registration-token",
+      "description": "Gets or creates a global runner registration token",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.CreateRegistrationToken",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/runners.go",
+          "input": "APIContext",
+          "output": "delegates to shared.GetRegistrationToken",
+          "operations": ["Call shared.GetRegistrationToken(ctx, 0, 0)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.GetRegistrationToken",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "APIContext, ownerID=0, repoID=0",
+          "output": "200 JSON RegistrationToken",
+          "operations": [
+            "Call actions_model.GetLatestRunnerToken(ctx, 0, 0)",
+            "If not found or inactive, call actions_model.NewRunnerToken(ctx, 0, 0)",
+            "Return token string"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner_token", "description": "Get latest token for global scope"},
+            {"operation": "UPDATE", "table": "action_runner_token", "description": "Deactivate old tokens (if creating new)"},
+            {"operation": "INSERT", "table": "action_runner_token", "description": "Create new token (if needed)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunnerToken",
+          "to": "shared.RegistrationToken",
+          "component": "shared.GetRegistrationToken",
+          "mappings": [
+            {"source_field": "Token", "target_field": "Token", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "shared.GetRegistrationToken", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "total_properties": 1,
+  "properties": [
+    {
+      "key": "setting.PanicInDevOrTesting",
+      "type": "function",
+      "default_value": "panics in dev/test mode only",
+      "source_file": "modules/setting/setting.go",
+      "used_by": [
+        {"class": "shared", "method": "ListRunners/GetRunner/DeleteRunner/UpdateRunner", "file_path": "routers/api/v1/shared/runners.go", "usage": "assert ownerID and repoID not both set", "impact": "panics in dev/test if invalid state detected"},
+        {"class": "shared", "method": "ListJobs/ListRuns", "file_path": "routers/api/v1/shared/action.go", "usage": "assert ownerID and repoID not both set", "impact": "panics in dev/test if invalid state detected"}
+      ],
+      "affected_endpoints": ["ep-050", "ep-051", "ep-052", "ep-053"]
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "UserSettingsOptions.Website must be a valid URL if provided, max 255 chars",
+      "location": {"class": "api", "method": "bind middleware", "file_path": "modules/structs/user.go", "line_number": 92},
+      "condition": "Website field is non-nil",
+      "action": "Validate URL format and max length 255",
+      "affected_endpoints": ["ep-163"],
+      "code_snippet": "Website *string `json:\"website\" binding:\"OmitEmpty;ValidUrl;MaxSize(255)\"`"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "UserSettingsOptions.FullName max 100 chars",
+      "location": {"class": "api", "method": "bind middleware", "file_path": "modules/structs/user.go", "line_number": 90},
+      "condition": "FullName field is non-nil",
+      "action": "Validate max length 100",
+      "affected_endpoints": ["ep-163"],
+      "code_snippet": "FullName *string `json:\"full_name\" binding:\"MaxSize(100)\"`"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Access token name must be unique per user",
+      "location": {"class": "auth_model", "method": "AccessTokenByNameExists", "file_path": "models/auth/access_token.go", "line_number": 188},
+      "condition": "Token with same name and UID already exists",
+      "action": "Return 400 error",
+      "affected_endpoints": ["ep-165"],
+      "code_snippet": "return db.GetEngine(ctx).Table(\"access_token\").Where(\"name = ?\", token.Name).And(\"uid = ?\", token.UID).Exist()"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Access token must have at least one valid scope",
+      "location": {"class": "user", "method": "CreateAccessToken", "file_path": "routers/api/v1/user/app.go", "line_number": 109},
+      "condition": "Normalized scope is empty string",
+      "action": "Return 400 'access token must have a scope'",
+      "affected_endpoints": ["ep-165"],
+      "code_snippet": "if scope == \"\" { ctx.APIError(http.StatusBadRequest, \"access token must have a scope\") }"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Access token scopes must be valid scope strings that can be parsed",
+      "location": {"class": "auth_model", "method": "AccessTokenScope.Normalize", "file_path": "models/auth/access_token_scope.go", "line_number": 284},
+      "condition": "Scope string contains invalid scope names",
+      "action": "Return error from parse()",
+      "affected_endpoints": ["ep-165"],
+      "code_snippet": "func (s AccessTokenScope) Normalize() (AccessTokenScope, error) { bitmap, err := s.parse() ..."
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Delete token accepts both numeric ID and string name as identifier",
+      "location": {"class": "user", "method": "DeleteAccessToken", "file_path": "routers/api/v1/user/app.go", "line_number": 143},
+      "condition": "Path param cannot be parsed as int64",
+      "action": "Fall back to name-based lookup",
+      "affected_endpoints": ["ep-166"],
+      "code_snippet": "tokenID, _ := strconv.ParseInt(token, 0, 64)"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "Multiple tokens with same name causes 422 error on delete-by-name",
+      "location": {"class": "user", "method": "DeleteAccessToken", "file_path": "routers/api/v1/user/app.go", "line_number": 157},
+      "condition": "Name lookup returns more than 1 token",
+      "action": "Return 422 Unprocessable Entity",
+      "affected_endpoints": ["ep-166"],
+      "code_snippet": "ctx.APIError(http.StatusUnprocessableEntity, fmt.Errorf(\"multiple matches for token name '%s'\", token))"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "OAuth2 redirect URIs must be valid URLs or use registered custom schemes",
+      "location": {"class": "forms", "method": "DetectInvalidOAuth2ApplicationRedirectURI", "file_path": "services/forms/user_form.go", "line_number": 368},
+      "condition": "URI doesn't match valid URL pattern or custom scheme list",
+      "action": "Return the invalid URI string",
+      "affected_endpoints": ["ep-167"],
+      "code_snippet": "valid := ok && (validation.IsValidURL(u) || util.SliceContainsString(setting.OAuth2.CustomSchemes, scheme))"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "authorization",
+      "description": "Token endpoints require self or admin access (reqSelfOrAdmin middleware)",
+      "location": {"class": "api", "method": "route registration", "file_path": "routers/api/v1/api.go", "line_number": 986},
+      "condition": "Authenticated user is not the target user and not admin",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-164", "ep-165", "ep-166"],
+      "code_snippet": "}, reqSelfOrAdmin(), reqBasicOrRevProxyAuth())"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "authorization",
+      "description": "Token endpoints require basic auth or reverse proxy auth (not token auth alone)",
+      "location": {"class": "api", "method": "route registration", "file_path": "routers/api/v1/api.go", "line_number": 986},
+      "condition": "Request uses only token-based authentication",
+      "action": "Reject - basic/reverse proxy auth required for token management",
+      "affected_endpoints": ["ep-164", "ep-165", "ep-166"],
+      "code_snippet": "}, reqSelfOrAdmin(), reqBasicOrRevProxyAuth())"
+    }
+  ]
+}

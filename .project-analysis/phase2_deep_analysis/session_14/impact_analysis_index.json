@@ -1,0 +1,66 @@
+{
+  "endpoints_by_database_table": {
+    "webhook": {"read": ["ep-091", "ep-092", "ep-094"], "write": ["ep-093", "ep-094", "ep-095"]},
+    "hook_task": {"read": [], "write": ["ep-095"]},
+    "user": {"read": ["ep-096", "ep-097", "ep-098"], "write": ["ep-096", "ep-098"]},
+    "org_user": {"read": [], "write": ["ep-096"]},
+    "team": {"read": [], "write": ["ep-096"]},
+    "team_unit": {"read": [], "write": ["ep-096"]},
+    "team_user": {"read": [], "write": ["ep-096"]},
+    "email_address": {"read": ["ep-098"], "write": ["ep-098"]},
+    "login_source": {"read": ["ep-098"], "write": []}
+  },
+  "endpoints_by_external_service": {
+    "HaveIBeenPwned API": ["ep-098"]
+  },
+  "endpoints_by_config_property": {
+    "PasswordCheckPwn": ["ep-098"],
+    "MinPasswordLength": ["ep-098"],
+    "AppURL": ["ep-091", "ep-094"],
+    "Service.DefaultOrgMemberVisible": ["ep-096"]
+  },
+  "endpoints_by_model_class": {
+    "webhook.Webhook": ["ep-091", "ep-092", "ep-093", "ep-094", "ep-095"],
+    "user_model.User": ["ep-096", "ep-097", "ep-098"],
+    "organization.Organization": ["ep-096", "ep-097"],
+    "organization.Team": ["ep-096"],
+    "user_model.EmailAddress": ["ep-098"]
+  },
+  "endpoints_by_service_class": {
+    "webhook_service.ToHook": ["ep-091", "ep-092", "ep-093", "ep-094"],
+    "convert.ToOrganization": ["ep-096", "ep-097"],
+    "convert.ToUser": ["ep-098"],
+    "password.IsPwned": ["ep-098"],
+    "mailer.SendRegisterNotifyMail": ["ep-098"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-091": {"reads": ["webhook"], "writes": []},
+    "ep-092": {"reads": ["webhook"], "writes": []},
+    "ep-093": {"reads": [], "writes": ["webhook"]},
+    "ep-094": {"reads": ["webhook"], "writes": ["webhook"]},
+    "ep-095": {"reads": [], "writes": ["webhook", "hook_task"]},
+    "ep-096": {"reads": ["user"], "writes": ["user", "org_user", "team", "team_unit", "team_user"]},
+    "ep-097": {"reads": ["user"], "writes": []},
+    "ep-098": {"reads": ["login_source", "user", "email_address"], "writes": ["user", "email_address"]}
+  },
+  "external_services_by_endpoint": {
+    "ep-091": [],
+    "ep-092": [],
+    "ep-093": [],
+    "ep-094": [],
+    "ep-095": [],
+    "ep-096": [],
+    "ep-097": [],
+    "ep-098": ["HaveIBeenPwned API"]
+  },
+  "config_properties_by_endpoint": {
+    "ep-091": ["AppURL"],
+    "ep-092": [],
+    "ep-093": [],
+    "ep-094": ["AppURL"],
+    "ep-095": [],
+    "ep-096": ["Service.DefaultOrgMemberVisible"],
+    "ep-097": [],
+    "ep-098": ["PasswordCheckPwn", "MinPasswordLength"]
+  }
+}

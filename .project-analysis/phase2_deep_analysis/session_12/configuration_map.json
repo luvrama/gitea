@@ -1,0 +1,29 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "setting.API.DefaultPagingNum",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Default page size when none specified", "impact": "Controls default number of results per page"}],
+      "affected_endpoints": ["ep-077", "ep-082"]
+    },
+    {
+      "key": "setting.API.MaxResponseItems",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Maximum page size cap", "impact": "Limits maximum results per page"}],
+      "affected_endpoints": ["ep-077", "ep-082"]
+    },
+    {
+      "key": "setting.SecretKey",
+      "type": "String",
+      "default_value": "auto-generated",
+      "source_file": "modules/setting/security.go",
+      "used_by": [{"class": "Webhook", "method": "SetHeaderAuthorization/HeaderAuthorization", "file_path": "models/webhook/webhook.go", "usage": "Encrypt/decrypt authorization header", "impact": "Required for webhook auth header encryption"}],
+      "affected_endpoints": ["ep-077", "ep-078", "ep-079", "ep-080"]
+    }
+  ]
+}

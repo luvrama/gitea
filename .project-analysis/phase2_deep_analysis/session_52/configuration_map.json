@@ -1,0 +1,40 @@
+{
+  "total_properties": 4,
+  "properties": [
+    {
+      "key": "attachment.ENABLED",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/attachment.go",
+      "used_by": [{"class": "repo", "method": "CreateReleaseAttachment", "file_path": "routers/api/v1/repo/release_attachment.go", "usage": "Check if attachments are enabled", "impact": "If false, upload returns 404"}],
+      "affected_endpoints": ["ep-354"]
+    },
+    {
+      "key": "repository.release.ALLOWED_TYPES",
+      "type": "String",
+      "default_value": "" ,
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {"class": "attachment_service", "method": "UploadAttachmentForRelease", "file_path": "services/attachment/attachment.go", "usage": "Validate file type on upload", "impact": "Empty means all types allowed"},
+        {"class": "repo", "method": "EditReleaseAttachment", "file_path": "routers/api/v1/repo/release_attachment.go", "usage": "Validate new filename extension on edit", "impact": "Rejects rename if new extension not allowed"}
+      ],
+      "affected_endpoints": ["ep-354", "ep-355"]
+    },
+    {
+      "key": "repository.release.FILE_MAX_SIZE",
+      "type": "Integer (MB)",
+      "default_value": "2048",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "attachment_service", "method": "UploadAttachmentForRelease", "file_path": "services/attachment/attachment.go", "usage": "Max file size limit (value << 20 for bytes)", "impact": "Files exceeding limit return 413"}],
+      "affected_endpoints": ["ep-354"]
+    },
+    {
+      "key": "server.APP_URL",
+      "type": "String",
+      "default_value": "http://localhost:3000/",
+      "source_file": "modules/setting/server.go",
+      "used_by": [{"class": "repo_model.Attachment", "method": "DownloadURL", "file_path": "models/repo/attachment.go", "usage": "Generate download URL for attachments", "impact": "Affects browser_download_url in response"}],
+      "affected_endpoints": ["ep-352", "ep-353", "ep-354", "ep-355"]
+    }
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "endpoints_by_database_table": {
+    "user": {"read": ["ep-103"], "write": ["ep-099", "ep-100", "ep-104"]},
+    "email_address": {"read": ["ep-099"], "write": ["ep-099"]},
+    "public_key": {"read": ["ep-102"], "write": ["ep-101", "ep-102"]},
+    "login_source": {"read": ["ep-099"], "write": []},
+    "auth_token": {"read": [], "write": ["ep-099"]},
+    "user_redirect": {"read": [], "write": ["ep-104"]},
+    "repository": {"read": ["ep-105"], "write": ["ep-100", "ep-104"]},
+    "action_run_job": {"read": ["ep-105"], "write": []},
+    "action_run": {"read": ["ep-105"], "write": []},
+    "two_factor": {"read": ["ep-103"], "write": []}
+  },
+  "endpoints_by_external_service": {
+    "HaveIBeenPwned API": ["ep-099"]
+  },
+  "endpoints_by_config_property": {
+    "MIN_PASSWORD_LENGTH": ["ep-099"],
+    "PASSWORD_CHECK_PWN": ["ep-099"],
+    "USER_DELETE_WITH_COMMENTS_MAX_TIME": ["ep-100"]
+  },
+  "endpoints_by_model_class": {
+    "user_model.User": ["ep-099", "ep-100", "ep-103", "ep-104"],
+    "asymkey_model.PublicKey": ["ep-101", "ep-102"],
+    "actions_model.ActionRunJob": ["ep-105"],
+    "user_model.EmailAddress": ["ep-099"],
+    "user_model.Redirect": ["ep-104"]
+  },
+  "endpoints_by_service_class": {
+    "user_service.UpdateAuth": ["ep-099"],
+    "user_service.UpdateUser": ["ep-099"],
+    "user_service.ReplacePrimaryEmailAddress": ["ep-099"],
+    "user_service.DeleteUser": ["ep-100"],
+    "user_service.RenameUser": ["ep-104"],
+    "asymkey_service.DeletePublicKey": ["ep-102"],
+    "shared.ListJobs": ["ep-105"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-099": {"reads": ["login_source", "email_address"], "writes": ["user", "email_address", "auth_token"]},
+    "ep-100": {"reads": ["repository", "org_user", "packages"], "writes": ["user", "repository", "watch", "star", "follow", "public_key", "gpg_key", "access_token"]},
+    "ep-101": {"reads": [], "writes": ["public_key"]},
+    "ep-102": {"reads": ["public_key"], "writes": ["public_key"]},
+    "ep-103": {"reads": ["user", "two_factor"], "writes": []},
+    "ep-104": {"reads": ["user"], "writes": ["user", "repository", "user_redirect"]},
+    "ep-105": {"reads": ["action_run_job", "action_run", "repository"], "writes": []}
+  },
+  "external_services_by_endpoint": {
+    "ep-099": ["HaveIBeenPwned API"],
+    "ep-100": [],
+    "ep-101": [],
+    "ep-102": [],
+    "ep-103": [],
+    "ep-104": [],
+    "ep-105": []
+  },
+  "config_properties_by_endpoint": {
+    "ep-099": ["MIN_PASSWORD_LENGTH", "PASSWORD_CHECK_PWN"],
+    "ep-100": ["USER_DELETE_WITH_COMMENTS_MAX_TIME"],
+    "ep-101": [],
+    "ep-102": [],
+    "ep-103": [],
+    "ep-104": [],
+    "ep-105": []
+  }
+}

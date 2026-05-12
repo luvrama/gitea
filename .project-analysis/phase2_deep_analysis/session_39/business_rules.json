@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Avatar image must be valid base64 encoded",
+      "location": {"class": "repo", "method": "UpdateAvatar", "file_path": "routers/api/v1/repo/avatar.go", "line_number": 42},
+      "condition": "base64.StdEncoding.DecodeString fails",
+      "action": "Return 400 Bad Request",
+      "affected_endpoints": ["ep-262"],
+      "code_snippet": "content, err := base64.StdEncoding.DecodeString(form.Image)"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Avatar image must be png, jpeg, gif, or webp format",
+      "location": {"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "line_number": 57},
+      "condition": "imgType not in [png, jpeg, gif, webp]",
+      "action": "Return error 'unsupported avatar image type'",
+      "affected_endpoints": ["ep-262"],
+      "code_snippet": "if imgType != \"png\" && imgType != \"jpeg\" && imgType != \"gif\" && imgType != \"webp\" {"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Avatar image dimensions must not exceed configured max width/height",
+      "location": {"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "line_number": 62},
+      "condition": "imgCfg.Width > setting.Avatar.MaxWidth or imgCfg.Height > setting.Avatar.MaxHeight",
+      "action": "Return error with dimension details",
+      "affected_endpoints": ["ep-262"],
+      "code_snippet": "if imgCfg.Width > setting.Avatar.MaxWidth {"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Skip avatar upload if same image hash already set",
+      "location": {"class": "repository", "method": "UploadAvatar", "file_path": "services/repository/avatar.go", "line_number": 28},
+      "condition": "repo.Avatar == newAvatar (same hash)",
+      "action": "Return nil (no-op)",
+      "affected_endpoints": ["ep-262"],
+      "code_snippet": "if repo.Avatar == newAvatar { return nil }"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Skip avatar deletion if no avatar exists",
+      "location": {"class": "repository", "method": "DeleteAvatar", "file_path": "services/repository/avatar.go", "line_number": 60},
+      "condition": "len(repo.Avatar) == 0",
+      "action": "Return nil (no-op)",
+      "affected_endpoints": ["ep-263"],
+      "code_snippet": "if len(repo.Avatar) == 0 { return nil }"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "Secret name must match pattern ^[A-Z_][A-Z0-9_]*$ (case insensitive)",
+      "location": {"class": "secrets", "method": "ValidateName", "file_path": "services/secrets/validation.go", "line_number": 26},
+      "condition": "Name doesn't match namePattern regex",
+      "action": "Return ErrInvalidArgument",
+      "affected_endpoints": ["ep-265", "ep-266"],
+      "code_snippet": "if !vars.namePattern.MatchString(name) ||"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "Secret/variable name must not start with GITEA_ or GITHUB_ prefix",
+      "location": {"class": "secrets", "method": "ValidateName", "file_path": "services/secrets/validation.go", "line_number": 27},
+      "condition": "Name matches forbiddenPrefixPattern",
+      "action": "Return ErrInvalidArgument",
+      "affected_endpoints": ["ep-265", "ep-266"],
+      "code_snippet": "vars.forbiddenPrefixPattern.MatchString(name) ||"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "Secret/variable name must not be 'CI'",
+      "location": {"class": "secrets", "method": "ValidateName", "file_path": "services/secrets/validation.go", "line_number": 28},
+      "condition": "strings.EqualFold(name, \"CI\")",
+      "action": "Return ErrInvalidArgument",
+      "affected_endpoints": ["ep-265", "ep-266"],
+      "code_snippet": "strings.EqualFold(name, \"CI\")"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "validation",
+      "description": "Secret data must not exceed 65536 bytes",
+      "location": {"class": "secret_model", "method": "InsertEncryptedSecret", "file_path": "models/secret/secret.go", "line_number": 72},
+      "condition": "len(data) > SecretDataMaxLength",
+      "action": "Return ErrInvalidArgument 'data too long'",
+      "affected_endpoints": ["ep-265"],
+      "code_snippet": "if len(data) > SecretDataMaxLength {"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "validation",
+      "description": "Variable data must not exceed 65536 runes",
+      "location": {"class": "actions_model", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 52},
+      "condition": "utf8.RuneCountInString(data) > VariableDataMaxLength",
+      "action": "Return ErrInvalidArgument 'data too long'",
+      "affected_endpoints": ["ep-267", "ep-268"],
+      "code_snippet": "if utf8.RuneCountInString(data) > VariableDataMaxLength {"
+    }
+  ]
+}

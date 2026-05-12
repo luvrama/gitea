@@ -1,0 +1,26 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic error", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "not found"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-035", "path": "/api/v1/orgs/{org}/activities/feeds", "error_scenarios": [
+      {"exception": "IsOrgMember error", "trigger": "DB error checking membership", "status_code": 500, "response": "internal error", "logged": true, "retryable": true},
+      {"exception": "GetFeeds error", "trigger": "DB query failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-037", "path": "/api/v1/orgs/{org}/avatar", "error_scenarios": [
+      {"exception": "base64 decode error", "trigger": "invalid base64 in image field", "status_code": 400, "response": "bad request", "logged": false, "retryable": false},
+      {"exception": "ProcessAvatarImage error", "trigger": "unsupported type or too large", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-040", "path": "/api/v1/orgs/{org}/actions/secrets/{secretname}", "error_scenarios": [
+      {"exception": "util.ErrInvalidArgument", "trigger": "invalid secret name or data too long", "status_code": 400, "response": "error with message", "logged": false, "retryable": false},
+      {"exception": "util.ErrNotExist", "trigger": "secret not found (should not happen for create)", "status_code": 404, "response": "not found", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "secret_model.ErrSecretNotFound", "file_path": "models/secret/secret.go", "extends": "util.ErrNotExist (via Unwrap)", "used_in": ["secret_service.DeleteSecretByName", "secret_service.DeleteSecretByID"], "http_status": 404}
+  ]
+}

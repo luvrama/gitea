@@ -1,0 +1,40 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "internal_error", "status_code": 500, "response_type": "APIError", "message_template": "error message (only shown in dev or to admin)"},
+        {"exception_type": "not_found", "status_code": 404, "response_type": "map[message,url,errors]", "message_template": "not found"},
+        {"exception_type": "generic_error", "status_code": "variable", "response_type": "APIError", "message_template": "error message or formatted obj"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-003",
+      "path": "/api/v1/label/templates/{name}",
+      "error_scenarios": [
+        {"exception": "label.ErrTemplateLoad", "trigger": "Template display name not in map", "status_code": 404, "response": "notFound JSON", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-004",
+      "path": "/api/v1/signing-key.gpg",
+      "error_scenarios": [
+        {"exception": "format mismatch or empty", "trigger": "No GPG key configured or key is SSH format", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+        {"exception": "gpg exec error", "trigger": "gpg binary fails or key not found", "status_code": 500, "response": "APIError", "logged": true, "retryable": true}
+      ]
+    }
+  ],
+  "custom_exceptions": [
+    {
+      "class": "label.ErrTemplateLoad",
+      "file_path": "modules/label/label.go",
+      "extends": "error (interface)",
+      "used_in": ["repo_module.LoadTemplateLabelsByDisplayName"],
+      "http_status": 404
+    }
+  ]
+}

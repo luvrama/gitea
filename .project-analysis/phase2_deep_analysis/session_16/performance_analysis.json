@@ -1,0 +1,157 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-106",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/runs",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_run", "user", "repository"],
+        "note": "5 DB queries: find runs, load trigger users, load repos, load owners, optional actor lookup"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "ToActionWorkflowRun is called per-run in a loop; each may load run attempts individually",
+          "impact": "N additional queries for N runs when loading attempt data",
+          "file_path": "routers/api/v1/shared/action.go",
+          "line_number": 155,
+          "code_snippet": "// TODO: load run attempts in batch",
+          "recommendation": "Batch-load run attempts before the conversion loop"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch load run attempts instead of per-run loading",
+          "estimated_impact": "Reduce N+1 queries to 1 batch query",
+          "implementation": "Load all attempt data for the page of runs before converting"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-107",
+      "http_method": "GET",
+      "path": "/api/v1/admin/unadopted",
+      "resource_load": {
+        "operations_per_request": -1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["filesystem", "user", "repository"],
+        "note": "Variable: walks entire RepoRootPath filesystem, makes DB queries per user directory"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "synchronous_blocking",
+          "description": "Walks entire filesystem tree synchronously on each request",
+          "impact": "Can be very slow on large installations with many repos on disk",
+          "file_path": "services/repository/adopt.go",
+          "line_number": 244,
+          "code_snippet": "if err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {",
+          "recommendation": "Consider caching the unadopted list or implementing background scanning"
+        },
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "For each user directory, makes a GetUserByName query and a GetUserRepositories query",
+          "impact": "2 DB queries per user directory on disk",
+          "file_path": "services/repository/adopt.go",
+          "line_number": 213,
+          "code_snippet": "ctxUser, err := user_model.GetUserByName(ctx, userName)",
+          "recommendation": "Batch user lookups or cache user existence"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "caching",
+          "description": "Cache the unadopted repository list with a TTL",
+          "estimated_impact": "Avoid repeated filesystem walks for the same data",
+          "implementation": "Use in-memory cache with configurable TTL for the scan results"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-108",
+      "http_method": "POST",
+      "path": "/api/v1/admin/unadopted/{owner}/{repo}",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["repository", "branch", "release", "filesystem"],
+        "note": "Heavy operation: creates DB records, syncs branches and releases from git"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-109",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/unadopted/{owner}/{repo}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["user", "repository", "filesystem"],
+        "note": "Lightweight: 2 DB checks + filesystem delete"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-110",
+      "http_method": "GET",
+      "path": "/api/v1/admin/cron",
+      "resource_load": {
+        "operations_per_request": 0,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["in-memory"],
+        "note": "Pure in-memory operation, no DB access"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-111",
+      "http_method": "POST",
+      "path": "/api/v1/admin/cron/{task}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["in-memory", "notice"],
+        "note": "In-memory lookup + async task execution"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-112",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/repos",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["repository", "repo_unit", "filesystem"],
+        "note": "Creates DB records and initializes git repo on disk"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-113",
+      "http_method": "POST",
+      "path": "/api/v1/admin/actions/runners/registration-token",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_runner_token"],
+        "note": "1-2 DB operations: get latest + optional create"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

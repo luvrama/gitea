@@ -1,0 +1,30 @@
+{
+  "total_patterns": 7,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "internal error", "status_code": 500, "response_type": "APIError", "message_template": "internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "APIError", "message_template": "not found"},
+      {"exception_type": "validation error", "status_code": 422, "response_type": "APIError", "message_template": null}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-330", "path": "/api/v1/repos/{owner}/{repo}/teams/{team}", "error_scenarios": [
+      {"exception": "not org", "trigger": "repo owner is not organization", "status_code": 405, "response": "error", "logged": false, "retryable": false},
+      {"exception": "ErrTeamNotExist", "trigger": "team name not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "not assigned", "trigger": "team not assigned to repo", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-331", "path": "/api/v1/repos/{owner}/{repo}/teams/{team}", "error_scenarios": [
+      {"exception": "not org", "trigger": "repo owner is not organization", "status_code": 405, "response": "error", "logged": false, "retryable": false},
+      {"exception": "forbidden", "trigger": "user not admin/owner", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false},
+      {"exception": "already added", "trigger": "team already assigned", "status_code": 422, "response": "validationError", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-334", "path": "/api/v1/repos/{owner}/{repo}/forks", "error_scenarios": [
+      {"exception": "ErrAlreadyExist", "trigger": "fork already exists", "status_code": 409, "response": "conflict", "logged": false, "retryable": false},
+      {"exception": "ErrReachLimitOfRepo", "trigger": "repo limit reached", "status_code": 409, "response": "conflict", "logged": false, "retryable": false},
+      {"exception": "ErrBlockedUser", "trigger": "user blocked by repo owner", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrForkAlreadyExist", "file_path": "services/repository/fork.go", "extends": "util.ErrAlreadyExist", "used_in": ["ForkRepository"], "http_status": 409}
+  ]
+}

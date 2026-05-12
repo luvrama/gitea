@@ -1,0 +1,27 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "Avatar Storage Backend",
+      "type": "cloud_service",
+      "base_url": "configured via [storage.avatars] in app.ini",
+      "client_class": "storage.ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "http_library": "storage abstraction (local FS, MinIO/S3, Azure Blob)",
+      "endpoints_called": [
+        {"method": "PUT", "path": "avatars/{hash}", "request": {"type": "[]byte", "key_fields": ["image data"]}, "response": {"type": "error", "key_fields": []}, "purpose": "save avatar image"},
+        {"method": "DELETE", "path": "avatars/{hash}", "request": {"type": "string", "key_fields": ["path"]}, "response": {"type": "error", "key_fields": []}, "purpose": "delete avatar image"}
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": null
+      },
+      "authentication": "configured per storage backend (S3 keys, Azure SAS, etc.)",
+      "used_by_endpoints": ["ep-037", "ep-038"],
+      "config_keys": ["storage.avatars.STORAGE_TYPE", "storage.avatars.MINIO_ENDPOINT"]
+    }
+  ]
+}

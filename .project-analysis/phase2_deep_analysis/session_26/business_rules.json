@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Runner must be editable in user context - runner's OwnerID must match the authenticated user's ID",
+      "location": {"class": "ActionRunner", "method": "EditableInContext", "file_path": "models/actions/runner.go", "line_number": 113},
+      "condition": "ownerID > 0 && r.OwnerID == ownerID",
+      "action": "Allow access to runner",
+      "affected_endpoints": ["ep-177", "ep-178", "ep-179"],
+      "code_snippet": "if ownerID > 0 && r.OwnerID == ownerID {\n\treturn true\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "ownerID and repoID must not both be non-zero - panics in dev/testing mode",
+      "location": {"class": "shared", "method": "ListRunners", "file_path": "routers/api/v1/shared/runners.go", "line_number": 50},
+      "condition": "ownerID != 0 && repoID != 0",
+      "action": "Panic in dev/testing mode",
+      "affected_endpoints": ["ep-176", "ep-177", "ep-178", "ep-179"],
+      "code_snippet": "if ownerID != 0 && repoID != 0 {\n\tsetting.PanicInDevOrTesting(\"ownerID and repoID should not be both set\")\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "UpdateRunner requires Disabled field to be non-nil",
+      "location": {"class": "shared", "method": "UpdateRunner", "file_path": "routers/api/v1/shared/runners.go", "line_number": 126},
+      "condition": "form.Disabled == nil",
+      "action": "Return 422 with '[Disabled]: Required'",
+      "affected_endpoints": ["ep-179"],
+      "code_snippet": "if form.Disabled == nil {\n\tctx.APIError(http.StatusUnprocessableEntity, \"[Disabled]: Required\")\n\treturn\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "SetRunnerDisabled skips update if runner already in desired state",
+      "location": {"class": "actions_model", "method": "SetRunnerDisabled", "file_path": "models/actions/runner.go", "line_number": 237},
+      "condition": "runner.IsDisabled == isDisabled",
+      "action": "Return nil (no-op)",
+      "affected_endpoints": ["ep-179"],
+      "code_snippet": "if runner.IsDisabled == isDisabled {\n\treturn nil\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Disabling/enabling a runner increases task version for global and owner scopes",
+      "location": {"class": "actions_model", "method": "SetRunnerDisabled", "file_path": "models/actions/runner.go", "line_number": 242},
+      "condition": "Runner disabled state changes",
+      "action": "Update is_disabled and call IncreaseTaskVersion within transaction",
+      "affected_endpoints": ["ep-179"],
+      "code_snippet": "return db.WithTx(ctx, func(ctx context.Context) error {\n\trunner.IsDisabled = isDisabled\n\t..."
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "AddEmail requires non-empty email list",
+      "location": {"class": "user", "method": "AddEmail", "file_path": "routers/api/v1/user/email.go", "line_number": 60},
+      "condition": "len(form.Emails) == 0",
+      "action": "Return 422 'Email list empty'",
+      "affected_endpoints": ["ep-181"],
+      "code_snippet": "if len(form.Emails) == 0 {\n\tctx.APIError(http.StatusUnprocessableEntity, \"Email list empty\")\n\treturn\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "Email must pass validation (RFC compliance and domain allowlist)",
+      "location": {"class": "user_service", "method": "AddEmailAddresses", "file_path": "services/user/email.go", "line_number": 72},
+      "condition": "ValidateEmail(emailStr) returns error",
+      "action": "Return validation error",
+      "affected_endpoints": ["ep-181"],
+      "code_snippet": "if err := user_model.ValidateEmail(emailStr); err != nil {\n\treturn err\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "New emails are auto-activated unless RegisterEmailConfirm is enabled",
+      "location": {"class": "user_service", "method": "AddEmailAddresses", "file_path": "services/user/email.go", "line_number": 87},
+      "condition": "Always on insert",
+      "action": "Set IsActivated = !setting.Service.RegisterEmailConfirm",
+      "affected_endpoints": ["ep-181"],
+      "code_snippet": "IsActivated: !setting.Service.RegisterEmailConfirm,"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "validation",
+      "description": "Cannot delete primary email address",
+      "location": {"class": "user_service", "method": "DeleteEmailAddresses", "file_path": "services/user/email.go", "line_number": 101},
+      "condition": "email.IsPrimary",
+      "action": "Return ErrPrimaryEmailCannotDelete",
+      "affected_endpoints": ["ep-182"],
+      "code_snippet": "if email.IsPrimary {\n\treturn user_model.ErrPrimaryEmailCannotDelete{Email: emailStr}\n}"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "GPG key listing excludes subkeys (primary_key_id='') and loads them separately",
+      "location": {"class": "user", "method": "listGPGKeys", "file_path": "routers/api/v1/user/gpg_key.go", "line_number": 21},
+      "condition": "Always",
+      "action": "FindGPGKeyOptions excludes subkeys by default, then LoadSubKeys loads them in batch",
+      "affected_endpoints": ["ep-183"],
+      "code_snippet": "keys, total, err := db.FindAndCount[asymkey_model.GPGKey](ctx, asymkey_model.FindGPGKeyOptions{...})\n...\nasymkey_model.GPGKeyList(keys).LoadSubKeys(ctx)"
+    }
+  ]
+}

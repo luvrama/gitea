@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Repo must be a fork to merge upstream",
+      "location": {"class": "repository", "method": "GetUpstreamDivergingInfo", "file_path": "services/repository/merge_upstream.go", "line_number": 91},
+      "condition": "!forkRepo.IsFork",
+      "action": "Return ErrInvalidArgument",
+      "affected_endpoints": ["ep-318"],
+      "code_snippet": "if !forkRepo.IsFork { return nil, util.NewInvalidArgumentErrorf(\"repo is not a fork\") }"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Repo must not be archived to merge upstream",
+      "location": {"class": "repository", "method": "MergeUpstream", "file_path": "services/repository/merge_upstream.go", "line_number": 23},
+      "condition": "repo.MustNotBeArchived() returns error",
+      "action": "Return error",
+      "affected_endpoints": ["ep-318"],
+      "code_snippet": "if err = repo.MustNotBeArchived(); err != nil { return \"\", err }"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "If ff_only requested and fast-forward fails, return error instead of merge",
+      "location": {"class": "repository", "method": "MergeUpstream", "file_path": "services/repository/merge_upstream.go", "line_number": 48},
+      "condition": "ffOnly && push failed with out-of-date/rejected",
+      "action": "Return InvalidArgument error",
+      "affected_endpoints": ["ep-318"],
+      "code_snippet": "if ffOnly { return \"\", util.NewInvalidArgumentErrorf(\"fast-forward merge not possible\") }"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Branch resolution: if branch exists in base repo use it, otherwise use base default branch",
+      "location": {"class": "repository", "method": "GetUpstreamDivergingInfo", "file_path": "services/repository/merge_upstream.go", "line_number": 103},
+      "condition": "Branch not found in base repo (ErrNotExist)",
+      "action": "Fall back to base repo default branch",
+      "affected_endpoints": ["ep-318"],
+      "code_snippet": "if errors.Is(err, util.ErrNotExist) { info, err = GetBranchDivergingInfo(ctx, forkRepo.BaseRepo, forkRepo.BaseRepo.DefaultBranch, ...) }"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "authorization",
+      "description": "User must have write permission on issues/pulls to lock",
+      "location": {"class": "repo", "method": "LockIssue", "file_path": "routers/api/v1/repo/issue_lock.go", "line_number": 63},
+      "condition": "!ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull)",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-319"],
+      "code_snippet": "if !ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull) { ctx.APIError(http.StatusForbidden, ...) }"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Lock is idempotent - if already locked, return success without action",
+      "location": {"class": "repo", "method": "LockIssue", "file_path": "routers/api/v1/repo/issue_lock.go", "line_number": 68},
+      "condition": "!issue.IsLocked",
+      "action": "Only perform lock if not already locked",
+      "affected_endpoints": ["ep-319"],
+      "code_snippet": "if !issue.IsLocked { ... err = issues_model.LockIssue(ctx, opt) }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "User must have write permission on issues/pulls to unlock",
+      "location": {"class": "repo", "method": "UnlockIssue", "file_path": "routers/api/v1/repo/issue_lock.go", "line_number": 113},
+      "condition": "!ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull)",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-320"],
+      "code_snippet": "if !ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull) { ctx.APIError(http.StatusForbidden, ...) }"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Unlock is idempotent - if already unlocked, return success without action",
+      "location": {"class": "repo", "method": "UnlockIssue", "file_path": "routers/api/v1/repo/issue_lock.go", "line_number": 118},
+      "condition": "issue.IsLocked",
+      "action": "Only perform unlock if currently locked",
+      "affected_endpoints": ["ep-320"],
+      "code_snippet": "if issue.IsLocked { ... err = issues_model.UnlockIssue(ctx, opt) }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "TestHook skips if repo has no commits",
+      "location": {"class": "repo", "method": "TestHook", "file_path": "routers/api/v1/repo/hook.go", "line_number": 148},
+      "condition": "ctx.Repo.Commit == nil",
+      "action": "Return 204 without sending webhook",
+      "affected_endpoints": ["ep-323"],
+      "code_snippet": "if ctx.Repo.Commit == nil { ctx.Status(http.StatusNoContent); return }"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "TestHook uses default branch ref unless ref query param provided",
+      "location": {"class": "repo", "method": "TestHook", "file_path": "routers/api/v1/repo/hook.go", "line_number": 153},
+      "condition": "r := ctx.FormTrim(\"ref\"); r != \"\"",
+      "action": "Use provided ref instead of default branch",
+      "affected_endpoints": ["ep-323"],
+      "code_snippet": "ref := git.BranchPrefix + ctx.Repo.Repository.DefaultBranch; if r := ctx.FormTrim(\"ref\"); r != \"\" { ref = r }"
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "any error", "status_code": 500, "response_type": "APIError JSON", "message_template": "internal server error"},
+        {"exception_type": "not found", "status_code": 404, "response_type": "APIError JSON", "message_template": "not found"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-202",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "error_scenarios": [
+        {"exception": "ErrPackageNotExist", "trigger": "Version not found in middleware", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+        {"exception": "generic error", "trigger": "RemovePackageVersion fails", "status_code": 500, "response": "APIErrorInternal", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-206",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/link/{repo_name}",
+      "error_scenarios": [
+        {"exception": "util.ErrNotExist", "trigger": "Package or repo not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+        {"exception": "util.ErrInvalidArgument", "trigger": "Package already linked", "status_code": 400, "response": "bad request", "logged": false, "retryable": false},
+        {"exception": "util.ErrPermissionDenied", "trigger": "Owner mismatch or no write access", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-207",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/unlink",
+      "error_scenarios": [
+        {"exception": "util.ErrNotExist", "trigger": "Package not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+        {"exception": "util.ErrPermissionDenied", "trigger": "No write access to repo", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false},
+        {"exception": "util.ErrInvalidArgument", "trigger": "Package not linked (RepoID==0)", "status_code": 400, "response": "bad request", "logged": false, "retryable": false}
+      ]
+    }
+  ],
+  "custom_exceptions": [
+    {
+      "class": "ErrDuplicatePackage",
+      "file_path": "models/packages/package.go",
+      "extends": "util.AlreadyExistError",
+      "used_in": ["TryInsertPackage"],
+      "http_status": 409
+    },
+    {
+      "class": "ErrPackageNotExist",
+      "file_path": "models/packages/package.go",
+      "extends": "util.NotExistError",
+      "used_in": ["GetPackageByName", "GetPackageByID"],
+      "http_status": 404
+    }
+  ]
+}

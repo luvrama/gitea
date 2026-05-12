@@ -1,0 +1,30 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "internal error", "status_code": 500, "response_type": "error JSON", "message_template": "internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "error JSON", "message_template": "not found"},
+      {"exception_type": "validation error", "status_code": 422, "response_type": "error JSON", "message_template": "varies"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-177", "path": "/api/v1/user/actions/runners/{runner_id}", "error_scenarios": [
+      {"exception": "util.ErrNotExist", "trigger": "Runner ID not found in DB", "status_code": 404, "response": "Runner not found", "logged": false, "retryable": false},
+      {"exception": "EditableInContext returns false", "trigger": "Runner belongs to different owner", "status_code": 404, "response": "No permission to access this runner", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-181", "path": "/api/v1/user/emails", "error_scenarios": [
+      {"exception": "ErrEmailAlreadyUsed", "trigger": "Email already registered", "status_code": 422, "response": "Email address has been used: <email>", "logged": false, "retryable": false},
+      {"exception": "ErrEmailInvalid/ErrEmailCharIsNotSupported", "trigger": "Invalid email format", "status_code": 422, "response": "Email address \"<email>\" invalid", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-182", "path": "/api/v1/user/emails", "error_scenarios": [
+      {"exception": "ErrEmailAddressNotExist", "trigger": "Email not found for user", "status_code": 404, "response": "error", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrEmailAlreadyUsed", "file_path": "models/user/email_address.go", "extends": "util.ErrAlreadyExist", "used_in": ["user_service.AddEmailAddresses"], "http_status": 422},
+    {"class": "ErrEmailAddressNotExist", "file_path": "models/user/email_address.go", "extends": "util.ErrNotExist", "used_in": ["user_service.DeleteEmailAddresses"], "http_status": 404},
+    {"class": "ErrPrimaryEmailCannotDelete", "file_path": "models/user/email_address.go", "extends": "util.ErrInvalidArgument", "used_in": ["user_service.DeleteEmailAddresses"], "http_status": 500},
+    {"class": "ErrEmailInvalid", "file_path": "models/user/email_address.go", "extends": "util.ErrInvalidArgument", "used_in": ["user_service.AddEmailAddresses"], "http_status": 422},
+    {"class": "ErrEmailCharIsNotSupported", "file_path": "models/user/email_address.go", "extends": "util.ErrInvalidArgument", "used_in": ["user_service.AddEmailAddresses"], "http_status": 422}
+  ]
+}

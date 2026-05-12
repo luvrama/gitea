@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Cannot block yourself",
+      "location": {"class": "user_service", "method": "CanBlockUser", "file_path": "services/user/block.go", "line_number": 16},
+      "condition": "blocker.ID == blockee.ID",
+      "action": "Return false (cannot block)",
+      "affected_endpoints": ["ep-192"],
+      "code_snippet": "if blocker.ID == blockee.ID { return false }"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "authorization",
+      "description": "Cannot block the doer themselves",
+      "location": {"class": "user_service", "method": "CanBlockUser", "file_path": "services/user/block.go", "line_number": 19},
+      "condition": "doer.ID == blockee.ID",
+      "action": "Return false (cannot block)",
+      "affected_endpoints": ["ep-192"],
+      "code_snippet": "if doer.ID == blockee.ID { return false }"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Cannot block an organization",
+      "location": {"class": "user_service", "method": "BlockUser", "file_path": "services/user/block.go", "line_number": 65},
+      "condition": "blockee.IsOrganization()",
+      "action": "Return ErrBlockOrganization",
+      "affected_endpoints": ["ep-192"],
+      "code_snippet": "if blockee.IsOrganization() { return user_model.ErrBlockOrganization }"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "authorization",
+      "description": "Cannot block user who already blocks you",
+      "location": {"class": "user_service", "method": "CanBlockUser", "file_path": "services/user/block.go", "line_number": 23},
+      "condition": "user_model.IsUserBlockedBy(ctx, blockee, blocker.ID)",
+      "action": "Return false (cannot block)",
+      "affected_endpoints": ["ep-192"],
+      "code_snippet": "if user_model.IsUserBlockedBy(ctx, blockee, blocker.ID) { return false }"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "authorization",
+      "description": "Cannot block org member (when blocker is org)",
+      "location": {"class": "user_service", "method": "CanBlockUser", "file_path": "services/user/block.go", "line_number": 28},
+      "condition": "blocker.IsOrganization() && isMember",
+      "action": "Return false (cannot block org member)",
+      "affected_endpoints": ["ep-192"],
+      "code_snippet": "if isMember, _ := org.IsOrgMember(ctx, blockee.ID); isMember { return false }"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "authorization",
+      "description": "Only org owner or admin can block on behalf of org",
+      "location": {"class": "user_service", "method": "CanBlockUser", "file_path": "services/user/block.go", "line_number": 31},
+      "condition": "blocker.IsOrganization() && !isAdmin && !doer.IsAdmin",
+      "action": "Return false (not authorized)",
+      "affected_endpoints": ["ep-192"],
+      "code_snippet": "if isAdmin, _ := org.IsOwnedBy(ctx, doer.ID); !isAdmin && !doer.IsAdmin { return false }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Blocking unfollows both users from each other",
+      "location": {"class": "user_service", "method": "BlockUser", "file_path": "services/user/block.go", "line_number": 72},
+      "condition": "Block operation succeeds validation",
+      "action": "UnfollowUser in both directions",
+      "affected_endpoints": ["ep-192"],
+      "code_snippet": "user_model.UnfollowUser(ctx, blocker.ID, blockee.ID)"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Blocking removes all shared repository relationships",
+      "location": {"class": "user_service", "method": "BlockUser", "file_path": "services/user/block.go", "line_number": 78},
+      "condition": "Block operation succeeds validation",
+      "action": "Unstar, unwatch, unassign, remove collaborations, cancel transfers in both directions",
+      "affected_endpoints": ["ep-192"],
+      "code_snippet": "unstarRepos(ctx, blocker, blockee); unwatchRepos(ctx, blocker, blockee)"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "authorization",
+      "description": "Admin users bypass block checks (IsUserBlockedBy returns false for admins)",
+      "location": {"class": "user_model", "method": "IsUserBlockedBy", "file_path": "models/user/block.go", "line_number": 48},
+      "condition": "blockee.IsAdmin",
+      "action": "Return false (admin is never blocked)",
+      "affected_endpoints": ["ep-191", "ep-192", "ep-193"],
+      "code_snippet": "if blockee.IsAdmin { return false }"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Subscription listing filters private repos unless viewer is the user",
+      "location": {"class": "user", "method": "GetWatchedRepos", "file_path": "routers/api/v1/user/watch.go", "line_number": 60},
+      "condition": "ctx.ContextUser.ID == ctx.Doer.ID",
+      "action": "Include private repos in results",
+      "affected_endpoints": ["ep-194"],
+      "code_snippet": "private := ctx.ContextUser.ID == ctx.Doer.ID"
+    }
+  ]
+}

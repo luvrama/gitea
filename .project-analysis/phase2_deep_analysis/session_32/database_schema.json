@@ -1,0 +1,131 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "issue",
+      "entity_class": "issues.Issue",
+      "file_path": "models/issues/issue.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "index", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_issue_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "issue_watch",
+      "entity_class": "issues.IssueWatch",
+      "file_path": "models/issues/issue_watch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(watch)"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(watch)"]},
+        {"name": "is_watching", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_issue_watch_watch", "columns": ["user_id", "issue_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"},
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "pull_request",
+      "entity_class": "issues.PullRequest",
+      "file_path": "models/issues/pull.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "base_repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "head_repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "merged_commit_id", "type": "VARCHAR(64)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_pull_request_base_repo_id", "columns": ["base_repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "base_repo_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "head_repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "user",
+      "entity_class": "user_model.User",
+      "file_path": "models/user/user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "email", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_user_name", "columns": ["name"], "unique": true}
+      ],
+      "relationships": []
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-214",
+      "path": "/api/v1/repos/{owner}/{repo}/git/commits/{sha}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "convert.ToCommit", "description": "lookup author/committer by email"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-215",
+      "path": "/api/v1/repos/{owner}/{repo}/commits",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "convert.ToCommit", "description": "lookup author/committer by email (with cache)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-216",
+      "path": "/api/v1/repos/{owner}/{repo}/git/commits/{sha}.{diffType}",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-217",
+      "path": "/api/v1/repos/{owner}/{repo}/commits/{sha}/pull",
+      "operations": [
+        {"store_type": "database", "store_name": "pull_request", "operation": "SELECT", "method": "issues_model.GetPullRequestByMergedCommit", "description": "find PR by base_repo_id and merged_commit_id"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "PullRequest.LoadIssue", "description": "load associated issue"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "PullRequest.LoadBaseRepo/LoadHeadRepo", "description": "load base and head repos"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-218",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "get issue by repo_id and index"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "get user by username"},
+        {"store_type": "database", "store_name": "issue_watch", "operation": "SELECT", "method": "issues_model.CheckIssueWatch", "description": "check current watch state"},
+        {"store_type": "database", "store_name": "issue_watch", "operation": "INSERT", "method": "issues_model.CreateOrUpdateIssueWatch", "description": "create or update subscription"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-219",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "get issue by repo_id and index"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "get user by username"},
+        {"store_type": "database", "store_name": "issue_watch", "operation": "SELECT", "method": "issues_model.CheckIssueWatch", "description": "check current watch state"},
+        {"store_type": "database", "store_name": "issue_watch", "operation": "UPDATE", "method": "issues_model.CreateOrUpdateIssueWatch", "description": "create or update subscription"}
+      ]
+    }
+  ]
+}

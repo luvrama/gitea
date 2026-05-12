@@ -1,0 +1,521 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-220",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/check",
+      "description": "Checks if the authenticated user is subscribed to an issue by looking at issue_watch table, repo watch, and participation",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CheckIssueSubscription",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_subscription.go",
+          "input": "APIContext (owner, repo, index)",
+          "output": "WatchInfo JSON",
+          "operations": ["Get issue by index", "Check watch status", "Return WatchInfo"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue", "description": "Get issue by repo_id and index"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetIssueByIndex",
+          "type": "repository",
+          "file_path": "models/issues/issue.go",
+          "input": "ctx, repoID, index",
+          "output": "*Issue",
+          "operations": ["Query issue table by repo_id and index"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue", "description": "WHERE repo_id=? AND `index`=?"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issues_model.CheckIssueWatch",
+          "type": "repository",
+          "file_path": "models/issues/issue_watch.go",
+          "input": "ctx, user, issue",
+          "output": "bool, error",
+          "operations": ["Check issue_watch for explicit subscription", "Fall back to repo watch mode", "Check if user is participant"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue_watch", "description": "WHERE user_id=? AND issue_id=?"},
+            {"operation": "SELECT", "table": "watch", "description": "Get repo watch mode if no explicit issue watch"},
+            {"operation": "SELECT", "table": "comment", "description": "Check if user is participant (implicit)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "bool (watching)",
+          "to": "api.WatchInfo",
+          "component": "repo.CheckIssueSubscription",
+          "mappings": [
+            {"source_field": "watching", "target_field": "Subscribed", "transformation": "direct_copy"},
+            {"source_field": "!watching", "target_field": "Ignored", "transformation": "computed"},
+            {"source_field": "issue.CreatedUnix", "target_field": "CreatedAt", "transformation": "computed"},
+            {"source_field": "issue.APIURL", "target_field": "URL", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-221",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions",
+      "description": "Returns paginated list of users subscribed to an issue",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetIssueSubscribers",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_subscription.go",
+          "input": "APIContext (owner, repo, index, page, limit)",
+          "output": "[]User JSON",
+          "operations": ["Get issue", "Get watchers", "Get users by IDs", "Convert to API users"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetIssueByIndex",
+          "type": "repository",
+          "file_path": "models/issues/issue.go",
+          "input": "ctx, repoID, index",
+          "output": "*Issue",
+          "operations": ["Query issue by repo_id and index"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue", "description": "WHERE repo_id=? AND `index`=?"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issues_model.GetIssueWatchers",
+          "type": "repository",
+          "file_path": "models/issues/issue_watch.go",
+          "input": "ctx, issueID, listOptions",
+          "output": "IssueWatchList",
+          "operations": ["Query issue_watch with JOIN on user table for active non-banned users"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue_watch JOIN user", "description": "WHERE issue_id=? AND is_watching=true AND user.is_active=true AND user.prohibit_login=false"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "user_model.GetUsersByIDs",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "ctx, userIDs",
+          "output": "[]*User",
+          "operations": ["Batch fetch users by IDs"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "WHERE id IN (...)"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "issues_model.CountIssueWatchers",
+          "type": "repository",
+          "file_path": "models/issues/issue_watch.go",
+          "input": "ctx, issueID",
+          "output": "int64",
+          "operations": ["Count watchers for pagination header"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue_watch JOIN user", "description": "COUNT WHERE issue_id=? AND is_watching=true"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 6,
+          "component": "convert.ToUser",
+          "type": "utility",
+          "file_path": "services/convert/user.go",
+          "input": "*user_model.User",
+          "output": "*api.User",
+          "operations": ["Convert each user model to API user struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "IssueWatchList",
+          "to": "[]int64 (userIDs)",
+          "component": "repo.GetIssueSubscribers",
+          "mappings": [
+            {"source_field": "iw.UserID", "target_field": "userIDs[]", "transformation": "direct_copy"}
+          ]
+        },
+        {
+          "from": "[]*user_model.User",
+          "to": "[]*api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error on GetIssueWatchers", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"},
+        {"condition": "DB error on GetUsersByIDs", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"},
+        {"condition": "DB error on CountIssueWatchers", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-222",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls",
+      "description": "Lists pull requests for a repository with filtering by state, labels, milestone, poster, base branch and pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListPullRequests",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/pull.go",
+          "input": "APIContext (owner, repo, query params)",
+          "output": "[]PullRequest JSON",
+          "operations": ["Parse filter params", "Resolve poster username to ID", "Query PRs", "Convert to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_model.GetUserByName",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "ctx, posterStr",
+          "output": "*User",
+          "operations": ["Resolve poster username to user (only if poster param provided)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "WHERE lower_name=?"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issues_model.PullRequests",
+          "type": "repository",
+          "file_path": "models/issues/pull_list.go",
+          "input": "ctx, repoID, PullRequestsOptions",
+          "output": "PullRequestList, int64",
+          "operations": ["Count matching PRs", "Query with pagination, sorting, filtering by state/labels/milestone/poster/base_branch"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT COUNT", "table": "pull_request JOIN issue", "description": "Count matching PRs"},
+            {"operation": "SELECT", "table": "pull_request JOIN issue [JOIN issue_label]", "description": "Paginated PR list with filters"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToAPIPullRequests",
+          "type": "utility",
+          "file_path": "services/convert/pull.go",
+          "input": "ctx, baseRepo, prs, doer",
+          "output": "[]*api.PullRequest",
+          "operations": ["Load repositories", "Load issues with labels/posters/attachments/milestones/assignees/pin_order", "Load reviews and reviewers", "Open git repo", "Build API response for each PR"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load head repos by IDs"},
+            {"operation": "SELECT", "table": "issue", "description": "Load issues for PRs"},
+            {"operation": "SELECT", "table": "label", "description": "Load labels for issues"},
+            {"operation": "SELECT", "table": "user", "description": "Load posters"},
+            {"operation": "SELECT", "table": "attachment", "description": "Load attachments"},
+            {"operation": "SELECT", "table": "milestone", "description": "Load milestones"},
+            {"operation": "SELECT", "table": "issue_assignees JOIN user", "description": "Load assignees"},
+            {"operation": "SELECT", "table": "review", "description": "Load reviews"},
+            {"operation": "SELECT", "table": "branch", "description": "Get base branch SHA"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "PullRequestList",
+          "to": "[]*api.PullRequest",
+          "component": "convert.ToAPIPullRequests",
+          "mappings": [
+            {"source_field": "pr.ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "pr.Index", "target_field": "number", "transformation": "direct_copy"},
+            {"source_field": "issue.Title", "target_field": "title", "transformation": "direct_copy"},
+            {"source_field": "pr.HasMerged", "target_field": "merged", "transformation": "direct_copy"},
+            {"source_field": "pr.BaseBranch", "target_field": "base.name", "transformation": "direct_copy"},
+            {"source_field": "pr.HeadBranch", "target_field": "head.name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Poster username not found", "handler": "ctx.APIError", "response_code": 400, "response": "bad request"},
+        {"condition": "DB error on PullRequests query", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"},
+        {"condition": "Error in ToAPIPullRequests", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-223",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}",
+      "description": "Get a single pull request by index, triggers merge check if status is 'checking'",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetPullRequest",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/pull.go",
+          "input": "APIContext (owner, repo, index)",
+          "output": "PullRequest JSON",
+          "operations": ["Get PR by index", "Load base/head repos", "Trigger check on view", "Convert to API"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetPullRequestByIndex",
+          "type": "repository",
+          "file_path": "models/issues/pull.go",
+          "input": "ctx, repoID, index",
+          "output": "*PullRequest",
+          "operations": ["Query pull_request by base_repo_id and index", "Load attributes", "Load issue"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "pull_request", "description": "WHERE base_repo_id=? AND index=?"},
+            {"operation": "SELECT", "table": "issue", "description": "Load associated issue"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "pr.LoadBaseRepo / pr.LoadHeadRepo",
+          "type": "repository",
+          "file_path": "models/issues/pull.go",
+          "input": "ctx",
+          "output": "loaded repos on PR struct",
+          "operations": ["Load base and head repository models"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load base repo by ID"},
+            {"operation": "SELECT", "table": "repository", "description": "Load head repo by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "pull_service.StartPullRequestCheckOnView",
+          "type": "service",
+          "file_path": "services/pull/check.go",
+          "input": "ctx, pr",
+          "output": "void (side effect: adds to queue)",
+          "operations": ["If PR status is 'checking', add to check queue with global lock"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": true
+        },
+        {
+          "step": 5,
+          "component": "convert.ToAPIPullRequest",
+          "type": "utility",
+          "file_path": "services/convert/pull.go",
+          "input": "ctx, pr, doer",
+          "output": "*api.PullRequest",
+          "operations": ["Convert PR model to API struct with all related data"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "branch", "description": "Get base branch commit SHA"},
+            {"operation": "SELECT", "table": "review", "description": "Load requested reviewers"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*issues_model.PullRequest",
+          "to": "*api.PullRequest",
+          "component": "convert.ToAPIPullRequest",
+          "mappings": [
+            {"source_field": "pr.ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "pr.Index", "target_field": "number", "transformation": "direct_copy"},
+            {"source_field": "pr.HasMerged", "target_field": "merged", "transformation": "direct_copy"},
+            {"source_field": "pr.Mergeable(ctx)", "target_field": "mergeable", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "PR not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Error loading repos", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-224",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{base}/{head}",
+      "description": "Get a pull request by base branch and head reference (supports cross-repo format owner:branch or owner/repo:branch)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetPullRequestByBaseHead",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/pull.go",
+          "input": "APIContext (owner, repo, base, head wildcard)",
+          "output": "PullRequest JSON",
+          "operations": ["Parse head param for cross-repo format", "Resolve head repo", "Get PR by base/head info", "Load repos", "Trigger check", "Convert"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.GetRepositoryByOwnerAndName",
+          "type": "repository",
+          "file_path": "models/repo/repo.go",
+          "input": "ctx, owner, name",
+          "output": "*Repository",
+          "operations": ["Resolve head repo if cross-repo format used"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repository JOIN user", "description": "WHERE user.lower_name=? AND repository.lower_name=?"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issues_model.GetPullRequestByBaseHeadInfo",
+          "type": "repository",
+          "file_path": "models/issues/pull.go",
+          "input": "ctx, baseID, headID, base, head",
+          "output": "*PullRequest",
+          "operations": ["Query PR by base_repo_id, head_repo_id, base_branch, head_branch"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "pull_request JOIN issue", "description": "WHERE base_repo_id=? AND base_branch=? AND head_repo_id=? AND head_branch=?"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "pull_service.StartPullRequestCheckOnView",
+          "type": "service",
+          "file_path": "services/pull/check.go",
+          "input": "ctx, pr",
+          "output": "void",
+          "operations": ["Trigger merge check if status is checking"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": true
+        },
+        {
+          "step": 5,
+          "component": "convert.ToAPIPullRequest",
+          "type": "utility",
+          "file_path": "services/convert/pull.go",
+          "input": "ctx, pr, doer",
+          "output": "*api.PullRequest",
+          "operations": ["Convert to API response"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "branch", "description": "Get base branch SHA"},
+            {"operation": "SELECT", "table": "review", "description": "Load reviewers"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "head path param",
+          "to": "headRepoID + headBranch",
+          "component": "repo.GetPullRequestByBaseHead",
+          "mappings": [
+            {"source_field": "head (contains ':')", "target_field": "owner:branch or owner/repo:branch parsed", "transformation": "computed"},
+            {"source_field": "head (no ':')", "target_field": "same repo branch", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Head repo not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "PR not found for base/head combo", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-225",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}.{diffType}",
+      "description": "Downloads the diff or patch file for a pull request, optionally including binary changes",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DownloadPullDiffOrPatch",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/pull.go",
+          "input": "APIContext (owner, repo, index, diffType, binary)",
+          "output": "text/plain stream",
+          "operations": ["Get PR by index", "Determine diff vs patch", "Stream diff/patch to response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetPullRequestByIndex",
+          "type": "repository",
+          "file_path": "models/issues/pull.go",
+          "input": "ctx, repoID, index",
+          "output": "*PullRequest",
+          "operations": ["Get PR from database"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "WHERE base_repo_id=? AND index=?"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "pull_service.DownloadDiffOrPatch",
+          "type": "service",
+          "file_path": "services/pull/patch.go",
+          "input": "ctx, pr, writer, patch, binary",
+          "output": "error (writes to writer)",
+          "operations": ["Load base repo", "Open git repository", "Compute compare arg (MergeBase...HeadRef)", "Execute git diff/patch/format-patch"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repository", "description": "Load base repo if not loaded"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "PR not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Git operation fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"}
+      ]
+    }
+  ]
+}

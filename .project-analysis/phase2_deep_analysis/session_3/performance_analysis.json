@@ -1,0 +1,191 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-015",
+      "http_method": "GET",
+      "path": "/api/v1/settings/ui",
+      "resource_load": {
+        "operations_per_request": 0,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": [],
+        "note": "Pure in-memory read from package-level variables. Zero I/O."
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-016",
+      "http_method": "GET",
+      "path": "/api/v1/settings/api",
+      "resource_load": {
+        "operations_per_request": 0,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": [],
+        "note": "Pure in-memory read from package-level variables. Zero I/O."
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-017",
+      "http_method": "GET",
+      "path": "/api/v1/settings/repository",
+      "resource_load": {
+        "operations_per_request": 0,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": [],
+        "note": "Pure in-memory read from package-level variables. Zero I/O."
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-018",
+      "http_method": "GET",
+      "path": "/api/v1/settings/attachment",
+      "resource_load": {
+        "operations_per_request": 0,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": [],
+        "note": "Pure in-memory read from package-level variables. Zero I/O."
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-019",
+      "http_method": "GET",
+      "path": "/api/v1/notifications",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "2 notification queries + 4 batch loads + N permission checks + N GetLastComment calls in convert layer"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "ToNotificationThread calls GetIndividualUserRepoPermission and GetLastComment per notification in the convert layer",
+          "impact": "For a page of 30 notifications, this adds up to 60 additional DB queries beyond the batch loads",
+          "file_path": "services/convert/notification.go",
+          "line_number": 30,
+          "code_snippet": "perm, err := access_model.GetIndividualUserRepoPermission(ctx, n.Repository, n.User)",
+          "recommendation": "Batch load permissions for all repos in the notification list before converting"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch permission checks for all unique repos in the notification list",
+          "estimated_impact": "Reduce per-notification permission queries from N to 1 batch query",
+          "implementation": "Pre-compute permissions for all unique repo IDs before calling ToNotifications"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-020",
+      "http_method": "PUT",
+      "path": "/api/v1/notifications",
+      "resource_load": {
+        "operations_per_request": "2 + 6*N (where N = number of matching notifications)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 find query + N*(1 select + 1 update + 4 attribute loads) + N permission/comment queries in convert"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "SetNotificationStatus is called in a loop: each iteration does SELECT by ID + UPDATE. Then LoadAttributes does 4 individual queries per notification.",
+          "impact": "For 100 unread notifications, this generates 100 SELECTs + 100 UPDATEs + 400 attribute loads = 600 queries",
+          "file_path": "routers/api/v1/notify/user.go",
+          "line_number": 129,
+          "code_snippet": "for _, n := range nl {\n\tnotif, err := activities_model.SetNotificationStatus(ctx, n.ID, ctx.Doer, targetStatus)",
+          "recommendation": "Use a single bulk UPDATE query with WHERE id IN (...) and batch load attributes"
+        },
+        {
+          "severity": "high",
+          "type": "unbounded_queries",
+          "description": "The initial db.Find has no pagination (ListOptions is zero-value). All matching notifications are loaded into memory.",
+          "impact": "A user with thousands of unread notifications will load all of them, causing memory pressure and very long response times",
+          "file_path": "routers/api/v1/notify/user.go",
+          "line_number": 117,
+          "code_snippet": "nl, err := db.Find[activities_model.Notification](ctx, opts)",
+          "recommendation": "Add a reasonable limit or use pagination. Consider processing in batches."
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P0",
+          "type": "query_optimization",
+          "description": "Replace per-notification SetNotificationStatus loop with bulk UPDATE",
+          "estimated_impact": "Reduce N*2 queries to 1 bulk UPDATE + 1 bulk SELECT",
+          "implementation": "UPDATE notification SET status=? WHERE id IN (?) AND user_id=?"
+        },
+        {
+          "priority": "P1",
+          "type": "pagination",
+          "description": "Add a limit to the unbounded find query or process in batches",
+          "estimated_impact": "Prevent memory exhaustion and timeout for users with many notifications",
+          "implementation": "Add ListOptions with a max limit, or use last_read_at to bound the result set"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-021",
+      "http_method": "GET",
+      "path": "/api/v1/notifications/new",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single COUNT query using composite index u_s_uu (user_id, status, updated_unix)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "This is likely a high-frequency polling endpoint. Consider short-lived cache.",
+          "estimated_impact": "Reduce DB load from polling clients",
+          "implementation": "Cache count per user with 5-10 second TTL, invalidate on notification creation/update"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-022",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Same as ep-019 but scoped to a single repo. 2 notification queries + 4 batch loads + N permission/comment queries"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Same N+1 pattern in ToNotificationThread as ep-019 (permission check + GetLastComment per notification)",
+          "impact": "For a page of 30 notifications, adds up to 60 additional DB queries",
+          "file_path": "services/convert/notification.go",
+          "line_number": 30,
+          "code_snippet": "perm, err := access_model.GetIndividualUserRepoPermission(ctx, n.Repository, n.User)",
+          "recommendation": "Since all notifications are for the same repo, compute permission once and reuse"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "For repo-scoped notifications, compute repo permission once since all notifications share the same repo",
+          "estimated_impact": "Eliminate N-1 redundant permission queries",
+          "implementation": "Check permission once before the loop in ListRepoNotifications and pass it to the converter"
+        }
+      ]
+    }
+  ]
+}

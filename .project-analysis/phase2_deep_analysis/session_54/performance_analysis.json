@@ -1,0 +1,158 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-367",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Multiple DB queries: owner, language, units, base repo, releases count, branches count, mirror, transfer, licenses"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "ToRepo performs 7+ DB queries per call with no caching for frequently accessed repo data",
+          "impact": "High-frequency endpoint with significant DB load per request",
+          "file_path": "services/convert/repository.go",
+          "line_number": 22,
+          "code_snippet": "func ToRepo(ctx context.Context, repo *repo_model.Repository, ...) *api.Repository",
+          "recommendation": "Cache repo metadata (release count, branch count) with short TTL"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "caching",
+          "description": "Cache release count and branch count per repo",
+          "estimated_impact": "Reduce 2 COUNT queries per request",
+          "implementation": "Use in-memory cache with 60s TTL for numReleases and branchCount"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-368",
+      "http_method": "GET",
+      "path": "/api/v1/repositories/{id}",
+      "resource_load": {
+        "operations_per_request": 9,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "GetByID + GetDoerRepoPermission + ToRepo (same as ep-367 plus permission check)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-369",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Multiple update operations depending on which fields are changed"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-370",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "resource_load": {
+        "operations_per_request": 10,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem"],
+        "note": "Deletes many related records across multiple tables and removes git repo from disk"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-371",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_templates",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git"],
+        "note": "Reads from git tree - no DB queries, but git operations for each template dir candidate"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "Parses template files from git on every request",
+          "impact": "Git tree traversal for up to 8 candidate directories per request",
+          "file_path": "services/issue/template.go",
+          "line_number": 115,
+          "code_snippet": "for _, dirName := range templateDirCandidates {",
+          "recommendation": "Cache parsed templates per commit SHA"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-372",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_config",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git"],
+        "note": "Reads config file from git tree"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-373",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_config/validate",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git"],
+        "note": "Same as ep-372 but returns validation result"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-374",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/activities/feeds",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Query action table with conditions, then convert results"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "Default pagination applies but action table can be very large; query relies on index",
+          "impact": "Slow queries on large repos with many activities if date filter not used",
+          "file_path": "models/activities/action_list.go",
+          "line_number": 207,
+          "code_snippet": "func GetFeeds(ctx context.Context, opts GetFeedsOptions) (ActionList, int64, error) {",
+          "recommendation": "Ensure composite index on (repo_id, created_unix) for efficient pagination"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "indexing",
+          "description": "Ensure index on action(repo_id, created_unix DESC) for repo feed queries",
+          "estimated_impact": "Faster pagination for repo activity feeds",
+          "implementation": "Add composite index if not already present"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,67 @@
+{
+  "total_patterns": 7,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "internal error", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"},
+        {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "resource not found"},
+        {"exception_type": "forbidden", "status_code": 403, "response_type": "JSON error", "message_template": "forbidden"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-023",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "error_scenarios": [
+        {"exception": "time.Parse error", "trigger": "Invalid RFC3339 last_read_at", "status_code": 400, "response": "bad request with parse error", "logged": false, "retryable": true},
+        {"exception": "db error", "trigger": "db.Find or SetNotificationStatus fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-024",
+      "path": "/api/v1/notifications/threads/{id}",
+      "error_scenarios": [
+        {"exception": "db.ErrNotExist", "trigger": "Notification ID not found", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+        {"exception": "ownership check", "trigger": "User is not owner and not admin", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false},
+        {"exception": "LoadAttributes error (non-comment)", "trigger": "DB error loading repo/issue/user", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-025",
+      "path": "/api/v1/notifications/threads/{id}",
+      "error_scenarios": [
+        {"exception": "db.ErrNotExist", "trigger": "Notification ID not found", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+        {"exception": "ownership check", "trigger": "User is not owner and not admin", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false},
+        {"exception": "SetNotificationStatus error", "trigger": "DB error or ownership mismatch in model", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-026",
+      "path": "/api/v1/user/orgs",
+      "error_scenarios": [
+        {"exception": "db error", "trigger": "FindAndCount fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-027",
+      "path": "/api/v1/users/{username}/orgs",
+      "error_scenarios": [
+        {"exception": "user not found", "trigger": "Username does not exist", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+        {"exception": "db error", "trigger": "FindAndCount fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-028",
+      "path": "/api/v1/users/{username}/orgs/{org}/permissions",
+      "error_scenarios": [
+        {"exception": "user not found", "trigger": "Username or org does not exist", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+        {"exception": "org not visible", "trigger": "HasOrgOrUserVisible returns false", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+        {"exception": "db error", "trigger": "GetOrgUserMaxAuthorizeLevel or CanCreateOrgRepo fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    }
+  ],
+  "custom_exceptions": []
+}

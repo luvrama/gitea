@@ -1,0 +1,217 @@
+{
+  "total_endpoints_analyzed": 9,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-114",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/runners",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 count query + 1 paginated select, then in-memory conversion"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-115",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single SELECT by ID"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-116",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT (validate) + SELECT (re-fetch in model DeleteRunner) + DELETE"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "DeleteRunner model function re-fetches the runner by ID even though it was already fetched in the handler",
+          "impact": "1 extra SELECT per delete request",
+          "file_path": "models/actions/runner.go",
+          "line_number": 248,
+          "code_snippet": "if _, err := GetRunnerByID(ctx, id); err != nil { return err }",
+          "recommendation": "Pass runner ID directly to DeleteByID without re-fetching, or use a DeleteRunnerByID that skips the check"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Eliminate redundant GetRunnerByID call in model layer since handler already validated existence",
+          "estimated_impact": "Saves 1 DB query per delete",
+          "implementation": "Add a DeleteRunnerByIDDirect function or remove the existence check from the model"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-117",
+      "http_method": "PATCH",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT + UPDATE + IncreaseTaskVersion + SELECT (re-fetch for response)"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "After updating, GetRunner is called which re-fetches the runner from DB instead of returning the already-modified in-memory object",
+          "impact": "1 extra SELECT per update request",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "line_number": 133,
+          "code_snippet": "GetRunner(ctx, ownerID, repoID, runnerID)",
+          "recommendation": "Convert the already-modified runner object directly instead of re-fetching"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Return the in-memory runner after update instead of re-fetching from DB",
+          "estimated_impact": "Saves 1 DB query per update",
+          "implementation": "Call convert.ToActionRunner(ctx, runner) directly after SetRunnerDisabled"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-118",
+      "http_method": "GET",
+      "path": "/api/v1/admin/emails",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 COUNT query + 1 paginated SELECT with JOIN"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-119",
+      "http_method": "GET",
+      "path": "/api/v1/admin/emails/search",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 COUNT + 1 SELECT with LIKE filter and JOIN"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "missing_indexes",
+          "description": "LIKE search on lower(full_name) uses function call which may not use index",
+          "impact": "Full table scan on user table for full_name searches on large instances",
+          "file_path": "models/user/email_address.go",
+          "line_number": 404,
+          "code_snippet": "builder.Like{\"lower(`user`.full_name)\", likeStr}",
+          "recommendation": "Add a lower_full_name indexed column or use a generated column index"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "indexing",
+          "description": "Consider adding index on lower(full_name) for email search performance",
+          "estimated_impact": "Significant improvement for large instances with many users",
+          "implementation": "Add a stored generated column or functional index for lower(full_name)"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-120",
+      "http_method": "GET",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 user lookup + 1 JOIN query for badges"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "GetUserBadges has no pagination - returns all badges for a user without limit",
+          "impact": "If a user has many badges, all are returned in one query",
+          "file_path": "models/user/badge.go",
+          "line_number": 46,
+          "code_snippet": "badges := make([]*Badge, 0, 8)",
+          "recommendation": "Add pagination support via ListOptions parameter"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "pagination",
+          "description": "Add pagination to GetUserBadges",
+          "estimated_impact": "Low impact since badge count per user is typically small",
+          "implementation": "Accept ListOptions and apply Limit/Offset"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-121",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "resource_load": {
+        "operations_per_request": "1 + 3*N (N = number of badges)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 user lookup + per badge: SELECT badge + EXISTS check + INSERT"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "AddUserBadges loops through each badge slug doing 3 individual queries per badge (SELECT + EXISTS + INSERT)",
+          "impact": "For N badges: 3N queries within a transaction",
+          "file_path": "models/user/badge.go",
+          "line_number": 147,
+          "code_snippet": "for _, badge := range badges { has, err := db.GetEngine(ctx).Where(\"slug=?\", badge.Slug).Get(badge)",
+          "recommendation": "Batch-load all badges by slug in one query, then batch-check existence, then batch-insert"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch the badge lookups and existence checks into single queries",
+          "estimated_impact": "Reduces from 3N queries to 3 queries for N badges",
+          "implementation": "SELECT badges WHERE slug IN (...), SELECT user_badges WHERE badge_id IN (...) AND user_id=?, then batch INSERT"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-122",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 user lookup + 1 JOIN query to find matching user_badges + 1 DELETE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

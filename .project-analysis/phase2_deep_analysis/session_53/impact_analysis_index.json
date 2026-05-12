@@ -1,0 +1,40 @@
+{
+  "endpoints_by_database_table": {
+    "label": {"read": ["ep-360"], "write": ["ep-359", "ep-360", "ep-361", "ep-364"]},
+    "issue_label": {"read": [], "write": ["ep-361"]},
+    "comment": {"read": [], "write": ["ep-361"]},
+    "repository": {"read": ["ep-362", "ep-363"], "write": ["ep-363", "ep-364", "ep-365", "ep-366"]},
+    "user": {"read": ["ep-362", "ep-364", "ep-365", "ep-366"], "write": ["ep-363", "ep-365", "ep-366"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "repository.FORCE_PRIVATE": ["ep-363", "ep-364", "ep-365", "ep-366"]
+  },
+  "endpoints_by_model_class": {
+    "issues_model.Label": ["ep-359", "ep-360", "ep-361"],
+    "repo_model.Repository": ["ep-362", "ep-363", "ep-364", "ep-365", "ep-366"],
+    "user_model.User": ["ep-362", "ep-364", "ep-365", "ep-366"]
+  },
+  "endpoints_by_service_class": {
+    "repo_service.CreateRepository": ["ep-363", "ep-365", "ep-366"],
+    "repo_service.GenerateRepository": ["ep-364"],
+    "repo_model.SearchRepository": ["ep-362"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-359": {"reads": [], "writes": ["label"]},
+    "ep-360": {"reads": ["label"], "writes": ["label"]},
+    "ep-361": {"reads": ["label"], "writes": ["label", "issue_label", "comment"]},
+    "ep-362": {"reads": ["repository", "user", "access"], "writes": []},
+    "ep-363": {"reads": ["repository"], "writes": ["repository", "repo_unit", "user"]},
+    "ep-364": {"reads": ["user", "repository"], "writes": ["repository", "label", "topic", "protected_branch"]},
+    "ep-365": {"reads": ["user"], "writes": ["repository", "repo_unit", "user"]},
+    "ep-366": {"reads": ["user"], "writes": ["repository", "repo_unit", "user"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-363": ["repository.FORCE_PRIVATE"],
+    "ep-364": ["repository.FORCE_PRIVATE"],
+    "ep-365": ["repository.FORCE_PRIVATE"],
+    "ep-366": ["repository.FORCE_PRIVATE"]
+  }
+}

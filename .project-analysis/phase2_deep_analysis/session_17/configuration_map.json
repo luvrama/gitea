@@ -1,0 +1,16 @@
+{
+  "total_properties": 1,
+  "properties": [
+    {
+      "key": "setting.PanicInDevOrTesting",
+      "type": "function",
+      "default_value": "panics in dev/test mode only",
+      "source_file": "modules/setting/setting.go",
+      "used_by": [
+        {"class": "shared", "method": "ListRunners", "file_path": "routers/api/v1/shared/runners.go", "usage": "Guard against invalid ownerID+repoID combination", "impact": "Panics in dev/test if both ownerID and repoID are non-zero"},
+        {"class": "shared", "method": "getRunnerByID", "file_path": "routers/api/v1/shared/runners.go", "usage": "Guard against invalid ownerID+repoID combination", "impact": "Panics in dev/test if both ownerID and repoID are non-zero"}
+      ],
+      "affected_endpoints": ["ep-114", "ep-115", "ep-116", "ep-117"]
+    }
+  ]
+}

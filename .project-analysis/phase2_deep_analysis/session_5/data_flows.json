@@ -1,0 +1,549 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-029",
+      "http_method": "GET",
+      "path": "/api/v1/orgs",
+      "description": "Lists all organizations visible to the current user with pagination, filtering by visibility based on auth state",
+      "steps": [
+        {
+          "step": 1,
+          "component": "tokenRequiresScopes",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "request context",
+          "output": "pass/fail",
+          "operations": ["Validates token scope includes AccessTokenScopeCategoryOrganization"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.GetAll",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "APIContext",
+          "output": "[]*api.Organization",
+          "operations": ["Determines visibility modes based on auth state", "Builds SearchUserOptions", "Calls SearchUsers"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "utils.GetListOptions",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/page.go",
+          "input": "APIContext",
+          "output": "db.ListOptions",
+          "operations": ["Extracts page/limit from query params", "Clamps limit to API.MaxResponseItems"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "user_model.SearchUsers",
+          "type": "repository",
+          "file_path": "models/user/search.go",
+          "input": "SearchUserOptions",
+          "output": "([]*User, int64, error)",
+          "operations": ["Builds SQL query with type=Organization filter", "Applies visibility filter", "Applies BuildCanSeeUserCondition", "Executes COUNT query", "Executes paginated SELECT query"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT COUNT", "table": "user", "description": "Count matching organizations"},
+            {"operation": "SELECT", "table": "user", "description": "Fetch paginated organizations ordered alphabetically"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToOrganization",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*organization.Organization",
+          "output": "*api.Organization",
+          "operations": ["Maps Organization fields to API struct", "Generates avatar URL via AvatarLink"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*user_model.User",
+          "to": "*api.Organization",
+          "component": "convert.ToOrganization",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "UserName", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "FullName", "transformation": "direct_copy"},
+            {"source_field": "Email", "target_field": "Email", "transformation": "direct_copy"},
+            {"source_field": "Visibility", "target_field": "Visibility", "transformation": "computed"},
+            {"source_field": "AvatarLink(ctx)", "target_field": "AvatarURL", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Database error in SearchUsers", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-030",
+      "http_method": "POST",
+      "path": "/api/v1/orgs",
+      "description": "Creates a new organization with owner team, team units, and org membership in a single transaction",
+      "steps": [
+        {
+          "step": 1,
+          "component": "reqToken",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "request context",
+          "output": "pass/fail",
+          "operations": ["Validates authentication token exists"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "bind(api.CreateOrgOption{})",
+          "type": "utility",
+          "file_path": "modules/web/middleware/binding.go",
+          "input": "request body JSON",
+          "output": "*api.CreateOrgOption",
+          "operations": ["Parses JSON body", "Validates binding tags (Required, Username, MaxSize, ValidUrl, In)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org.Create",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "APIContext with CreateOrgOption",
+          "output": "*api.Organization (201)",
+          "operations": ["Checks CanCreateOrganization()", "Resolves visibility", "Builds Organization struct", "Calls CreateOrganization"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "organization.CreateOrganization",
+          "type": "service",
+          "file_path": "models/organization/org.go",
+          "input": "(*Organization, *User)",
+          "output": "error",
+          "operations": ["Validates username usability", "Checks user doesn't already exist", "Sets LowerName, Rands, Salt, Type", "Runs in transaction: delete redirect, insert org, generate avatar, insert OrgUser, insert Team (Owners), insert TeamUnits, insert TeamUser"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Check if username already exists"},
+            {"operation": "DELETE", "table": "user_redirect", "description": "Remove any existing redirect for this name"},
+            {"operation": "INSERT", "table": "user", "description": "Insert organization record"},
+            {"operation": "INSERT", "table": "org_user", "description": "Add creator as org member"},
+            {"operation": "INSERT", "table": "team", "description": "Create Owners team"},
+            {"operation": "INSERT", "table": "team_unit", "description": "Create team units for all repo unit types"},
+            {"operation": "INSERT", "table": "team_user", "description": "Add creator to Owners team"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToOrganization",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*organization.Organization",
+          "output": "*api.Organization",
+          "operations": ["Maps Organization to API response struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.CreateOrgOption",
+          "to": "*organization.Organization",
+          "component": "org.Create",
+          "mappings": [
+            {"source_field": "UserName", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "FullName", "transformation": "direct_copy"},
+            {"source_field": "Email", "target_field": "Email", "transformation": "direct_copy"},
+            {"source_field": "Visibility", "target_field": "Visibility", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "User cannot create organizations", "handler": "ctx.APIError", "response_code": 403, "response": "forbidden"},
+        {"condition": "Username already exists", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "Name reserved/invalid chars/pattern", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "Database error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-031",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}",
+      "description": "Gets a single organization's details, with email hidden for anonymous users",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true)",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization populated",
+          "operations": ["Resolves org by name from DB", "Handles user redirects for renamed orgs", "Sets ctx.ContextUser"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get org by lower_name and type=organization"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "checkTokenPublicOnly",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Organization",
+          "output": "pass/fail",
+          "operations": ["If token is public-only, checks org visibility is public"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org.Get",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "APIContext with ctx.Org.Organization",
+          "output": "*api.Organization",
+          "operations": ["Checks HasOrgOrUserVisible", "Converts to API org", "Clears email if user not signed in"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "organization.HasOrgOrUserVisible",
+          "type": "service",
+          "file_path": "models/organization/org.go",
+          "input": "(orgUser, doer)",
+          "output": "bool",
+          "operations": ["Checks visibility rules: public always visible, admin/self always visible, private requires membership"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "org_user", "description": "Check membership if org is private (only if needed)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToOrganization",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*organization.Organization",
+          "output": "*api.Organization",
+          "operations": ["Maps fields to API struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*organization.Organization",
+          "to": "*api.Organization",
+          "component": "convert.ToOrganization",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Email", "target_field": "Email", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Org not found by orgAssignment", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "Org not visible to user", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-032",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/rename",
+      "description": "Renames an organization, updating DB records, filesystem paths, and creating a redirect",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true) + reqToken + reqOrgOwnership",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}, auth token",
+          "output": "ctx.Org.Organization populated, ownership verified",
+          "operations": ["Resolves org", "Validates token", "Checks org ownership or site admin"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get org by name"},
+            {"operation": "SELECT", "table": "team_user + team", "description": "Check if user is org owner"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "bind(api.RenameOrgOption{})",
+          "type": "utility",
+          "file_path": "modules/web/middleware/binding.go",
+          "input": "request body JSON",
+          "output": "*api.RenameOrgOption",
+          "operations": ["Parses JSON body", "Validates Required field"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org.Rename",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "APIContext with RenameOrgOption",
+          "output": "204 No Content",
+          "operations": ["Calls user_service.RenameUser with org user and new name"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "user_service.RenameUser",
+          "type": "service",
+          "file_path": "services/user/user.go",
+          "input": "(*User, newName, doer)",
+          "output": "error",
+          "operations": ["Validates username usability", "If only capitalization change: updates name col + repo owner names", "Otherwise: starts transaction, checks existence, updates repo owner names, creates user redirect, updates agit refs, updates container names, updates user name/lower_name cols, renames filesystem directory, commits transaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Check if new name already exists"},
+            {"operation": "UPDATE", "table": "repository", "description": "Update owner_name in repositories"},
+            {"operation": "INSERT", "table": "user_redirect", "description": "Create redirect from old name to new"},
+            {"operation": "UPDATE", "table": "user", "description": "Update name and lower_name columns"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "New name same as current", "handler": "returns nil (no-op)", "response_code": 204, "response": "empty"},
+        {"condition": "Name already exists", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "Name reserved/invalid", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "Filesystem rename fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-033",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}",
+      "description": "Edits organization metadata (email, full name, description, website, location, visibility, repo_admin_change_team_access)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true) + reqToken + reqOrgOwnership",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}, auth token",
+          "output": "ctx.Org.Organization populated, ownership verified",
+          "operations": ["Resolves org", "Validates token", "Checks org ownership"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get org by name"},
+            {"operation": "SELECT", "table": "team_user + team", "description": "Check ownership"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "bind(api.EditOrgOption{})",
+          "type": "utility",
+          "file_path": "modules/web/middleware/binding.go",
+          "input": "request body JSON",
+          "output": "*api.EditOrgOption",
+          "operations": ["Parses JSON body", "Validates binding tags"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org.Edit",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "APIContext with EditOrgOption",
+          "output": "*api.Organization (200)",
+          "operations": ["Calls UpdateOrgEmailAddress for email", "Builds UpdateOptions from form fields", "Calls user_service.UpdateUser"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "org.UpdateOrgEmailAddress",
+          "type": "service",
+          "file_path": "services/org/org.go",
+          "input": "(*Organization, *string)",
+          "output": "error",
+          "operations": ["If email nil, no-op", "If non-empty, validates email format and domain", "Updates email column"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "user", "description": "Update email column"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "user_service.UpdateUser",
+          "type": "service",
+          "file_path": "services/user/update.go",
+          "input": "(*User, *UpdateOptions)",
+          "output": "error",
+          "operations": ["Builds list of columns to update from non-nil optional fields", "Calls UpdateUserCols with dynamic column list"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "user", "description": "Update specified columns (full_name, description, website, location, visibility, repo_admin_change_team_access)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 6,
+          "component": "convert.ToOrganization",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*organization.Organization",
+          "output": "*api.Organization",
+          "operations": ["Maps updated org to API response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.EditOrgOption",
+          "to": "user_service.UpdateOptions",
+          "component": "org.Edit",
+          "mappings": [
+            {"source_field": "FullName", "target_field": "FullName", "transformation": "computed"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "computed"},
+            {"source_field": "Website", "target_field": "Website", "transformation": "computed"},
+            {"source_field": "Location", "target_field": "Location", "transformation": "computed"},
+            {"source_field": "Visibility", "target_field": "Visibility", "transformation": "computed"},
+            {"source_field": "RepoAdminChangeTeamAccess", "target_field": "RepoAdminChangeTeamAccess", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid email format/domain", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "Database error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-034",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}",
+      "description": "Deletes an organization completely, including all associated data (teams, members, secrets, runners) but fails if org still has repos or packages",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true) + reqToken + reqOrgOwnership",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}, auth token",
+          "output": "ctx.Org.Organization populated, ownership verified",
+          "operations": ["Resolves org", "Validates token", "Checks org ownership"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get org by name"},
+            {"operation": "SELECT", "table": "team_user + team", "description": "Check ownership"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.Delete",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "APIContext",
+          "output": "204 No Content",
+          "operations": ["Calls org.DeleteOrganization(ctx, org, false)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org.DeleteOrganization",
+          "type": "service",
+          "file_path": "services/org/org.go",
+          "input": "(*Organization, purge=false)",
+          "output": "error",
+          "operations": ["In transaction: counts repos (fails if >0), checks packages (fails if owns any), deletes all org beans (teams, org_users, team_users, team_units, team_invites, secrets, blockings, action_runners, action_runner_tokens, user record)", "After tx: removes filesystem directory, deletes avatar from storage"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT COUNT", "table": "repository", "description": "Check if org owns any repos"},
+            {"operation": "SELECT", "table": "package", "description": "Check if org owns any packages"},
+            {"operation": "DELETE", "table": "team", "description": "Delete all teams"},
+            {"operation": "DELETE", "table": "org_user", "description": "Delete all org memberships"},
+            {"operation": "DELETE", "table": "team_user", "description": "Delete all team memberships"},
+            {"operation": "DELETE", "table": "team_unit", "description": "Delete all team units"},
+            {"operation": "DELETE", "table": "team_invite", "description": "Delete all team invites"},
+            {"operation": "DELETE", "table": "secret", "description": "Delete all org secrets"},
+            {"operation": "DELETE", "table": "user_blocking", "description": "Delete all org blocks"},
+            {"operation": "DELETE", "table": "action_runner", "description": "Delete all org runners"},
+            {"operation": "DELETE", "table": "action_runner_token", "description": "Delete all runner tokens"},
+            {"operation": "DELETE", "table": "user", "description": "Delete the org user record"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Org still has repositories", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "ErrUserOwnRepos"},
+        {"condition": "Org still has packages", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "ErrUserOwnPackages"},
+        {"condition": "Database error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

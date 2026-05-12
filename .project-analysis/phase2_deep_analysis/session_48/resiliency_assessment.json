@@ -1,0 +1,145 @@
+{
+  "total_findings": 6,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-324",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Creating a webhook is not idempotent but duplicates are allowed (no unique constraint on URL per repo)",
+          "recommendation": "Consider adding duplicate detection or unique constraint on (repo_id, url)"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - local DB operation only",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-325",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Edit is idempotent - applying same edit multiple times yields same result",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - local DB operation only",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-326",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Delete webhook and hook_tasks wrapped in transaction - atomic",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - transactional delete",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-327",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/stargazers",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Local DB query only, no external dependencies",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-328",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/subscribers",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Local DB query only, no external dependencies",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-329",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/teams",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Local DB queries only, no external dependencies",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": "/api/v1/version",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea handles graceful shutdown via graceful module",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in API rate limiting",
+      "recommendation": "Add rate limiting middleware or use reverse proxy rate limiting"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": ["Database"],
+    "cascading_failure_paths": []
+  }
+}

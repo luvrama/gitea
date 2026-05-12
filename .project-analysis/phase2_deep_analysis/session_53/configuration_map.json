@@ -1,0 +1,13 @@
+{
+  "total_properties": 1,
+  "properties": [
+    {
+      "key": "repository.FORCE_PRIVATE",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "repo", "method": "CreateUserRepo", "file_path": "routers/api/v1/repo/repo.go", "usage": "OR'd with user private flag", "impact": "Forces all new repos to be private"}],
+      "affected_endpoints": ["ep-363", "ep-364", "ep-365", "ep-366"]
+    }
+  ]
+}

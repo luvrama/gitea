@@ -1,0 +1,21 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "SSH.MinimumKeySizeCheck",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/ssh.go",
+      "used_by": [{"class": "asymkey_model", "method": "CheckPublicKeyString", "file_path": "models/asymkey/ssh_key_parse.go", "usage": "Gate for key size validation", "impact": "If false, any key size is accepted"}],
+      "affected_endpoints": ["ep-342"]
+    },
+    {
+      "key": "SSH.StartBuiltinServer",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/ssh.go",
+      "used_by": [{"class": "asymkey_service", "method": "RewriteAllPublicKeys", "file_path": "services/asymkey/ssh_key_authorized_keys.go", "usage": "Skip authorized_keys rewrite if builtin SSH server", "impact": "If true, no filesystem I/O on key deletion"}],
+      "affected_endpoints": ["ep-343"]
+    }
+  ]
+}

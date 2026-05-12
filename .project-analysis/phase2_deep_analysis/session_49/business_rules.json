@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Repository must be owned by an organization for team operations",
+      "location": {"class": "repo", "method": "IsTeam/changeRepoTeam", "file_path": "routers/api/v1/repo/teams.go", "line_number": 89},
+      "condition": "!ctx.Repo.Owner.IsOrganization()",
+      "action": "Return 405 Method Not Allowed",
+      "affected_endpoints": ["ep-330", "ep-331", "ep-332"],
+      "code_snippet": "if !ctx.Repo.Owner.IsOrganization() {\n\tctx.APIError(http.StatusMethodNotAllowed, \"repo is not owned by an organization\")\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "authorization",
+      "description": "Only repo admin or org owner can add/remove teams",
+      "location": {"class": "repo", "method": "changeRepoTeam", "file_path": "routers/api/v1/repo/teams.go", "line_number": 163},
+      "condition": "!ctx.Repo.Owner.RepoAdminChangeTeamAccess && !ctx.Repo.Permission.IsOwner()",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-331", "ep-332"],
+      "code_snippet": "if !ctx.Repo.Owner.RepoAdminChangeTeamAccess && !ctx.Repo.Permission.IsOwner() {\n\tctx.APIError(http.StatusForbidden, \"user is nor repo admin nor owner\")\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Cannot add a team that is already assigned to the repository",
+      "location": {"class": "repo", "method": "changeRepoTeam", "file_path": "routers/api/v1/repo/teams.go", "line_number": 173},
+      "condition": "add && repoHasTeam",
+      "action": "Return 422 Unprocessable Entity",
+      "affected_endpoints": ["ep-331"],
+      "code_snippet": "if repoHasTeam {\n\tctx.APIError(http.StatusUnprocessableEntity, fmt.Errorf(\"team '%s' is already added to repo\", team.Name))\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Cannot remove a team that is not assigned to the repository",
+      "location": {"class": "repo", "method": "changeRepoTeam", "file_path": "routers/api/v1/repo/teams.go", "line_number": 178},
+      "condition": "!add && !repoHasTeam",
+      "action": "Return 422 Unprocessable Entity",
+      "affected_endpoints": ["ep-332"],
+      "code_snippet": "if !repoHasTeam {\n\tctx.APIError(http.StatusUnprocessableEntity, fmt.Errorf(\"team '%s' was not added to repo\", team.Name))\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Auto-watch repo for team members when team is added (if setting enabled)",
+      "location": {"class": "repository", "method": "addRepositoryToTeam", "file_path": "services/repository/repo_team.go", "line_number": 50},
+      "condition": "setting.Service.AutoWatchNewRepos",
+      "action": "Watch repo for all team members",
+      "affected_endpoints": ["ep-331"],
+      "code_snippet": "if setting.Service.AutoWatchNewRepos {\n\tfor _, u := range t.Members {\n\t\trepo_model.WatchRepo(ctx, u, repo, true)\n\t}\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "When removing team, unwatch repo for members who lost all access",
+      "location": {"class": "repository", "method": "removeRepositoryFromTeam", "file_path": "services/repository/repo_team.go", "line_number": 162},
+      "condition": "!HasAnyUnitAccess(ctx, member.ID, repo)",
+      "action": "Remove watch and issue watches for member",
+      "affected_endpoints": ["ep-332"],
+      "code_snippet": "has, err := access_model.HasAnyUnitAccess(ctx, member.ID, repo)\nif !has {\n\trepo_model.WatchRepo(ctx, member, repo, false)\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Fork blocked if user is blocked by repo owner",
+      "location": {"class": "repository", "method": "ForkRepository", "file_path": "services/repository/fork.go", "line_number": 65},
+      "condition": "user_model.IsUserBlockedBy(ctx, doer, opts.BaseRepo.Owner.ID)",
+      "action": "Return ErrBlockedUser",
+      "affected_endpoints": ["ep-334"],
+      "code_snippet": "if user_model.IsUserBlockedBy(ctx, doer, opts.BaseRepo.Owner.ID) {\n\treturn nil, user_model.ErrBlockedUser\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "eligibility",
+      "description": "Fork prohibited if user reached maximum repo limit",
+      "location": {"class": "repository", "method": "ForkRepository", "file_path": "services/repository/fork.go", "line_number": 69},
+      "condition": "!doer.CanForkRepoIn(owner)",
+      "action": "Return ErrReachLimitOfRepo",
+      "affected_endpoints": ["ep-334"],
+      "code_snippet": "if !doer.CanForkRepoIn(owner) {\n\treturn nil, repo_model.ErrReachLimitOfRepo{Limit: owner.MaxRepoCreation}\n}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "validation",
+      "description": "Cannot fork a repo that user already forked",
+      "location": {"class": "repository", "method": "ForkRepository", "file_path": "services/repository/fork.go", "line_number": 74},
+      "condition": "forkedRepo != nil (existing fork found)",
+      "action": "Return ErrForkAlreadyExist (wraps ErrAlreadyExist)",
+      "affected_endpoints": ["ep-334"],
+      "code_snippet": "if forkedRepo != nil {\n\treturn nil, ErrForkAlreadyExist{Uname: owner.Name, RepoName: opts.BaseRepo.FullName()}\n}"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "authorization",
+      "description": "Write permission required to manage issue labels",
+      "location": {"class": "repo", "method": "prepareForReplaceOrAdd", "file_path": "routers/api/v1/repo/issue_label.go", "line_number": 247},
+      "condition": "!ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull)",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-335"],
+      "code_snippet": "if !ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull) {\n\tctx.APIError(http.StatusForbidden, \"write permission is required\")\n}"
+    }
+  ]
+}

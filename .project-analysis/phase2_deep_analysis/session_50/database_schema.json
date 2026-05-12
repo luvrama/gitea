@@ -1,0 +1,181 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite (via XORM)",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "label",
+      "entity_class": "issues_model.Label",
+      "file_path": "models/issues/label.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "exclusive", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "exclusive_order", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "description", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "color", "type": "VARCHAR(7)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_issues", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "num_closed_issues", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["updated"]},
+        {"name": "archived_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": "NULL", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_label_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_label_org_id", "columns": ["org_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-many", "target_table": "issue", "join_column": "issue_label"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "issue_label",
+      "entity_class": "issues_model.IssueLabel",
+      "file_path": "models/issues/issue_label.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "label_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]}
+      ],
+      "indexes": [
+        {"name": "UQE_issue_label_s", "columns": ["issue_id", "label_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "label", "join_column": "label_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "deploy_key",
+      "entity_class": "asymkey_model.DeployKey",
+      "file_path": "models/asymkey/ssh_key_deploy.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "key_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "fingerprint", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "mode", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "1", "constraints": ["NOT NULL"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_deploy_key_s", "columns": ["key_id", "repo_id"], "unique": true},
+        {"name": "IDX_deploy_key_key_id", "columns": ["key_id"], "unique": false},
+        {"name": "IDX_deploy_key_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "public_key", "join_column": "key_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "public_key",
+      "entity_class": "asymkey_model.PublicKey",
+      "file_path": "models/asymkey/ssh_key.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "fingerprint", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "type", "type": "INT", "code_type": "KeyType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "content", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "mode", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "2", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_public_key_fingerprint", "columns": ["fingerprint"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "one-to-many", "target_table": "deploy_key", "join_column": "key_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-336",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "Get issue by repo+index"},
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelIDsInRepoByNames", "description": "Resolve label names to IDs"},
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelsByIDs", "description": "Get label objects by IDs"},
+        {"store_type": "database", "store_name": "issue_label", "operation": "INSERT", "method": "issues_model.newIssueLabel", "description": "Create issue-label relations"},
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelsByIssueID", "description": "Get final label list"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-337",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "Get issue"},
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelByID", "description": "Get label"},
+        {"store_type": "database", "store_name": "issue_label", "operation": "DELETE", "method": "issues_model.deleteIssueLabel", "description": "Remove label from issue"},
+        {"store_type": "database", "store_name": "comment", "operation": "INSERT", "method": "issues_model.CreateComment", "description": "Create label removal comment"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-338",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "Get issue"},
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelsByIDs", "description": "Get new labels"},
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelsByIssueID", "description": "Get current labels"},
+        {"store_type": "database", "store_name": "issue_label", "operation": "INSERT", "method": "issues_model.newIssueLabel", "description": "Add new labels"},
+        {"store_type": "database", "store_name": "issue_label", "operation": "DELETE", "method": "issues_model.deleteIssueLabel", "description": "Remove old labels"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-339",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "Get issue"},
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelsByIssueID", "description": "Load all labels"},
+        {"store_type": "database", "store_name": "issue_label", "operation": "DELETE", "method": "issues_model.deleteIssueLabel", "description": "Delete each label (loop)"},
+        {"store_type": "database", "store_name": "comment", "operation": "INSERT", "method": "issues_model.CreateComment", "description": "Create comment per label (loop)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-340",
+      "path": "/api/v1/repos/{owner}/{repo}/keys",
+      "operations": [
+        {"store_type": "database", "store_name": "deploy_key", "operation": "SELECT", "method": "db.FindAndCount", "description": "List deploy keys with pagination"},
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "DeployKey.GetContent", "description": "Get key content per key (N+1)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-341",
+      "path": "/api/v1/repos/{owner}/{repo}/keys/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "deploy_key", "operation": "SELECT", "method": "asymkey_model.GetDeployKeyByID", "description": "Get deploy key"},
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "DeployKey.GetContent", "description": "Get key content"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-342",
+      "path": "/api/v1/repos/{owner}/{repo}/keys",
+      "operations": [
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "asymkey_model.AddDeployKey", "description": "Check existing key by fingerprint"},
+        {"store_type": "database", "store_name": "public_key", "operation": "INSERT", "method": "asymkey_model.addKey", "description": "Create public key if new"},
+        {"store_type": "database", "store_name": "deploy_key", "operation": "SELECT", "method": "checkDeployKey", "description": "Check for duplicates"},
+        {"store_type": "database", "store_name": "deploy_key", "operation": "INSERT", "method": "addDeployKey", "description": "Create deploy key"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-343",
+      "path": "/api/v1/repos/{owner}/{repo}/keys/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "deploy_key", "operation": "SELECT", "method": "asymkey_model.GetDeployKeyByID", "description": "Get deploy key"},
+        {"store_type": "database", "store_name": "deploy_key", "operation": "DELETE", "method": "db.DeleteByID", "description": "Delete deploy key"},
+        {"store_type": "database", "store_name": "deploy_key", "operation": "SELECT", "method": "IsDeployKeyExistByKeyID", "description": "Check if other keys reference same public key"},
+        {"store_type": "database", "store_name": "public_key", "operation": "DELETE", "method": "db.DeleteByID", "description": "Delete public key if orphaned"},
+        {"store_type": "database", "store_name": "public_key", "operation": "SELECT", "method": "RewriteAllPublicKeys", "description": "Read all keys to rewrite authorized_keys"}
+      ]
+    }
+  ]
+}

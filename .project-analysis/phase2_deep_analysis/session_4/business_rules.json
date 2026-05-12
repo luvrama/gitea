@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Notification thread access requires ownership or admin status",
+      "location": {"class": "notify", "method": "getThread", "file_path": "routers/api/v1/notify/threads.go", "line_number": 96},
+      "condition": "n.UserID != ctx.Doer.ID && !ctx.Doer.IsAdmin",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-024", "ep-025"],
+      "code_snippet": "if n.UserID != ctx.Doer.ID && !ctx.Doer.IsAdmin {\n\tctx.APIError(http.StatusForbidden, ...)\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "business_logic",
+      "description": "Default status filter for read operations is 'unread' only",
+      "location": {"class": "notify", "method": "ReadRepoNotifications", "file_path": "routers/api/v1/notify/repo.go", "line_number": 148},
+      "condition": "!ctx.FormBool(\"all\") && len(statuses) == 0",
+      "action": "Default to filtering only 'unread' notifications",
+      "affected_endpoints": ["ep-023"],
+      "code_snippet": "opts.Status = statusStringsToNotificationStatuses(statuses, []string{\"unread\"})"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Default target status for mark-as-read is 'read'",
+      "location": {"class": "notify", "method": "ReadRepoNotifications", "file_path": "routers/api/v1/notify/repo.go", "line_number": 153},
+      "condition": "targetStatus == 0 (invalid or empty to-status param)",
+      "action": "Default to NotificationStatusRead",
+      "affected_endpoints": ["ep-023", "ep-025"],
+      "code_snippet": "if targetStatus == 0 {\n\ttargetStatus = activities_model.NotificationStatusRead\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "last_read_at must be valid RFC 3339 format if provided",
+      "location": {"class": "notify", "method": "ReadRepoNotifications", "file_path": "routers/api/v1/notify/repo.go", "line_number": 126},
+      "condition": "len(qLastRead) > 0 && time.Parse fails",
+      "action": "Return 400 Bad Request",
+      "affected_endpoints": ["ep-023"],
+      "code_snippet": "tmpLastRead, err := time.Parse(time.RFC3339, qLastRead)\nif err != nil {\n\tctx.APIError(http.StatusBadRequest, err)"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "authorization",
+      "description": "SetNotificationStatus verifies user ownership before updating",
+      "location": {"class": "activities_model", "method": "SetNotificationStatus", "file_path": "models/activities/notification.go", "line_number": 243},
+      "condition": "notification.UserID != user.ID",
+      "action": "Return error: can't change notification of another user",
+      "affected_endpoints": ["ep-023", "ep-025"],
+      "code_snippet": "if notification.UserID != user.ID {\n\treturn nil, fmt.Errorf(\"Can't change notification of another user: %d, %d\", ...)\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Organization visibility filtering based on doer relationship",
+      "location": {"class": "organization", "method": "DoerViewOtherVisibility", "file_path": "models/organization/org_list.go", "line_number": 72},
+      "condition": "doer.IsAdmin || doer.ID == other.ID",
+      "action": "Allow seeing private orgs; otherwise limited visibility only",
+      "affected_endpoints": ["ep-026", "ep-027"],
+      "code_snippet": "if doer.IsAdmin || doer.ID == other.ID {\n\treturn structs.VisibleTypePrivate\n}\nreturn structs.VisibleTypeLimited"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Org permissions endpoint requires org to be visible to doer",
+      "location": {"class": "org", "method": "GetUserOrgsPermissions", "file_path": "routers/api/v1/org/org.go", "line_number": 133},
+      "condition": "!organization.HasOrgOrUserVisible(ctx, o, ctx.Doer)",
+      "action": "Return 404 Not Found",
+      "affected_endpoints": ["ep-028"],
+      "code_snippet": "if !organization.HasOrgOrUserVisible(ctx, o, ctx.Doer) {\n\tctx.APIErrorNotFound(\"HasOrgOrUserVisible\", nil)\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Permission levels are cumulative: owner > admin > write > read > none",
+      "location": {"class": "org", "method": "GetUserOrgsPermissions", "file_path": "routers/api/v1/org/org.go", "line_number": 140},
+      "condition": "authorizeLevel compared against AccessMode constants",
+      "action": "Set CanRead/CanWrite/IsAdmin/IsOwner based on threshold comparisons",
+      "affected_endpoints": ["ep-028"],
+      "code_snippet": "if authorizeLevel > perm.AccessModeNone { op.CanRead = true }\nif authorizeLevel > perm.AccessModeRead { op.CanWrite = true }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "FindOrgOptions filters by org_user.is_public when visibility is not private",
+      "location": {"class": "organization", "method": "FindOrgOptions.ToConds", "file_path": "models/organization/org_list.go", "line_number": 60},
+      "condition": "opts.IncludeVisibility != VisibleTypePrivate",
+      "action": "Only include orgs where user's membership is public (via queryUserOrgIDs)",
+      "affected_endpoints": ["ep-026", "ep-027"],
+      "code_snippet": "cond[\"is_public\"] = true // in queryUserOrgIDs when !includePrivate"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Notification convert suppresses repo info if user lost access",
+      "location": {"class": "convert", "method": "ToNotificationThread", "file_path": "services/convert/notification.go", "line_number": 27},
+      "condition": "!perm.HasAnyUnitAccessOrPublicAccess()",
+      "action": "Repository field left nil in response",
+      "affected_endpoints": ["ep-023", "ep-024", "ep-025"],
+      "code_snippet": "if perm.HasAnyUnitAccessOrPublicAccess() {\n\tresult.Repository = ToRepo(ctx, n.Repository, perm)\n}"
+    }
+  ]
+}

@@ -1,0 +1,31 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "internal_error", "status_code": 500, "response_type": "error JSON", "message_template": "internal server error"},
+      {"exception_type": "not_found", "status_code": 404, "response_type": "error JSON", "message_template": "not found"},
+      {"exception_type": "bad_request", "status_code": 400, "response_type": "error JSON", "message_template": "variable message"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-293", "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/artifacts", "error_scenarios": [
+      {"exception": "db error", "trigger": "FindAndCount fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true},
+      {"exception": "convert error", "trigger": "ToActionArtifact fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-294", "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}", "error_scenarios": [
+      {"exception": "not_exist", "trigger": "Run not found by repo+id", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+      {"exception": "validation", "trigger": "Run status is not done", "status_code": 400, "response": "this workflow run is not done", "logged": false, "retryable": false},
+      {"exception": "db/storage error", "trigger": "DeleteRun fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-296", "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}", "error_scenarios": [
+      {"exception": "not_found", "trigger": "Artifact not found, wrong repo, or invalid status", "status_code": 404, "response": "artifact not found", "logged": false, "retryable": false},
+      {"exception": "not_found", "trigger": "Artifact is v3 format", "status_code": 404, "response": "Artifact not found", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-298", "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip", "error_scenarios": [
+      {"exception": "not_found", "trigger": "Artifact not found or wrong repo", "status_code": 404, "response": "artifact not found", "logged": false, "retryable": false},
+      {"exception": "expired", "trigger": "Artifact status is Expired", "status_code": 404, "response": "Artifact has expired", "logged": false, "retryable": false},
+      {"exception": "not_found", "trigger": "Artifact is v3", "status_code": 404, "response": "Artifact not found", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": []
+}

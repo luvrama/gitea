@@ -1,0 +1,43 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "generic error", "status_code": 500, "response_type": "APIError", "message_template": "internal server error"},
+        {"exception_type": "not found", "status_code": 404, "response_type": "APIError", "message_template": "not found"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-214",
+      "path": "/api/v1/repos/{owner}/{repo}/git/commits/{sha}",
+      "error_scenarios": [
+        {"exception": "invalid ref pattern", "trigger": "sha fails IsValidRefPattern", "status_code": 422, "response": "validationError", "logged": false, "retryable": false},
+        {"exception": "git.ErrNotExist", "trigger": "commit not found in repo", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-215",
+      "path": "/api/v1/repos/{owner}/{repo}/commits",
+      "error_scenarios": [
+        {"exception": "time.Parse error", "trigger": "invalid since/until format", "status_code": 422, "response": "validationError", "logged": false, "retryable": false},
+        {"exception": "empty repo", "trigger": "Repository.IsEmpty is true", "status_code": 409, "response": "conflict", "logged": false, "retryable": false},
+        {"exception": "git.ErrNotExist", "trigger": "sha/branch not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-217",
+      "path": "/api/v1/repos/{owner}/{repo}/commits/{sha}/pull",
+      "error_scenarios": [
+        {"exception": "ErrPullRequestNotExist", "trigger": "no merged PR for this commit", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+      ]
+    }
+  ],
+  "custom_exceptions": [
+    {"class": "issues_model.ErrPullRequestNotExist", "file_path": "models/issues/pull.go", "extends": "error", "used_in": ["GetPullRequestByMergedCommit"], "http_status": 404},
+    {"class": "issues_model.ErrIssueNotExist", "file_path": "models/issues/issue.go", "extends": "error", "used_in": ["GetIssueByIndex"], "http_status": 404}
+  ]
+}

@@ -1,0 +1,183 @@
+{
+  "total_findings": 8,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-344",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, only DB queries",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - simple read operation",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-345",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Release deletion involves DB update + attachment deletion from storage. If storage delete fails, attachment records are already deleted but files remain orphaned",
+          "recommendation": "Consider deleting storage files before DB records, or use a cleanup job"
+        }
+      ],
+      "non_atomic_operations": ["DB update (IsTag=true) + attachment record deletion + storage file deletion are not fully atomic"],
+      "cascading_failure_risk": "Storage failure leaves orphaned files but release is still marked as deleted",
+      "graceful_degradation": "Partial failure: release marked as tag, but attachment files may remain in storage"
+    },
+    {
+      "endpoint_id": "ep-346",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/licenses",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Simple DB read",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-347",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/topics",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Simple DB read with pagination",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-348",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/topics",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "SaveTopics is idempotent - calling with same topics produces same result. Uses transaction (db.WithTx)",
+          "recommendation": "N/A - already safe"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Transaction rollback on failure - consistent state maintained",
+      "graceful_degradation": "Returns 500 on DB failure, transaction ensures no partial state"
+    },
+    {
+      "endpoint_id": "ep-349",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/topics/{topic}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "AddTopic is idempotent - adding existing topic returns success without changes. Uses db.WithTx2",
+          "recommendation": "N/A - already safe"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Transaction rollback on failure",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-350",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/topics/{topic}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "DeleteTopic uses db.WithTx2 for atomicity. Returns 404 if topic not on repo (not idempotent for repeated calls)",
+          "recommendation": "Consider returning 204 even if topic not found for true idempotency"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Transaction rollback on failure",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-351",
+      "http_method": "GET",
+      "path": "/api/v1/topics/search",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Simple DB read with pagination",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "Returns 500 on DB failure"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": "Add dedicated readiness check that verifies DB connectivity"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea handles graceful shutdown via graceful module",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in API rate limiting for these endpoints",
+      "recommendation": "Add rate limiting middleware for API endpoints"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message flows in these endpoints"
+    },
+    "single_points_of_failure": ["Database"],
+    "cascading_failure_paths": []
+  }
+}

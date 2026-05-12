@@ -1,0 +1,52 @@
+{
+  "endpoints_by_database_table": {
+    "team": {"read": ["ep-330", "ep-331", "ep-332"], "write": []},
+    "team_repo": {"read": ["ep-330", "ep-331", "ep-332"], "write": ["ep-331", "ep-332"]},
+    "team_unit": {"read": ["ep-330"], "write": []},
+    "access": {"read": [], "write": ["ep-331", "ep-332"]},
+    "watch": {"read": [], "write": ["ep-331", "ep-332"]},
+    "repository": {"read": ["ep-333", "ep-334"], "write": ["ep-334"]},
+    "issue": {"read": ["ep-335"], "write": []},
+    "label": {"read": ["ep-335"], "write": []},
+    "issue_label": {"read": ["ep-335"], "write": []},
+    "user": {"read": ["ep-333", "ep-334"], "write": []},
+    "lfs_meta_object": {"read": [], "write": ["ep-334"]},
+    "branch": {"read": [], "write": ["ep-334"]}
+  },
+  "endpoints_by_external_service": {
+    "Git CLI": ["ep-334"]
+  },
+  "endpoints_by_config_property": {
+    "service.AUTO_WATCH_NEW_REPOS": ["ep-331"]
+  },
+  "endpoints_by_model_class": {
+    "organization.Team": ["ep-330", "ep-331", "ep-332"],
+    "organization.TeamRepo": ["ep-330", "ep-331", "ep-332"],
+    "repo_model.Repository": ["ep-333", "ep-334"],
+    "issues_model.Issue": ["ep-335"],
+    "issues_model.Label": ["ep-335"]
+  },
+  "endpoints_by_service_class": {
+    "repo_service.HasRepository": ["ep-330", "ep-331", "ep-332"],
+    "repo_service.TeamAddRepository": ["ep-331"],
+    "repo_service.RemoveRepositoryFromTeam": ["ep-332"],
+    "repo_service.FindForks": ["ep-333"],
+    "repo_service.ForkRepository": ["ep-334"],
+    "convert.ToTeam": ["ep-330"],
+    "convert.ToLabelList": ["ep-335"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-330": {"reads": ["team", "team_repo", "team_unit"], "writes": []},
+    "ep-331": {"reads": ["team", "team_repo"], "writes": ["team_repo", "team", "access", "watch"]},
+    "ep-332": {"reads": ["team", "team_repo", "repository"], "writes": ["team_repo", "team", "access", "watch", "issue_watch"]},
+    "ep-333": {"reads": ["repository", "user", "repo_unit", "access"], "writes": []},
+    "ep-334": {"reads": ["user", "repository", "user_blocking"], "writes": ["repository", "lfs_meta_object", "branch", "release"]},
+    "ep-335": {"reads": ["issue", "label", "issue_label"], "writes": []}
+  },
+  "external_services_by_endpoint": {
+    "ep-334": ["Git CLI"]
+  },
+  "config_properties_by_endpoint": {
+    "ep-331": ["service.AUTO_WATCH_NEW_REPOS"]
+  }
+}

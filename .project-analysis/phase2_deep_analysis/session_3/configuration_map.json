@@ -1,0 +1,107 @@
+{
+  "total_properties": 12,
+  "properties": [
+    {
+      "key": "ui.DEFAULT_THEME",
+      "type": "String",
+      "default_value": "gitea-auto",
+      "source_file": "modules/setting/ui.go",
+      "used_by": [{"class": "settings", "method": "GetGeneralUISettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "setting.UI.DefaultTheme", "impact": "Changes default_theme in response"}],
+      "affected_endpoints": ["ep-015"]
+    },
+    {
+      "key": "ui.REACTIONS",
+      "type": "[]String",
+      "default_value": "[+1, -1, laugh, hooray, confused, heart, rocket, eyes]",
+      "source_file": "modules/setting/ui.go",
+      "used_by": [{"class": "settings", "method": "GetGeneralUISettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "setting.UI.Reactions", "impact": "Changes allowed_reactions in response"}],
+      "affected_endpoints": ["ep-015"]
+    },
+    {
+      "key": "ui.CUSTOM_EMOJIS",
+      "type": "[]String",
+      "default_value": "[git, gitea, codeberg, gitlab, github, gogs]",
+      "source_file": "modules/setting/ui.go",
+      "used_by": [{"class": "settings", "method": "GetGeneralUISettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "setting.UI.CustomEmojis", "impact": "Changes custom_emojis in response"}],
+      "affected_endpoints": ["ep-015"]
+    },
+    {
+      "key": "api.MAX_RESPONSE_ITEMS",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {"class": "settings", "method": "GetGeneralAPISettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "setting.API.MaxResponseItems", "impact": "Changes max_response_items in response"},
+        {"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Clamps page size upper bound", "impact": "Limits pagination size for all list endpoints"}
+      ],
+      "affected_endpoints": ["ep-016", "ep-019", "ep-022"]
+    },
+    {
+      "key": "api.DEFAULT_PAGING_NUM",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {"class": "settings", "method": "GetGeneralAPISettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "setting.API.DefaultPagingNum", "impact": "Changes default_paging_num in response"},
+        {"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Default page size when not specified", "impact": "Default pagination for all list endpoints"}
+      ],
+      "affected_endpoints": ["ep-016", "ep-019", "ep-022"]
+    },
+    {
+      "key": "api.DEFAULT_GIT_TREES_PER_PAGE",
+      "type": "Integer",
+      "default_value": "1000",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "settings", "method": "GetGeneralAPISettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "setting.API.DefaultGitTreesPerPage", "impact": "Changes default_git_trees_per_page in response"}],
+      "affected_endpoints": ["ep-016"]
+    },
+    {
+      "key": "api.DEFAULT_MAX_BLOB_SIZE",
+      "type": "Integer (int64)",
+      "default_value": "10485760 (10MB)",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "settings", "method": "GetGeneralAPISettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "setting.API.DefaultMaxBlobSize", "impact": "Changes default_max_blob_size in response"}],
+      "affected_endpoints": ["ep-016"]
+    },
+    {
+      "key": "api.DEFAULT_MAX_RESPONSE_SIZE",
+      "type": "Integer (int64)",
+      "default_value": "104857600 (100MB)",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "settings", "method": "GetGeneralAPISettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "setting.API.DefaultMaxResponseSize", "impact": "Changes default_max_response_size in response"}],
+      "affected_endpoints": ["ep-016"]
+    },
+    {
+      "key": "mirror.ENABLED",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/mirror.go",
+      "used_by": [{"class": "settings", "method": "GetGeneralRepoSettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "!setting.Mirror.Enabled", "impact": "Changes mirrors_disabled in response"}],
+      "affected_endpoints": ["ep-017"]
+    },
+    {
+      "key": "repository.DISABLE_HTTP_GIT",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "settings", "method": "GetGeneralRepoSettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "setting.Repository.DisableHTTPGit", "impact": "Changes http_git_disabled in response"}],
+      "affected_endpoints": ["ep-017"]
+    },
+    {
+      "key": "attachment.ENABLED",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/attachment.go",
+      "used_by": [{"class": "settings", "method": "GetGeneralAttachmentSettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "setting.Attachment.Enabled", "impact": "Changes enabled in response"}],
+      "affected_endpoints": ["ep-018"]
+    },
+    {
+      "key": "attachment.MAX_SIZE",
+      "type": "Integer (int64)",
+      "default_value": "100",
+      "source_file": "modules/setting/attachment.go",
+      "used_by": [{"class": "settings", "method": "GetGeneralAttachmentSettings", "file_path": "routers/api/v1/settings/settings.go", "usage": "setting.Attachment.MaxSize", "impact": "Changes max_size in response"}],
+      "affected_endpoints": ["ep-018"]
+    }
+  ]
+}

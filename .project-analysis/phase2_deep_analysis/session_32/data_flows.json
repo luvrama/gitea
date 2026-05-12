@@ -1,0 +1,376 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-214",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/commits/{sha}",
+      "description": "Validates SHA ref pattern, retrieves commit from git repo, converts to API format with optional stats/files/verification",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetSingleCommit",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/commits.go",
+          "input": "APIContext with sha path param",
+          "output": "calls getCommit",
+          "operations": ["validate sha with git.IsValidRefPattern", "parse commit options from query params"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.getCommit",
+          "type": "service",
+          "file_path": "routers/api/v1/repo/commits.go",
+          "input": "identifier string, ToCommitOptions",
+          "output": "api.Commit JSON",
+          "operations": ["get commit from git repo by identifier"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "git.Repository.GetCommit",
+          "type": "utility",
+          "file_path": "modules/git/repo_commit.go",
+          "input": "commit identifier (sha or ref)",
+          "output": "*git.Commit",
+          "operations": ["resolve ref to commit object via git"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToCommit",
+          "type": "utility",
+          "file_path": "services/convert/git_commit.go",
+          "input": "*git.Commit, repo, options",
+          "output": "*api.Commit",
+          "operations": ["lookup author/committer by email in DB", "build parent list", "optionally get file status", "optionally get diff stats", "optionally get verification"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "lookup author by email"},
+            {"operation": "SELECT", "table": "user", "description": "lookup committer by email"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*git.Commit",
+          "to": "*api.Commit",
+          "component": "convert.ToCommit",
+          "mappings": [
+            {"source_field": "ID", "target_field": "SHA", "transformation": "direct_copy"},
+            {"source_field": "Author", "target_field": "RepoCommit.Author", "transformation": "computed"},
+            {"source_field": "Committer", "target_field": "RepoCommit.Committer", "transformation": "computed"},
+            {"source_field": "Message", "target_field": "RepoCommit.Message", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "invalid ref pattern", "handler": "GetSingleCommit", "response_code": 422, "response": "validationError"},
+        {"condition": "commit not found", "handler": "getCommit", "response_code": 404, "response": "notFound"},
+        {"condition": "internal git error", "handler": "getCommit", "response_code": 500, "response": "internalError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-215",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/commits",
+      "description": "Lists commits with pagination, optional path filtering, date range, and exclusion. Returns commit list with pagination headers.",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetAllCommits",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/commits.go",
+          "input": "APIContext with query params",
+          "output": "[]api.Commit JSON with pagination headers",
+          "operations": ["validate since/until RFC3339 format", "check if repo is empty", "get list options", "cap page size to CommitsRangeSize"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "git.Repository.GetBranchCommit / GetCommit",
+          "type": "utility",
+          "file_path": "modules/git/repo_commit.go",
+          "input": "branch name or sha",
+          "output": "*git.Commit",
+          "operations": ["resolve base commit for listing"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "gitrepo.CommitsCount",
+          "type": "utility",
+          "file_path": "modules/gitrepo/commit.go",
+          "input": "CommitsCountOptions",
+          "output": "int64 count",
+          "operations": ["run git rev-list --count with filters"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "git.Commit.CommitsByRange / CommitsByFileAndRange",
+          "type": "utility",
+          "file_path": "modules/git/commit.go",
+          "input": "page, pageSize, not, since, until",
+          "output": "[]*git.Commit",
+          "operations": ["run git log with pagination and filters"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToCommit (loop)",
+          "type": "utility",
+          "file_path": "services/convert/git_commit.go",
+          "input": "each *git.Commit",
+          "output": "*api.Commit",
+          "operations": ["convert each commit with userCache for deduplication"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "lookup author/committer by email (cached)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*git.Commit",
+          "to": "[]*api.Commit",
+          "component": "convert.ToCommit",
+          "mappings": [
+            {"source_field": "ID", "target_field": "SHA", "transformation": "direct_copy"},
+            {"source_field": "Author.Email", "target_field": "Author (User)", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "invalid since/until format", "handler": "GetAllCommits", "response_code": 422, "response": "validationError"},
+        {"condition": "empty repository", "handler": "GetAllCommits", "response_code": 409, "response": "conflict"},
+        {"condition": "base commit not found", "handler": "GetAllCommits", "response_code": 404, "response": "notFound"},
+        {"condition": "file path commits count is 0", "handler": "GetAllCommits", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-216",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/commits/{sha}.{diffType}",
+      "description": "Downloads the raw diff or patch for a specific commit, streamed directly to response",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DownloadCommitDiffOrPatch",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/commits.go",
+          "input": "APIContext with sha and diffType path params",
+          "output": "text/plain streamed response",
+          "operations": ["extract sha and diffType from path", "call git.GetRawDiff"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "git.GetRawDiff",
+          "type": "utility",
+          "file_path": "modules/git/diff.go",
+          "input": "repo, commitID, diffType, writer",
+          "output": "streams diff/patch to writer",
+          "operations": ["resolve commit", "run git diff/format-patch command", "stream output to response writer"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "commit not found", "handler": "DownloadCommitDiffOrPatch", "response_code": 404, "response": "notFound"},
+        {"condition": "git command error", "handler": "DownloadCommitDiffOrPatch", "response_code": 500, "response": "internalError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-217",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/commits/{sha}/pull",
+      "description": "Finds the merged pull request associated with a given commit SHA",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetCommitPullRequest",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/commits.go",
+          "input": "APIContext with sha path param",
+          "output": "api.PullRequest JSON",
+          "operations": ["get PR by merged commit ID", "load base and head repos", "convert to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetPullRequestByMergedCommit",
+          "type": "repository",
+          "file_path": "models/issues/pull.go",
+          "input": "repoID, sha",
+          "output": "*PullRequest",
+          "operations": ["query pull_request table by base_repo_id and merged_commit_id", "load attributes", "load issue"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "pull_request", "description": "find PR by merged_commit_id"},
+            {"operation": "SELECT", "table": "issue", "description": "load associated issue"},
+            {"operation": "SELECT", "table": "repository", "description": "load base and head repos"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToAPIPullRequest",
+          "type": "utility",
+          "file_path": "services/convert/pull.go",
+          "input": "*PullRequest, doer",
+          "output": "*api.PullRequest",
+          "operations": ["convert PR model to API response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*issues_model.PullRequest",
+          "to": "*api.PullRequest",
+          "component": "convert.ToAPIPullRequest",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Issue.Index", "target_field": "Number", "transformation": "direct_copy"},
+            {"source_field": "MergedCommitID", "target_field": "MergedCommitID", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "no PR found for commit", "handler": "GetCommitPullRequest", "response_code": 404, "response": "notFound"},
+        {"condition": "error loading repos", "handler": "GetCommitPullRequest", "response_code": 500, "response": "internalError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-218",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
+      "description": "Subscribe a user to an issue. Only admins can subscribe other users.",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.AddIssueSubscription",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_subscription.go",
+          "input": "APIContext",
+          "output": "status code",
+          "operations": ["delegates to setIssueSubscription(ctx, true)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.setIssueSubscription",
+          "type": "service",
+          "file_path": "routers/api/v1/repo/issue_subscription.go",
+          "input": "ctx, watch=true",
+          "output": "HTTP status",
+          "operations": ["get issue by index", "get user by name", "check permission (admin or self)", "check current watch state", "create or update watch"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue", "description": "get issue by repo_id and index"},
+            {"operation": "SELECT", "table": "user", "description": "get user by name"},
+            {"operation": "SELECT", "table": "issue_watch", "description": "check current watch state"},
+            {"operation": "INSERT/UPDATE", "table": "issue_watch", "description": "create or update subscription"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "issue not found", "handler": "setIssueSubscription", "response_code": 404, "response": "notFound"},
+        {"condition": "user not found", "handler": "setIssueSubscription", "response_code": 404, "response": "notFound"},
+        {"condition": "non-admin subscribing another user", "handler": "setIssueSubscription", "response_code": 403, "response": "forbidden"},
+        {"condition": "already subscribed", "handler": "setIssueSubscription", "response_code": 200, "response": "empty"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-219",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
+      "description": "Unsubscribe a user from an issue. Only admins can unsubscribe other users.",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DelIssueSubscription",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_subscription.go",
+          "input": "APIContext",
+          "output": "status code",
+          "operations": ["delegates to setIssueSubscription(ctx, false)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.setIssueSubscription",
+          "type": "service",
+          "file_path": "routers/api/v1/repo/issue_subscription.go",
+          "input": "ctx, watch=false",
+          "output": "HTTP status",
+          "operations": ["get issue by index", "get user by name", "check permission (admin or self)", "check current watch state", "create or update watch"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue", "description": "get issue by repo_id and index"},
+            {"operation": "SELECT", "table": "user", "description": "get user by name"},
+            {"operation": "SELECT", "table": "issue_watch", "description": "check current watch state"},
+            {"operation": "INSERT/UPDATE", "table": "issue_watch", "description": "create or update subscription"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "issue not found", "handler": "setIssueSubscription", "response_code": 404, "response": "notFound"},
+        {"condition": "user not found", "handler": "setIssueSubscription", "response_code": 404, "response": "notFound"},
+        {"condition": "non-admin unsubscribing another user", "handler": "setIssueSubscription", "response_code": 403, "response": "forbidden"},
+        {"condition": "already unsubscribed", "handler": "setIssueSubscription", "response_code": 200, "response": "empty"}
+      ]
+    }
+  ]
+}

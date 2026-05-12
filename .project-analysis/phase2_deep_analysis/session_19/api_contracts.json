@@ -1,0 +1,200 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-129",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/avatar",
+      "controller_class": "user",
+      "controller_method": "DeleteAvatar",
+      "description": "Deletes the current user's custom avatar",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 500, "type": "APIError", "condition": "Internal error during avatar deletion"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-130",
+      "http_method": "PUT",
+      "path": "/api/v1/user/actions/secrets/{secretname}",
+      "controller_class": "user",
+      "controller_method": "CreateOrUpdateSecret",
+      "description": "Creates or updates a secret value in the user scope",
+      "request": {
+        "path_params": [{"name": "secretname", "type": "string", "required": true, "validation": ["must match ^[A-Z_][A-Z0-9_]*$", "must not start with GITEA_ or GITHUB_", "must not be CI"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "CreateOrUpdateSecretOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "data", "type": "string", "required": true, "validation": ["max length 65536"], "description": "Secret data value"},
+            {"name": "description", "type": "string", "required": false, "validation": ["max length 4096 runes, truncated if longer"], "description": "Description of the secret"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 204, "type": "empty", "condition": "Secret updated (already existed)"},
+          {"status_code": 400, "type": "APIError", "condition": "Invalid secret name"},
+          {"status_code": 404, "type": "APIError", "condition": "Not found"},
+          {"status_code": 500, "type": "APIError", "condition": "Internal error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-131",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/actions/secrets/{secretname}",
+      "controller_class": "user",
+      "controller_method": "DeleteSecret",
+      "description": "Deletes a secret in the user scope",
+      "request": {
+        "path_params": [{"name": "secretname", "type": "string", "required": true, "validation": ["name of the secret to delete"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "APIError", "condition": "Invalid argument"},
+          {"status_code": 404, "type": "APIError", "condition": "Secret not found"},
+          {"status_code": 500, "type": "APIError", "condition": "Internal error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-132",
+      "http_method": "POST",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "controller_class": "user",
+      "controller_method": "CreateVariable",
+      "description": "Creates a user-level variable",
+      "request": {
+        "path_params": [{"name": "variablename", "type": "string", "required": true, "validation": ["must match ^[A-Z_][A-Z0-9_]*$", "must not start with GITEA_ or GITHUB_", "must not be CI"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "CreateVariableOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "value", "type": "string", "required": true, "validation": ["max 65536 runes"], "description": "Value of the variable"},
+            {"name": "description", "type": "string", "required": false, "validation": ["max 4096 runes, truncated if longer"], "description": "Description of the variable"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "APIError", "condition": "Invalid variable name or data too long"},
+          {"status_code": 409, "type": "APIError", "condition": "Variable name already exists"},
+          {"status_code": 500, "type": "APIError", "condition": "Internal error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-133",
+      "http_method": "PUT",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "controller_class": "user",
+      "controller_method": "UpdateVariable",
+      "description": "Updates a user-level variable created by current doer",
+      "request": {
+        "path_params": [{"name": "variablename", "type": "string", "required": true, "validation": ["name of the variable to update"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "UpdateVariableOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": false, "validation": ["must match ^[A-Z_][A-Z0-9_]*$ if provided"], "description": "New name for the variable (empty means keep current)"},
+            {"name": "value", "type": "string", "required": true, "validation": ["max 65536 runes"], "description": "New value of the variable"},
+            {"name": "description", "type": "string", "required": false, "validation": ["max 4096 runes, truncated if longer"], "description": "New description of the variable"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "APIError", "condition": "Invalid variable name or data too long"},
+          {"status_code": 404, "type": "APIError", "condition": "Variable not found"},
+          {"status_code": 500, "type": "APIError", "condition": "Internal error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-134",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "controller_class": "user",
+      "controller_method": "DeleteVariable",
+      "description": "Deletes a user-level variable created by current doer",
+      "request": {
+        "path_params": [{"name": "variablename", "type": "string", "required": true, "validation": ["name of the variable to delete"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "APIError", "condition": "Invalid argument"},
+          {"status_code": 404, "type": "APIError", "condition": "Variable not found"},
+          {"status_code": 500, "type": "APIError", "condition": "Internal error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

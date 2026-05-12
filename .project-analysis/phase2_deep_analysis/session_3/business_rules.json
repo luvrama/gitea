@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "business_logic",
+      "description": "Settings endpoints return negated boolean values for 'disabled' fields (e.g., MirrorsDisabled = !Mirror.Enabled)",
+      "location": {"class": "settings", "method": "GetGeneralRepoSettings", "file_path": "routers/api/v1/settings/settings.go", "line_number": 62},
+      "condition": "Always",
+      "action": "Negate the internal enabled flag to produce a disabled flag for the API",
+      "affected_endpoints": ["ep-017"],
+      "code_snippet": "MirrorsDisabled: !setting.Mirror.Enabled,"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Notification status-types defaults to [unread, pinned] when not specified for list endpoints",
+      "location": {"class": "notify", "method": "getFindNotificationOptions", "file_path": "routers/api/v1/notify/notifications.go", "line_number": 50},
+      "condition": "!ctx.FormBool(\"all\") && len(statuses) == 0",
+      "action": "Use default statuses [unread, pinned]",
+      "affected_endpoints": ["ep-019", "ep-022"],
+      "code_snippet": "opts.Status = statusStringsToNotificationStatuses(statuses, []string{\"unread\", \"pinned\"})"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Notification status-types defaults to [unread] when not specified for read/mark endpoints",
+      "location": {"class": "notify", "method": "ReadNotifications", "file_path": "routers/api/v1/notify/user.go", "line_number": 119},
+      "condition": "!ctx.FormBool(\"all\") && len(statuses) == 0",
+      "action": "Use default statuses [unread]",
+      "affected_endpoints": ["ep-020"],
+      "code_snippet": "opts.Status = statusStringsToNotificationStatuses(statuses, []string{\"unread\"})"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "When 'all' flag is true, no status filter is applied (all statuses are included)",
+      "location": {"class": "notify", "method": "getFindNotificationOptions", "file_path": "routers/api/v1/notify/notifications.go", "line_number": 48},
+      "condition": "ctx.FormBool(\"all\") == true",
+      "action": "Skip status filtering, return all notifications regardless of status",
+      "affected_endpoints": ["ep-019", "ep-020", "ep-022"],
+      "code_snippet": "if !ctx.FormBool(\"all\") {"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Default target status for marking notifications is 'read' when to-status is not specified or invalid",
+      "location": {"class": "notify", "method": "ReadNotifications", "file_path": "routers/api/v1/notify/user.go", "line_number": 126},
+      "condition": "targetStatus == 0 (invalid or empty to-status)",
+      "action": "Set targetStatus to NotificationStatusRead",
+      "affected_endpoints": ["ep-020"],
+      "code_snippet": "if targetStatus == 0 {\n\ttargetStatus = activities_model.NotificationStatusRead\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "authorization",
+      "description": "Notification endpoints require token with notification scope category",
+      "location": {"class": "api", "method": "tokenRequiresScopes", "file_path": "routers/api/v1/api.go", "line_number": 960},
+      "condition": "Token is API token with scope",
+      "action": "Verify token has AccessTokenScopeCategoryNotification; PUT/PATCH/DELETE require write level",
+      "affected_endpoints": ["ep-019", "ep-020", "ep-021", "ep-022"],
+      "code_snippet": "tokenRequiresScopes(auth_model.AccessTokenScopeCategoryNotification)"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Notification thread access is restricted to the owning user or admin",
+      "location": {"class": "notify", "method": "getThread", "file_path": "routers/api/v1/notify/threads.go", "line_number": 100},
+      "condition": "n.UserID != ctx.Doer.ID && !ctx.Doer.IsAdmin",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-019", "ep-020"],
+      "code_snippet": "if n.UserID != ctx.Doer.ID && !ctx.Doer.IsAdmin {"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "SetNotificationStatus verifies the notification belongs to the requesting user before updating",
+      "location": {"class": "activities_model", "method": "SetNotificationStatus", "file_path": "models/activities/notification.go", "line_number": 237},
+      "condition": "notification.UserID != user.ID",
+      "action": "Return error: Can't change notification of another user",
+      "affected_endpoints": ["ep-020"],
+      "code_snippet": "if notification.UserID != user.ID {\n\treturn nil, fmt.Errorf(\"Can't change notification of another user\")\n}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Repository info is omitted from notification response if user's access has been revoked",
+      "location": {"class": "convert", "method": "ToNotificationThread", "file_path": "services/convert/notification.go", "line_number": 30},
+      "condition": "!perm.HasAnyUnitAccessOrPublicAccess()",
+      "action": "Leave result.Repository as nil in the response",
+      "affected_endpoints": ["ep-019", "ep-020", "ep-022"],
+      "code_snippet": "if perm.HasAnyUnitAccessOrPublicAccess() {\n\tresult.Repository = ToRepo(ctx, n.Repository, perm)\n}"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Subject-type filter maps string values to NotificationSource enum for query filtering",
+      "location": {"class": "notify", "method": "subjectToSource", "file_path": "routers/api/v1/notify/notifications.go", "line_number": 62},
+      "condition": "subject-type query param is provided",
+      "action": "Map issue→NotificationSourceIssue, pull→NotificationSourcePullRequest, commit→NotificationSourceCommit, repository→NotificationSourceRepository",
+      "affected_endpoints": ["ep-019", "ep-022"],
+      "code_snippet": "case \"issue\":\n\tresult = append(result, activities_model.NotificationSourceIssue)"
+    }
+  ]
+}

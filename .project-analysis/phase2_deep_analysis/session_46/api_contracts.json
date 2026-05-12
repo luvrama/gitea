@@ -1,0 +1,306 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-312",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "controller_class": "repo",
+      "controller_method": "GetBranchProtection",
+      "description": "Get a specific branch protection rule for the repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "name", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "API token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.BranchProtection",
+          "fields": [
+            {"name": "branch_name", "type": "string", "description": "Deprecated: branch name (empty for glob rules)"},
+            {"name": "rule_name", "type": "string", "description": "Name of the branch protection rule"},
+            {"name": "priority", "type": "int64", "description": "Priority of this rule"},
+            {"name": "enable_push", "type": "bool", "description": "Whether push is enabled"},
+            {"name": "enable_push_whitelist", "type": "bool", "description": "Whether push whitelist is enabled"},
+            {"name": "push_whitelist_usernames", "type": "[]string", "description": "Usernames in push whitelist"},
+            {"name": "push_whitelist_teams", "type": "[]string", "description": "Teams in push whitelist"},
+            {"name": "push_whitelist_deploy_keys", "type": "bool", "description": "Whether deploy keys can push"},
+            {"name": "enable_force_push", "type": "bool", "description": "Whether force push is enabled"},
+            {"name": "enable_force_push_allowlist", "type": "bool", "description": "Whether force push allowlist is enabled"},
+            {"name": "force_push_allowlist_usernames", "type": "[]string", "description": "Usernames in force push allowlist"},
+            {"name": "force_push_allowlist_teams", "type": "[]string", "description": "Teams in force push allowlist"},
+            {"name": "force_push_allowlist_deploy_keys", "type": "bool", "description": "Whether deploy keys can force push"},
+            {"name": "enable_merge_whitelist", "type": "bool", "description": "Whether merge whitelist is enabled"},
+            {"name": "merge_whitelist_usernames", "type": "[]string", "description": "Usernames in merge whitelist"},
+            {"name": "merge_whitelist_teams", "type": "[]string", "description": "Teams in merge whitelist"},
+            {"name": "enable_status_check", "type": "bool", "description": "Whether status checks are required"},
+            {"name": "status_check_contexts", "type": "[]string", "description": "Required status check contexts"},
+            {"name": "required_approvals", "type": "int64", "description": "Number of required approvals"},
+            {"name": "enable_approvals_whitelist", "type": "bool", "description": "Whether approvals whitelist is enabled"},
+            {"name": "approvals_whitelist_username", "type": "[]string", "description": "Usernames in approvals whitelist"},
+            {"name": "approvals_whitelist_teams", "type": "[]string", "description": "Teams in approvals whitelist"},
+            {"name": "block_on_rejected_reviews", "type": "bool", "description": "Block merge on rejected reviews"},
+            {"name": "block_on_official_review_requests", "type": "bool", "description": "Block merge on official review requests"},
+            {"name": "block_on_outdated_branch", "type": "bool", "description": "Block merge on outdated branch"},
+            {"name": "dismiss_stale_approvals", "type": "bool", "description": "Dismiss stale approvals"},
+            {"name": "ignore_stale_approvals", "type": "bool", "description": "Ignore stale approvals"},
+            {"name": "require_signed_commits", "type": "bool", "description": "Require signed commits"},
+            {"name": "protected_file_patterns", "type": "string", "description": "Semicolon-separated protected file patterns"},
+            {"name": "unprotected_file_patterns", "type": "string", "description": "Semicolon-separated unprotected file patterns"},
+            {"name": "block_admin_merge_override", "type": "bool", "description": "Block admin merge override"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation timestamp"},
+            {"name": "updated_at", "type": "time.Time", "description": "Last update timestamp"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Branch protection rule not found or wrong repo"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-313",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections",
+      "controller_class": "repo",
+      "controller_method": "ListBranchProtections",
+      "description": "List all branch protection rules for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "API token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.BranchProtection",
+          "fields": [
+            {"name": "[]", "type": "api.BranchProtection", "description": "Array of branch protection rules"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-314",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections",
+      "controller_class": "repo",
+      "controller_method": "CreateBranchProtection",
+      "description": "Create a branch protection rule for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "API token or basic auth"}],
+        "body": {
+          "type": "api.CreateBranchProtectionOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "branch_name", "type": "string", "required": false, "validation": ["deprecated, use rule_name"], "description": "Deprecated branch name"},
+            {"name": "rule_name", "type": "string", "required": false, "validation": ["either rule_name or branch_name must be set"], "description": "Rule name (can be glob pattern)"},
+            {"name": "priority", "type": "int64", "required": false, "validation": [], "description": "Priority of the rule"},
+            {"name": "enable_push", "type": "bool", "required": false, "validation": [], "description": "Enable push"},
+            {"name": "enable_push_whitelist", "type": "bool", "required": false, "validation": [], "description": "Enable push whitelist"},
+            {"name": "push_whitelist_usernames", "type": "[]string", "required": false, "validation": ["users must exist"], "description": "Push whitelist usernames"},
+            {"name": "push_whitelist_teams", "type": "[]string", "required": false, "validation": ["teams must exist in org"], "description": "Push whitelist teams"},
+            {"name": "push_whitelist_deploy_keys", "type": "bool", "required": false, "validation": [], "description": "Allow deploy keys to push"},
+            {"name": "enable_force_push", "type": "bool", "required": false, "validation": [], "description": "Enable force push"},
+            {"name": "enable_force_push_allowlist", "type": "bool", "required": false, "validation": [], "description": "Enable force push allowlist"},
+            {"name": "force_push_allowlist_usernames", "type": "[]string", "required": false, "validation": ["users must exist"], "description": "Force push allowlist usernames"},
+            {"name": "force_push_allowlist_teams", "type": "[]string", "required": false, "validation": ["teams must exist in org"], "description": "Force push allowlist teams"},
+            {"name": "force_push_allowlist_deploy_keys", "type": "bool", "required": false, "validation": [], "description": "Allow deploy keys to force push"},
+            {"name": "enable_merge_whitelist", "type": "bool", "required": false, "validation": [], "description": "Enable merge whitelist"},
+            {"name": "merge_whitelist_usernames", "type": "[]string", "required": false, "validation": ["users must exist"], "description": "Merge whitelist usernames"},
+            {"name": "merge_whitelist_teams", "type": "[]string", "required": false, "validation": ["teams must exist in org"], "description": "Merge whitelist teams"},
+            {"name": "enable_status_check", "type": "bool", "required": false, "validation": [], "description": "Enable status checks"},
+            {"name": "status_check_contexts", "type": "[]string", "required": false, "validation": [], "description": "Required status check contexts"},
+            {"name": "required_approvals", "type": "int64", "required": false, "validation": ["must be > 0 to take effect"], "description": "Required approvals count"},
+            {"name": "enable_approvals_whitelist", "type": "bool", "required": false, "validation": [], "description": "Enable approvals whitelist"},
+            {"name": "approvals_whitelist_username", "type": "[]string", "required": false, "validation": ["users must exist"], "description": "Approvals whitelist usernames"},
+            {"name": "approvals_whitelist_teams", "type": "[]string", "required": false, "validation": ["teams must exist in org"], "description": "Approvals whitelist teams"},
+            {"name": "block_on_rejected_reviews", "type": "bool", "required": false, "validation": [], "description": "Block on rejected reviews"},
+            {"name": "block_on_official_review_requests", "type": "bool", "required": false, "validation": [], "description": "Block on official review requests"},
+            {"name": "block_on_outdated_branch", "type": "bool", "required": false, "validation": [], "description": "Block on outdated branch"},
+            {"name": "dismiss_stale_approvals", "type": "bool", "required": false, "validation": [], "description": "Dismiss stale approvals"},
+            {"name": "ignore_stale_approvals", "type": "bool", "required": false, "validation": [], "description": "Ignore stale approvals"},
+            {"name": "require_signed_commits", "type": "bool", "required": false, "validation": [], "description": "Require signed commits"},
+            {"name": "protected_file_patterns", "type": "string", "required": false, "validation": [], "description": "Semicolon-separated protected file patterns"},
+            {"name": "unprotected_file_patterns", "type": "string", "required": false, "validation": [], "description": "Semicolon-separated unprotected file patterns"},
+            {"name": "block_admin_merge_override", "type": "bool", "required": false, "validation": [], "description": "Block admin merge override"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.BranchProtection",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Both rule_name and branch_name are empty"},
+          {"status_code": 403, "type": "forbidden", "condition": "Branch protection already exists for this rule name"},
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 422, "type": "validationError", "condition": "User or team in whitelist does not exist"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Repository is archived"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-315",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "controller_class": "repo",
+      "controller_method": "EditBranchProtection",
+      "description": "Edit a branch protection rule for a repository. Only fields that are set will be changed",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "name", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "API token or basic auth"}],
+        "body": {
+          "type": "api.EditBranchProtectionOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "priority", "type": "*int64", "required": false, "validation": [], "description": "Priority of the rule"},
+            {"name": "enable_push", "type": "*bool", "required": false, "validation": [], "description": "Enable push"},
+            {"name": "enable_push_whitelist", "type": "*bool", "required": false, "validation": [], "description": "Enable push whitelist"},
+            {"name": "push_whitelist_usernames", "type": "[]string", "required": false, "validation": ["users must exist"], "description": "Push whitelist usernames"},
+            {"name": "push_whitelist_teams", "type": "[]string", "required": false, "validation": ["teams must exist in org"], "description": "Push whitelist teams"},
+            {"name": "push_whitelist_deploy_keys", "type": "*bool", "required": false, "validation": [], "description": "Allow deploy keys to push"},
+            {"name": "enable_force_push", "type": "*bool", "required": false, "validation": [], "description": "Enable force push"},
+            {"name": "enable_force_push_allowlist", "type": "*bool", "required": false, "validation": [], "description": "Enable force push allowlist"},
+            {"name": "force_push_allowlist_usernames", "type": "[]string", "required": false, "validation": ["users must exist"], "description": "Force push allowlist usernames"},
+            {"name": "force_push_allowlist_teams", "type": "[]string", "required": false, "validation": ["teams must exist in org"], "description": "Force push allowlist teams"},
+            {"name": "force_push_allowlist_deploy_keys", "type": "*bool", "required": false, "validation": [], "description": "Allow deploy keys to force push"},
+            {"name": "enable_merge_whitelist", "type": "*bool", "required": false, "validation": [], "description": "Enable merge whitelist"},
+            {"name": "merge_whitelist_usernames", "type": "[]string", "required": false, "validation": ["users must exist"], "description": "Merge whitelist usernames"},
+            {"name": "merge_whitelist_teams", "type": "[]string", "required": false, "validation": ["teams must exist in org"], "description": "Merge whitelist teams"},
+            {"name": "enable_status_check", "type": "*bool", "required": false, "validation": [], "description": "Enable status checks"},
+            {"name": "status_check_contexts", "type": "[]string", "required": false, "validation": [], "description": "Required status check contexts"},
+            {"name": "required_approvals", "type": "*int64", "required": false, "validation": ["must be >= 0"], "description": "Required approvals count"},
+            {"name": "enable_approvals_whitelist", "type": "*bool", "required": false, "validation": [], "description": "Enable approvals whitelist"},
+            {"name": "approvals_whitelist_username", "type": "[]string", "required": false, "validation": ["users must exist"], "description": "Approvals whitelist usernames"},
+            {"name": "approvals_whitelist_teams", "type": "[]string", "required": false, "validation": ["teams must exist in org"], "description": "Approvals whitelist teams"},
+            {"name": "block_on_rejected_reviews", "type": "*bool", "required": false, "validation": [], "description": "Block on rejected reviews"},
+            {"name": "block_on_official_review_requests", "type": "*bool", "required": false, "validation": [], "description": "Block on official review requests"},
+            {"name": "block_on_outdated_branch", "type": "*bool", "required": false, "validation": [], "description": "Block on outdated branch"},
+            {"name": "dismiss_stale_approvals", "type": "*bool", "required": false, "validation": [], "description": "Dismiss stale approvals"},
+            {"name": "ignore_stale_approvals", "type": "*bool", "required": false, "validation": [], "description": "Ignore stale approvals"},
+            {"name": "require_signed_commits", "type": "*bool", "required": false, "validation": [], "description": "Require signed commits"},
+            {"name": "protected_file_patterns", "type": "*string", "required": false, "validation": [], "description": "Semicolon-separated protected file patterns"},
+            {"name": "unprotected_file_patterns", "type": "*string", "required": false, "validation": [], "description": "Semicolon-separated unprotected file patterns"},
+            {"name": "block_admin_merge_override", "type": "*bool", "required": false, "validation": [], "description": "Block admin merge override"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.BranchProtection",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Branch protection rule not found"},
+          {"status_code": 422, "type": "validationError", "condition": "User or team in whitelist does not exist"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Repository is archived"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-316",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "controller_class": "repo",
+      "controller_method": "DeleteBranchProtection",
+      "description": "Delete a specific branch protection rule for the repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "name", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "API token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Branch protection rule not found or wrong repo"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-317",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/priority",
+      "controller_class": "repo",
+      "controller_method": "UpdateBranchProtectionPriories",
+      "description": "Update the priorities of branch protection rules for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "API token or basic auth"}],
+        "body": {
+          "type": "api.UpdateBranchProtectionPriories",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "ids", "type": "[]int64", "required": true, "validation": ["must be valid branch protection rule IDs for this repo"], "description": "Ordered list of branch protection rule IDs"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid rule IDs"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Repository is archived"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

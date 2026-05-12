@@ -1,0 +1,292 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-106",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/runs",
+      "controller_class": "admin",
+      "controller_method": "ListWorkflowRuns",
+      "description": "Lists all workflow runs across all repositories (admin-level)",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "event", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "branch", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "status", "type": "string", "required": false, "default": null, "validation": ["pending|waiting|requested|action_required|queued|in_progress|completed|failure|success|skipped|neutral|cancelled|timed_out"]},
+          {"name": "actor", "type": "string", "required": false, "default": null, "validation": ["must be existing username"]},
+          {"name": "head_sha", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min:1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected by ToCorrectPageSize"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token with admin scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionWorkflowRunsResponse",
+          "fields": [
+            {"name": "workflow_runs", "type": "[]*ActionWorkflowRun", "description": "List of workflow runs"},
+            {"name": "total_count", "type": "int64", "description": "Total number of matching runs"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid status value provided"},
+          {"status_code": 404, "type": "notFound", "condition": "Not found"},
+          {"status_code": 500, "type": "internal", "condition": "DB error or user lookup failure"}
+        ]
+      },
+      "authentication": "bearer (token with AccessTokenScopeCategoryAdmin)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-107",
+      "http_method": "GET",
+      "path": "/api/v1/admin/unadopted",
+      "controller_class": "admin",
+      "controller_method": "ListUnadoptedRepositories",
+      "description": "Lists unadopted repositories (git repos on disk not tracked in DB)",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min:1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected by ToCorrectPageSize"]},
+          {"name": "pattern", "type": "string", "required": false, "default": null, "validation": ["glob pattern, supports owner/repo format"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token with admin scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]string",
+          "fields": [
+            {"name": "(array elements)", "type": "string", "description": "Repository paths in owner/repo format"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Non-admin user"},
+          {"status_code": 500, "type": "internal", "condition": "Filesystem walk error or DB error"}
+        ]
+      },
+      "authentication": "bearer (token with AccessTokenScopeCategoryAdmin)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-108",
+      "http_method": "POST",
+      "path": "/api/v1/admin/unadopted/{owner}/{repo}",
+      "controller_class": "admin",
+      "controller_method": "AdoptRepository",
+      "description": "Adopts unadopted files on disk as a repository tracked in the database",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must be existing username"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["must be valid repo name"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token with admin scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Non-admin user"},
+          {"status_code": 404, "type": "notFound", "condition": "User not found, repo already in DB, or git repo not on disk"},
+          {"status_code": 500, "type": "internal", "condition": "DB error or adoption failure"}
+        ]
+      },
+      "authentication": "bearer (token with AccessTokenScopeCategoryAdmin)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-109",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/unadopted/{owner}/{repo}",
+      "controller_class": "admin",
+      "controller_method": "DeleteUnadoptedRepository",
+      "description": "Deletes unadopted repository files from the filesystem",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must be existing username"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["must be valid repo name"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token with admin scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Non-admin user"},
+          {"status_code": 404, "type": "notFound", "condition": "User not found, repo already in DB, or git repo not on disk"},
+          {"status_code": 500, "type": "internal", "condition": "DB error or deletion failure"}
+        ]
+      },
+      "authentication": "bearer (token with AccessTokenScopeCategoryAdmin)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-110",
+      "http_method": "GET",
+      "path": "/api/v1/admin/cron",
+      "controller_class": "admin",
+      "controller_method": "ListCronTasks",
+      "description": "Lists all registered cron tasks with their schedule and execution info",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min:1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected by ToCorrectPageSize"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token with admin scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]Cron",
+          "fields": [
+            {"name": "name", "type": "string", "description": "Task name"},
+            {"name": "schedule", "type": "string", "description": "Cron schedule expression"},
+            {"name": "next", "type": "time.Time", "description": "Next scheduled execution"},
+            {"name": "prev", "type": "time.Time", "description": "Previous execution time"},
+            {"name": "exec_times", "type": "int64", "description": "Total execution count"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Non-admin user"}
+        ]
+      },
+      "authentication": "bearer (token with AccessTokenScopeCategoryAdmin)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-111",
+      "http_method": "POST",
+      "path": "/api/v1/admin/cron/{task}",
+      "controller_class": "admin",
+      "controller_method": "PostCronTask",
+      "description": "Triggers a cron task to run immediately",
+      "request": {
+        "path_params": [
+          {"name": "task", "type": "string", "required": true, "validation": ["must be registered task name"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token with admin scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Task name not found in registered tasks"}
+        ]
+      },
+      "authentication": "bearer (token with AccessTokenScopeCategoryAdmin)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-112",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/repos",
+      "controller_class": "admin",
+      "controller_method": "CreateRepo",
+      "description": "Creates a repository on behalf of a user (admin only)",
+      "request": {
+        "path_params": [
+          {"name": "username", "type": "string", "required": true, "validation": ["must be existing user"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token with admin scope"}],
+        "body": {
+          "type": "CreateRepoOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": true, "validation": ["AlphaDashDot", "MaxSize(100)"], "description": "Repository name"},
+            {"name": "description", "type": "string", "required": false, "validation": ["MaxSize(2048)"], "description": "Repository description"},
+            {"name": "private", "type": "bool", "required": false, "validation": [], "description": "Whether repo is private"},
+            {"name": "issue_labels", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Label-Set to use"},
+            {"name": "auto_init", "type": "bool", "required": false, "validation": [], "description": "Auto-initialize with README"},
+            {"name": "template", "type": "bool", "required": false, "validation": [], "description": "Whether repo is a template"},
+            {"name": "gitignores", "type": "string", "required": false, "validation": [], "description": "Gitignores to use"},
+            {"name": "license", "type": "string", "required": false, "validation": ["MaxSize(100)"], "description": "License to use"},
+            {"name": "readme", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Readme template"},
+            {"name": "default_branch", "type": "string", "required": false, "validation": ["GitRefName", "MaxSize(100)"], "description": "Default branch name"},
+            {"name": "trust_model", "type": "string", "required": false, "validation": ["enum: default,collaborator,committer,collaboratorcommitter"], "description": "Trust model"},
+            {"name": "object_format_name", "type": "string", "required": false, "validation": ["MaxSize(6)"], "description": "Object format (sha1 default)"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Repository ID"},
+            {"name": "name", "type": "string", "description": "Repository name"},
+            {"name": "full_name", "type": "string", "description": "Full name (owner/repo)"},
+            {"name": "owner", "type": "User", "description": "Repository owner"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid readme template"},
+          {"status_code": 403, "type": "forbidden", "condition": "Permission denied"},
+          {"status_code": 404, "type": "notFound", "condition": "User not found"},
+          {"status_code": 409, "type": "error", "condition": "Repository with same name already exists"},
+          {"status_code": 422, "type": "validationError", "condition": "Reserved name or invalid pattern"}
+        ]
+      },
+      "authentication": "bearer (token with AccessTokenScopeCategoryAdmin)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-113",
+      "http_method": "POST",
+      "path": "/api/v1/admin/actions/runners/registration-token",
+      "controller_class": "admin",
+      "controller_method": "CreateRegistrationToken",
+      "description": "Gets or creates a global actions runner registration token",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token with admin scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "RegistrationToken",
+          "fields": [
+            {"name": "token", "type": "string", "description": "Registration token string (40 char random)"}
+          ]
+        },
+        "errors": [
+          {"status_code": 500, "type": "internal", "condition": "DB error creating/fetching token"}
+        ]
+      },
+      "authentication": "bearer (token with AccessTokenScopeCategoryAdmin)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

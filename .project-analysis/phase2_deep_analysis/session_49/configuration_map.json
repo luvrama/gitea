@@ -1,0 +1,13 @@
+{
+  "total_properties": 1,
+  "properties": [
+    {
+      "key": "service.AUTO_WATCH_NEW_REPOS",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/service.go",
+      "used_by": [{"class": "repository", "method": "addRepositoryToTeam", "file_path": "services/repository/repo_team.go", "usage": "conditional auto-watch", "impact": "if true, all team members auto-watch repo when team is added"}],
+      "affected_endpoints": ["ep-331"]
+    }
+  ]
+}

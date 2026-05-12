@@ -1,0 +1,201 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-190",
+      "http_method": "GET",
+      "path": "/api/v1/user/blocks",
+      "controller_class": "user",
+      "controller_method": "ListBlocks",
+      "description": "List users blocked by the authenticated user",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min:1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": ["max:setting.API.MaxResponseItems"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "user ID"},
+            {"name": "login", "type": "string", "description": "username"},
+            {"name": "full_name", "type": "string", "description": "display name"},
+            {"name": "email", "type": "string", "description": "email address"},
+            {"name": "avatar_url", "type": "string", "description": "avatar URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 500, "type": "APIError", "condition": "Database error in FindBlockings or LoadAttributes"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-191",
+      "http_method": "GET",
+      "path": "/api/v1/user/blocks/{username}",
+      "controller_class": "user",
+      "controller_method": "CheckUserBlock",
+      "description": "Check if a user is blocked by the authenticated user",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": ["must exist as user"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIError", "condition": "User not found or not blocked"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-192",
+      "http_method": "PUT",
+      "path": "/api/v1/user/blocks/{username}",
+      "controller_class": "user",
+      "controller_method": "BlockUser",
+      "description": "Block a user",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": ["must exist as user"]}],
+        "query_params": [
+          {"name": "note", "type": "string", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIError", "condition": "User not found by username"},
+          {"status_code": 400, "type": "APIError", "condition": "Cannot block (self, org member, already blocked by target, or not authorized)"},
+          {"status_code": 422, "type": "validationError", "condition": "Cannot block organization"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-193",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/blocks/{username}",
+      "controller_class": "user",
+      "controller_method": "UnblockUser",
+      "description": "Unblock a user",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": ["must exist as user"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIError", "condition": "User not found by username"},
+          {"status_code": 400, "type": "APIError", "condition": "Cannot unblock (not blocked, or not authorized)"},
+          {"status_code": 422, "type": "validationError", "condition": "Cannot unblock organization"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-194",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/subscriptions",
+      "controller_class": "user",
+      "controller_method": "GetWatchedRepos",
+      "description": "List the repositories watched by a user",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": ["must exist as user"]}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min:1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": ["max:setting.API.MaxResponseItems"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "repository ID"},
+            {"name": "name", "type": "string", "description": "repository name"},
+            {"name": "full_name", "type": "string", "description": "owner/name"},
+            {"name": "private", "type": "bool", "description": "is private"},
+            {"name": "owner", "type": "User", "description": "repository owner"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIError", "condition": "User not found"},
+          {"status_code": 500, "type": "APIError", "condition": "Database error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-195",
+      "http_method": "GET",
+      "path": "/api/v1/user/subscriptions",
+      "controller_class": "user",
+      "controller_method": "GetMyWatchedRepos",
+      "description": "List repositories watched by the authenticated user",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min:1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": ["max:setting.API.MaxResponseItems"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "repository ID"},
+            {"name": "name", "type": "string", "description": "repository name"},
+            {"name": "full_name", "type": "string", "description": "owner/name"},
+            {"name": "private", "type": "bool", "description": "is private"},
+            {"name": "owner", "type": "User", "description": "repository owner"}
+          ]
+        },
+        "errors": [
+          {"status_code": 500, "type": "APIError", "condition": "Database error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

@@ -1,0 +1,168 @@
+{
+  "total_findings": 6,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-196",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, only local DB query",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - simple DB read",
+      "graceful_degradation": "Returns 404 if not watching, 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-197",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Watch record insert/update and repository counter update are separate operations but within same DB session (not explicit transaction)",
+          "recommendation": "Consider wrapping in explicit transaction to ensure counter consistency"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "watchRepoMode checks if mode is already the target mode and returns nil - safe to retry",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": ["Watch record update and repository num_watches counter update are separate SQL statements"],
+      "cascading_failure_risk": "Minimal - only affects watch counter accuracy",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-198",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "If watch mode is already None, watchRepoMode returns nil without changes",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": ["Watch record delete and repository num_watches counter update are separate SQL statements"],
+      "cascading_failure_risk": "Minimal",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-199",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only operation",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-200",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only operation",
+      "graceful_degradation": "Returns 404 if not found, 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-201",
+      "http_method": "DELETE",
+      "path": "/api/v1/packages/{owner}/{type}/{name}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Deletion is wrapped in db.WithTx - all deletes are atomic within a transaction",
+          "recommendation": "None needed - properly transactional"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "If package doesn't exist, middleware returns 404 before handler runs. Safe to retry.",
+          "recommendation": "None needed"
+        },
+        {
+          "pattern": "cascading_failure",
+          "status": "not_applicable",
+          "severity": "medium",
+          "detail": "Blob storage cleanup is deferred to cron task. If cron fails, orphaned blobs accumulate but don't affect functionality.",
+          "recommendation": "Monitor cleanup_packages cron task for failures"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Low - deferred blob cleanup means storage won't be freed immediately but no data inconsistency",
+      "graceful_degradation": "Returns 500 on DB failure; blob cleanup handled asynchronously by cron"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": "/api/v1/version",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea handles graceful shutdown via graceful module",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in rate limiting on API endpoints",
+      "recommendation": "Consider adding rate limiting middleware or using reverse proxy rate limiting"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message queues used in these endpoints"
+    },
+    "single_points_of_failure": [
+      "Database - all endpoints depend on single DB connection"
+    ],
+    "cascading_failure_paths": []
+  }
+}

@@ -1,0 +1,186 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 5,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "watch",
+      "entity_class": "repo_model.Watch",
+      "file_path": "models/repo/watch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(watch)"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(watch)"]},
+        {"name": "mode", "type": "SMALLINT", "code_type": "WatchMode (int8)", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "1", "constraints": ["NOT NULL DEFAULT 1"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_watch_s", "columns": ["user_id", "repo_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "package",
+      "entity_class": "packages_model.Package",
+      "file_path": "models/packages/package.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s) INDEX NOT NULL"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "type", "type": "VARCHAR", "code_type": "Type (string)", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s) INDEX NOT NULL"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s) INDEX NOT NULL"]},
+        {"name": "semver_compatible", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "is_internal", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]}
+      ],
+      "indexes": [
+        {"name": "UQE_package_s", "columns": ["owner_id", "type", "lower_name"], "unique": true},
+        {"name": "IDX_package_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "one-to-many", "target_table": "package_version", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "package_version",
+      "entity_class": "packages_model.PackageVersion",
+      "file_path": "models/packages/package_version.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "package_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s) INDEX NOT NULL"]},
+        {"name": "creator_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL DEFAULT 0"]},
+        {"name": "version", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "lower_version", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s) INDEX NOT NULL"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["created INDEX NOT NULL"]},
+        {"name": "is_internal", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "false", "constraints": ["INDEX NOT NULL DEFAULT false"]},
+        {"name": "metadata_json", "type": "LONGTEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "download_count", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL DEFAULT 0"]}
+      ],
+      "indexes": [
+        {"name": "UQE_package_version_s", "columns": ["package_id", "lower_version"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "package", "join_column": "package_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "creator_id"},
+        {"type": "one-to-many", "target_table": "package_file", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "package_file",
+      "entity_class": "packages_model.PackageFile",
+      "file_path": "models/packages/package_file.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "version_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s) INDEX NOT NULL"]},
+        {"name": "blob_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX NOT NULL"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s) INDEX NOT NULL"]},
+        {"name": "composite_key", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s) INDEX"]},
+        {"name": "is_lead", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["created INDEX NOT NULL"]}
+      ],
+      "indexes": [
+        {"name": "UQE_package_file_s", "columns": ["version_id", "lower_name", "composite_key"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "package_version", "join_column": "version_id"},
+        {"type": "many-to-one", "target_table": "package_blob", "join_column": "blob_id"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "package_property",
+      "entity_class": "packages_model.PackageProperty",
+      "file_path": "models/packages/package_property.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "ref_type", "type": "INTEGER", "code_type": "PropertyType (int64)", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "ref_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "value", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_package_property_ref", "columns": ["ref_type", "ref_id"], "unique": false}
+      ],
+      "relationships": []
+    }
+  ],
+  "cache_stores": [
+    {"store_id": "cache-001", "name": "EphemeralCache", "technology": "in-memory", "key_pattern": "package:{id}, user:{id}, repo:{id}, package_file_blob:{id}", "ttl_seconds": null, "description": "Per-request ephemeral cache for package descriptor building to avoid repeated DB lookups"}
+  ],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-196",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "operations": [
+        {"store_type": "database", "store_name": "watch", "operation": "SELECT", "method": "repo_model.GetWatch", "description": "Check if user watches repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-197",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "operations": [
+        {"store_type": "database", "store_name": "watch", "operation": "SELECT", "method": "repo_model.GetWatch", "description": "Get existing watch record"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.IsUserBlockedBy", "description": "Check if user is blocked"},
+        {"store_type": "database", "store_name": "watch", "operation": "INSERT", "method": "repo_model.watchRepoMode", "description": "Insert or update watch record"},
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "repo_model.watchRepoMode", "description": "Update num_watches counter"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-198",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "operations": [
+        {"store_type": "database", "store_name": "watch", "operation": "SELECT", "method": "repo_model.GetWatch", "description": "Get existing watch record"},
+        {"store_type": "database", "store_name": "watch", "operation": "DELETE", "method": "repo_model.watchRepoMode", "description": "Delete or update watch record"},
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "repo_model.watchRepoMode", "description": "Decrement num_watches counter"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-199",
+      "path": "/api/v1/packages/{owner}",
+      "operations": [
+        {"store_type": "database", "store_name": "package_version JOIN package", "operation": "SELECT", "method": "packages_model.SearchVersions", "description": "Search package versions with filters"},
+        {"store_type": "database", "store_name": "package", "operation": "SELECT", "method": "packages_model.GetPackageByID", "description": "Get package details for each version"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByID", "description": "Get owner and creator"},
+        {"store_type": "database", "store_name": "package_property", "operation": "SELECT", "method": "packages_model.GetProperties", "description": "Get package and version properties"},
+        {"store_type": "database", "store_name": "package_file", "operation": "SELECT", "method": "packages_model.GetFilesByVersionID", "description": "Get files for each version"},
+        {"store_type": "cache", "store_name": "EphemeralCache", "operation": "GET", "method": "cache.GetWithEphemeralCache", "description": "Cache package, user, repo lookups within request"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-200",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "operations": [
+        {"store_type": "database", "store_name": "package_version JOIN package", "operation": "SELECT", "method": "packages_model.GetVersionByNameAndVersion", "description": "Find specific version"},
+        {"store_type": "database", "store_name": "package", "operation": "SELECT", "method": "packages_model.GetPackageByID", "description": "Get package details"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByID", "description": "Get owner and creator"},
+        {"store_type": "database", "store_name": "package_property", "operation": "SELECT", "method": "packages_model.GetProperties", "description": "Get properties"},
+        {"store_type": "database", "store_name": "package_file", "operation": "SELECT", "method": "packages_model.GetFilesByVersionID", "description": "Get files"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "access_model.GetDoerRepoPermission", "description": "Check permission on linked repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-201",
+      "path": "/api/v1/packages/{owner}/{type}/{name}",
+      "operations": [
+        {"store_type": "database", "store_name": "package", "operation": "SELECT", "method": "packages_model.GetPackageByName", "description": "Find package by name"},
+        {"store_type": "database", "store_name": "package_version", "operation": "SELECT", "method": "packages_model.GetAllPackageDescriptors", "description": "Get all versions"},
+        {"store_type": "database", "store_name": "package_property", "operation": "DELETE", "method": "packages_model.DeletePropertiesByPackageID", "description": "Delete all properties"},
+        {"store_type": "database", "store_name": "package_file", "operation": "DELETE", "method": "packages_model.DeleteFilesByPackageID", "description": "Delete all files"},
+        {"store_type": "database", "store_name": "package_version", "operation": "DELETE", "method": "packages_model.DeleteVersionsByPackageID", "description": "Delete all versions"},
+        {"store_type": "database", "store_name": "package", "operation": "DELETE", "method": "packages_model.DeletePackageByID", "description": "Delete the package"}
+      ]
+    }
+  ]
+}

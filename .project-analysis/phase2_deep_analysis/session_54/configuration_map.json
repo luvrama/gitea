@@ -1,0 +1,29 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "repository.ForcePrivate",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "repo", "method": "updateBasicProperties", "file_path": "routers/api/v1/repo/repo.go", "usage": "Prevent changing private to public", "impact": "Non-admin users cannot make repos public"}],
+      "affected_endpoints": ["ep-369"]
+    },
+    {
+      "key": "mirror.MinInterval",
+      "type": "Duration",
+      "default_value": "10m0s",
+      "source_file": "modules/setting/mirror.go",
+      "used_by": [{"class": "repo", "method": "updateMirror", "file_path": "routers/api/v1/repo/repo.go", "usage": "Validate mirror interval minimum", "impact": "Rejects intervals shorter than configured minimum"}],
+      "affected_endpoints": ["ep-369"]
+    },
+    {
+      "key": "repository.issue.MaxPinned",
+      "type": "Integer",
+      "default_value": "3",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "issues_model", "method": "PinIssue", "file_path": "models/issues/issue_pin.go", "usage": "Limit max pinned issues per repo", "impact": "Returns error when max reached"}],
+      "affected_endpoints": ["ep-371"]
+    }
+  ]
+}

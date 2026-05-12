@@ -1,0 +1,26 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "Git CLI (fork clone)",
+      "type": "cli_process",
+      "base_url": "local filesystem",
+      "client_class": "gitrepo",
+      "file_path": "modules/gitrepo/clone.go",
+      "http_library": "os/exec",
+      "endpoints_called": [
+        {"method": "EXEC", "path": "git clone --bare", "request": {"type": "CloneRepoOptions", "key_fields": ["Bare", "Timeout", "SingleBranch"]}, "response": {"type": "error", "key_fields": []}, "purpose": "clone base repo to create fork"}
+      ],
+      "resilience": {
+        "timeout_ms": 600000,
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": null
+      },
+      "authentication": "none",
+      "used_by_endpoints": ["ep-334"],
+      "config_keys": []
+    }
+  ]
+}

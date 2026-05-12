@@ -1,0 +1,75 @@
+{
+  "total_rules": 7,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Label template name is sanitized via PathJoinRelX to prevent path traversal",
+      "location": {"class": "misc", "method": "GetLabelTemplate", "file_path": "routers/api/v1/misc/label_templates.go", "line_number": 51},
+      "condition": "Always applied to path param 'name'",
+      "action": "Sanitize path to prevent directory traversal",
+      "affected_endpoints": ["ep-003"],
+      "code_snippet": "name := util.PathJoinRelX(ctx.PathParam(\"name\"))"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Gitignore template name is sanitized via PathJoinRelX to prevent path traversal",
+      "location": {"class": "misc", "method": "GetGitignoreTemplateInfo", "file_path": "routers/api/v1/misc/gitignore.go", "line_number": 47},
+      "condition": "Always applied to path param 'name'",
+      "action": "Sanitize path to prevent directory traversal",
+      "affected_endpoints": ["ep-012"],
+      "code_snippet": "name := util.PathJoinRelX(ctx.PathParam(\"name\"))"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Signing key format must match expected format (openpgp or ssh), otherwise 404",
+      "location": {"class": "misc", "method": "getSigningKey", "file_path": "routers/api/v1/misc/signing.go", "line_number": 20},
+      "condition": "format != expectedFormat",
+      "action": "Return 404 with message about actual format",
+      "affected_endpoints": ["ep-004", "ep-005", "ep-006", "ep-007"],
+      "code_snippet": "} else if format != expectedFormat {\n\tctx.APIErrorNotFound(\"signing key format is \" + format)"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "If signing key is 'none', no key is returned",
+      "location": {"class": "git", "method": "GetSigningKey", "file_path": "modules/git/key.go", "line_number": 37},
+      "condition": "setting.Repository.Signing.SigningKey == \"none\"",
+      "action": "Return nil (no signing key available)",
+      "affected_endpoints": ["ep-004", "ep-005", "ep-006", "ep-007"],
+      "code_snippet": "if setting.Repository.Signing.SigningKey == \"none\" {\n\treturn nil, nil\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "If signing key is 'default', reads git global config to determine key",
+      "location": {"class": "git", "method": "GetSigningKey", "file_path": "modules/git/key.go", "line_number": 41},
+      "condition": "setting.Repository.Signing.SigningKey == \"default\" || == \"\"",
+      "action": "Read commit.gpgsign, gpg.format, user.signingkey from git global config",
+      "affected_endpoints": ["ep-004", "ep-005", "ep-006", "ep-007"],
+      "code_snippet": "value, _, _ := gitcmd.NewCommand(\"config\", \"--global\", \"--get\", \"commit.gpgsign\").RunStdString(ctx)"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Markup Wiki flag is deprecated; if Wiki=true, mode is set to 'wiki' overriding Mode field",
+      "location": {"class": "misc", "method": "Markup", "file_path": "routers/api/v1/misc/markup.go", "line_number": 34},
+      "condition": "form.Wiki == true",
+      "action": "Mode is set to 'wiki' regardless of Mode field value",
+      "affected_endpoints": ["ep-008"],
+      "code_snippet": "mode := util.Iif(form.Wiki, \"wiki\", form.Mode)"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "Markup mode must be one of: empty, markdown, gfm, comment, wiki, file",
+      "location": {"class": "common", "method": "RenderMarkup", "file_path": "routers/common/markup.go", "line_number": 82},
+      "condition": "mode not in recognized set",
+      "action": "Return 422 Unprocessable Entity",
+      "affected_endpoints": ["ep-008"],
+      "code_snippet": "default:\n\tctx.HTTPError(http.StatusUnprocessableEntity, \"unsupported render mode: \"+mode)"
+    }
+  ]
+}

@@ -1,0 +1,366 @@
+{
+  "total_flows": 7,
+  "flows": [
+    {
+      "endpoint_id": "ep-262",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/avatar",
+      "description": "Decodes base64 image, processes avatar, saves to storage, updates DB",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.UpdateAvatar",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/avatar.go",
+          "input": "*api.UpdateRepoAvatarOption",
+          "output": "HTTP 204",
+          "operations": ["Extract form body", "Base64 decode image"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_service.UploadAvatar",
+          "type": "service",
+          "file_path": "services/repository/avatar.go",
+          "input": "context.Context, *repo_model.Repository, []byte",
+          "output": "error",
+          "operations": ["Process avatar image", "Hash avatar", "Check if same avatar", "Begin transaction", "Update DB column", "Save to storage", "Delete old avatar from storage"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "repository", "description": "Update avatar column"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "avatar.ProcessAvatarImage",
+          "type": "utility",
+          "file_path": "modules/avatar/avatar.go",
+          "input": "[]byte",
+          "output": "[]byte, error",
+          "operations": ["Decode image config", "Validate image type (png/jpeg/gif/webp)", "Check dimensions against MaxWidth/MaxHeight", "Crop to square", "Resize to target size", "Encode as PNG"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "avatar.HashAvatar",
+          "type": "utility",
+          "file_path": "modules/avatar/hash.go",
+          "input": "int64, []byte",
+          "output": "string",
+          "operations": ["SHA256 hash of repoID + data"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.UpdateRepoAvatarOption",
+          "to": "[]byte (raw image)",
+          "component": "repo.UpdateAvatar",
+          "mappings": [{"source_field": "Image", "target_field": "content", "transformation": "computed"}]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid base64 encoding", "handler": "repo.UpdateAvatar", "response_code": 400, "response": "error"},
+        {"condition": "Image processing fails (unsupported type, too large)", "handler": "repo_service.UploadAvatar", "response_code": 500, "response": "internal error"},
+        {"condition": "Storage write fails", "handler": "repo_service.UploadAvatar", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-263",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/avatar",
+      "description": "Deletes repository custom avatar from storage and clears DB field",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteAvatar",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/avatar.go",
+          "input": "*context.APIContext",
+          "output": "HTTP 204",
+          "operations": ["Call service to delete avatar"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_service.DeleteAvatar",
+          "type": "service",
+          "file_path": "services/repository/avatar.go",
+          "input": "context.Context, *repo_model.Repository",
+          "output": "error",
+          "operations": ["Check if avatar exists", "Begin transaction", "Clear avatar column in DB", "Delete file from storage"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "repository", "description": "Clear avatar column to empty string"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "DB update fails", "handler": "repo_service.DeleteAvatar", "response_code": 500, "response": "internal error"},
+        {"condition": "Storage delete fails", "handler": "repo_service.DeleteAvatar", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-264",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets",
+      "description": "Lists all secrets for a repository with pagination (names only)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.ListActionsSecrets",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "*context.APIContext",
+          "output": "HTTP 200 []*api.Secret",
+          "operations": ["Get list options from query params", "Query secrets by repo ID", "Convert to API response"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "secret", "description": "Find secrets by repo_id with pagination and count"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*secret_model.Secret",
+          "to": "*api.Secret",
+          "component": "Action.ListActionsSecrets",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "Created", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Database query fails", "handler": "Action.ListActionsSecrets", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-265",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}",
+      "description": "Creates or updates a secret value in a repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.CreateOrUpdateSecret",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "*context.APIContext",
+          "output": "HTTP 201 or 204",
+          "operations": ["Extract form body", "Call secret service"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "secret_service.CreateOrUpdateSecret",
+          "type": "service",
+          "file_path": "services/secrets/secrets.go",
+          "input": "ctx, ownerID=0, repoID, name, data, description",
+          "output": "*Secret, bool(created), error",
+          "operations": ["Validate name", "Find existing secret", "Insert or update"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "secret", "description": "Find existing secret by owner_id=0, repo_id, name"},
+            {"operation": "INSERT", "table": "secret", "description": "Insert new encrypted secret if not exists"},
+            {"operation": "UPDATE", "table": "secret", "description": "Update encrypted data and description if exists"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "secrets.ValidateName",
+          "type": "utility",
+          "file_path": "services/secrets/validation.go",
+          "input": "string",
+          "output": "error",
+          "operations": ["Check name matches ^[A-Z_][A-Z0-9_]*$ (case insensitive)", "Check name doesn't start with GITEA_ or GITHUB_", "Check name is not CI"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.CreateOrUpdateSecretOption",
+          "to": "secret_model.Secret (encrypted)",
+          "component": "secret_model.InsertEncryptedSecret",
+          "mappings": [
+            {"source_field": "Data", "target_field": "Data", "transformation": "computed"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid secret name", "handler": "Action.CreateOrUpdateSecret", "response_code": 400, "response": "error"},
+        {"condition": "Secret not found (for update path)", "handler": "Action.CreateOrUpdateSecret", "response_code": 404, "response": "notFound"},
+        {"condition": "Encryption or DB error", "handler": "Action.CreateOrUpdateSecret", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-266",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}",
+      "description": "Delete a secret from a repository by name",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.DeleteSecret",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "*context.APIContext",
+          "output": "HTTP 204",
+          "operations": ["Call secret service to delete by name"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "secret_service.DeleteSecretByName",
+          "type": "service",
+          "file_path": "services/secrets/secrets.go",
+          "input": "ctx, ownerID=0, repoID, name",
+          "output": "error",
+          "operations": ["Find secret by name", "Verify exactly one found", "Delete by ID"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "secret", "description": "Find secret by owner_id=0, repo_id, name"},
+            {"operation": "DELETE", "table": "secret", "description": "Delete secret by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Invalid secret name", "handler": "Action.DeleteSecret", "response_code": 400, "response": "error"},
+        {"condition": "Secret not found", "handler": "Action.DeleteSecret", "response_code": 404, "response": "notFound"},
+        {"condition": "Database error", "handler": "Action.DeleteSecret", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-267",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "description": "Get a single repo-level variable by name",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.GetVariable",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "*context.APIContext",
+          "output": "HTTP 200 *api.ActionVariable",
+          "operations": ["Call actions service to get variable", "Convert to API response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.GetVariable",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "ctx, FindVariablesOpts{RepoID, Name}",
+          "output": "*ActionVariable, error",
+          "operations": ["Find variables matching opts", "Verify exactly one found"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_variable", "description": "Find variable by repo_id and name (uppercased)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*actions_model.ActionVariable",
+          "to": "*api.ActionVariable",
+          "component": "Action.GetVariable",
+          "mappings": [
+            {"source_field": "OwnerID", "target_field": "OwnerID", "transformation": "direct_copy"},
+            {"source_field": "RepoID", "target_field": "RepoID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Data", "target_field": "Data", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Variable not found", "handler": "Action.GetVariable", "response_code": 404, "response": "notFound"},
+        {"condition": "Database error", "handler": "Action.GetVariable", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-268",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "description": "Delete a repo-level variable by name",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.DeleteVariable",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "*context.APIContext",
+          "output": "HTTP 204",
+          "operations": ["Call actions service to delete variable by name"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.DeleteVariableByName",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "ctx, ownerID=0, repoID, name",
+          "output": "error",
+          "operations": ["Get variable by name", "Delete variable by ID"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_variable", "description": "Find variable by owner_id=0, repo_id, name"},
+            {"operation": "DELETE", "table": "action_variable", "description": "Delete variable by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Invalid variable name", "handler": "Action.DeleteVariable", "response_code": 400, "response": "error"},
+        {"condition": "Variable not found", "handler": "Action.DeleteVariable", "response_code": 404, "response": "notFound"},
+        {"condition": "Database error", "handler": "Action.DeleteVariable", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

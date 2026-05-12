@@ -1,0 +1,21 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "git.CommitsRangeSize",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/git.go",
+      "used_by": [{"class": "repo", "method": "GetAllCommits", "file_path": "routers/api/v1/repo/commits.go", "usage": "caps page size", "impact": "limits maximum commits per page"}],
+      "affected_endpoints": ["ep-215"]
+    },
+    {
+      "key": "api.SwaggerURL",
+      "type": "String",
+      "default_value": "",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "repo", "method": "GetAllCommits", "file_path": "routers/api/v1/repo/commits.go", "usage": "included in error response URL field", "impact": "informational only"}],
+      "affected_endpoints": ["ep-215"]
+    }
+  ]
+}

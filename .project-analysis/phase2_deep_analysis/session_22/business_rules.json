@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "URL in webhook config must be a valid URL",
+      "location": {"class": "utils", "method": "editHook", "file_path": "routers/api/v1/utils/hook.go", "line_number": 248},
+      "condition": "url provided in form.Config and !validation.IsValidURL(url)",
+      "action": "Return 422 'Invalid url'",
+      "affected_endpoints": ["ep-150"],
+      "code_snippet": "if !validation.IsValidURL(url) {\n\tctx.APIError(http.StatusUnprocessableEntity, \"Invalid url\")\n\treturn false\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Content type in webhook config must be 'json' or 'form'",
+      "location": {"class": "utils", "method": "editHook", "file_path": "routers/api/v1/utils/hook.go", "line_number": 254},
+      "condition": "content_type provided and !webhook.IsValidHookContentType(ct)",
+      "action": "Return 422 'Invalid content type'",
+      "affected_endpoints": ["ep-150"],
+      "code_snippet": "if !webhook.IsValidHookContentType(ct) {\n\tctx.APIError(http.StatusUnprocessableEntity, \"Invalid content type\")\n\treturn false\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "authorization",
+      "description": "Webhooks must be enabled by administrator",
+      "location": {"class": "api", "method": "reqWebhooksEnabled", "file_path": "routers/api/v1/api.go", "line_number": 567},
+      "condition": "setting.DisableWebhooks is true",
+      "action": "Return 403 'webhooks disabled by administrator'",
+      "affected_endpoints": ["ep-150", "ep-151"],
+      "code_snippet": "if setting.DisableWebhooks {\n\tctx.APIError(http.StatusForbidden, \"webhooks disabled by administrator\")\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "authorization",
+      "description": "Stars must be enabled by administrator",
+      "location": {"class": "api", "method": "reqStarsEnabled", "file_path": "routers/api/v1/api.go", "line_number": 577},
+      "condition": "setting.Repository.DisableStars is true",
+      "action": "Return 403 'stars disabled by administrator'",
+      "affected_endpoints": ["ep-152", "ep-153", "ep-154", "ep-155"],
+      "code_snippet": "if setting.Repository.DisableStars {\n\tctx.APIError(http.StatusForbidden, \"stars disabled by administrator\")\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Private starred repos only visible when viewing own profile",
+      "location": {"class": "user", "method": "GetStarredRepos", "file_path": "routers/api/v1/user/star.go", "line_number": 72},
+      "condition": "ctx.ContextUser.ID == ctx.Doer.ID",
+      "action": "Include private repos in results",
+      "affected_endpoints": ["ep-152"],
+      "code_snippet": "private := ctx.ContextUser.ID == ctx.Doer.ID"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Starring is idempotent - starring an already-starred repo is a no-op",
+      "location": {"class": "repo", "method": "StarRepo", "file_path": "models/repo/star.go", "line_number": 37},
+      "condition": "star=true and already starring",
+      "action": "Return nil (no error, no change)",
+      "affected_endpoints": ["ep-155"],
+      "code_snippet": "if staring {\n\treturn nil\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Cannot star a repo if blocked by the repo owner",
+      "location": {"class": "repo", "method": "StarRepo", "file_path": "models/repo/star.go", "line_number": 33},
+      "condition": "user_model.IsUserBlockedBy(ctx, doer, repo.OwnerID)",
+      "action": "Return ErrBlockedUser",
+      "affected_endpoints": ["ep-155"],
+      "code_snippet": "if user_model.IsUserBlockedBy(ctx, doer, repo.OwnerID) {\n\treturn user_model.ErrBlockedUser\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Star operation updates counters in a transaction (star table + repository.num_stars + user.num_stars)",
+      "location": {"class": "repo", "method": "StarRepo", "file_path": "models/repo/star.go", "line_number": 29},
+      "condition": "star=true and not already starring",
+      "action": "Insert star, increment repo num_stars, increment user num_stars in transaction",
+      "affected_endpoints": ["ep-155"],
+      "code_snippet": "return db.WithTx(ctx, func(ctx context.Context) error {"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Webhook deletion cascades to hook_task records",
+      "location": {"class": "webhook", "method": "DeleteWebhookByID", "file_path": "models/webhook/webhook.go", "line_number": 325},
+      "condition": "Webhook is deleted",
+      "action": "Delete all hook_task records with matching hook_id in same transaction",
+      "affected_endpoints": ["ep-151"],
+      "code_snippet": "} else if _, err = db.DeleteByBean(ctx, &HookTask{HookID: id}); err != nil {"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "authorization",
+      "description": "Admin users bypass block checks when starring",
+      "location": {"class": "user", "method": "IsUserBlockedBy", "file_path": "models/user/block.go", "line_number": 53},
+      "condition": "blockee.IsAdmin is true",
+      "action": "Return false (not blocked)",
+      "affected_endpoints": ["ep-155"],
+      "code_snippet": "if blockee.IsAdmin {\n\treturn false\n}"
+    }
+  ]
+}

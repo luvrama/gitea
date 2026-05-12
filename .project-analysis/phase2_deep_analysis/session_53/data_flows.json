@@ -1,0 +1,600 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-359",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/labels",
+      "description": "Creates a new label for a repository after validating color format",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateLabel",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/label.go",
+          "input": "CreateLabelOption form",
+          "output": "Label JSON response",
+          "operations": ["Extract form from context", "Validate and normalize color"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "label.NormalizeColor",
+          "type": "utility",
+          "file_path": "modules/label/label.go",
+          "input": "color string",
+          "output": "normalized color string or error",
+          "operations": ["Trim/lowercase", "Add # prefix if missing", "Validate regex", "Expand 3-char to 6-char"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issues_model.NewLabel",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "Label struct",
+          "output": "error",
+          "operations": ["Normalize color again", "Insert into label table"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "label", "description": "Insert new label record"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToLabel",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "Label model, Repository",
+          "output": "api.Label",
+          "operations": ["Map fields", "Strip # from color", "Build URL"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "CreateLabelOption",
+          "to": "issues_model.Label",
+          "component": "repo.CreateLabel",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Color", "target_field": "Color", "transformation": "computed"},
+            {"source_field": "Exclusive", "target_field": "Exclusive", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid color format", "handler": "repo.CreateLabel", "response_code": 422, "response": "validationError"},
+        {"condition": "DB insert failure", "handler": "repo.CreateLabel", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-360",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "description": "Updates an existing label's properties",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.EditLabel",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/label.go",
+          "input": "EditLabelOption form, label ID",
+          "output": "Label JSON response",
+          "operations": ["Get label by repo+id", "Apply partial updates", "Validate color if changed"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetLabelInRepoByID",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "repoID, labelID",
+          "output": "Label or error",
+          "operations": ["Query label by id and repo_id"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "label", "description": "Get label by id and repo_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issues_model.UpdateLabel",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "Label struct",
+          "output": "error",
+          "operations": ["Normalize color", "Update label with subquery to recalculate num_issues and num_closed_issues"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "label", "description": "Update label fields with issue count recalculation"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToLabel",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "Label model, Repository",
+          "output": "api.Label",
+          "operations": ["Map fields to API response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "EditLabelOption",
+          "to": "issues_model.Label",
+          "component": "repo.EditLabel",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Color", "target_field": "Color", "transformation": "computed"},
+            {"source_field": "Exclusive", "target_field": "Exclusive", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Label not found in repo", "handler": "repo.EditLabel", "response_code": 404, "response": "notFound"},
+        {"condition": "Invalid color format", "handler": "repo.EditLabel", "response_code": 422, "response": "validationError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-361",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "description": "Deletes a label and all its issue associations",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteLabel",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/label.go",
+          "input": "repo ID, label ID",
+          "output": "204 No Content",
+          "operations": ["Call model delete with repo ID and label ID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.DeleteLabel",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "id (repoID), labelID",
+          "output": "error",
+          "operations": ["Get label by ID", "Verify ownership", "Delete label", "Delete issue_label associations", "Delete comments referencing label"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "label", "description": "Get label by ID"},
+            {"operation": "DELETE", "table": "label", "description": "Delete label record"},
+            {"operation": "DELETE", "table": "issue_label", "description": "Delete all issue-label associations"},
+            {"operation": "DELETE", "table": "comment", "description": "Delete comments referencing this label"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "DB error during delete", "handler": "repo.DeleteLabel", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-362",
+      "http_method": "GET",
+      "path": "/api/v1/repos/search",
+      "description": "Search repositories with various filters and sorting options",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.Search",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "Query parameters",
+          "output": "SearchResults JSON",
+          "operations": ["Parse query params", "Build SearchRepoOptions", "Validate sort/mode"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.SearchRepository",
+          "type": "repository",
+          "file_path": "models/repo/repo_list.go",
+          "input": "SearchRepoOptions",
+          "output": "RepositoryList, count, error",
+          "operations": ["Build condition from options", "Execute paginated query", "Load attributes"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Search repositories with conditions"},
+            {"operation": "SELECT", "table": "repository", "description": "Count total matching repos"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo.LoadOwner (loop)",
+          "type": "repository",
+          "file_path": "models/repo/repo.go",
+          "input": "Repository",
+          "output": "Repository with Owner loaded",
+          "operations": ["Load owner for each repo in results"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Load owner for each repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "access_model.GetDoerRepoPermission (loop)",
+          "type": "repository",
+          "file_path": "models/perm/access/repo_permission.go",
+          "input": "repo, doer",
+          "output": "Permission",
+          "operations": ["Calculate permission for each repo"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "Get user access level for repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToRepo (loop)",
+          "type": "utility",
+          "file_path": "services/convert/repository.go",
+          "input": "Repository, Permission",
+          "output": "api.Repository",
+          "operations": ["Convert each repo to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Repository",
+          "to": "api.Repository",
+          "component": "convert.ToRepo",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "OwnerName/Name", "target_field": "full_name", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid sort mode", "handler": "repo.Search", "response_code": 422, "response": "validationError"},
+        {"condition": "Invalid sort order", "handler": "repo.Search", "response_code": 422, "response": "validationError"},
+        {"condition": "DB search error", "handler": "repo.Search", "response_code": 500, "response": "SearchError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-363",
+      "http_method": "POST",
+      "path": "/api/v1/user/repos",
+      "description": "Create a repository for the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.Create",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "CreateRepoOption form",
+          "output": "Repository JSON",
+          "operations": ["Validate user is not org", "Delegate to CreateUserRepo"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.CreateUserRepo",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "owner User, CreateRepoOption",
+          "output": "Repository JSON",
+          "operations": ["Set default readme if auto_init", "Validate readme template exists", "Apply ForcePrivate setting"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_service.CreateRepository",
+          "type": "service",
+          "file_path": "services/repository/repository.go",
+          "input": "CreateRepoOptions",
+          "output": "Repository, error",
+          "operations": ["Call CreateRepositoryDirectly", "Send notification"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "repo_service.CreateRepositoryDirectly",
+          "type": "service",
+          "file_path": "services/repository/create.go",
+          "input": "CreateRepoOptions",
+          "output": "Repository, error",
+          "operations": ["Create repo in DB", "Init git repo", "Create initial commit if auto_init", "Update repo status to ready"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "repository", "description": "Create repository record"},
+            {"operation": "INSERT", "table": "repo_unit", "description": "Create default repo units"},
+            {"operation": "UPDATE", "table": "user", "description": "Increment user repo count"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "repo_model.GetRepositoryByID",
+          "type": "repository",
+          "file_path": "models/repo/repo.go",
+          "input": "repo ID",
+          "output": "Repository",
+          "operations": ["Reload repo from DB for fresh state"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repository", "description": "Reload repository"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.CreateRepoOption",
+          "to": "repo_service.CreateRepoOptions",
+          "component": "repo.CreateUserRepo",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Private", "target_field": "IsPrivate", "transformation": "computed"},
+            {"source_field": "AutoInit", "target_field": "AutoInit", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "User is organization", "handler": "repo.Create", "response_code": 422, "response": "validationError"},
+        {"condition": "Readme template not found", "handler": "repo.CreateUserRepo", "response_code": 400, "response": "error"},
+        {"condition": "Repo already exists", "handler": "repo.CreateUserRepo", "response_code": 409, "response": "conflict"},
+        {"condition": "Reserved name", "handler": "repo.CreateUserRepo", "response_code": 422, "response": "validationError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-364",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{template_owner}/{template_repo}/generate",
+      "description": "Generate a new repository from a template repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.Generate",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "GenerateRepoOption form",
+          "output": "Repository JSON",
+          "operations": ["Validate repo is template", "Validate user not org", "Build GenerateRepoOptions", "Validate at least one option selected", "Resolve target owner"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_model.GetUserByName",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "owner name",
+          "output": "User or error",
+          "operations": ["Look up target owner if different from doer"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Get target owner by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_service.GenerateRepository",
+          "type": "service",
+          "file_path": "services/repository/template.go",
+          "input": "doer, owner, templateRepo, GenerateRepoOptions",
+          "output": "Repository, error",
+          "operations": ["Check repo creation limit", "Create repo in DB", "Init git repo", "Copy git content/topics/hooks/webhooks/avatar/labels/protected branches as selected", "Update status to ready", "Send notification"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "repository", "description": "Create generated repository"},
+            {"operation": "INSERT", "table": "label", "description": "Copy labels from template"},
+            {"operation": "INSERT", "table": "topic", "description": "Copy topics from template"},
+            {"operation": "INSERT", "table": "protected_branch", "description": "Copy protected branches"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.GenerateRepoOption",
+          "to": "repo_service.GenerateRepoOptions",
+          "component": "repo.Generate",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Private", "target_field": "Private", "transformation": "computed"},
+            {"source_field": "GitContent", "target_field": "GitContent", "transformation": "direct_copy"},
+            {"source_field": "Labels", "target_field": "IssueLabels", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Not a template repo", "handler": "repo.Generate", "response_code": 422, "response": "validationError"},
+        {"condition": "No template items selected", "handler": "repo.Generate", "response_code": 422, "response": "validationError"},
+        {"condition": "Owner not found", "handler": "repo.Generate", "response_code": 404, "response": "notFound"},
+        {"condition": "Not admin and target is other user", "handler": "repo.Generate", "response_code": 403, "response": "forbidden"},
+        {"condition": "Repo already exists", "handler": "repo.Generate", "response_code": 409, "response": "conflict"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-365",
+      "http_method": "POST",
+      "path": "/api/v1/org/{org}/repos",
+      "description": "Create a repository in an organization (deprecated, delegates to CreateOrgRepo)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateOrgRepoDeprecated",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "CreateRepoOption form",
+          "output": "Repository JSON",
+          "operations": ["Delegates directly to CreateOrgRepo"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.CreateOrgRepo",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "CreateRepoOption form, org path param",
+          "output": "Repository JSON",
+          "operations": ["Get org name from path", "Validate org exists and user can create", "Delegate to CreateUserRepo"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "prepareDoerCreateRepoInOrg",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/fork.go",
+          "input": "org name",
+          "output": "Organization or nil",
+          "operations": ["Get org by name", "Check visibility", "Check create permission"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Get org by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "repo.CreateUserRepo",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "org as User, CreateRepoOption",
+          "output": "Repository JSON",
+          "operations": ["Same as ep-363 step 2 onwards"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "repository", "description": "Create repository"},
+            {"operation": "UPDATE", "table": "user", "description": "Increment org repo count"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "prepareDoerCreateRepoInOrg", "response_code": 404, "response": "notFound"},
+        {"condition": "User cannot create in org", "handler": "prepareDoerCreateRepoInOrg", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-366",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/repos",
+      "description": "Create a repository in an organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateOrgRepo",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "CreateRepoOption form, org path param",
+          "output": "Repository JSON",
+          "operations": ["Get org name from path", "Validate org and permissions", "Delegate to CreateUserRepo"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "prepareDoerCreateRepoInOrg",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/fork.go",
+          "input": "org name",
+          "output": "Organization or nil",
+          "operations": ["Get org by name", "Check visibility", "Check create permission"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Get org by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo.CreateUserRepo",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "org as User, CreateRepoOption",
+          "output": "Repository JSON",
+          "operations": ["Validate readme template", "Apply ForcePrivate", "Create repository"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "repo_service.CreateRepository",
+          "type": "service",
+          "file_path": "services/repository/repository.go",
+          "input": "CreateRepoOptions",
+          "output": "Repository, error",
+          "operations": ["Create repo directly", "Send notification"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "repository", "description": "Create repository record"},
+            {"operation": "INSERT", "table": "repo_unit", "description": "Create default repo units"},
+            {"operation": "UPDATE", "table": "user", "description": "Increment org repo count"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "prepareDoerCreateRepoInOrg", "response_code": 404, "response": "notFound"},
+        {"condition": "User cannot create in org", "handler": "prepareDoerCreateRepoInOrg", "response_code": 403, "response": "forbidden"},
+        {"condition": "Repo already exists", "handler": "repo.CreateUserRepo", "response_code": 409, "response": "conflict"}
+      ]
+    }
+  ]
+}

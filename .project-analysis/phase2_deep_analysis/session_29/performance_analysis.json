@@ -1,0 +1,121 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-196",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single SELECT query on indexed unique composite key"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-197",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT watch + SELECT user_blocking + INSERT/UPDATE watch + UPDATE repository"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-198",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT watch + DELETE/UPDATE watch + UPDATE repository"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-199",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "cache"],
+        "note": "1 search query + N descriptor builds (mitigated by ephemeral cache)"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "GetPackageDescriptors iterates over each version and performs multiple queries per version (properties, files, blobs), though mitigated by EphemeralCache for shared entities",
+          "impact": "For pages with many packages from different owners/repos, multiple DB round-trips per result",
+          "file_path": "models/packages/descriptor.go",
+          "line_number": 100,
+          "code_snippet": "for _, pv := range pvs {\n\tpd, err := GetPackageDescriptorWithCache(ctx, pv, c)\n}",
+          "recommendation": "Batch-load properties and files for all version IDs in a single query"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch-load package_property and package_file records for all version IDs returned by SearchVersions",
+          "estimated_impact": "Reduce DB round-trips from O(N*3) to O(3) for N results",
+          "implementation": "Add batch methods like GetPropertiesByVersionIDs and GetFilesByVersionIDs"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-200",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Middleware loads full descriptor (version lookup + package + owner + creator + properties + files + blobs)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-201",
+      "http_method": "DELETE",
+      "path": "/api/v1/packages/{owner}/{type}/{name}",
+      "resource_load": {
+        "operations_per_request": 10,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Package lookup + get all descriptors + transaction with multiple deletes + notifications"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "GetAllPackageDescriptors loads all versions then builds descriptor for each one individually",
+          "impact": "For packages with many versions, this causes many DB round-trips before the actual deletion",
+          "file_path": "models/packages/descriptor.go",
+          "line_number": 218,
+          "code_snippet": "for _, pv := range pvs {\n\tpd, err := GetPackageDescriptorWithCache(ctx, pv, c)\n}",
+          "recommendation": "Since descriptors are only needed for notifications, consider a lighter-weight approach for the delete path"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "For deletion, only minimal descriptor info is needed for notifications. Use a lighter query that doesn't load all files/blobs/properties",
+          "estimated_impact": "Reduce pre-deletion query load significantly for packages with many versions",
+          "implementation": "Add a GetMinimalPackageDescriptors method that only loads package, version, owner, creator"
+        }
+      ]
+    }
+  ]
+}

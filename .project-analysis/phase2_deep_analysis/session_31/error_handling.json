@@ -1,0 +1,39 @@
+{
+  "total_patterns": 7,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic", "status_code": 404, "response_type": "APIErrorNotFound", "message_template": "not found"},
+      {"exception_type": "generic", "status_code": 500, "response_type": "APIErrorInternal", "message_template": "internal server error"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-208", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies", "error_scenarios": [
+      {"exception": "dependencies disabled", "trigger": "IsDependenciesEnabled returns false", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "ErrIssueNotExist", "trigger": "Issue index not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "permission denied", "trigger": "Cannot read issues/pulls", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-209", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies", "error_scenarios": [
+      {"exception": "cross-repo disabled", "trigger": "Different repo and AllowCrossRepositoryDependencies=false", "status_code": 400, "response": "CrossRepositoryDependencies not enabled", "logged": false, "retryable": false},
+      {"exception": "ErrDependencyExists", "trigger": "Dependency already exists", "status_code": 500, "response": "internal error", "logged": true, "retryable": false},
+      {"exception": "ErrCircularDependency", "trigger": "Would create circular dependency", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-210", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies", "error_scenarios": [
+      {"exception": "ErrDependencyNotExists", "trigger": "Dependency does not exist to remove", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-211", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks", "error_scenarios": [
+      {"exception": "ErrIssueNotExist", "trigger": "Issue index not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-212", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks", "error_scenarios": [
+      {"exception": "ErrDependencyExists", "trigger": "Blocking relationship already exists", "status_code": 500, "response": "internal error", "logged": true, "retryable": false},
+      {"exception": "ErrCircularDependency", "trigger": "Would create circular dependency", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-213", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks", "error_scenarios": [
+      {"exception": "ErrDependencyNotExists", "trigger": "Blocking relationship does not exist", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrDependencyExists", "file_path": "models/issues/dependency.go", "extends": "util.ErrAlreadyExist", "used_in": ["CreateIssueDependency"], "http_status": 500},
+    {"class": "ErrDependencyNotExists", "file_path": "models/issues/dependency.go", "extends": "util.ErrNotExist", "used_in": ["RemoveIssueDependency"], "http_status": 500},
+    {"class": "ErrCircularDependency", "file_path": "models/issues/dependency.go", "extends": "error", "used_in": ["CreateIssueDependency"], "http_status": 500}
+  ]
+}

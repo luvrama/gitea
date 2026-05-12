@@ -1,0 +1,53 @@
+{
+  "endpoints_by_database_table": {
+    "action_artifact": {"read": ["ep-293", "ep-295", "ep-296", "ep-297", "ep-298"], "write": ["ep-294", "ep-297"]},
+    "action_run": {"read": ["ep-294"], "write": ["ep-294"]},
+    "action_run_job": {"read": ["ep-294"], "write": ["ep-294"]},
+    "action_task": {"read": ["ep-294"], "write": ["ep-294"]},
+    "action_runner": {"read": [], "write": ["ep-294"]}
+  },
+  "endpoints_by_external_service": {
+    "Object Storage": ["ep-294", "ep-298"]
+  },
+  "endpoints_by_config_property": {
+    "actions.artifact_storage.STORAGE_TYPE": ["ep-294", "ep-298"],
+    "actions.artifact_storage.SERVE_DIRECT": ["ep-298"],
+    "SECRET_KEY": ["ep-298"]
+  },
+  "endpoints_by_model_class": {
+    "ActionArtifact": ["ep-293", "ep-294", "ep-295", "ep-296", "ep-297", "ep-298"],
+    "ActionRun": ["ep-294"],
+    "ActionRunJob": ["ep-294"],
+    "ActionTask": ["ep-294"]
+  },
+  "endpoints_by_service_class": {
+    "actions_service.DeleteRun": ["ep-294"],
+    "actions_service.IsArtifactV4": ["ep-296", "ep-297", "ep-298"],
+    "actions_service.DownloadArtifactV4ServeDirect": ["ep-298"],
+    "convert.ToActionArtifact": ["ep-293", "ep-295", "ep-296"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-293": {"reads": ["action_artifact"], "writes": []},
+    "ep-294": {"reads": ["action_run", "action_run_job", "action_task", "action_artifact"], "writes": ["action_run", "action_run_attempt", "action_run_job", "action_task", "action_task_step", "action_task_output", "action_artifact", "action_runner"]},
+    "ep-295": {"reads": ["action_artifact"], "writes": []},
+    "ep-296": {"reads": ["action_artifact"], "writes": []},
+    "ep-297": {"reads": ["action_artifact"], "writes": ["action_artifact"]},
+    "ep-298": {"reads": ["action_artifact"], "writes": []}
+  },
+  "external_services_by_endpoint": {
+    "ep-293": [],
+    "ep-294": ["Object Storage"],
+    "ep-295": [],
+    "ep-296": [],
+    "ep-297": [],
+    "ep-298": ["Object Storage"]
+  },
+  "config_properties_by_endpoint": {
+    "ep-293": [],
+    "ep-294": ["actions.artifact_storage.STORAGE_TYPE"],
+    "ep-295": [],
+    "ep-296": [],
+    "ep-297": [],
+    "ep-298": ["actions.artifact_storage.SERVE_DIRECT", "SECRET_KEY"]
+  }
+}

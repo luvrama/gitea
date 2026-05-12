@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Run must belong to the specified repository",
+      "location": {"class": "actions_model", "method": "GetRunByRepoAndID", "file_path": "models/actions/run.go", "line_number": 236},
+      "condition": "run.id = runID AND run.repo_id = repoID",
+      "action": "Return 404 if not found",
+      "affected_endpoints": ["ep-285", "ep-286", "ep-287", "ep-288", "ep-289", "ep-290", "ep-291"],
+      "code_snippet": "has, err := db.GetEngine(ctx).Where(\"id=? AND repo_id=?\", runID, repoID).Get(&run)"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Run must be in a done state before rerun is allowed",
+      "location": {"class": "actions_service", "method": "validateRerun", "file_path": "services/actions/rerun.go", "line_number": 60},
+      "condition": "!run.Status.IsDone()",
+      "action": "Return 400 invalid argument error",
+      "affected_endpoints": ["ep-287", "ep-288", "ep-289"],
+      "code_snippet": "if !run.Status.IsDone() { return util.NewInvalidArgumentErrorf(\"this workflow run is not done\") }"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Workflow must not be disabled for rerun",
+      "location": {"class": "actions_service", "method": "validateRerun", "file_path": "services/actions/rerun.go", "line_number": 73},
+      "condition": "cfg.IsWorkflowDisabled(run.WorkflowID)",
+      "action": "Return 400 invalid argument error",
+      "affected_endpoints": ["ep-287", "ep-288", "ep-289"],
+      "code_snippet": "if cfg.IsWorkflowDisabled(run.WorkflowID) { return util.NewInvalidArgumentErrorf(\"workflow %s is disabled\", run.WorkflowID) }"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Maximum rerun attempts cap (default 50)",
+      "location": {"class": "actions_service", "method": "validateRerun", "file_path": "services/actions/rerun.go", "line_number": 79},
+      "condition": "latestAttempt.Attempt >= setting.Actions.MaxRerunAttempts",
+      "action": "Return 400 invalid argument error",
+      "affected_endpoints": ["ep-287", "ep-288", "ep-289"],
+      "code_snippet": "if has && latestAttempt.Attempt >= setting.Actions.MaxRerunAttempts { return util.NewInvalidArgumentErrorf(...) }"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Rerun failed jobs filters to only Failure or Cancelled status",
+      "location": {"class": "actions_service", "method": "GetFailedJobsForRerun", "file_path": "services/actions/rerun.go", "line_number": 22},
+      "condition": "job.Status == StatusFailure || job.Status == StatusCancelled",
+      "action": "Include job in rerun set",
+      "affected_endpoints": ["ep-288"],
+      "code_snippet": "if job.Status == actions_model.StatusFailure || job.Status == actions_model.StatusCancelled {"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Rerun expands to include all downstream dependent jobs",
+      "location": {"class": "rerunPlan", "method": "expandRerunJobIDs", "file_path": "services/actions/rerun.go", "line_number": 186},
+      "condition": "A job's Needs contains a job in the rerun set",
+      "action": "Add the dependent job to the rerun set, iterate until no more found",
+      "affected_endpoints": ["ep-287", "ep-288", "ep-289"],
+      "code_snippet": "for _, need := range job.Needs { if rerunJobIDs.Contains(need) { found = true; rerunJobIDs.Add(job.JobID) } }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "Job must belong to the specified run for single-job rerun",
+      "location": {"class": "repo", "method": "RerunWorkflowJob", "file_path": "routers/api/v1/repo/action.go", "line_number": 0},
+      "condition": "slices.IndexFunc finds no job with matching ID",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-289"],
+      "code_snippet": "jobIdx := slices.IndexFunc(jobs, func(job *actions_model.ActionRunJob) bool { return job.ID == jobID })"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "ListWorkflowRunJobs requires runID > 0",
+      "location": {"class": "repo", "method": "ListWorkflowRunJobs", "file_path": "routers/api/v1/repo/action.go", "line_number": 0},
+      "condition": "runID <= 0",
+      "action": "Return 400 bad request",
+      "affected_endpoints": ["ep-290"],
+      "code_snippet": "if runID <= 0 { ctx.APIError(http.StatusBadRequest, util.NewInvalidArgumentErrorf(\"runID must be a positive integer\")) }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "validation",
+      "description": "GetWorkflowJob verifies job belongs to the context repository",
+      "location": {"class": "repo", "method": "GetWorkflowJob", "file_path": "routers/api/v1/repo/action.go", "line_number": 0},
+      "condition": "!has || job.RepoID != ctx.Repo.Repository.ID",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-292"],
+      "code_snippet": "if !has || job.RepoID != ctx.Repo.Repository.ID { ctx.APIErrorNotFound(util.ErrNotExist) }"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Legacy runs (LatestAttemptID=0) get backfilled with attempt=1 before rerun",
+      "location": {"class": "actions_service", "method": "createOriginalAttemptForLegacyRun", "file_path": "services/actions/rerun.go", "line_number": 222},
+      "condition": "run.LatestAttemptID == 0",
+      "action": "Create attempt=1 record, backfill jobs and artifacts with attempt IDs",
+      "affected_endpoints": ["ep-287", "ep-288", "ep-289"],
+      "code_snippet": "if run.LatestAttemptID == 0 { if err := createOriginalAttemptForLegacyRun(ctx, run); err != nil { ... } }"
+    }
+  ]
+}

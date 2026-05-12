@@ -1,0 +1,214 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL",
+  "total_tables_or_collections": 5,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "action_run",
+      "entity_class": "ActionRun",
+      "file_path": "models/actions/run.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "title", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["unique(repo_index)"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "workflow_id", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "index", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["unique(repo_index)"]},
+        {"name": "trigger_user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "ref", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "commit_sha", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "event", "type": "VARCHAR", "code_type": "webhook_module.HookEventType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "trigger_event", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "status", "type": "INT", "code_type": "Status", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "started", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "stopped", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "latest_attempt_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_repo_index", "columns": ["repo_id", "index"], "unique": true},
+        {"name": "idx_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "idx_workflow_id", "columns": ["workflow_id"], "unique": false},
+        {"name": "idx_trigger_user_id", "columns": ["trigger_user_id"], "unique": false},
+        {"name": "idx_ref", "columns": ["ref"], "unique": false},
+        {"name": "idx_status", "columns": ["status"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "trigger_user_id"},
+        {"type": "one-to-many", "target_table": "action_run_job", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "action_run_job",
+      "entity_class": "ActionRunJob",
+      "file_path": "models/actions/run_job.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "run_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "commit_sha", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "attempt", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "job_id", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "task_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "status", "type": "INT", "code_type": "Status", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "run_attempt_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": []},
+        {"name": "attempt_job_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_run_id", "columns": ["run_id"], "unique": false},
+        {"name": "idx_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "idx_status", "columns": ["status"], "unique": false},
+        {"name": "idx_run_attempt_id", "columns": ["run_attempt_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "action_run", "join_column": "run_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "one-to-one", "target_table": "action_task", "join_column": "task_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "action_task",
+      "entity_class": "ActionTask",
+      "file_path": "models/actions/task.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "job_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "attempt", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "runner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "status", "type": "INT", "code_type": "Status", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "started", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "stopped", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_runner_id", "columns": ["runner_id"], "unique": false},
+        {"name": "idx_status", "columns": ["status"], "unique": false},
+        {"name": "idx_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "action_run_job", "join_column": "job_id"},
+        {"type": "many-to-one", "target_table": "action_runner", "join_column": "runner_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "repo_unit",
+      "entity_class": "RepoUnit",
+      "file_path": "models/repo/repo_unit.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "type", "type": "INT", "code_type": "unit.Type", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "config", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "action_run_attempt",
+      "entity_class": "ActionRunAttempt",
+      "file_path": "models/actions/run_attempt.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "run_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "attempt", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "trigger_user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "status", "type": "INT", "code_type": "Status", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_run_id", "columns": ["run_id"], "unique": false},
+        {"name": "idx_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "action_run", "join_column": "run_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-277",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/jobs",
+      "operations": [
+        {"store_type": "database", "store_name": "action_run_job", "operation": "SELECT", "method": "shared.ListJobs", "description": "find jobs by repo with status filter and pagination"},
+        {"store_type": "database", "store_name": "action_run", "operation": "SELECT", "method": "ActionJobList.LoadAttributes", "description": "load run for each job"},
+        {"store_type": "database", "store_name": "action_task", "operation": "SELECT", "method": "convert.ToActionWorkflowJob", "description": "load task for job steps"},
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "convert.ToActionWorkflowJob", "description": "load runner name"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-278",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs",
+      "operations": [
+        {"store_type": "database", "store_name": "action_run", "operation": "SELECT", "method": "shared.ListRuns", "description": "find runs by repo with filters and pagination"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "RunList.LoadTriggerUser", "description": "load trigger users"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "RunList.LoadRepos", "description": "load repos"},
+        {"store_type": "database", "store_name": "action_run_attempt", "operation": "SELECT", "method": "convert.ToActionWorkflowRun", "description": "get latest attempt per run"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-279",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/tasks",
+      "operations": [
+        {"store_type": "database", "store_name": "action_task", "operation": "SELECT", "method": "ListActionTasks", "description": "find tasks by repo with pagination"},
+        {"store_type": "database", "store_name": "action_run_job", "operation": "SELECT", "method": "TaskList.LoadAttributes", "description": "load job for each task"},
+        {"store_type": "database", "store_name": "action_run", "operation": "SELECT", "method": "TaskList.LoadAttributes", "description": "load run for each job"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "TaskList.LoadAttributes", "description": "load repo for each run"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-280",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows",
+      "operations": [
+        {"store_type": "database", "store_name": "repo_unit", "operation": "SELECT", "method": "convert.getActionWorkflowEntry", "description": "check workflow disabled state"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-281",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "repo_unit", "operation": "SELECT", "method": "convert.getActionWorkflowEntry", "description": "check workflow disabled state"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-282",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable",
+      "operations": [
+        {"store_type": "database", "store_name": "repo_unit", "operation": "SELECT", "method": "EnableOrDisableWorkflow", "description": "get actions unit config"},
+        {"store_type": "database", "store_name": "repo_unit", "operation": "UPDATE", "method": "repo_model.UpdateRepoUnitConfig", "description": "persist disabled workflow in config"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-283",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+      "operations": [
+        {"store_type": "database", "store_name": "repo_unit", "operation": "SELECT", "method": "DispatchActionWorkflow", "description": "check workflow disabled state"},
+        {"store_type": "database", "store_name": "action_run", "operation": "INSERT", "method": "PrepareRunAndInsert", "description": "create new workflow run"},
+        {"store_type": "database", "store_name": "action_run_job", "operation": "INSERT", "method": "PrepareRunAndInsert", "description": "create jobs for the run"},
+        {"store_type": "database", "store_name": "action_run_attempt", "operation": "INSERT", "method": "PrepareRunAndInsert", "description": "create attempt for the run"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-284",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable",
+      "operations": [
+        {"store_type": "database", "store_name": "repo_unit", "operation": "SELECT", "method": "EnableOrDisableWorkflow", "description": "get actions unit config"},
+        {"store_type": "database", "store_name": "repo_unit", "operation": "UPDATE", "method": "repo_model.UpdateRepoUnitConfig", "description": "persist enabled workflow in config"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic error", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-150", "path": "/api/v1/user/hooks/{id}", "error_scenarios": [
+      {"exception": "ErrWebhookNotExist", "trigger": "Webhook not found by owner_id+id", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "validation error", "trigger": "Invalid URL or content_type", "status_code": 422, "response": "Unprocessable Entity message", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-151", "path": "/api/v1/user/hooks/{id}", "error_scenarios": [
+      {"exception": "ErrWebhookNotExist", "trigger": "Webhook not found by owner_id+id", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-152", "path": "/api/v1/users/{username}/starred", "error_scenarios": [
+      {"exception": "DB error", "trigger": "Database query failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-155", "path": "/api/v1/user/starred/{owner}/{repo}", "error_scenarios": [
+      {"exception": "ErrBlockedUser", "trigger": "User blocked by repo owner", "status_code": 403, "response": "user is blocked", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrWebhookNotExist", "file_path": "models/webhook/webhook.go", "extends": "util.ErrNotExist", "used_in": ["webhook.GetWebhookByOwnerID", "webhook.DeleteWebhookByOwnerID"], "http_status": 404},
+    {"class": "ErrBlockedUser", "file_path": "models/user/block.go", "extends": "util.PermissionDeniedError", "used_in": ["repo.StarRepo"], "http_status": 403}
+  ]
+}

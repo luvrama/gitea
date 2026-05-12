@@ -1,0 +1,56 @@
+{
+  "total_patterns": 7,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "generic error", "status_code": 500, "response_type": "APIError", "message_template": "internal server error"},
+        {"exception_type": "not found", "status_code": 404, "response_type": "APIError", "message_template": "not found"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-070",
+      "path": "/api/v1/orgs/{org}/members",
+      "error_scenarios": [
+        {"exception": "org not found", "trigger": "GetOrgByName returns ErrOrgNotExist", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+        {"exception": "DB error", "trigger": "IsOrgMember/CountOrgMembers/FindOrgMembers fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-072",
+      "path": "/api/v1/orgs/{org}/members/{username}",
+      "error_scenarios": [
+        {"exception": "user not found", "trigger": "GetUserByName returns ErrUserNotExist", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+        {"exception": "not a member", "trigger": "Target user not in org_user", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-074",
+      "path": "/api/v1/orgs/{org}/public_members/{username} (PUT)",
+      "error_scenarios": [
+        {"exception": "forbidden", "trigger": "Doer is not target, not admin, not org owner", "status_code": 403, "response": "Cannot change member visibility", "logged": false, "retryable": false},
+        {"exception": "DB error", "trigger": "ChangeOrgUserStatus fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-076",
+      "path": "/api/v1/orgs/{org}/members/{username} (DELETE)",
+      "error_scenarios": [
+        {"exception": "ErrLastOrgOwner", "trigger": "User is last owner of org", "status_code": 500, "response": "internal error", "logged": true, "retryable": false},
+        {"exception": "not a member", "trigger": "User not in org_user", "status_code": 204, "response": "silent success (no-op)", "logged": false, "retryable": false}
+      ]
+    }
+  ],
+  "custom_exceptions": [
+    {
+      "class": "organization.ErrLastOrgOwner",
+      "file_path": "models/organization/org.go",
+      "extends": "error (interface)",
+      "used_in": ["org_service.RemoveOrgUser", "removeTeamMember"],
+      "http_status": 500
+    }
+  ]
+}

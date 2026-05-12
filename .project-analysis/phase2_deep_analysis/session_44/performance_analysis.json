@@ -1,0 +1,134 @@
+{
+  "total_endpoints_analyzed": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-299",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/notes/{sha}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git_filesystem", "database"],
+        "note": "Git operations: resolve ref, get notes commit, traverse tree, read blob, get last commit"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "Git note lookup involves multiple git operations (resolve ref, tree traversal, blob read) with no caching",
+          "impact": "Each request performs multiple git filesystem operations",
+          "file_path": "modules/git/notes_nogogit.go",
+          "line_number": 18,
+          "code_snippet": "notes, err := repo.GetCommit(NotesRef)",
+          "recommendation": "Consider caching notes ref commit for frequently accessed repos"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "caching",
+          "description": "Cache the notes ref commit resolution to avoid repeated git operations",
+          "estimated_impact": "Reduce git operations by 50% for repeated note lookups",
+          "implementation": "Use LastCommitCache or similar mechanism for notes ref"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-300",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "4 DB queries: get comment, load issue, find reactions, load users"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "FindCommentReactions has no pagination - returns all reactions for a comment",
+          "impact": "Comments with many reactions will return unbounded result sets",
+          "file_path": "models/issues/reaction.go",
+          "line_number": 127,
+          "code_snippet": "return FindReactions(ctx, FindReactionsOptions{\n\tIssueID: issueID, CommentID: commentID,\n})",
+          "recommendation": "Add pagination support to comment reactions endpoint"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "pagination",
+          "description": "Add page/limit query params to comment reactions endpoint",
+          "estimated_impact": "Prevent large response payloads for popular comments",
+          "implementation": "Pass ListOptions to FindCommentReactions like FindIssueReactions does"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-301",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "5 DB queries: get comment, load issue, check blocking, check existing, insert"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-302",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "3 DB queries: get comment, load issue, delete reaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-303",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "3 DB queries: get issue with attrs, find reactions (paginated), load users"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-304",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "5 DB queries: get issue, load repo, check blocking, check existing, insert"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-305",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "2 DB queries: get issue with attrs, delete reaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

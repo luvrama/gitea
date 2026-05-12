@@ -1,0 +1,311 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-254",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "controller_class": "repo",
+      "controller_method": "GetRepoPermissions",
+      "description": "Get repository permissions for a user",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "collaborator", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "RepoCollaboratorPermission",
+          "fields": [
+            {"name": "permission", "type": "AccessLevelName", "description": "Permission level (none/read/write/admin/owner)"},
+            {"name": "role_name", "type": "string", "description": "Role name string"},
+            {"name": "user", "type": "User", "description": "User information"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "error", "condition": "Doer is not admin, repo admin, or querying own permissions"},
+          {"status_code": 404, "type": "notFound", "condition": "User not found or repo not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-255",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/reviewers",
+      "controller_class": "repo",
+      "controller_method": "GetReviewers",
+      "description": "Return all users that can be requested to review in this repo",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "UserList",
+          "fields": [
+            {"name": "[]", "type": "User", "description": "Array of users who can review"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "error", "condition": "Doer has no permission to get reviewers"},
+          {"status_code": 404, "type": "notFound", "condition": "Repo not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-256",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/assignees",
+      "controller_class": "repo",
+      "controller_method": "GetAssignees",
+      "description": "Return all users that have write access and can be assigned to issues",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "UserList",
+          "fields": [
+            {"name": "[]", "type": "User", "description": "Array of users who can be assigned"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repo not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-257",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "controller_class": "repo",
+      "controller_method": "GetIssueAttachment",
+      "description": "Get a single issue attachment",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format: int64"]},
+          {"name": "attachment_id", "type": "integer", "required": true, "validation": ["format: int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "Attachment",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Attachment ID"},
+            {"name": "name", "type": "string", "description": "Filename"},
+            {"name": "size", "type": "int64", "description": "File size in bytes"},
+            {"name": "download_count", "type": "int64", "description": "Download count"},
+            {"name": "created_at", "type": "time", "description": "Creation time"},
+            {"name": "uuid", "type": "string", "description": "UUID"},
+            {"name": "browser_download_url", "type": "string", "description": "Download URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "error", "condition": "Issue or attachment not found, or attachment doesn't belong to issue"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-258",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets",
+      "controller_class": "repo",
+      "controller_method": "ListIssueAttachments",
+      "description": "List all attachments of an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format: int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "AttachmentList",
+          "fields": [
+            {"name": "[]", "type": "Attachment", "description": "Array of attachments"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "error", "condition": "Issue not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-259",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets",
+      "controller_class": "repo",
+      "controller_method": "CreateIssueAttachment",
+      "description": "Create an issue attachment by uploading a file",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format: int64"]}
+        ],
+        "query_params": [
+          {"name": "name", "type": "string", "required": false, "default": null, "validation": ["overrides filename from upload"]}
+        ],
+        "headers": [],
+        "body": {
+          "type": "multipart/form-data",
+          "content_type": "multipart/form-data",
+          "fields": [
+            {"name": "attachment", "type": "file", "required": true, "validation": ["must pass allowed types check", "max size from setting.Attachment.MaxSize"], "description": "File to upload"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "Attachment",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Attachment ID"},
+            {"name": "name", "type": "string", "description": "Filename"},
+            {"name": "size", "type": "int64", "description": "File size in bytes"},
+            {"name": "download_count", "type": "int64", "description": "Download count"},
+            {"name": "created_at", "type": "time", "description": "Creation time"},
+            {"name": "uuid", "type": "string", "description": "UUID"},
+            {"name": "browser_download_url", "type": "string", "description": "Download URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Bad request"},
+          {"status_code": 404, "type": "error", "condition": "Issue not found"},
+          {"status_code": 413, "type": "error", "condition": "File exceeds max size limit"},
+          {"status_code": 422, "type": "validationError", "condition": "File type forbidden"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Repository is archived"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-260",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "controller_class": "repo",
+      "controller_method": "EditIssueAttachment",
+      "description": "Edit an issue attachment (rename)",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format: int64"]},
+          {"name": "attachment_id", "type": "integer", "required": true, "validation": ["format: int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "EditAttachmentOptions",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": false, "validation": ["must pass allowed types check if non-empty"], "description": "New filename"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "Attachment",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Attachment ID"},
+            {"name": "name", "type": "string", "description": "Filename"},
+            {"name": "size", "type": "int64", "description": "File size in bytes"},
+            {"name": "download_count", "type": "int64", "description": "Download count"},
+            {"name": "created_at", "type": "time", "description": "Creation time"},
+            {"name": "uuid", "type": "string", "description": "UUID"},
+            {"name": "browser_download_url", "type": "string", "description": "Download URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "error", "condition": "Issue or attachment not found"},
+          {"status_code": 422, "type": "validationError", "condition": "New name has forbidden file type"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Repository is archived"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-261",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "controller_class": "repo",
+      "controller_method": "DeleteIssueAttachment",
+      "description": "Delete an issue attachment",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format: int64"]},
+          {"name": "attachment_id", "type": "integer", "required": true, "validation": ["format: int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "error", "condition": "Issue or attachment not found"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Repository is archived"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

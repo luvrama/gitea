@@ -1,0 +1,256 @@
+{
+  "total_endpoints": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-084",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "controller_class": "org",
+      "controller_method": "GetLabel",
+      "description": "Get a single label by ID or name in an organization",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be valid org name"]},
+          {"name": "id", "type": "string", "required": true, "validation": ["can be integer ID or label name string"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Label",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Label ID"},
+            {"name": "name", "type": "string", "description": "Label display name"},
+            {"name": "exclusive", "type": "bool", "description": "Whether label is exclusive"},
+            {"name": "is_archived", "type": "bool", "description": "Whether label is archived"},
+            {"name": "color", "type": "string", "description": "Hex color without leading #"},
+            {"name": "description", "type": "string", "description": "Label description"},
+            {"name": "url", "type": "string", "description": "API URL for this label"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Label does not exist in org or org not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-085",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "controller_class": "org",
+      "controller_method": "EditLabel",
+      "description": "Update a label in an organization",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be valid org name"]},
+          {"name": "id", "type": "integer", "required": true, "validation": ["must be valid int64 label ID"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "api.EditLabelOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "*string", "required": false, "validation": [], "description": "New label name"},
+            {"name": "exclusive", "type": "*bool", "required": false, "validation": [], "description": "Whether label is exclusive"},
+            {"name": "color", "type": "*string", "required": false, "validation": ["must be valid hex color"], "description": "New color"},
+            {"name": "description", "type": "*string", "required": false, "validation": [], "description": "New description"},
+            {"name": "is_archived", "type": "*bool", "required": false, "validation": [], "description": "Whether to archive the label"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Label",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Label ID"},
+            {"name": "name", "type": "string", "description": "Label display name"},
+            {"name": "exclusive", "type": "bool", "description": "Whether label is exclusive"},
+            {"name": "is_archived", "type": "bool", "description": "Whether label is archived"},
+            {"name": "color", "type": "string", "description": "Hex color without leading #"},
+            {"name": "description", "type": "string", "description": "Label description"},
+            {"name": "url", "type": "string", "description": "API URL for this label"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Label does not exist in org"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid color format"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-086",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "controller_class": "org",
+      "controller_method": "DeleteLabel",
+      "description": "Delete a label from an organization",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be valid org name"]},
+          {"name": "id", "type": "integer", "required": true, "validation": ["must be valid int64 label ID"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Org not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-087",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/blocks",
+      "controller_class": "org",
+      "controller_method": "ListBlocks",
+      "description": "List users blocked by the organization",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be valid org name"]}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["bounded by API.MaxResponseItems"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "User ID"},
+            {"name": "login", "type": "string", "description": "Username"},
+            {"name": "full_name", "type": "string", "description": "Full name"},
+            {"name": "email", "type": "string", "description": "Email (if visible)"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Org not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-088",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "controller_class": "org",
+      "controller_method": "CheckUserBlock",
+      "description": "Check if a user is blocked by the organization",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be valid org name"]},
+          {"name": "username", "type": "string", "required": true, "validation": ["must be valid username"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "User not found or not blocked by org"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-089",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "controller_class": "org",
+      "controller_method": "BlockUser",
+      "description": "Block a user from the organization",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be valid org name"]},
+          {"name": "username", "type": "string", "required": true, "validation": ["must be valid username"]}
+        ],
+        "query_params": [
+          {"name": "note", "type": "string", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Cannot block user (self-block, org member, already blocked, or target is org)"},
+          {"status_code": 404, "type": "notFound", "condition": "User not found"},
+          {"status_code": 422, "type": "validationError", "condition": "Validation error"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-090",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "controller_class": "org",
+      "controller_method": "UnblockUser",
+      "description": "Unblock a user from the organization",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["must be valid org name"]},
+          {"name": "username", "type": "string", "required": true, "validation": ["must be valid username"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Cannot unblock user (not blocked, target is org, or insufficient permissions)"},
+          {"status_code": 404, "type": "notFound", "condition": "User not found"},
+          {"status_code": 422, "type": "validationError", "condition": "Validation error"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

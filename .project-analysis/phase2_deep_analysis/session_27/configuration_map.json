@@ -1,0 +1,21 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "admin.USER_DISABLED_FEATURES / admin.EXTERNAL_USER_DISABLE_FEATURES",
+      "type": "container.Set[string]",
+      "default_value": "empty set",
+      "source_file": "modules/setting/admin.go",
+      "used_by": [{"class": "user_model", "method": "IsFeatureDisabledWithLoginType", "file_path": "models/user/user.go", "usage": "Check if manage_gpg_keys feature is disabled", "impact": "Returns 404 if disabled"}],
+      "affected_endpoints": ["ep-188", "ep-189"]
+    },
+    {
+      "key": "setting.UserFeatureManageGPGKeys",
+      "type": "string constant",
+      "default_value": "manage_gpg_keys",
+      "source_file": "modules/setting/admin.go",
+      "used_by": [{"class": "user", "method": "CreateUserGPGKey/DeleteGPGKey", "file_path": "routers/api/v1/user/gpg_key.go", "usage": "Feature flag name for GPG key management", "impact": "Controls whether create/delete operations are allowed"}],
+      "affected_endpoints": ["ep-188", "ep-189"]
+    }
+  ]
+}

@@ -1,0 +1,182 @@
+{
+  "total_findings": 8,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-277",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/jobs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, only local DB queries",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-278",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, only local DB queries",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-279",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/tasks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, only local DB queries",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-280",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Git operations are local filesystem, no network calls",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Git repo corruption would cause 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-281",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Git repo corruption would cause 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-282",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Disabling an already-disabled workflow is safe - cfg.DisableWorkflow is idempotent",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "DB write failure returns 500, no side effects",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-283",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "PrepareRunAndInsert uses a DB transaction to insert run, jobs, and attempt atomically",
+          "recommendation": "Transaction ensures consistency - acceptable"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Duplicate dispatch requests create duplicate runs - no deduplication mechanism",
+          "recommendation": "Consider adding idempotency key support or rate limiting on dispatch"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "DB failure during insert rolls back transaction cleanly",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-284",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Enabling an already-enabled workflow is safe - cfg.EnableWorkflow is idempotent",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "DB write failure returns 500, no side effects",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses modules/graceful for shutdown handling",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting for actions API",
+      "recommendation": "Consider rate limiting dispatch endpoint to prevent abuse"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message flows in these endpoints"
+    },
+    "single_points_of_failure": ["database"],
+    "cascading_failure_paths": []
+  }
+}

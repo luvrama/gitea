@@ -1,0 +1,222 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite (via XORM)",
+  "total_tables_or_collections": 7,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "team",
+      "entity_class": "organization.Team",
+      "file_path": "models/organization/team.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "description", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "authorize", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_repos", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "num_members", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "includes_all_repositories", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "can_create_org_repo", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]}
+      ],
+      "indexes": [{"name": "IDX_team_org_id", "columns": ["org_id"], "unique": false}],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"},
+        {"type": "one-to-many", "target_table": "team_unit", "join_column": "id"},
+        {"type": "one-to-many", "target_table": "team_user", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "team_user",
+      "entity_class": "organization.TeamUser",
+      "file_path": "models/organization/team_user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "team_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]}
+      ],
+      "indexes": [
+        {"name": "IDX_team_user_org_id", "columns": ["org_id"], "unique": false},
+        {"name": "UQE_team_user_s", "columns": ["team_id", "uid"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "team", "join_column": "team_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "team_unit",
+      "entity_class": "organization.TeamUnit",
+      "file_path": "models/organization/team_unit.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "team_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "type", "type": "INT", "code_type": "unit.Type", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "access_mode", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_team_unit_org_id", "columns": ["org_id"], "unique": false},
+        {"name": "UQE_team_unit_s", "columns": ["team_id", "type"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "team", "join_column": "team_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "org_user",
+      "entity_class": "organization.OrgUser",
+      "file_path": "models/organization/org_user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "is_public", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_org_user_s", "columns": ["uid", "org_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "user_blocking",
+      "entity_class": "user_model.Blocking",
+      "file_path": "models/user/block.go",
+      "columns": [
+        {"name": "blocker_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "blockee_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": []
+    },
+    {
+      "entity_id": "db-006",
+      "table_or_collection": "protected_branch",
+      "entity_class": "git_model.ProtectedBranch",
+      "file_path": "models/git/protected_branch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-007",
+      "table_or_collection": "team_invite",
+      "entity_class": "organization.TeamInvite",
+      "file_path": "models/organization/team.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "team_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "team", "join_column": "team_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-056",
+      "path": "/api/v1/teams/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "GetTeamByID", "description": "get team by ID"},
+        {"store_type": "database", "store_name": "team_unit", "operation": "SELECT", "method": "Team.LoadUnits", "description": "load team units"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetOrgByID", "description": "get org for response"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-057",
+      "path": "/api/v1/orgs/{org}/teams",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetOrgByName", "description": "resolve org"},
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "NewTeam", "description": "check duplicate"},
+        {"store_type": "database", "store_name": "team", "operation": "INSERT", "method": "NewTeam", "description": "create team"},
+        {"store_type": "database", "store_name": "team_unit", "operation": "INSERT", "method": "NewTeam", "description": "create units"},
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "NewTeam", "description": "increment num_teams"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-058",
+      "path": "/api/v1/teams/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "GetTeamByID", "description": "get team"},
+        {"store_type": "database", "store_name": "team_unit", "operation": "SELECT", "method": "LoadUnits", "description": "load units"},
+        {"store_type": "database", "store_name": "team", "operation": "UPDATE", "method": "UpdateTeam", "description": "update team"},
+        {"store_type": "database", "store_name": "team_unit", "operation": "DELETE", "method": "UpdateTeam", "description": "delete old units"},
+        {"store_type": "database", "store_name": "team_unit", "operation": "INSERT", "method": "UpdateTeam", "description": "insert new units"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-059",
+      "path": "/api/v1/teams/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "GetTeamByID", "description": "get team"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "LoadMembers", "description": "load members"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "DeleteTeam", "description": "find protections"},
+        {"store_type": "database", "store_name": "team", "operation": "DELETE", "method": "DeleteTeam", "description": "delete team"},
+        {"store_type": "database", "store_name": "team_user", "operation": "DELETE", "method": "DeleteTeam", "description": "delete memberships"},
+        {"store_type": "database", "store_name": "team_unit", "operation": "DELETE", "method": "DeleteTeam", "description": "delete units"},
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "DeleteTeam", "description": "decrement num_teams"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-060",
+      "path": "/api/v1/teams/{id}/members",
+      "operations": [
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "GetTeamByID", "description": "get team"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "IsOrganizationMember", "description": "check org membership"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetTeamMembers", "description": "get paginated members"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-061",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "GetTeamByID", "description": "get team"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByName", "description": "resolve user"},
+        {"store_type": "database", "store_name": "team_user", "operation": "SELECT", "method": "IsUserInTeams", "description": "check membership"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-062",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "GetTeamByID", "description": "get team"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByName", "description": "resolve user"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "IsUserBlockedBy", "description": "check blocked"},
+        {"store_type": "database", "store_name": "team_user", "operation": "SELECT", "method": "IsTeamMember", "description": "check already member"},
+        {"store_type": "database", "store_name": "org_user", "operation": "INSERT", "method": "AddOrgUser", "description": "add to org"},
+        {"store_type": "database", "store_name": "team_user", "operation": "INSERT", "method": "AddTeamMember", "description": "add to team"},
+        {"store_type": "database", "store_name": "team", "operation": "UPDATE", "method": "AddTeamMember", "description": "increment num_members"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-063",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "GetTeamByID", "description": "get team"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByName", "description": "resolve user"},
+        {"store_type": "database", "store_name": "team_user", "operation": "SELECT", "method": "IsTeamMember", "description": "check membership"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "GetTeamRepositories", "description": "get team repos"},
+        {"store_type": "database", "store_name": "team_user", "operation": "DELETE", "method": "removeTeamMember", "description": "remove from team"},
+        {"store_type": "database", "store_name": "team", "operation": "UPDATE", "method": "removeTeamMember", "description": "decrement num_members"},
+        {"store_type": "database", "store_name": "access", "operation": "UPDATE", "method": "RecalculateUserAccess", "description": "recalculate per repo"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+{
+  "endpoints_by_database_table": {
+    "protected_branch": {
+      "read": ["ep-312", "ep-313", "ep-314", "ep-315", "ep-316"],
+      "write": ["ep-314", "ep-315", "ep-316", "ep-317"]
+    }
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {},
+  "endpoints_by_model_class": {
+    "git_model.ProtectedBranch": ["ep-312", "ep-313", "ep-314", "ep-315", "ep-316", "ep-317"]
+  },
+  "endpoints_by_service_class": {
+    "pull_service.CreateOrUpdateProtectedBranch": ["ep-314"],
+    "pull_service.CheckPRsForBaseBranch": ["ep-315"],
+    "convert.ToBranchProtection": ["ep-312", "ep-313", "ep-314", "ep-315"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-312": {"reads": ["protected_branch"], "writes": []},
+    "ep-313": {"reads": ["protected_branch"], "writes": []},
+    "ep-314": {"reads": ["protected_branch", "user", "team"], "writes": ["protected_branch"]},
+    "ep-315": {"reads": ["protected_branch", "user", "team", "branch", "pull_request"], "writes": ["protected_branch"]},
+    "ep-316": {"reads": ["protected_branch"], "writes": ["protected_branch"]},
+    "ep-317": {"reads": [], "writes": ["protected_branch"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {}
+}

@@ -1,0 +1,26 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "HaveIBeenPwned API",
+      "type": "http_api",
+      "base_url": "https://api.pwnedpasswords.com/range/",
+      "client_class": "pwn.Client",
+      "file_path": "modules/auth/password/pwn/pwn.go",
+      "http_library": "net/http (http.DefaultClient)",
+      "endpoints_called": [
+        {"method": "GET", "path": "/{sha1_prefix}", "request": {"type": "none", "key_fields": []}, "response": {"type": "text/plain", "key_fields": ["suffix:count pairs"]}, "purpose": "Check if password SHA1 prefix matches known breached passwords"}
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": "Error is wrapped as ErrIsPwnedRequest and logged; user creation proceeds with 400 error"
+      },
+      "authentication": "none",
+      "used_by_endpoints": ["ep-098"],
+      "config_keys": ["PasswordCheckPwn"]
+    }
+  ]
+}

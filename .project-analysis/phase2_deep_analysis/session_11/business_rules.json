@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Member list visibility: if doer is org member or admin, all members shown; otherwise only public members",
+      "location": {"class": "org", "method": "ListMembers", "file_path": "routers/api/v1/org/member.go", "line_number": 73},
+      "condition": "ctx.Doer != nil && (isMember || ctx.Doer.IsAdmin)",
+      "action": "Show all members (PublicOnly=false)",
+      "affected_endpoints": ["ep-070"],
+      "code_snippet": "isMember, err = ctx.Org.Organization.IsOrgMember(ctx, ctx.Doer.ID)"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "authorization",
+      "description": "Public members list always shows only public members regardless of authentication",
+      "location": {"class": "org", "method": "ListPublicMembers", "file_path": "routers/api/v1/org/member.go", "line_number": 99},
+      "condition": "Always isMember=false",
+      "action": "listMembers called with isMember=false, forcing PublicOnly=true",
+      "affected_endpoints": ["ep-071"],
+      "code_snippet": "listMembers(ctx, false)"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "authorization",
+      "description": "IsMember check: if doer is member/admin, directly checks target; otherwise redirects to public_members",
+      "location": {"class": "org", "method": "IsMember", "file_path": "routers/api/v1/org/member.go", "line_number": 126},
+      "condition": "userIsMember || ctx.Doer.IsAdmin",
+      "action": "Directly check target user membership and return 204/404",
+      "affected_endpoints": ["ep-072"],
+      "code_snippet": "if userIsMember || ctx.Doer.IsAdmin {"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "authorization",
+      "description": "IsMember: if doer is the target user and not a member, return 404 (don't redirect)",
+      "location": {"class": "org", "method": "IsMember", "file_path": "routers/api/v1/org/member.go", "line_number": 136},
+      "condition": "ctx.Doer.ID == userToCheck.ID && !userIsMember",
+      "action": "Return 404 directly without redirect",
+      "affected_endpoints": ["ep-072"],
+      "code_snippet": "} else if ctx.Doer.ID == userToCheck.ID {"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "authorization",
+      "description": "IsMember: non-member doer checking another user gets 303 redirect to public_members endpoint",
+      "location": {"class": "org", "method": "IsMember", "file_path": "routers/api/v1/org/member.go", "line_number": 140},
+      "condition": "Doer is not member, not admin, and not the target user",
+      "action": "303 redirect to /api/v1/orgs/{org}/public_members/{username}",
+      "affected_endpoints": ["ep-072"],
+      "code_snippet": "ctx.Redirect(redirectURL)"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "authorization",
+      "description": "Publicize/Conceal: user can change own status, admin can change any, org owner can change members",
+      "location": {"class": "org", "method": "checkCanChangeOrgUserStatus", "file_path": "routers/api/v1/org/member.go", "line_number": 170},
+      "condition": "targetUser.ID == ctx.Doer.ID || ctx.Doer.IsAdmin",
+      "action": "Allow the operation",
+      "affected_endpoints": ["ep-074", "ep-075"],
+      "code_snippet": "if targetUser.ID == ctx.Doer.ID || ctx.Doer.IsAdmin { return }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Publicize/Conceal: org owners can change any member's visibility",
+      "location": {"class": "org", "method": "checkCanChangeOrgUserStatus", "file_path": "routers/api/v1/org/member.go", "line_number": 174},
+      "condition": "IsOwnedBy(ctx.Doer.ID) == true",
+      "action": "Allow the operation",
+      "affected_endpoints": ["ep-074", "ep-075"],
+      "code_snippet": "isOwner, err := ctx.Org.Organization.IsOwnedBy(ctx, ctx.Doer.ID)"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "ChangeOrgUserStatus is a no-op if user is not an org member (no error returned)",
+      "location": {"class": "organization", "method": "ChangeOrgUserStatus", "file_path": "models/organization/org.go", "line_number": 485},
+      "condition": "!has (OrgUser record not found)",
+      "action": "Return nil (silent no-op)",
+      "affected_endpoints": ["ep-074", "ep-075"],
+      "code_snippet": "} else if !has { return nil }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "RemoveOrgUser prevents removal of last org owner",
+      "location": {"class": "org_service", "method": "RemoveOrgUser", "file_path": "services/org/user.go", "line_number": 37},
+      "condition": "User is owner AND owner team has only 1 member AND that member is the user",
+      "action": "Return ErrLastOrgOwner error",
+      "affected_endpoints": ["ep-076"],
+      "code_snippet": "if t.NumMembers == 1 { ... return organization.ErrLastOrgOwner{UID: user.ID} }"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Restricted users in org member list only see public members and their own teammates",
+      "location": {"class": "FindOrgMembersOpts", "method": "applyTeamMatesOnlyFilter", "file_path": "models/organization/org.go", "line_number": 194},
+      "condition": "opts.Doer != nil && opts.IsDoerMember && opts.Doer.IsRestricted",
+      "action": "Filter to only show teammates or public members",
+      "affected_endpoints": ["ep-070"],
+      "code_snippet": "sess.And(builder.In(\"org_user.uid\", teamMates).Or(builder.Eq{\"org_user.is_public\": true}))"
+    }
+  ]
+}

@@ -1,0 +1,106 @@
+{
+  "total_findings": 4,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-162",
+      "http_method": "GET",
+      "path": "/api/v1/user/settings",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure in-memory read",
+      "graceful_degradation": "not_applicable"
+    },
+    {
+      "endpoint_id": "ep-163",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/settings",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "PATCH is idempotent - same settings can be applied multiple times safely",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-165",
+      "http_method": "POST",
+      "path": "/api/v1/users/{username}/tokens",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Name uniqueness check prevents duplicate token creation - safe to retry",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-167",
+      "http_method": "POST",
+      "path": "/api/v1/user/applications/oauth2",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "CreateOAuth2Application INSERT and GenerateClientSecret UPDATE are separate operations. If GenerateClientSecret fails after INSERT, an app exists without a secret.",
+          "recommendation": "Wrap both operations in a single transaction, or handle the partial state in error recovery"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "missing",
+          "severity": "low",
+          "detail": "No duplicate name check - retrying creates multiple apps with same name",
+          "recommendation": "Add unique constraint on (uid, name) or check before insert"
+        }
+      ],
+      "non_atomic_operations": ["INSERT oauth2_application then UPDATE client_secret are not in a single transaction"],
+      "cascading_failure_risk": "Database unavailability returns 400 (misleading - should be 500)",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": "Already available via version endpoint"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses graceful.GetManager() for shutdown coordination",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No rate limiting on these endpoints",
+      "recommendation": "Consider rate limiting token creation endpoints to prevent abuse"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": ["Database (all write operations depend on it)"],
+    "cascading_failure_paths": []
+  }
+}

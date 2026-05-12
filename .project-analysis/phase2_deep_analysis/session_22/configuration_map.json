@@ -1,0 +1,21 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "setting.DisableWebhooks",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/webhook.go",
+      "used_by": [{"class": "api", "method": "reqWebhooksEnabled", "file_path": "routers/api/v1/api.go", "usage": "Middleware check", "impact": "Returns 403 if true, blocking all webhook endpoints"}],
+      "affected_endpoints": ["ep-150", "ep-151"]
+    },
+    {
+      "key": "setting.Repository.DisableStars",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "api", "method": "reqStarsEnabled", "file_path": "routers/api/v1/api.go", "usage": "Middleware check", "impact": "Returns 403 if true, blocking all star endpoints"}],
+      "affected_endpoints": ["ep-152", "ep-153", "ep-154", "ep-155"]
+    }
+  ]
+}

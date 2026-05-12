@@ -1,0 +1,159 @@
+{
+  "total_findings": 6,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-184",
+      "http_method": "GET",
+      "path": "/api/v1/user/gpg_keys",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Database-only endpoint, no external calls",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-185",
+      "http_method": "GET",
+      "path": "/api/v1/user/gpg_keys/{id}",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Database-only endpoint",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-186",
+      "http_method": "GET",
+      "path": "/api/v1/user/gpg_key_token",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Pure computation, no external dependencies",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - stateless computation",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-187",
+      "http_method": "POST",
+      "path": "/api/v1/user/gpg_key_verify",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Verification is idempotent - re-verifying an already verified key just sets verified=true again",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-188",
+      "http_method": "POST",
+      "path": "/api/v1/user/gpg_keys",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "All inserts (import + key + subkeys) wrapped in db.WithTx2 transaction",
+          "recommendation": "None needed - properly transactional"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Duplicate key_id check prevents double-creation, safe to retry",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-189",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/gpg_keys/{id}",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Delete of import + key/subkeys wrapped in db.WithTx transaction",
+          "recommendation": "None needed"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "DeleteGPGKey returns nil if key doesn't exist - safe to retry",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses graceful.GetManager() for shutdown coordination",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting on GPG key endpoints",
+      "recommendation": "Consider rate limiting key creation to prevent abuse"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in GPG key endpoints"
+    },
+    "single_points_of_failure": ["Database"],
+    "cascading_failure_paths": []
+  }
+}

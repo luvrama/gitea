@@ -1,0 +1,175 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "release",
+      "entity_class": "repo_model.Release",
+      "file_path": "models/repo/release.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "UNIQUE(n)"]},
+        {"name": "publisher_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "tag_name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "UNIQUE(n)"]},
+        {"name": "lower_tag_name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "target", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "title", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "sha1", "type": "VARCHAR(64)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "note", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_draft", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "is_prerelease", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "is_tag", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]}
+      ],
+      "indexes": [
+        {"name": "idx_release_repo_id_tag_name", "columns": ["repo_id", "tag_name"], "unique": true},
+        {"name": "idx_release_publisher_id", "columns": ["publisher_id"], "unique": false},
+        {"name": "idx_release_sha1", "columns": ["sha1"], "unique": false},
+        {"name": "idx_release_created_unix", "columns": ["created_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "publisher_id"},
+        {"type": "one-to-many", "target_table": "attachment", "join_column": "release_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "repo_license",
+      "entity_class": "repo_model.RepoLicense",
+      "file_path": "models/repo/license.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "commit_id", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "license", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX CREATED"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX UPDATED"]}
+      ],
+      "indexes": [
+        {"name": "idx_repo_license_unique", "columns": ["repo_id", "license"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "topic",
+      "entity_class": "repo_model.Topic",
+      "file_path": "models/repo/topic.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "name", "type": "VARCHAR(50)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "repo_count", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX updated"]}
+      ],
+      "indexes": [
+        {"name": "idx_topic_name", "columns": ["name"], "unique": true},
+        {"name": "idx_topic_created_unix", "columns": ["created_unix"], "unique": false},
+        {"name": "idx_topic_updated_unix", "columns": ["updated_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-many", "target_table": "repository", "join_column": "repo_topic"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "repo_topic",
+      "entity_class": "repo_model.RepoTopic",
+      "file_path": "models/repo/topic.go",
+      "columns": [
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": false, "unique": false, "default": null, "constraints": ["pk"]},
+        {"name": "topic_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": false, "unique": false, "default": null, "constraints": ["pk"]}
+      ],
+      "indexes": [
+        {"name": "pk_repo_topic", "columns": ["repo_id", "topic_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "topic", "join_column": "topic_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-344",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "operations": [
+        {"store_type": "database", "store_name": "release", "operation": "SELECT", "method": "repo_model.GetRelease", "description": "Get release by repo_id and lower_tag_name"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "Release.LoadRepo", "description": "Load repo for release"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "Release.LoadAttributes", "description": "Load publisher user"},
+        {"store_type": "database", "store_name": "attachment", "operation": "SELECT", "method": "GetReleaseAttachments", "description": "Load release attachments"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-345",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "operations": [
+        {"store_type": "database", "store_name": "release", "operation": "SELECT", "method": "repo_model.GetRelease", "description": "Get release by tag name"},
+        {"store_type": "database", "store_name": "release", "operation": "UPDATE", "method": "repo_model.UpdateRelease", "description": "Set IsTag=true"},
+        {"store_type": "database", "store_name": "attachment", "operation": "SELECT", "method": "Release.LoadAttributes", "description": "Load attachments"},
+        {"store_type": "database", "store_name": "attachment", "operation": "DELETE", "method": "repo_model.DeleteAttachmentsByRelease", "description": "Delete attachment records"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-346",
+      "path": "/api/v1/repos/{owner}/{repo}/licenses",
+      "operations": [
+        {"store_type": "database", "store_name": "repo_license", "operation": "SELECT", "method": "repo_model.GetRepoLicenses", "description": "Get all licenses for repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-347",
+      "path": "/api/v1/repos/{owner}/{repo}/topics",
+      "operations": [
+        {"store_type": "database", "store_name": "topic", "operation": "SELECT", "method": "db.FindAndCount", "description": "Find and count topics for repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-348",
+      "path": "/api/v1/repos/{owner}/{repo}/topics",
+      "operations": [
+        {"store_type": "database", "store_name": "topic", "operation": "SELECT", "method": "repo_model.SaveTopics", "description": "Get current topics"},
+        {"store_type": "database", "store_name": "topic", "operation": "INSERT", "method": "addTopicByNameToRepo", "description": "Create new topics"},
+        {"store_type": "database", "store_name": "topic", "operation": "UPDATE", "method": "addTopicByNameToRepo/removeTopicFromRepo", "description": "Update repo_count"},
+        {"store_type": "database", "store_name": "repo_topic", "operation": "INSERT", "method": "addTopicByNameToRepo", "description": "Link topics"},
+        {"store_type": "database", "store_name": "repo_topic", "operation": "DELETE", "method": "removeTopicFromRepo", "description": "Unlink topics"},
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "syncTopicsInRepository", "description": "Sync topics field"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-349",
+      "path": "/api/v1/repos/{owner}/{repo}/topics/{topic}",
+      "operations": [
+        {"store_type": "database", "store_name": "topic", "operation": "SELECT", "method": "db.Count", "description": "Count existing topics"},
+        {"store_type": "database", "store_name": "topic", "operation": "SELECT", "method": "GetRepoTopicByName", "description": "Check if already exists"},
+        {"store_type": "database", "store_name": "topic", "operation": "INSERT", "method": "addTopicByNameToRepo", "description": "Create topic if new"},
+        {"store_type": "database", "store_name": "repo_topic", "operation": "INSERT", "method": "addTopicByNameToRepo", "description": "Link topic to repo"},
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "syncTopicsInRepository", "description": "Sync topics field"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-350",
+      "path": "/api/v1/repos/{owner}/{repo}/topics/{topic}",
+      "operations": [
+        {"store_type": "database", "store_name": "topic", "operation": "SELECT", "method": "GetRepoTopicByName", "description": "Check if repo has topic"},
+        {"store_type": "database", "store_name": "topic", "operation": "UPDATE", "method": "removeTopicFromRepo", "description": "Decrement repo_count"},
+        {"store_type": "database", "store_name": "repo_topic", "operation": "DELETE", "method": "removeTopicFromRepo", "description": "Remove link"},
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "syncTopicsInRepository", "description": "Sync topics field"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-351",
+      "path": "/api/v1/topics/search",
+      "operations": [
+        {"store_type": "database", "store_name": "topic", "operation": "SELECT", "method": "db.FindAndCount", "description": "Search topics by keyword LIKE"}
+      ]
+    }
+  ]
+}

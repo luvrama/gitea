@@ -1,0 +1,237 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-050",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "controller_class": "Action",
+      "controller_method": "DeleteRunner",
+      "description": "Delete an org-level runner",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]},
+          {"name": "runner_id", "type": "integer", "required": true, "validation": ["parsed via PathParamInt64"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 204, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "invalid request"},
+          {"status_code": 404, "type": "notFound", "condition": "runner not found or not editable in org context"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-051",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "controller_class": "Action",
+      "controller_method": "UpdateRunner",
+      "description": "Update an org-level runner (enable/disable)",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]},
+          {"name": "runner_id", "type": "integer", "required": true, "validation": ["parsed via PathParamInt64"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": {
+          "type": "EditActionRunnerOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "disabled", "type": "*bool", "required": true, "validation": ["must not be nil, returns 422 if missing"], "description": "whether the runner should be disabled"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionRunner",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "runner ID"},
+            {"name": "name", "type": "string", "description": "runner name"},
+            {"name": "status", "type": "string", "description": "online/offline"},
+            {"name": "busy", "type": "bool", "description": "whether runner is actively running a job"},
+            {"name": "disabled", "type": "bool", "description": "whether runner is disabled"},
+            {"name": "ephemeral", "type": "bool", "description": "whether runner is ephemeral"},
+            {"name": "labels", "type": "[]ActionRunnerLabel", "description": "runner labels"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "invalid request"},
+          {"status_code": 404, "type": "notFound", "condition": "runner not found or not editable in org context"},
+          {"status_code": 422, "type": "validationError", "condition": "disabled field is nil/missing"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-052",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/jobs",
+      "controller_class": "Action",
+      "controller_method": "ListWorkflowJobs",
+      "description": "Get org-level workflow jobs",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]}
+        ],
+        "query_params": [
+          {"name": "status", "type": "string", "required": false, "default": null, "validation": ["pending|queued|in_progress|failure|success|skipped|completed|waiting|requested|action_required|neutral|cancelled|timed_out"]},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected by ToCorrectPageSize"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionWorkflowJobsResponse",
+          "fields": [
+            {"name": "jobs", "type": "[]ActionWorkflowJob", "description": "list of workflow jobs"},
+            {"name": "total_count", "type": "int64", "description": "total number of matching jobs"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "invalid status filter value"},
+          {"status_code": 404, "type": "notFound", "condition": "org not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-053",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runs",
+      "controller_class": "Action",
+      "controller_method": "ListWorkflowRuns",
+      "description": "Get org-level workflow runs",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]}
+        ],
+        "query_params": [
+          {"name": "event", "type": "string", "required": false, "default": null, "validation": ["webhook event type"]},
+          {"name": "branch", "type": "string", "required": false, "default": null, "validation": ["branch name, converted to refs/heads/ prefix"]},
+          {"name": "status", "type": "string", "required": false, "default": null, "validation": ["same as jobs status filter"]},
+          {"name": "actor", "type": "string", "required": false, "default": null, "validation": ["username, resolved via GetUserByName"]},
+          {"name": "head_sha", "type": "string", "required": false, "default": null, "validation": ["commit SHA"]},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected by ToCorrectPageSize"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionWorkflowRunsResponse",
+          "fields": [
+            {"name": "workflow_runs", "type": "[]ActionWorkflowRun", "description": "list of workflow runs"},
+            {"name": "total_count", "type": "int64", "description": "total number of matching runs"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "invalid status filter value"},
+          {"status_code": 404, "type": "notFound", "condition": "org not found"},
+          {"status_code": 500, "type": "error", "condition": "actor username not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-054",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/teams",
+      "controller_class": "org",
+      "controller_method": "ListTeams",
+      "description": "List an organization's teams",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected by ToCorrectPageSize"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]Team",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "team ID"},
+            {"name": "name", "type": "string", "description": "team name"},
+            {"name": "description", "type": "string", "description": "team description"},
+            {"name": "organization", "type": "Organization", "description": "null (not loaded for org-level listing)"},
+            {"name": "includes_all_repositories", "type": "bool", "description": "whether team has access to all repos"},
+            {"name": "permission", "type": "string", "description": "access level name"},
+            {"name": "units", "type": "[]string", "description": "unit names"},
+            {"name": "units_map", "type": "map[string]string", "description": "unit permissions map"},
+            {"name": "can_create_org_repo", "type": "bool", "description": "whether team can create repos"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "org not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-055",
+      "http_method": "GET",
+      "path": "/api/v1/user/teams",
+      "controller_class": "org",
+      "controller_method": "ListUserTeams",
+      "description": "List all the teams a user belongs to",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected by ToCorrectPageSize"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]Team",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "team ID"},
+            {"name": "name", "type": "string", "description": "team name"},
+            {"name": "description", "type": "string", "description": "team description"},
+            {"name": "organization", "type": "Organization", "description": "organization object (loaded with caching)"},
+            {"name": "includes_all_repositories", "type": "bool", "description": "whether team has access to all repos"},
+            {"name": "permission", "type": "string", "description": "access level name"},
+            {"name": "units", "type": "[]string", "description": "unit names"},
+            {"name": "units_map", "type": "map[string]string", "description": "unit permissions map"},
+            {"name": "can_create_org_repo", "type": "bool", "description": "whether team can create repos"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

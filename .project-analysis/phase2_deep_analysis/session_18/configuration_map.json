@@ -1,0 +1,45 @@
+{
+  "total_properties": 5,
+  "properties": [
+    {
+      "key": "API.DefaultPagingNum",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Default page size when limit<=0", "impact": "Controls default number of results per page"}],
+      "affected_endpoints": ["ep-123", "ep-127"]
+    },
+    {
+      "key": "API.MaxResponseItems",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Maximum page size cap", "impact": "Limits maximum results per page"}],
+      "affected_endpoints": ["ep-123", "ep-127"]
+    },
+    {
+      "key": "Avatar.MaxWidth",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [{"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "usage": "Maximum allowed image width", "impact": "Rejects images wider than this"}],
+      "affected_endpoints": ["ep-128"]
+    },
+    {
+      "key": "Avatar.MaxHeight",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [{"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "usage": "Maximum allowed image height", "impact": "Rejects images taller than this"}],
+      "affected_endpoints": ["ep-128"]
+    },
+    {
+      "key": "Avatar.MaxOriginSize",
+      "type": "Integer",
+      "default_value": "262144",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [{"class": "avatar", "method": "ProcessAvatarImage", "file_path": "modules/avatar/avatar.go", "usage": "If original image is smaller than this, skip processing", "impact": "Small images are stored as-is (preserving animation)"}],
+      "affected_endpoints": ["ep-128"]
+    }
+  ]
+}

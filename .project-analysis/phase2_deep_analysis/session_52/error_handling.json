@@ -1,0 +1,28 @@
+{
+  "total_patterns": 8,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "internal error", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "not found"},
+      {"exception_type": "validation error", "status_code": 422, "response_type": "JSON error", "message_template": "validation failed"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-352", "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}", "error_scenarios": [
+      {"exception": "ErrReleaseNotExist", "trigger": "Release ID not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "ErrAttachmentNotExist", "trigger": "Attachment ID not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-354", "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets", "error_scenarios": [
+      {"exception": "ErrFileTypeForbidden", "trigger": "File type not in allowed list", "status_code": 400, "response": "error", "logged": true, "retryable": false},
+      {"exception": "ErrContentTooLarge", "trigger": "File exceeds max size", "status_code": 413, "response": "error", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-355", "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}", "error_scenarios": [
+      {"exception": "ErrFileTypeForbidden", "trigger": "New filename extension not allowed", "status_code": 422, "response": "validationError", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrAttachmentNotExist", "file_path": "models/repo/attachment.go", "extends": "util.ErrNotExist", "used_in": ["repo_model.GetAttachmentByID"], "http_status": 404},
+    {"class": "ErrFileTypeForbidden", "file_path": "services/context/upload/upload.go", "extends": "error", "used_in": ["upload.Verify"], "http_status": 400},
+    {"class": "ErrRepoLabelNotExist", "file_path": "models/issues/label.go", "extends": "util.ErrNotExist", "used_in": ["issues_model.GetLabelInRepoByID", "issues_model.GetLabelInRepoByName"], "http_status": 404}
+  ]
+}

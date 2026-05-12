@@ -1,0 +1,115 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 2,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "mirror",
+      "entity_class": "repo_model.Mirror",
+      "file_path": "models/repo/mirror.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "interval", "type": "BIGINT", "code_type": "time.Duration", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "enable_prune", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "true", "constraints": ["NOT NULL DEFAULT true"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "next_update_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "last_sync_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "lfs_enabled", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "lfs_endpoint", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "remote_address", "type": "VARCHAR(2048)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_mirror_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_mirror_updated_unix", "columns": ["updated_unix"], "unique": false},
+        {"name": "idx_mirror_next_update_unix", "columns": ["next_update_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "push_mirror",
+      "entity_class": "repo_model.PushMirror",
+      "file_path": "models/repo/pushmirror.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "remote_name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "remote_address", "type": "VARCHAR(2048)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "sync_on_commit", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "true", "constraints": ["NOT NULL DEFAULT true"]},
+        {"name": "interval", "type": "BIGINT", "code_type": "time.Duration", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "last_update", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "last_error", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_push_mirror_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_push_mirror_last_update", "columns": ["last_update"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [
+    {
+      "queue_id": "mq-001",
+      "name": "mirror",
+      "technology": "internal unique queue (levelqueue/channel/redis)",
+      "message_type": "SyncRequest{Type SyncType, ReferenceID int64}",
+      "description": "Queue for mirror sync operations, both pull and push mirrors"
+    }
+  ],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-234",
+      "path": "/api/v1/repos/{owner}/{repo}/mirror-sync",
+      "operations": [
+        {"store_type": "database", "store_name": "mirror", "operation": "SELECT", "method": "repo_model.GetMirrorByRepoID", "description": "Verify repo is a pull mirror"},
+        {"store_type": "message_queue", "store_name": "mirror", "operation": "PUBLISH", "method": "mirror_service.AddPullMirrorToQueue", "description": "Add pull mirror sync request to queue"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-235",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors-sync",
+      "operations": [
+        {"store_type": "database", "store_name": "push_mirror", "operation": "SELECT", "method": "repo_model.GetPushMirrorsByRepoID", "description": "Get all push mirrors for repo"},
+        {"store_type": "database", "store_name": "push_mirror", "operation": "SELECT", "method": "db.GetByID", "description": "Load each mirror by ID during sync"},
+        {"store_type": "database", "store_name": "push_mirror", "operation": "UPDATE", "method": "repo_model.UpdatePushMirror", "description": "Update last_update and last_error after sync"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-236",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors",
+      "operations": [
+        {"store_type": "database", "store_name": "push_mirror", "operation": "SELECT", "method": "repo_model.GetPushMirrorsByRepoID", "description": "Paginated list of push mirrors"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-237",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors/{name}",
+      "operations": [
+        {"store_type": "database", "store_name": "push_mirror", "operation": "SELECT", "method": "db.Get[PushMirror]", "description": "Get push mirror by repo_id and remote_name"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-238",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors",
+      "operations": [
+        {"store_type": "database", "store_name": "push_mirror", "operation": "INSERT", "method": "db.Insert", "description": "Insert new push mirror record"},
+        {"store_type": "database", "store_name": "push_mirror", "operation": "DELETE", "method": "repo_model.DeletePushMirrors", "description": "Cleanup on remote registration failure"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-239",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors/{name}",
+      "operations": [
+        {"store_type": "database", "store_name": "push_mirror", "operation": "DELETE", "method": "repo_model.DeletePushMirrors", "description": "Delete push mirror by repo_id and remote_name"}
+      ]
+    }
+  ]
+}

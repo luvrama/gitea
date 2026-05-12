@@ -1,0 +1,531 @@
+{
+  "total_flows": 7,
+  "flows": [
+    {
+      "endpoint_id": "ep-084",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "description": "Retrieve a single org label by ID or name, convert to API format",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.GetLabel",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/label.go",
+          "input": "APIContext with org and id path param",
+          "output": "JSON Label response",
+          "operations": ["Parse id param", "Determine if id is numeric or string name", "Dispatch to appropriate model lookup"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetLabelInOrgByID or GetLabelInOrgByName",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "orgID int64, labelID int64 or labelName string",
+          "output": "*Label or ErrOrgLabelNotExist",
+          "operations": ["Query label table by id+org_id or name+org_id"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "label", "description": "Get label by id/name and org_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToLabel",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "*issues_model.Label, nil repo, org user",
+          "output": "*api.Label",
+          "operations": ["Map model fields to API struct", "Strip # from color", "Build URL from org name"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "issues_model.Label",
+          "to": "api.Label",
+          "component": "convert.ToLabel",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Exclusive", "target_field": "exclusive", "transformation": "direct_copy"},
+            {"source_field": "Color", "target_field": "color", "transformation": "computed"},
+            {"source_field": "Description", "target_field": "description", "transformation": "direct_copy"},
+            {"source_field": "ArchivedUnix", "target_field": "is_archived", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Label not found in org", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Database error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-085",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "description": "Update an org label's name, color, description, exclusive, or archived status",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.EditLabel",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/label.go",
+          "input": "APIContext with EditLabelOption form",
+          "output": "JSON Label response",
+          "operations": ["Extract form from context", "Fetch existing label", "Apply partial updates", "Validate color if provided"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetLabelInOrgByID",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "orgID, labelID int64",
+          "output": "*Label or ErrOrgLabelNotExist",
+          "operations": ["Query label by id and org_id"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "label", "description": "Get label by id and org_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "label.NormalizeColor",
+          "type": "utility",
+          "file_path": "modules/label/label.go",
+          "input": "color string",
+          "output": "normalized color string or error",
+          "operations": ["Trim whitespace", "Add # prefix if missing", "Validate against regex", "Expand 3-char to 6-char hex"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "issues_model.UpdateLabel",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "*Label with updated fields",
+          "output": "error or nil",
+          "operations": ["Update label columns", "Recalculate num_issues and num_closed_issues via subqueries"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "label", "description": "Update label fields with recalculated issue counts"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToLabel",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "*issues_model.Label",
+          "output": "*api.Label",
+          "operations": ["Convert model to API response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.EditLabelOption",
+          "to": "issues_model.Label",
+          "component": "org.EditLabel",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Exclusive", "target_field": "Exclusive", "transformation": "direct_copy"},
+            {"source_field": "Color", "target_field": "Color", "transformation": "computed"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"},
+            {"source_field": "IsArchived", "target_field": "ArchivedUnix", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Label not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Invalid color", "handler": "ctx.APIError", "response_code": 422, "response": "validationError"},
+        {"condition": "Database error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-086",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "description": "Delete an org label and all associated issue_label and comment records",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.DeleteLabel",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/label.go",
+          "input": "APIContext with org and id path param",
+          "output": "204 No Content",
+          "operations": ["Call model DeleteLabel with org ID and label ID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.DeleteLabel",
+          "type": "repository",
+          "file_path": "models/issues/label.go",
+          "input": "id (orgID), labelID int64",
+          "output": "error or nil",
+          "operations": ["Get label by ID", "Verify ownership", "Delete label record", "Delete issue_label records", "Delete comment records referencing label"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "label", "description": "Get label by ID to verify existence"},
+            {"operation": "DELETE", "table": "label", "description": "Delete the label record"},
+            {"operation": "DELETE", "table": "issue_label", "description": "Delete all issue-label associations"},
+            {"operation": "DELETE", "table": "comment", "description": "Delete comments referencing this label"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Database error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-087",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/blocks",
+      "description": "List all users blocked by the organization with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.ListBlocks",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/block.go",
+          "input": "APIContext",
+          "output": "delegates to shared.ListBlocks",
+          "operations": ["Pass org user to shared handler"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListBlocks",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/block.go",
+          "input": "APIContext, blocker *user_model.User",
+          "output": "JSON []*api.User",
+          "operations": ["Get list options", "Find blockings with pagination", "Load attributes for each blocking"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.FindBlockings",
+          "type": "repository",
+          "file_path": "models/user/block.go",
+          "input": "FindBlockingOptions with BlockerID and pagination",
+          "output": "[]*Blocking, total int64",
+          "operations": ["Query user_blocking table with blocker_id filter"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user_blocking", "description": "Find blocking records for blocker with count"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "BlockingList.LoadAttributes",
+          "type": "repository",
+          "file_path": "models/user/block.go",
+          "input": "BlockingList",
+          "output": "error (populates Blocker/Blockee fields)",
+          "operations": ["Collect all user IDs", "Batch fetch users by IDs", "Map users to blocking records"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Batch load blocker and blockee user records"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToUser",
+          "type": "utility",
+          "file_path": "services/convert/user.go",
+          "input": "*user_model.User (blockee), blocker",
+          "output": "*api.User",
+          "operations": ["Convert each blockee to API user format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.Blocking",
+          "to": "api.User",
+          "component": "shared.ListBlocks + convert.ToUser",
+          "mappings": [
+            {"source_field": "Blockee.ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Blockee.Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "Blockee.FullName", "target_field": "full_name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Database error on FindBlockings", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "Database error on LoadAttributes", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-088",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "description": "Check if a specific user is blocked by the organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.CheckUserBlock",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/block.go",
+          "input": "APIContext",
+          "output": "delegates to shared.CheckUserBlock",
+          "operations": ["Pass org user to shared handler"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.CheckUserBlock",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/block.go",
+          "input": "APIContext, blocker *user_model.User",
+          "output": "204 or 404 status",
+          "operations": ["Look up blockee by username", "Check blocking record exists"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.GetUserByName",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "username string",
+          "output": "*User or error",
+          "operations": ["Query user table by lower_name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Get user by username"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "user_model.GetBlocking",
+          "type": "repository",
+          "file_path": "models/user/block.go",
+          "input": "blockerID, blockeeID int64",
+          "output": "*Blocking or ErrNotExist",
+          "operations": ["Query user_blocking by blocker_id and blockee_id"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user_blocking", "description": "Check if blocking record exists"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User not found by name", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Blocking not found", "handler": "ctx.Status(404)", "response_code": 404, "response": "empty"},
+        {"condition": "Database error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-089",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "description": "Block a user from the organization, removing all mutual relationships",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.BlockUser",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/block.go",
+          "input": "APIContext",
+          "output": "delegates to shared.BlockUser",
+          "operations": ["Pass org user to shared handler"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.BlockUser",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/block.go",
+          "input": "APIContext, blocker *user_model.User",
+          "output": "204 or error status",
+          "operations": ["Look up blockee by username", "Call user_service.BlockUser"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.GetUserByName",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "username string",
+          "output": "*User or error",
+          "operations": ["Query user table by lower_name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Get blockee user by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "user_service.BlockUser",
+          "type": "service",
+          "file_path": "services/user/block.go",
+          "input": "ctx, doer, blocker, blockee, note",
+          "output": "error or nil",
+          "operations": [
+            "Validate blockee is not an org",
+            "Check CanBlockUser permissions",
+            "Begin transaction",
+            "Unfollow each other",
+            "Unstar each other's repos",
+            "Unwatch each other's repos",
+            "Unassign each other from issues",
+            "Remove collaborations",
+            "Cancel repository transfers",
+            "Insert blocking record"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user_blocking", "description": "Check if already blocked"},
+            {"operation": "SELECT", "table": "org_user", "description": "Check org membership"},
+            {"operation": "DELETE", "table": "follow", "description": "Unfollow each other"},
+            {"operation": "SELECT", "table": "star", "description": "Find starred repos"},
+            {"operation": "DELETE", "table": "star", "description": "Remove stars"},
+            {"operation": "SELECT", "table": "watch", "description": "Find watched repos"},
+            {"operation": "DELETE", "table": "watch", "description": "Remove watches"},
+            {"operation": "SELECT", "table": "issue_assignees", "description": "Find assigned issues"},
+            {"operation": "DELETE", "table": "issue_assignees", "description": "Remove assignments"},
+            {"operation": "SELECT", "table": "collaboration", "description": "Find collaborations"},
+            {"operation": "DELETE", "table": "collaboration", "description": "Remove collaborations"},
+            {"operation": "SELECT", "table": "repo_transfer", "description": "Find pending transfers"},
+            {"operation": "DELETE", "table": "repo_transfer", "description": "Cancel transfers"},
+            {"operation": "INSERT", "table": "user_blocking", "description": "Create blocking record"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Cannot block (self, org member, already blocked)", "handler": "ctx.APIError", "response_code": 400, "response": "error"},
+        {"condition": "Target is organization", "handler": "ctx.APIError", "response_code": 400, "response": "error"},
+        {"condition": "Database error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-090",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "description": "Unblock a user from the organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.UnblockUser",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/block.go",
+          "input": "APIContext",
+          "output": "delegates to shared.UnblockUser",
+          "operations": ["Pass doer and org user to shared handler"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.UnblockUser",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/block.go",
+          "input": "APIContext, doer, blocker *user_model.User",
+          "output": "204 or error status",
+          "operations": ["Look up blockee by username", "Call user_service.UnblockUser"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.GetUserByName",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "username string",
+          "output": "*User or error",
+          "operations": ["Query user table by lower_name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Get blockee user by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "user_service.UnblockUser",
+          "type": "service",
+          "file_path": "services/user/block.go",
+          "input": "ctx, doer, blocker, blockee",
+          "output": "error or nil",
+          "operations": [
+            "Validate blockee is not an org",
+            "Check CanUnblockUser permissions",
+            "Begin transaction",
+            "Get blocking record",
+            "Delete blocking record by ID"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user_blocking", "description": "Check if blocked and get record"},
+            {"operation": "SELECT", "table": "org_user", "description": "Check org ownership for permission"},
+            {"operation": "DELETE", "table": "user_blocking", "description": "Delete blocking record"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Cannot unblock (not blocked, insufficient perms)", "handler": "ctx.APIError", "response_code": 400, "response": "error"},
+        {"condition": "Target is organization", "handler": "ctx.APIError", "response_code": 400, "response": "error"},
+        {"condition": "Database error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

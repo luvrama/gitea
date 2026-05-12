@@ -1,0 +1,49 @@
+{
+  "endpoints_by_database_table": {
+    "repository": {"read": [], "write": ["ep-262", "ep-263"]},
+    "secret": {"read": ["ep-264", "ep-265", "ep-266"], "write": ["ep-265", "ep-266"]},
+    "action_variable": {"read": ["ep-267", "ep-268"], "write": ["ep-268"]}
+  },
+  "endpoints_by_external_service": {
+    "File Storage (RepoAvatars)": ["ep-262", "ep-263"]
+  },
+  "endpoints_by_config_property": {
+    "avatar.MAX_WIDTH": ["ep-262"],
+    "avatar.MAX_HEIGHT": ["ep-262"],
+    "avatar.MAX_ORIGIN_SIZE": ["ep-262"],
+    "avatar.RENDERED_SIZE_FACTOR": ["ep-262"],
+    "api.DEFAULT_PAGING_NUM": ["ep-264"]
+  },
+  "endpoints_by_model_class": {
+    "secret_model.Secret": ["ep-264", "ep-265", "ep-266"],
+    "actions_model.ActionVariable": ["ep-267", "ep-268"],
+    "repo_model.Repository": ["ep-262", "ep-263"]
+  },
+  "endpoints_by_service_class": {
+    "repo_service (services/repository)": ["ep-262", "ep-263"],
+    "secret_service (services/secrets)": ["ep-265", "ep-266"],
+    "actions_service (services/actions)": ["ep-267", "ep-268"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-262": {"reads": [], "writes": ["repository"]},
+    "ep-263": {"reads": [], "writes": ["repository"]},
+    "ep-264": {"reads": ["secret"], "writes": []},
+    "ep-265": {"reads": ["secret"], "writes": ["secret"]},
+    "ep-266": {"reads": ["secret"], "writes": ["secret"]},
+    "ep-267": {"reads": ["action_variable"], "writes": []},
+    "ep-268": {"reads": ["action_variable"], "writes": ["action_variable"]}
+  },
+  "external_services_by_endpoint": {
+    "ep-262": ["File Storage (RepoAvatars)"],
+    "ep-263": ["File Storage (RepoAvatars)"]
+  },
+  "config_properties_by_endpoint": {
+    "ep-262": ["avatar.MAX_WIDTH", "avatar.MAX_HEIGHT", "avatar.MAX_ORIGIN_SIZE", "avatar.RENDERED_SIZE_FACTOR"],
+    "ep-263": [],
+    "ep-264": ["api.DEFAULT_PAGING_NUM"],
+    "ep-265": [],
+    "ep-266": [],
+    "ep-267": [],
+    "ep-268": []
+  }
+}

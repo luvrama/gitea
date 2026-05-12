@@ -1,0 +1,40 @@
+{
+  "endpoints_by_database_table": {
+    "issue": {"read": ["ep-336", "ep-337", "ep-338", "ep-339"], "write": []},
+    "label": {"read": ["ep-336", "ep-337", "ep-338", "ep-339"], "write": ["ep-336", "ep-337", "ep-338", "ep-339"]},
+    "issue_label": {"read": ["ep-336", "ep-338"], "write": ["ep-336", "ep-337", "ep-338", "ep-339"]},
+    "comment": {"read": [], "write": ["ep-336", "ep-337", "ep-338", "ep-339"]},
+    "deploy_key": {"read": ["ep-340", "ep-341", "ep-343"], "write": ["ep-342", "ep-343"]},
+    "public_key": {"read": ["ep-340", "ep-341", "ep-342", "ep-343"], "write": ["ep-342", "ep-343"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "SSH.MinimumKeySizeCheck": ["ep-342"],
+    "SSH.StartBuiltinServer": ["ep-343"]
+  },
+  "endpoints_by_model_class": {
+    "issues_model.Label": ["ep-336", "ep-337", "ep-338", "ep-339"],
+    "issues_model.IssueLabel": ["ep-336", "ep-337", "ep-338", "ep-339"],
+    "asymkey_model.DeployKey": ["ep-340", "ep-341", "ep-342", "ep-343"],
+    "asymkey_model.PublicKey": ["ep-340", "ep-341", "ep-342", "ep-343"]
+  },
+  "endpoints_by_service_class": {
+    "issue_service": ["ep-336", "ep-337", "ep-338", "ep-339"],
+    "asymkey_service": ["ep-343"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-336": {"reads": ["issue", "label", "issue_label"], "writes": ["issue_label", "comment", "label"]},
+    "ep-337": {"reads": ["issue", "label", "repository", "access"], "writes": ["issue_label", "comment", "label"]},
+    "ep-338": {"reads": ["issue", "label", "issue_label", "repository"], "writes": ["issue_label", "comment", "label"]},
+    "ep-339": {"reads": ["issue", "label", "issue_label", "repository", "access"], "writes": ["issue_label", "comment", "label"]},
+    "ep-340": {"reads": ["deploy_key", "public_key"], "writes": []},
+    "ep-341": {"reads": ["deploy_key", "public_key"], "writes": []},
+    "ep-342": {"reads": ["public_key", "deploy_key"], "writes": ["public_key", "deploy_key"]},
+    "ep-343": {"reads": ["deploy_key", "public_key"], "writes": ["deploy_key", "public_key"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-342": ["SSH.MinimumKeySizeCheck", "SSH.MinimumKeySizes"],
+    "ep-343": ["SSH.StartBuiltinServer", "SSH.CreateAuthorizedKeysFile"]
+  }
+}

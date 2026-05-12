@@ -1,0 +1,44 @@
+{
+  "endpoints_by_database_table": {
+    "team": {"read": ["ep-064", "ep-065", "ep-066", "ep-067", "ep-068", "ep-069"], "write": ["ep-066", "ep-067"]},
+    "team_repo": {"read": ["ep-064", "ep-065", "ep-066", "ep-067"], "write": ["ep-066", "ep-067"]},
+    "repository": {"read": ["ep-064", "ep-065", "ep-066", "ep-067"], "write": []},
+    "action": {"read": ["ep-069"], "write": []},
+    "team_unit": {"read": ["ep-068"], "write": []},
+    "team_user": {"read": ["ep-064", "ep-065", "ep-066", "ep-067", "ep-069"], "write": []},
+    "org_user": {"read": ["ep-064", "ep-065", "ep-066", "ep-067", "ep-068", "ep-069"], "write": []},
+    "access": {"read": ["ep-064", "ep-065", "ep-066", "ep-067"], "write": ["ep-066", "ep-067"]},
+    "watch": {"read": [], "write": ["ep-066", "ep-067"]},
+    "issue_watch": {"read": [], "write": ["ep-067"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "service.AUTO_WATCH_NEW_REPOS": ["ep-066"]
+  },
+  "endpoints_by_model_class": {
+    "organization.Team": ["ep-064", "ep-065", "ep-066", "ep-067", "ep-068", "ep-069"],
+    "organization.TeamRepo": ["ep-064", "ep-065", "ep-066", "ep-067"],
+    "repo_model.Repository": ["ep-064", "ep-065", "ep-066", "ep-067"],
+    "activities_model.Action": ["ep-069"]
+  },
+  "endpoints_by_service_class": {
+    "repo_service.TeamAddRepository": ["ep-066"],
+    "repo_service.RemoveRepositoryFromTeam": ["ep-067"],
+    "feed_service.GetFeeds": ["ep-069"],
+    "convert.ToRepo": ["ep-064", "ep-065"],
+    "convert.ToTeams": ["ep-068"],
+    "convert.ToActivities": ["ep-069"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-064": {"reads": ["team", "team_repo", "repository", "access", "team_user", "org_user"], "writes": []},
+    "ep-065": {"reads": ["team", "repository", "team_repo", "access", "team_user", "org_user"], "writes": []},
+    "ep-066": {"reads": ["team", "repository", "access", "team_repo", "team_user", "org_user"], "writes": ["team_repo", "team", "access", "watch"]},
+    "ep-067": {"reads": ["team", "repository", "access", "team_repo", "team_user", "org_user"], "writes": ["team_repo", "team", "access", "watch", "issue_watch"]},
+    "ep-068": {"reads": ["user", "org_user", "team", "team_unit", "team_user"], "writes": []},
+    "ep-069": {"reads": ["team", "team_user", "org_user", "user", "repository", "team_repo", "action"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-066": ["service.AUTO_WATCH_NEW_REPOS"]
+  }
+}

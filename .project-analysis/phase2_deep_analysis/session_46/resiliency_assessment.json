@@ -1,0 +1,145 @@
+{
+  "total_findings": 6,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-312",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "fallback",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Pure database read, no external dependencies",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-313",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "fallback",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Pure database read, no external dependencies",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-314",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Insert + PR check is not atomic, but PR check failure after insert is acceptable (rule is created, PRs will be checked eventually)",
+          "recommendation": "Acceptable as-is since PR checks are eventually consistent"
+        }
+      ],
+      "non_atomic_operations": ["Rule insert followed by PR check - if PR check fails, rule is still created"],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-315",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Update rule + check PRs for matched branches is not atomic. If CheckPRsForBaseBranch fails midway through glob-matched branches, some PRs are re-checked and others are not",
+          "recommendation": "Consider making PR re-checks async/queued rather than synchronous in the request path"
+        }
+      ],
+      "non_atomic_operations": ["Rule update followed by iterating matched branches for PR checks - partial failure leaves some PRs unchecked"],
+      "cascading_failure_risk": "If glob matches many branches, the request could time out during PR checks",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-316",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "missing",
+          "severity": "low",
+          "detail": "Delete is not idempotent - second call returns 404",
+          "recommendation": "Acceptable REST behavior for DELETE"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-317",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/priority",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Priority update is idempotent - same input produces same result. Uses transaction for atomicity",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses modules/graceful for shutdown handling",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting for branch protection APIs",
+      "recommendation": "Consider rate limiting write operations to prevent abuse"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message flows in these endpoints"
+    },
+    "single_points_of_failure": ["Database (single point for all operations)"],
+    "cascading_failure_paths": []
+  }
+}

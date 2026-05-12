@@ -1,0 +1,242 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-001",
+      "http_method": "GET",
+      "path": "/api/v1/version",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": [],
+        "note": "Pure in-memory read of a global variable"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-002",
+      "http_method": "GET",
+      "path": "/api/v1/label/templates",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": [],
+        "note": "Pure in-memory read of pre-loaded slice"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-003",
+      "http_method": "GET",
+      "path": "/api/v1/label/templates/{name}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["filesystem"],
+        "note": "Map lookup + file read from disk/bindata"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "Label template file is read from disk on every request (via label.LoadTemplateFile)",
+          "impact": "Disk I/O per request, though files are small",
+          "file_path": "modules/repository/init.go",
+          "line_number": 152,
+          "code_snippet": "return label.LoadTemplateFile(fileName)",
+          "recommendation": "Consider caching parsed label templates in memory since they rarely change"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Cache parsed label template results in memory",
+          "estimated_impact": "Eliminate disk reads for repeated requests",
+          "implementation": "Store parsed labels in a map alongside labelTemplateFileMap, invalidate on config reload"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-004",
+      "http_method": "GET",
+      "path": "/api/v1/signing-key.gpg",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["process_exec", "git_config"],
+        "note": "Multiple git config reads + gpg process execution"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "Every request executes git config commands and gpg --export process",
+          "impact": "Process spawn overhead (~50-100ms per request)",
+          "file_path": "services/asymkey/sign.go",
+          "line_number": 126,
+          "code_snippet": "content, stderr, err := process.GetManager().ExecDir(ctx, -1, setting.Git.HomePath, ...)",
+          "recommendation": "Cache the exported GPG key since signing keys change very rarely"
+        },
+        {
+          "severity": "medium",
+          "type": "no_timeout",
+          "description": "gpg --export is called with timeout=-1 (no timeout)",
+          "impact": "If gpg hangs, the request will hang indefinitely",
+          "file_path": "services/asymkey/sign.go",
+          "line_number": 126,
+          "code_snippet": "process.GetManager().ExecDir(ctx, -1, ...)",
+          "recommendation": "Set a reasonable timeout (e.g., 10 seconds) for gpg execution"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "timeout",
+          "description": "Add timeout to gpg process execution",
+          "estimated_impact": "Prevent request hangs when gpg is unresponsive",
+          "implementation": "Change -1 timeout to 10*time.Second in ExecDir call"
+        },
+        {
+          "priority": "P2",
+          "type": "caching",
+          "description": "Cache GPG public key export result",
+          "estimated_impact": "Eliminate process spawn on every request",
+          "implementation": "Cache result with TTL or invalidate on signing key config change"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-005",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/signing-key.gpg",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["process_exec", "git_config"],
+        "note": "Same as ep-004 - shares handler"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "Same as ep-004: gpg process spawned per request",
+          "impact": "Process spawn overhead",
+          "file_path": "services/asymkey/sign.go",
+          "line_number": 126,
+          "code_snippet": "process.GetManager().ExecDir(ctx, -1, ...)",
+          "recommendation": "Cache GPG key export"
+        },
+        {
+          "severity": "medium",
+          "type": "no_timeout",
+          "description": "Same as ep-004: no timeout on gpg execution",
+          "impact": "Potential request hang",
+          "file_path": "services/asymkey/sign.go",
+          "line_number": 126,
+          "code_snippet": "process.GetManager().ExecDir(ctx, -1, ...)",
+          "recommendation": "Add timeout"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "timeout",
+          "description": "Add timeout to gpg process execution",
+          "estimated_impact": "Prevent hangs",
+          "implementation": "Set timeout in ExecDir"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-006",
+      "http_method": "GET",
+      "path": "/api/v1/signing-key.pub",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["filesystem", "git_config"],
+        "note": "Git config reads + file read for SSH key"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "SSH key file is read from disk on every request",
+          "impact": "Minor disk I/O, SSH key files are small",
+          "file_path": "services/asymkey/sign.go",
+          "line_number": 119,
+          "code_snippet": "content, err := os.ReadFile(signingKey.KeyID)",
+          "recommendation": "Cache SSH key content in memory"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Cache SSH public key file content",
+          "estimated_impact": "Eliminate file read per request",
+          "implementation": "Read once at startup or cache with file watcher"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-007",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/signing-key.pub",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["filesystem", "git_config"],
+        "note": "Same as ep-006 - shares handler"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "Same as ep-006: SSH key file read per request",
+          "impact": "Minor disk I/O",
+          "file_path": "services/asymkey/sign.go",
+          "line_number": 119,
+          "code_snippet": "content, err := os.ReadFile(signingKey.KeyID)",
+          "recommendation": "Cache SSH key content"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-008",
+      "http_method": "POST",
+      "path": "/api/v1/markup",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["cpu"],
+        "note": "CPU-intensive markdown/markup parsing and HTML rendering"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "Markup rendering is CPU-intensive and runs synchronously on the request goroutine with no size limit on input",
+          "impact": "Large documents could consume significant CPU time and memory",
+          "file_path": "routers/api/v1/misc/markup.go",
+          "line_number": 34,
+          "code_snippet": "common.RenderMarkup(ctx.Base, ctx.Repo, mode, form.Text, form.Context, form.FilePath)",
+          "recommendation": "Add input size limit and/or render timeout"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "timeout",
+          "description": "Add render timeout to prevent DoS via large documents",
+          "estimated_impact": "Prevent CPU exhaustion from malicious large inputs",
+          "implementation": "Wrap render call with context.WithTimeout or limit input Text size"
+        }
+      ]
+    }
+  ]
+}

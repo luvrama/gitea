@@ -1,0 +1,121 @@
+{
+  "total_findings": 5,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-220",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/check",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure DB read",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-221",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure DB read",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-222",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "cascading_failure",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "ToAPIPullRequests opens a git repository. If git storage is slow or unavailable, the entire list endpoint fails with no fallback.",
+          "recommendation": "Consider returning partial data (without branch SHAs) if git repo is unavailable"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Git storage unavailability causes complete endpoint failure",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-223",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "StartPullRequestCheckOnView uses a unique queue - duplicate adds are ignored. Global lock prevents race conditions.",
+          "recommendation": "Current implementation is safe"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Minimal - queue add failure doesn't affect response",
+      "graceful_degradation": "PR check queue failure is non-blocking"
+    },
+    {
+      "endpoint_id": "ep-225",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}.{diffType}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Git diff/patch operation has no explicit timeout. Very large diffs could take a long time to generate.",
+          "recommendation": "Add context timeout for git operations to prevent long-running requests"
+        },
+        {
+          "pattern": "bulkhead",
+          "status": "missing",
+          "severity": "low",
+          "detail": "No concurrency limit on diff generation. Multiple simultaneous large diff requests could exhaust resources.",
+          "recommendation": "Consider rate limiting or concurrency control for diff endpoints"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Large diff requests could consume significant memory and CPU",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses modules/graceful for shutdown handling",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in API rate limiting for these endpoints",
+      "recommendation": "Consider adding rate limiting for expensive endpoints like PR list and diff download"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "PR check queue is internal; failed checks are retried on next view"
+    },
+    "single_points_of_failure": [
+      "Git storage (filesystem) - required for diff/patch and branch SHA resolution"
+    ],
+    "cascading_failure_paths": [
+      "Git storage slow → ep-222 list timeout → client retries → increased load"
+    ]
+  }
+}

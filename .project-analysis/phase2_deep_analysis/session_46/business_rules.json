@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Rule name must not be empty - either rule_name or branch_name must be provided",
+      "location": {"class": "repo", "method": "CreateBranchProtection", "file_path": "routers/api/v1/repo/branch.go", "line_number": 413},
+      "condition": "len(ruleName) == 0",
+      "action": "Return 400 Bad Request",
+      "affected_endpoints": ["ep-314"],
+      "code_snippet": "if len(ruleName) == 0 {\n\tctx.APIError(http.StatusBadRequest, \"both rule_name and branch_name are empty\")\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Branch protection rule must not already exist for the same repo and rule name",
+      "location": {"class": "repo", "method": "CreateBranchProtection", "file_path": "routers/api/v1/repo/branch.go", "line_number": 419},
+      "condition": "protectBranch != nil (already exists)",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-314"],
+      "code_snippet": "} else if protectBranch != nil {\n\tctx.APIError(http.StatusForbidden, \"Branch protection already exist\")\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "authorization",
+      "description": "Whitelist users must have write access to the code unit to be added to push/force-push/merge whitelists",
+      "location": {"class": "git_model", "method": "updateUserWhitelist", "file_path": "models/git/protected_branch.go", "line_number": 310},
+      "condition": "!perm.CanWrite(unit.TypeCode)",
+      "action": "User ID is silently dropped from whitelist",
+      "affected_endpoints": ["ep-314", "ep-315"],
+      "code_snippet": "if !perm.CanWrite(unit.TypeCode) {\n\tcontinue // Drop invalid user ID\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "authorization",
+      "description": "Approval whitelist users must have at least read access to the pull requests unit",
+      "location": {"class": "git_model", "method": "updateApprovalWhitelist", "file_path": "models/git/protected_branch.go", "line_number": 289},
+      "condition": "!prUserIDs.Contains(userID)",
+      "action": "User ID is silently dropped from approval whitelist",
+      "affected_endpoints": ["ep-314", "ep-315"],
+      "code_snippet": "if !prUserIDs.Contains(userID) {\n\tcontinue\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Auto-priority calculation: new rules get MAX(priority)+1 if priority is not explicitly set",
+      "location": {"class": "git_model", "method": "UpdateProtectBranch", "file_path": "models/git/protected_branch.go", "line_number": 268},
+      "condition": "protectBranch.ID == 0 && protectBranch.Priority == 0",
+      "action": "Query MAX(priority) and set priority = lowestPrio + 1",
+      "affected_endpoints": ["ep-314"],
+      "code_snippet": "if _, err := db.GetEngine(ctx).SQL(`SELECT MAX(priority) FROM protected_branch WHERE repo_id = ?`, protectBranch.RepoID).Get(&lowestPrio); err != nil {"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Rule sorting: plain names have higher priority than glob patterns; within same type, earlier created rules have higher priority",
+      "location": {"class": "ProtectedBranchRules", "method": "sort", "file_path": "models/git/protected_branch_list.go", "line_number": 25},
+      "condition": "rules[i].Priority != rules[j].Priority or isPlainName differs",
+      "action": "Sort by priority ASC, then plain-name-first, then created_unix ASC",
+      "affected_endpoints": ["ep-313"],
+      "code_snippet": "if rules[i].Priority != rules[j].Priority {\n\treturn rules[i].Priority < rules[j].Priority\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "EnableWhitelist is only true if both EnablePush AND EnablePushWhitelist are true",
+      "location": {"class": "repo", "method": "CreateBranchProtection", "file_path": "routers/api/v1/repo/branch.go", "line_number": 467},
+      "condition": "form.EnablePush && form.EnablePushWhitelist",
+      "action": "Set EnableWhitelist = true only when both conditions met",
+      "affected_endpoints": ["ep-314"],
+      "code_snippet": "EnableWhitelist: form.EnablePush && form.EnablePushWhitelist,"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Disabling push cascades to disable whitelist and deploy keys",
+      "location": {"class": "repo", "method": "EditBranchProtection", "file_path": "routers/api/v1/repo/branch.go", "line_number": 548},
+      "condition": "form.EnablePush != nil && !*form.EnablePush",
+      "action": "Set CanPush=false, EnableWhitelist=false, WhitelistDeployKeys=false",
+      "affected_endpoints": ["ep-315"],
+      "code_snippet": "if !*form.EnablePush {\n\tprotectBranch.CanPush = false\n\tprotectBranch.EnableWhitelist = false"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "After editing a branch protection, PRs for matching branches are re-checked",
+      "location": {"class": "repo", "method": "EditBranchProtection", "file_path": "routers/api/v1/repo/branch.go", "line_number": 668},
+      "condition": "isBranchExist (plain rule) or glob rule matches branches",
+      "action": "Call CheckPRsForBaseBranch for each matched branch to re-evaluate mergeability",
+      "affected_endpoints": ["ep-315"],
+      "code_snippet": "if err = pull_service.CheckPRsForBaseBranch(ctx, ctx.Repo.Repository, bpName); err != nil {"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Priority update uses a transaction to ensure atomic ordering",
+      "location": {"class": "git_model", "method": "UpdateProtectBranchPriorities", "file_path": "models/git/protected_branch.go", "line_number": 280},
+      "condition": "Always (transactional update)",
+      "action": "Within db.WithTx: iterate IDs and set priority=1,2,3... scoped to repo_id",
+      "affected_endpoints": ["ep-317"],
+      "code_snippet": "return db.WithTx(ctx, func(ctx context.Context) error {\n\tfor _, id := range ids {"
+    }
+  ]
+}

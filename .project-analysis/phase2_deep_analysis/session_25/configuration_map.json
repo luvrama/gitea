@@ -1,0 +1,21 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "OAuth2.DefaultApplications",
+      "type": "[]string",
+      "default_value": "[\"git-credential-oauth\", \"git-credential-manager\", \"tea\"]",
+      "source_file": "modules/setting/oauth2.go",
+      "used_by": [{"class": "auth_model", "method": "Init", "file_path": "models/auth/oauth2.go", "usage": "Determines which builtin apps to register", "impact": "Controls which apps are locked/unlocked"}],
+      "affected_endpoints": ["ep-169", "ep-171"]
+    },
+    {
+      "key": "OAuth2.CustomSchemes",
+      "type": "[]string",
+      "default_value": "[]",
+      "source_file": "modules/setting/oauth2.go",
+      "used_by": [{"class": "forms", "method": "DetectInvalidOAuth2ApplicationRedirectURI", "file_path": "services/forms/user_form.go", "usage": "Additional allowed URI schemes for redirect URIs", "impact": "Allows custom URI schemes beyond standard http/https"}],
+      "affected_endpoints": ["ep-171"]
+    }
+  ]
+}

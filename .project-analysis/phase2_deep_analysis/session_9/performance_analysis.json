@@ -1,0 +1,235 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-056",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["team", "team_user", "team_unit", "user"],
+        "note": "Middleware does 2-3 queries (team lookup + ownership check), then convert does 2 more (units + org)"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "ToTeam calls LoadUnits which queries team_unit per team, but for single team this is acceptable",
+          "impact": "1 extra query per request, negligible for single team",
+          "file_path": "services/convert/convert.go",
+          "line_number": 735,
+          "code_snippet": "if err := t.LoadUnits(ctx); err != nil {",
+          "recommendation": "Acceptable for single-team endpoint"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-057",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/teams",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["team", "team_unit", "user", "repository"],
+        "note": "Transactional: org check + duplicate check + insert team + insert units + update num_teams. If IncludesAllRepositories, adds N repo operations."
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "When IncludesAllRepositories=true, AddAllRepositoriesToTeam loads ALL org repos and iterates them",
+          "impact": "O(N) where N = number of org repos, each requiring HasTeamRepo check + addRepositoryToTeam",
+          "file_path": "services/repository/repo_team.go",
+          "line_number": 64,
+          "code_snippet": "orgRepos, err := repo_model.GetOrgRepositories(ctx, t.OrgID)",
+          "recommendation": "Add batch processing or limit for large orgs"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch insert team_repo records instead of per-repo addRepositoryToTeam calls",
+          "estimated_impact": "Reduces DB round-trips from O(N) to O(1) for IncludesAllRepositories",
+          "implementation": "Use bulk INSERT for team_repo and batch RecalculateTeamAccesses"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-058",
+      "http_method": "PATCH",
+      "path": "/api/v1/teams/{id}",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["team", "team_unit", "repository", "access"],
+        "note": "If authChanged, recalculates access for ALL team repos (O(N) repos)"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "When auth changes, RecalculateTeamAccesses is called per repo in a loop",
+          "impact": "O(N) where N = team repos. Each RecalculateTeamAccesses does multiple queries (delete + insert access records)",
+          "file_path": "services/org/team.go",
+          "line_number": 107,
+          "code_snippet": "for _, repo := range repos { if err = access_model.RecalculateTeamAccesses(ctx, repo, 0); err != nil {",
+          "recommendation": "Batch recalculate access for all repos at once"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch access recalculation when team permissions change",
+          "estimated_impact": "Could reduce from O(N*M) queries to O(N) where M = team members",
+          "implementation": "Implement batch RecalculateTeamAccesses that processes all repos in one transaction"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-059",
+      "http_method": "DELETE",
+      "path": "/api/v1/teams/{id}",
+      "resource_load": {
+        "operations_per_request": 15,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["team", "team_user", "team_unit", "team_invite", "review", "protected_branch", "repository", "access", "user"],
+        "note": "Heavy operation: loads all members, all branch protections for org repos, removes all repos from team with per-repo access recalculation"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "RemoveAllRepositoriesFromTeam iterates all team repos, calling RecalculateTeamAccesses per repo, then iterates all members per repo for watch cleanup",
+          "impact": "O(repos * members) queries for watch cleanup, O(repos) for access recalculation",
+          "file_path": "services/repository/repo_team.go",
+          "line_number": 100,
+          "code_snippet": "for _, repo := range repos { if err := access_model.RecalculateTeamAccesses(ctx, repo, t.ID); err != nil {",
+          "recommendation": "Batch access deletion and watch cleanup"
+        },
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "RemoveTeamIDFromProtectedBranch is called per branch protection in a loop",
+          "impact": "O(P) where P = number of protected branches in org repos",
+          "file_path": "services/org/team.go",
+          "line_number": 140,
+          "code_snippet": "for _, p := range protections { if err := git_model.RemoveTeamIDFromProtectedBranch(ctx, p, t.ID); err != nil {",
+          "recommendation": "Batch update protected_branch records"
+        },
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "removeInvalidOrgUser called per team member after deletion",
+          "impact": "O(M) where M = team members, each doing a COUNT + possible RemoveOrgUser",
+          "file_path": "services/org/team.go",
+          "line_number": 147,
+          "code_snippet": "for _, tm := range t.Members { if err := removeInvalidOrgUser(ctx, t.OrgID, tm); err != nil {",
+          "recommendation": "Batch check remaining memberships with single query"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch all cleanup operations in DeleteTeam",
+          "estimated_impact": "Could reduce from O(R*M + P + M) to O(R + M + P) queries",
+          "implementation": "Use bulk DELETE/UPDATE with IN clauses instead of per-item loops"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-060",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/members",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["team", "org_user", "user"],
+        "note": "Paginated query with subquery join, efficient"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-061",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["team", "user", "team_user"],
+        "note": "Simple existence checks, efficient"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-062",
+      "http_method": "PUT",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["team", "user", "user_blocking", "team_user", "org_user", "repository", "watch"],
+        "note": "Core operation is efficient. Auto-watch fires async goroutine for team repos."
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Auto-watch goroutine calls WatchRepo per team repository with no batching",
+          "impact": "O(N) where N = team repos, but runs async so doesn't block response",
+          "file_path": "services/org/team.go",
+          "line_number": 175,
+          "code_snippet": "for _, repo := range repos { if err = repo_model.WatchRepo(graceful.GetManager().ShutdownContext(), user, repo, true); err != nil {",
+          "recommendation": "Batch insert watch records"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Batch WatchRepo calls in auto-watch goroutine",
+          "estimated_impact": "Reduces background DB load from O(N) to O(1)",
+          "implementation": "Bulk INSERT INTO watch with ON CONFLICT DO NOTHING"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-063",
+      "http_method": "DELETE",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "resource_load": {
+        "operations_per_request": 10,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["team", "user", "team_user", "repository", "access", "watch", "issue_assignees", "org_user"],
+        "note": "Heavy: loads all team repos, then per-repo recalculates access, reconsiders watches and issue assignments"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "Per-repo loop calling RecalculateUserAccess, ReconsiderWatches, and ReconsiderRepoIssuesAssignee",
+          "impact": "O(3*N) where N = team repos. Each function does multiple queries internally.",
+          "file_path": "services/org/team.go",
+          "line_number": 198,
+          "code_snippet": "for _, repo := range repos { if err := access_model.RecalculateUserAccess(ctx, repo, user.ID); err != nil {",
+          "recommendation": "Batch access recalculation and watch/assignment cleanup"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch per-repo cleanup when removing team member",
+          "estimated_impact": "Could reduce from O(3*N) to O(3) queries for N repos",
+          "implementation": "Bulk recalculate access, bulk remove watches, bulk reconsider assignments"
+        }
+      ]
+    }
+  ]
+}

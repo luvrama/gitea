@@ -1,0 +1,136 @@
+{
+  "total_findings": 5,
+  "overall_risk": "high",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-023",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "risk_level": "high",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "high",
+          "detail": "Notifications are updated one-by-one in a loop without a transaction. If the request fails mid-loop, some notifications are marked read while others remain unread, leaving inconsistent state.",
+          "recommendation": "Wrap the entire loop in a database transaction, or use a single batch UPDATE statement"
+        },
+        {
+          "pattern": "cascading_failure",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies; only database. Database failure causes 500 error.",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": ["Per-notification status update loop: partial failure leaves some notifications updated and others not"],
+      "cascading_failure_risk": "Database overload from unbounded query + N*8 queries per request",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-024",
+      "http_method": "GET",
+      "path": "/api/v1/notifications/threads/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external calls; only database queries with fixed cost",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single item read",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-025",
+      "http_method": "PATCH",
+      "path": "/api/v1/notifications/threads/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Setting notification status is idempotent - calling multiple times with same to-status produces same result",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single item update",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-026",
+      "http_method": "GET",
+      "path": "/api/v1/user/orgs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Pure database read with pagination, no external dependencies",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-027",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/orgs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-028",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/orgs/{org}/permissions",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - fixed small number of queries",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": "Add a dedicated readiness endpoint that checks DB connectivity"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Uses modules/graceful package with ShutdownContext for background tasks",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in API rate limiting observed in these endpoints",
+      "recommendation": "Add rate limiting middleware, especially for write endpoints like ep-023"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message processing in these endpoints"
+    },
+    "single_points_of_failure": ["Database (all endpoints depend on it)"],
+    "cascading_failure_paths": ["ep-023 unbounded query can overload database, affecting all other endpoints sharing the connection pool"]
+  }
+}

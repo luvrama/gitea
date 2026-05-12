@@ -1,0 +1,139 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-142",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/following",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single paginated query with JOIN"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Consider caching following list for popular users",
+          "estimated_impact": "Reduce DB load for frequently accessed profiles",
+          "implementation": "Cache with short TTL, invalidate on follow/unfollow"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-143",
+      "http_method": "GET",
+      "path": "/api/v1/user/following/{username}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single existence check query"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-144",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/following/{target}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Load target user + check follow existence"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-145",
+      "http_method": "PUT",
+      "path": "/api/v1/user/following/{username}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "IsFollowing check + block check + INSERT + 2 UPDATEs in transaction"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "writes_on_reads",
+          "description": "IsFollowing is called before the transaction, creating a TOCTOU race condition where two concurrent follow requests could both pass the check",
+          "impact": "Potential duplicate follow record attempt (mitigated by UNIQUE constraint)",
+          "file_path": "models/user/follow.go",
+          "line_number": 33,
+          "code_snippet": "if user.ID == follow.ID || IsFollowing(ctx, user.ID, follow.ID) {",
+          "recommendation": "The UNIQUE constraint prevents actual duplicates; the pre-check is an optimization to avoid transaction overhead"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-146",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/following/{username}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "IsFollowing check + DELETE + 2 UPDATEs in transaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-147",
+      "http_method": "GET",
+      "path": "/api/v1/user/hooks",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "FindAndCount query + N decryption operations for authorization headers"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "Each webhook's HeaderAuthorization is decrypted synchronously in a loop during ToHook conversion",
+          "impact": "For users with many webhooks, decryption adds latency proportional to webhook count",
+          "file_path": "services/webhook/general.go",
+          "line_number": 407,
+          "code_snippet": "authorizationHeader, err := w.HeaderAuthorization()",
+          "recommendation": "Acceptable for typical webhook counts (<50); no action needed unless users have hundreds of webhooks"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-148",
+      "http_method": "GET",
+      "path": "/api/v1/user/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single SELECT by id and owner_id"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-149",
+      "http_method": "POST",
+      "path": "/api/v1/user/hooks",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single INSERT"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

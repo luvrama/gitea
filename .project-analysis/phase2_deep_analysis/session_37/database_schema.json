@@ -1,0 +1,163 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 5,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "collaboration",
+      "entity_class": "repo_model.Collaboration",
+      "file_path": "models/repo/collaboration.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk", "autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "INDEX", "NOT NULL"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "INDEX", "NOT NULL"]},
+        {"name": "mode", "type": "INTEGER", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "2", "constraints": ["DEFAULT 2", "NOT NULL"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_collaboration_s", "columns": ["repo_id", "user_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "access",
+      "entity_class": "access_model.Access",
+      "file_path": "models/perm/access/access.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "mode", "type": "INTEGER", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_access_s", "columns": ["user_id", "repo_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "protected_branch",
+      "entity_class": "git_model.ProtectedBranch",
+      "file_path": "models/git/protected_branch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "rule_name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "require_signed_commits", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "branch",
+      "entity_class": "git_model.Branch",
+      "file_path": "models/git/branch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "issue_assignees",
+      "entity_class": "issues_model.IssueAssignees",
+      "file_path": "models/issues/assignees.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "assignee_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "assignee_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-246",
+      "path": "/api/v1/repos/{owner}/{repo}/git/trees/{sha}",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-247",
+      "path": "/api/v1/repos/{owner}/{repo}/git/refs",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-248",
+      "path": "/api/v1/repos/{owner}/{repo}/git/refs/{ref}",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-249",
+      "path": "/api/v1/repos/{owner}/{repo}/diffpatch",
+      "operations": [
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "git_model.IsBranchExist", "description": "Check old branch exists"},
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "git_model.IsBranchExist", "description": "Check new branch exists"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.GetFirstMatchProtectedBranchRule", "description": "Check branch protection"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-250",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators",
+      "operations": [
+        {"store_type": "database", "store_name": "collaboration", "operation": "SELECT", "method": "repo_model.GetCollaborators", "description": "List collaborations with pagination"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "repo_model.GetCollaborators", "description": "Load user details by IDs"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-251",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Get user by username"},
+        {"store_type": "database", "store_name": "collaboration", "operation": "SELECT", "method": "repo_model.IsCollaborator", "description": "Check collaboration exists"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-252",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Get collaborator user"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "repo.LoadOwner", "description": "Load repo owner"},
+        {"store_type": "database", "store_name": "blocked_user", "operation": "SELECT", "method": "user_model.IsUserBlockedBy", "description": "Check user blocks"},
+        {"store_type": "database", "store_name": "collaboration", "operation": "SELECT", "method": "db.Get[Collaboration]", "description": "Check existing collaboration"},
+        {"store_type": "database", "store_name": "collaboration", "operation": "INSERT", "method": "db.Insert", "description": "Create new collaboration"},
+        {"store_type": "database", "store_name": "access", "operation": "UPDATE", "method": "access_model.RecalculateUserAccess", "description": "Recalculate access permissions"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-253",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Get collaborator user"},
+        {"store_type": "database", "store_name": "collaboration", "operation": "DELETE", "method": "db.GetEngine.Delete", "description": "Delete collaboration record"},
+        {"store_type": "database", "store_name": "access", "operation": "UPDATE", "method": "access_model.RecalculateAccesses", "description": "Recalculate all accesses"},
+        {"store_type": "database", "store_name": "watch", "operation": "DELETE", "method": "repo_model.WatchRepo", "description": "Remove watch"},
+        {"store_type": "database", "store_name": "stopwatch", "operation": "DELETE", "method": "issues_model.RemoveStopwatchesByRepoID", "description": "Remove stopwatches"},
+        {"store_type": "database", "store_name": "issue_watch", "operation": "DELETE", "method": "issues_model.RemoveIssueWatchersByRepoID", "description": "Remove issue watches"},
+        {"store_type": "database", "store_name": "issue_assignees", "operation": "DELETE", "method": "ReconsiderRepoIssuesAssignee", "description": "Unassign from issues"}
+      ]
+    }
+  ]
+}

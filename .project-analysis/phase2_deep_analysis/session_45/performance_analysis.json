@@ -1,0 +1,139 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-306",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "1 DB check + 1 git commit read + 1 DB protection rule query + 1 DB permission check"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-307",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Count branches + optional sync + permission checks + mark deleted + git delete"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "SyncRepoBranches is called synchronously if branch count is 0, which walks all git refs",
+          "impact": "First delete on a repo that hasn't synced branches could be slow for repos with many branches",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "line_number": 119,
+          "code_snippet": "_, err = repo_module.SyncRepoBranches(ctx, ctx.Repo.Repository.ID, 0)",
+          "recommendation": "This is a one-time cost per repo; acceptable but could be moved to background"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-308",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/branches",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Resolve source commit + walk refs for name check + git push + get commit + protection query"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "checkBranchName walks ALL refs in the repository to check for name conflicts",
+          "impact": "For repos with thousands of branches/tags, this could be slow",
+          "file_path": "services/repository/branch.go",
+          "line_number": 195,
+          "code_snippet": "_, err = gitrepo.WalkReferences(ctx, repo, func(_, refName string) error {",
+          "recommendation": "Consider using git check-ref-format or targeted ref lookup instead of walking all refs"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Replace full ref walk with targeted git ref existence check",
+          "estimated_impact": "Reduce branch creation time for large repos from O(n) to O(1)",
+          "implementation": "Use git show-ref --verify to check specific ref existence"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-309",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branches",
+      "resource_load": {
+        "operations_per_request": "3 + N (N = page size)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Count + protection rules + paginated branches + N git commit reads + N permission checks"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "For each branch in the page, GetBranchCommit is called individually to get the git commit, and convert.ToBranch makes individual permission checks",
+          "impact": "With default page size of 50, this results in 50+ git operations and 50+ DB queries per request",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "line_number": 248,
+          "code_snippet": "c, err := ctx.Repo.GitRepo.GetBranchCommit(branches[i].Name)",
+          "recommendation": "Batch commit lookups or cache commit info in the branch DB record"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch git commit lookups for all branches in the page",
+          "estimated_impact": "Reduce git operations from N to 1 batch operation",
+          "implementation": "Use git for-each-ref with format to get all branch commits in one call"
+        },
+        {
+          "priority": "P2",
+          "type": "caching",
+          "description": "Cache user permission results since they don't change per-request",
+          "estimated_impact": "Reduce DB queries for permission checks from N to 1",
+          "implementation": "Compute permission once and reuse for all branches in the response"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-310",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Get branch from DB + resolve commits + check force push + git push"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-311",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Multiple DB checks + permission check + protection checks + DB rename + git rename + notifications"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

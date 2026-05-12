@@ -1,0 +1,39 @@
+{
+  "endpoints_by_database_table": {
+    "language_stat": {"read": ["ep-375"], "write": []},
+    "issue_pin": {"read": ["ep-376", "ep-378", "ep-379", "ep-380", "ep-381"], "write": ["ep-376", "ep-377", "ep-378"]},
+    "issue": {"read": ["ep-376", "ep-377", "ep-378", "ep-379", "ep-380"], "write": []},
+    "comment": {"read": [], "write": ["ep-376", "ep-377"]},
+    "pull_request": {"read": ["ep-380"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "repository.issue.MAX_PINNED": ["ep-376", "ep-381"]
+  },
+  "endpoints_by_model_class": {
+    "repo_model.LanguageStat": ["ep-375"],
+    "issues_model.IssuePin": ["ep-376", "ep-377", "ep-378", "ep-379", "ep-380", "ep-381"],
+    "issues_model.Issue": ["ep-376", "ep-377", "ep-378", "ep-379", "ep-380"],
+    "api.NewIssuePinsAllowed": ["ep-381"],
+    "api.PullRequest": ["ep-380"]
+  },
+  "endpoints_by_service_class": {
+    "issues_model": ["ep-376", "ep-377", "ep-378", "ep-379", "ep-380", "ep-381"],
+    "repo_model": ["ep-375"],
+    "convert": ["ep-379", "ep-380"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-375": {"reads": ["language_stat"], "writes": []},
+    "ep-376": {"reads": ["issue", "issue_pin"], "writes": ["issue_pin", "comment"]},
+    "ep-377": {"reads": ["issue"], "writes": ["issue_pin", "comment"]},
+    "ep-378": {"reads": ["issue", "issue_pin"], "writes": ["issue_pin"]},
+    "ep-379": {"reads": ["issue_pin", "issue"], "writes": []},
+    "ep-380": {"reads": ["issue_pin", "issue", "pull_request"], "writes": []},
+    "ep-381": {"reads": ["issue_pin"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-376": ["repository.issue.MAX_PINNED"],
+    "ep-381": ["repository.issue.MAX_PINNED"]
+  }
+}

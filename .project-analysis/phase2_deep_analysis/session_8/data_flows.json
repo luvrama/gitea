@@ -1,0 +1,447 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-050",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "description": "Delete an org-level runner by ID after verifying ownership",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.DeleteRunner",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/action.go",
+          "input": "APIContext with org and runner_id path params",
+          "output": "delegates to shared.DeleteRunner",
+          "operations": ["extract org ID and runner_id from context"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.DeleteRunner",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID, repoID=0, runnerID",
+          "output": "204 or error",
+          "operations": ["call getRunnerByID to validate", "call actions_model.DeleteRunner"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "shared.getRunnerByID",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID, repoID, runnerID",
+          "output": "*ActionRunner or error response",
+          "operations": ["get runner from DB by ID", "check EditableInContext(ownerID, repoID)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_runner", "description": "get runner by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "actions_model.DeleteRunner",
+          "type": "repository",
+          "file_path": "models/actions/runner.go",
+          "input": "runner ID",
+          "output": "error",
+          "operations": ["verify runner exists (redundant SELECT)", "delete by ID"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner", "description": "verify runner exists (redundant)"},
+            {"operation": "DELETE", "table": "action_runner", "description": "soft delete runner by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "runner not found by ID", "handler": "shared.getRunnerByID", "response_code": 404, "response": "Runner not found"},
+        {"condition": "runner not editable in org context", "handler": "shared.getRunnerByID", "response_code": 404, "response": "No permission to access this runner"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-051",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "description": "Update an org-level runner's disabled state",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.UpdateRunner",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/action.go",
+          "input": "APIContext with org, runner_id, and body",
+          "output": "delegates to shared.UpdateRunner",
+          "operations": ["extract org ID and runner_id from context"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.UpdateRunner",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID, repoID=0, runnerID",
+          "output": "200 with runner or error",
+          "operations": ["get runner by ID", "validate form", "set disabled state", "return updated runner"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "shared.getRunnerByID",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID, repoID, runnerID",
+          "output": "*ActionRunner",
+          "operations": ["get runner from DB", "check EditableInContext"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_runner", "description": "get runner by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "actions_model.SetRunnerDisabled",
+          "type": "repository",
+          "file_path": "models/actions/runner.go",
+          "input": "runner, isDisabled bool",
+          "output": "error",
+          "operations": ["check if state already matches (no-op)", "within transaction: update runner, increase task version"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "action_runner", "description": "set is_disabled column"},
+            {"operation": "UPDATE", "table": "action_tasks_version", "description": "increase task version for global, owner scopes"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "shared.GetRunner",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID, repoID, runnerID",
+          "output": "JSON response with runner",
+          "operations": ["re-fetch runner by ID", "convert to API format"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_runner", "description": "re-fetch runner for response"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunner",
+          "to": "api.ActionRunner",
+          "component": "convert.ToActionRunner",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Status()", "target_field": "Status", "transformation": "computed"},
+            {"source_field": "IsDisabled", "target_field": "Disabled", "transformation": "direct_copy"},
+            {"source_field": "AgentLabels", "target_field": "Labels", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "runner not found", "handler": "shared.getRunnerByID", "response_code": 404, "response": "Runner not found"},
+        {"condition": "runner not editable in org context", "handler": "shared.getRunnerByID", "response_code": 404, "response": "No permission to access this runner"},
+        {"condition": "disabled field is nil", "handler": "shared.UpdateRunner", "response_code": 422, "response": "[Disabled]: Required"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-052",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/jobs",
+      "description": "List workflow jobs for an organization with optional status filter",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.ListWorkflowJobs",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/action.go",
+          "input": "APIContext with org",
+          "output": "delegates to shared.ListJobs",
+          "operations": ["pass org ID, repoID=0, runID=0, runAttemptID=nil"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListJobs",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/action.go",
+          "input": "ownerID, repoID=0, runID=0, runAttemptID=nil",
+          "output": "ActionWorkflowJobsResponse",
+          "operations": ["parse pagination", "parse status filters", "query jobs", "load attributes", "convert to API"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run_job JOIN repository", "description": "find jobs by owner ID with pagination"},
+            {"operation": "SELECT", "table": "repository", "description": "batch load repos for jobs"},
+            {"operation": "SELECT", "table": "action_run", "description": "batch load runs for jobs"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToActionWorkflowJob",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "repo, task=nil, job",
+          "output": "api.ActionWorkflowJob",
+          "operations": ["load job attributes (run)", "load task by effectiveTaskID", "load task steps", "load runner by ID"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run", "description": "load run for job (if not already loaded)"},
+            {"operation": "SELECT", "table": "action_task", "description": "load task by effective task ID per job"},
+            {"operation": "SELECT", "table": "action_task_step", "description": "load steps for task"},
+            {"operation": "SELECT", "table": "action_runner", "description": "load runner by ID per job"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunJob",
+          "to": "api.ActionWorkflowJob",
+          "component": "convert.ToActionWorkflowJob",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "RunID", "target_field": "RunID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status", "transformation": "computed"},
+            {"source_field": "RunsOn", "target_field": "Labels", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "invalid status value", "handler": "shared.ListJobs", "response_code": 400, "response": "Invalid status {value}"},
+        {"condition": "job missing run or repo", "handler": "shared.ListJobs", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-053",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runs",
+      "description": "List workflow runs for an organization with optional filters",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.ListWorkflowRuns",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/action.go",
+          "input": "APIContext with org",
+          "output": "delegates to shared.ListRuns",
+          "operations": ["pass org ID, repoID=0"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListRuns",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/action.go",
+          "input": "ownerID, repoID=0",
+          "output": "ActionWorkflowRunsResponse",
+          "operations": ["parse pagination", "parse event/branch/status/actor/head_sha filters", "query runs", "batch load trigger users", "batch load repos", "batch load repo owners", "convert to API"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run JOIN repository", "description": "find runs by owner ID with pagination"},
+            {"operation": "SELECT", "table": "user", "description": "batch load trigger users"},
+            {"operation": "SELECT", "table": "repository", "description": "batch load repos"},
+            {"operation": "SELECT", "table": "user", "description": "batch load repo owners"},
+            {"operation": "SELECT", "table": "user", "description": "resolve actor username to ID (if actor filter used)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToActionWorkflowRun",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "run, attempt=nil",
+          "output": "api.ActionWorkflowRun",
+          "operations": ["load repo (already loaded)", "load trigger user (already loaded)", "get latest attempt", "load attempt attributes", "compute status/conclusion"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run_attempt", "description": "get latest attempt per run"},
+            {"operation": "SELECT", "table": "user", "description": "load attempt trigger user (if different from run trigger)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRun",
+          "to": "api.ActionWorkflowRun",
+          "component": "convert.ToActionWorkflowRun",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Index", "target_field": "RunNumber", "transformation": "direct_copy"},
+            {"source_field": "Title", "target_field": "DisplayTitle", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status", "transformation": "computed"},
+            {"source_field": "CommitSHA", "target_field": "HeadSha", "transformation": "direct_copy"},
+            {"source_field": "Ref", "target_field": "HeadBranch", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "invalid status value", "handler": "shared.ListRuns", "response_code": 400, "response": "Invalid status {value}"},
+        {"condition": "actor username not found", "handler": "shared.ListRuns", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-054",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/teams",
+      "description": "List all teams of an organization with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.ListTeams",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/team.go",
+          "input": "APIContext with org",
+          "output": "JSON array of teams",
+          "operations": ["get list options", "search teams by org ID", "convert to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "organization.SearchTeam",
+          "type": "repository",
+          "file_path": "models/organization/team_list.go",
+          "input": "SearchTeamOptions{OrgID}",
+          "output": "TeamList, count, error",
+          "operations": ["build condition with org_id filter", "paginate", "order by name (owners first)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team", "description": "find teams by org_id with pagination and count"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToTeams",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "teams, loadOrgs=false",
+          "output": "[]api.Team",
+          "operations": ["for each team: load units", "build API team struct"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_unit", "description": "load units per team (N+1)"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "organization.Team",
+          "to": "api.Team",
+          "component": "convert.ToTeams",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"},
+            {"source_field": "AccessMode", "target_field": "Permission", "transformation": "computed"},
+            {"source_field": "Units", "target_field": "Units", "transformation": "computed"},
+            {"source_field": "Units", "target_field": "UnitsMap", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "org not found", "handler": "orgAssignment middleware", "response_code": 404, "response": "not found"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-055",
+      "http_method": "GET",
+      "path": "/api/v1/user/teams",
+      "description": "List all teams the authenticated user belongs to",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.ListUserTeams",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/team.go",
+          "input": "APIContext with authenticated user",
+          "output": "JSON array of teams with org info",
+          "operations": ["get list options", "search teams by user ID", "convert to API format with orgs"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "organization.SearchTeam",
+          "type": "repository",
+          "file_path": "models/organization/team_list.go",
+          "input": "SearchTeamOptions{UserID}",
+          "output": "TeamList, count, error",
+          "operations": ["JOIN team_user on team_user.team_id = team.id", "filter by team_user.uid", "paginate"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team JOIN team_user", "description": "find teams by user ID with pagination and count"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToTeams",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "teams, loadOrgs=true",
+          "output": "[]api.Team",
+          "operations": ["for each team: load units", "for each unique org: load org by ID (cached in map)"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "team_unit", "description": "load units per team (N+1)"},
+            {"operation": "SELECT", "table": "user", "description": "load org by ID per unique org (cached)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "organization.Team",
+          "to": "api.Team",
+          "component": "convert.ToTeams",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "OrgID", "target_field": "Organization", "transformation": "enriched"},
+            {"source_field": "AccessMode", "target_field": "Permission", "transformation": "computed"},
+            {"source_field": "Units", "target_field": "UnitsMap", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": []
+    }
+  ]
+}

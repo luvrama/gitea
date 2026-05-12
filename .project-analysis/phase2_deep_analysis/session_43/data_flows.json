@@ -1,0 +1,341 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-293",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/artifacts",
+      "description": "Lists all finalized v4 artifacts for a specific workflow run with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "GetArtifactsOfRun",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext with repo and run path params",
+          "output": "ActionArtifactsResponse JSON",
+          "operations": ["Extract run ID from path", "Extract optional name query param", "Call db.FindAndCount with FindArtifactsOptions"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_artifact", "description": "Find artifacts by repo_id, run_id, optional name filter, with FinalizedArtifactsV4 filter (status=confirmed/expired AND content_encoding LIKE '%/%')"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToActionArtifact",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "repo_model.Repository, actions_model.ActionArtifact",
+          "output": "api.ActionArtifact",
+          "operations": ["Build API URL from repo APIURL + artifact ID", "Map fields: ID, Name, SizeInBytes, Expired, URLs, timestamps", "Create minimal WorkflowRun with RunID, RepoID, CommitSHA"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionArtifact",
+          "to": "api.ActionArtifact",
+          "component": "convert.ToActionArtifact",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "ArtifactName", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "FileSize", "target_field": "SizeInBytes", "transformation": "direct_copy"},
+            {"source_field": "Status == ArtifactStatusExpired", "target_field": "Expired", "transformation": "computed"},
+            {"source_field": "CreatedUnix", "target_field": "CreatedAt", "transformation": "computed"},
+            {"source_field": "RunID", "target_field": "WorkflowRun.ID", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "db.FindAndCount fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"},
+        {"condition": "convert.ToActionArtifact fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-294",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}",
+      "description": "Deletes a completed workflow run including all jobs, tasks, logs, and artifacts",
+      "steps": [
+        {
+          "step": 1,
+          "component": "getCurrentRepoActionRunByID",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext with run path param",
+          "output": "ActionRun",
+          "operations": ["Extract run ID from path", "Query action_run by id and repo_id"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_run", "description": "Get run by id=? AND repo_id=?"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "DeleteActionRun (validation)",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ActionRun",
+          "output": "validated run",
+          "operations": ["Check run.Status.IsDone() - must be success/failure/cancelled/skipped"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions_service.DeleteRun",
+          "type": "service",
+          "file_path": "services/actions/cleanup.go",
+          "input": "ActionRun",
+          "output": "error",
+          "operations": ["Load all jobs for run", "Load all tasks for jobs", "Load all artifacts for run", "Build delete records list", "Within transaction: cleanup ephemeral runners then delete all records", "After transaction: delete task log files from storage", "Delete artifact files from storage"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run_job", "description": "Get all jobs by repo_id and run_id"},
+            {"operation": "SELECT", "table": "action_task", "description": "Get tasks by repo_id and job_ids"},
+            {"operation": "SELECT", "table": "action_artifact", "description": "Find artifacts by repo_id and run_id"},
+            {"operation": "DELETE", "table": "action_runner", "description": "Cleanup ephemeral runners with finished tasks"},
+            {"operation": "DELETE", "table": "action_run", "description": "Delete the run record"},
+            {"operation": "DELETE", "table": "action_run_attempt", "description": "Delete run attempts"},
+            {"operation": "DELETE", "table": "action_run_job", "description": "Delete run jobs"},
+            {"operation": "DELETE", "table": "action_task", "description": "Delete tasks per job"},
+            {"operation": "DELETE", "table": "action_task_step", "description": "Delete task steps"},
+            {"operation": "DELETE", "table": "action_task_output", "description": "Delete task outputs"},
+            {"operation": "DELETE", "table": "action_artifact", "description": "Delete artifact records"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Run not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Run is not done", "handler": "ctx.APIError", "response_code": 400, "response": "this workflow run is not done"},
+        {"condition": "DeleteRun fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-295",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts",
+      "description": "Lists all finalized v4 artifacts for a repository with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "GetArtifacts",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext with repo",
+          "output": "ActionArtifactsResponse JSON",
+          "operations": ["Extract optional name query param", "Call db.FindAndCount with FindArtifactsOptions (no RunID filter)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_artifact", "description": "Find artifacts by repo_id, optional name filter, FinalizedArtifactsV4 filter"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToActionArtifact",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "repo_model.Repository, actions_model.ActionArtifact",
+          "output": "api.ActionArtifact",
+          "operations": ["Map artifact fields to API response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionArtifact",
+          "to": "api.ActionArtifact",
+          "component": "convert.ToActionArtifact",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "ArtifactName", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "FileSize", "target_field": "SizeInBytes", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "db.FindAndCount fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"},
+        {"condition": "convert.ToActionArtifact fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-296",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}",
+      "description": "Gets a specific v4 artifact by ID, returns 404 for v3 artifacts",
+      "steps": [
+        {
+          "step": 1,
+          "component": "getArtifactByPathParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext, Repository",
+          "output": "ActionArtifact or nil",
+          "operations": ["Parse artifact_id from path", "Fetch artifact by ID from DB", "Validate: exists, repo matches, status is confirmed or expired"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_artifact", "description": "Get artifact by primary key ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "GetArtifact (v4 check)",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ActionArtifact",
+          "output": "api.ActionArtifact JSON",
+          "operations": ["Check IsArtifactV4 (content_encoding contains '/')", "If v4: convert and return", "If v3: return 404"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToActionArtifact",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "Repository, ActionArtifact",
+          "output": "api.ActionArtifact",
+          "operations": ["Map fields to API response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionArtifact",
+          "to": "api.ActionArtifact",
+          "component": "convert.ToActionArtifact",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "ArtifactName", "target_field": "Name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Artifact not found or wrong repo or invalid status", "handler": "ctx.APIError", "response_code": 404, "response": "artifact not found"},
+        {"condition": "Artifact is v3 format", "handler": "ctx.APIError", "response_code": 404, "response": "Artifact not found"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-297",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}",
+      "description": "Marks a v4 artifact for deletion (actual deletion by cron job)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "getArtifactByPathParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext, Repository",
+          "output": "ActionArtifact or nil",
+          "operations": ["Parse artifact_id, fetch by ID, validate repo and status"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_artifact", "description": "Get artifact by primary key ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "DeleteArtifact (v4 check + mark)",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ActionArtifact",
+          "output": "204 No Content",
+          "operations": ["Check IsArtifactV4", "If v4: call SetArtifactNeedDeleteByID to mark status=PendingDeletion", "If v3: return 404"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "action_artifact", "description": "Set status=PendingDeletion WHERE id=? AND status=UploadConfirmed"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Artifact not found or wrong repo", "handler": "ctx.APIError", "response_code": 404, "response": "artifact not found"},
+        {"condition": "Artifact is v3", "handler": "ctx.APIError", "response_code": 404, "response": "Artifact not found"},
+        {"condition": "SetArtifactNeedDeleteByID fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-298",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip",
+      "description": "Downloads artifact via redirect to signed URL or direct serve from storage",
+      "steps": [
+        {
+          "step": 1,
+          "component": "getArtifactByPathParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext, Repository",
+          "output": "ActionArtifact or nil",
+          "operations": ["Parse artifact_id, fetch by ID, validate repo and status"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_artifact", "description": "Get artifact by primary key ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "DownloadArtifact (expiry check)",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ActionArtifact",
+          "output": "redirect or error",
+          "operations": ["Check if status is Expired -> 404", "Check IsArtifactV4", "Try DownloadArtifactV4ServeDirect (minio/azure direct URL)", "If not direct: build signed URL with HMAC-SHA256 and redirect 302"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions_service.DownloadArtifactV4ServeDirect",
+          "type": "service",
+          "file_path": "services/actions/artifacts.go",
+          "input": "Base context, ActionArtifact",
+          "output": "bool (whether served directly)",
+          "operations": ["Check setting.Actions.ArtifactStorage.ServeDirect()", "If minio/azure with ServeDirect: get presigned URL and redirect 302", "Otherwise return false"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "buildSigURL",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "endpoint path, artifact ID",
+          "output": "signed URL string",
+          "operations": ["Create HMAC-SHA256 signature using app SecretKey", "Build URL with sig and expires (60 min) query params"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Artifact not found or wrong repo", "handler": "ctx.APIError", "response_code": 404, "response": "artifact not found"},
+        {"condition": "Artifact status is Expired", "handler": "ctx.APIError", "response_code": 404, "response": "Artifact has expired"},
+        {"condition": "Artifact is v3", "handler": "ctx.APIError", "response_code": 404, "response": "Artifact not found"}
+      ]
+    }
+  ]
+}

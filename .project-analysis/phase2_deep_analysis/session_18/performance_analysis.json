@@ -1,0 +1,185 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-123",
+      "http_method": "GET",
+      "path": "/api/v1/users/search",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "2 DB queries: count + paginated select"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "missing_indexes",
+          "description": "LIKE query on LOWER(full_name) cannot use index efficiently",
+          "impact": "Full table scan on full_name column for keyword searches",
+          "file_path": "models/user/search.go",
+          "line_number": 76,
+          "code_snippet": "builder.Like{\"LOWER(full_name)\", lowerKeyword}",
+          "recommendation": "Consider adding a functional index on LOWER(full_name) or using full-text search"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Add index on lower(full_name) for keyword search performance",
+          "estimated_impact": "Faster keyword searches on large user tables",
+          "implementation": "CREATE INDEX idx_user_lower_full_name ON user(LOWER(full_name))"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-124",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 user lookup + visibility check (follow + team_user queries for private users)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-125",
+      "http_method": "GET",
+      "path": "/api/v1/user",
+      "resource_load": {
+        "operations_per_request": 0,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": [],
+        "note": "No DB queries - uses pre-loaded ctx.Doer from auth middleware"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-126",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/heatmap",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 user lookup + 1 aggregation query on action table"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "Heatmap data is computed on every request with a heavy aggregation query over ~1 year of action data",
+          "impact": "Expensive GROUP BY query on action table for each request",
+          "file_path": "models/activities/user_heatmap.go",
+          "line_number": 56,
+          "code_snippet": "Select(groupBy+\" AS timestamp, count(user_id) as contributions\").Table(\"action\")",
+          "recommendation": "Cache heatmap results with short TTL (5-15 min) since data changes infrequently"
+        },
+        {
+          "severity": "low",
+          "type": "missing_indexes",
+          "description": "The heatmap query filters on created_unix with a range condition but also needs user_id filter from the ActivityQueryCondition",
+          "impact": "May not use optimal index for the combined user_id + created_unix filter",
+          "file_path": "models/activities/user_heatmap.go",
+          "line_number": 60,
+          "code_snippet": "And(\"created_unix > ?\", timeutil.TimeStampNow()-(366+7)*86400)",
+          "recommendation": "Ensure composite index on action(user_id, created_unix) exists"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "caching",
+          "description": "Cache heatmap results per user with 5-15 minute TTL",
+          "estimated_impact": "Eliminate repeated expensive aggregation queries",
+          "implementation": "Use cache.StringCache with key 'heatmap:{user_id}' and invalidate on new actions"
+        },
+        {
+          "priority": "P2",
+          "type": "indexing",
+          "description": "Add composite index on action(user_id, created_unix)",
+          "estimated_impact": "Faster heatmap aggregation queries",
+          "implementation": "CREATE INDEX idx_action_user_created ON action(user_id, created_unix)"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-127",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/activities/feeds",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 user lookup + 1 count + 1 action query + N LoadAttributes queries (users, repos) + N permission checks"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "ToActivities calls GetDoerRepoPermission for each action's repo individually",
+          "impact": "For a page of 30 actions across different repos, this generates up to 30 additional permission queries",
+          "file_path": "services/convert/activity.go",
+          "line_number": 18,
+          "code_snippet": "p, err := access_model.GetDoerRepoPermission(ctx, ac.Repo, doer)",
+          "recommendation": "Batch permission checks or cache repo permissions per request"
+        },
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "Activity feeds are queried from DB on every request with no caching layer",
+          "impact": "Repeated expensive queries for popular user profiles",
+          "file_path": "models/activities/action_list.go",
+          "line_number": 243,
+          "code_snippet": "count, err = sess.Desc(\"`action`.created_unix\").FindAndCount(&actions)",
+          "recommendation": "Consider short-lived cache for feed results (1-5 min TTL)"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch repo permission checks in ToActivities instead of per-action",
+          "estimated_impact": "Reduce N permission queries to 1 batch query for unique repos",
+          "implementation": "Collect unique repo IDs, batch-fetch permissions, then map to each activity"
+        },
+        {
+          "priority": "P2",
+          "type": "caching",
+          "description": "Cache activity feed results with short TTL",
+          "estimated_impact": "Reduce DB load for frequently accessed user profiles",
+          "implementation": "Cache serialized feed response with key 'feeds:{user_id}:{page}:{date}'"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-128",
+      "http_method": "POST",
+      "path": "/api/v1/user/avatar",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "storage"],
+        "note": "1 image processing + 1 DB update + 1 storage write"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "Image processing (decode, crop, resize, encode) happens synchronously on the request thread",
+          "impact": "Large images may block the request thread during processing",
+          "file_path": "modules/avatar/avatar.go",
+          "line_number": 78,
+          "code_snippet": "img = scale(img, targetSize, targetSize, draw.BiLinear)",
+          "recommendation": "Acceptable for avatar sizes; MaxWidth/MaxHeight limits prevent extreme cases"
+        }
+      ],
+      "optimization_recommendations": []
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "business_logic",
+      "description": "Unstar is idempotent - if user is not starring the repo, operation returns nil without error",
+      "location": {"class": "repo_model", "method": "StarRepo", "file_path": "models/repo/star.go", "line_number": 52},
+      "condition": "!staring && star==false",
+      "action": "Return nil immediately without any DB changes",
+      "affected_endpoints": ["ep-156"],
+      "code_snippet": "if !staring { return nil }"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "business_logic",
+      "description": "Unstar decrements num_stars counters on both repository and user tables atomically in a transaction",
+      "location": {"class": "repo_model", "method": "StarRepo", "file_path": "models/repo/star.go", "line_number": 56},
+      "condition": "staring && star==false",
+      "action": "Delete star record, decrement repository.num_stars, decrement user.num_stars",
+      "affected_endpoints": ["ep-156"],
+      "code_snippet": "db.Exec(ctx, \"UPDATE `repository` SET num_stars = num_stars - 1 WHERE id = ?\", repo.ID)"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "authorization",
+      "description": "Private key information (owner, key_type, read_only) only appended if requester is admin or key owner",
+      "location": {"class": "user", "method": "listPublicKeys", "file_path": "routers/api/v1/user/key.go", "line_number": 82},
+      "condition": "ctx.Doer.IsAdmin || ctx.Doer.ID == keys[i].OwnerID",
+      "action": "Append KeyType, Owner, and ReadOnly fields to API response",
+      "affected_endpoints": ["ep-157", "ep-158", "ep-159"],
+      "code_snippet": "if ctx.Doer.IsAdmin || ctx.Doer.ID == keys[i].OwnerID { apiKeys[i], _ = appendPrivateInformation(...) }"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Fingerprint query param changes search behavior - when username is in path, restricts to that user; otherwise unrestricted",
+      "location": {"class": "user", "method": "listPublicKeys", "file_path": "routers/api/v1/user/key.go", "line_number": 62},
+      "condition": "fingerprint != \"\" && username != \"\"",
+      "action": "Set userID to user.ID to restrict fingerprint search to that user",
+      "affected_endpoints": ["ep-157", "ep-158"],
+      "code_snippet": "if username != \"\" { userID = user.ID }"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "SSH key management can be disabled per user via admin settings based on login type",
+      "location": {"class": "user", "method": "CreateUserPublicKey", "file_path": "routers/api/v1/user/key.go", "line_number": 155},
+      "condition": "user_model.IsFeatureDisabledWithLoginType(ctx.Doer, setting.UserFeatureManageSSHKeys)",
+      "action": "Return 404 Not Found with message 'ssh keys setting is not allowed to be visited'",
+      "affected_endpoints": ["ep-160", "ep-161"],
+      "code_snippet": "if user_model.IsFeatureDisabledWithLoginType(ctx.Doer, setting.UserFeatureManageSSHKeys) {"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "Public key content must be a single line and pass SSH parsing validation",
+      "location": {"class": "asymkey_model", "method": "CheckPublicKeyString", "file_path": "models/asymkey/ssh_key_parse.go", "line_number": 167},
+      "condition": "strings.ContainsAny(content, \"\\n\\r\")",
+      "action": "Return error 'only a single line with a single key please'",
+      "affected_endpoints": ["ep-160"],
+      "code_snippet": "if strings.ContainsAny(content, \"\\n\\r\") { return \"\", util.NewInvalidArgumentErrorf(...) }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "Key minimum size is enforced when MinimumKeySizeCheck is enabled in SSH settings",
+      "location": {"class": "asymkey_model", "method": "CheckPublicKeyString", "file_path": "models/asymkey/ssh_key_parse.go", "line_number": 180},
+      "condition": "setting.SSH.MinimumKeySizeCheck && length < minLen",
+      "action": "Return error with required minimum length",
+      "affected_endpoints": ["ep-160"],
+      "code_snippet": "if minLen, found := setting.SSH.MinimumKeySizes[keyType]; found && length < minLen {"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "Key name must be unique per owner - duplicate names are rejected",
+      "location": {"class": "asymkey_model", "method": "AddPublicKey", "file_path": "models/asymkey/ssh_key.go", "line_number": 103},
+      "condition": "has (key with same owner_id and name exists)",
+      "action": "Return ErrKeyNameAlreadyUsed",
+      "affected_endpoints": ["ep-160"],
+      "code_snippet": "if has { return nil, ErrKeyNameAlreadyUsed{ownerID, name} }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "authorization",
+      "description": "Externally managed SSH keys cannot be deleted through the API",
+      "location": {"class": "user", "method": "DeletePublicKey", "file_path": "routers/api/v1/user/key.go", "line_number": 218},
+      "condition": "externallyManaged == true",
+      "action": "Return 403 Forbidden with message 'SSH Key is externally managed for this user'",
+      "affected_endpoints": ["ep-161"],
+      "code_snippet": "if externallyManaged { ctx.APIError(http.StatusForbidden, \"SSH Key is externally managed...\") }"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "authorization",
+      "description": "Only admin or key owner can delete a public key",
+      "location": {"class": "asymkey_service", "method": "DeletePublicKey", "file_path": "services/asymkey/ssh_key.go", "line_number": 22},
+      "condition": "!doer.IsAdmin && doer.ID != key.OwnerID",
+      "action": "Return ErrKeyAccessDenied",
+      "affected_endpoints": ["ep-161"],
+      "code_snippet": "if !doer.IsAdmin && doer.ID != key.OwnerID { return asymkey_model.ErrKeyAccessDenied{...} }"
+    }
+  ]
+}

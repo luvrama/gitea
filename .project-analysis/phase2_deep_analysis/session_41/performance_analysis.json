@@ -1,0 +1,204 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-277",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/jobs",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "N+1 pattern: loads task, steps, runner per job"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "For each job, ToActionWorkflowJob loads task by ID, then loads task steps, then loads runner by ID - all individually per job",
+          "impact": "3 extra queries per job; with 50 jobs per page = 150 extra queries",
+          "file_path": "services/convert/convert.go",
+          "line_number": 380,
+          "code_snippet": "task, _, err = db.GetByID[actions_model.ActionTask](ctx, effectiveTaskID)",
+          "recommendation": "Batch load tasks, steps, and runners for all jobs in a single query"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch load tasks and runners for all jobs instead of per-job queries",
+          "estimated_impact": "Reduce queries from O(3n) to O(3) for n jobs",
+          "implementation": "Pre-load all tasks by job IDs, then batch load runners by runner IDs"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-278",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Loads latest attempt per run individually"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "ToActionWorkflowRun calls run.GetLatestAttempt(ctx) individually for each run in the list",
+          "impact": "1 extra query per run; with 50 runs per page = 50 extra queries",
+          "file_path": "services/convert/convert.go",
+          "line_number": 260,
+          "code_snippet": "attempt, _, err = run.GetLatestAttempt(ctx)",
+          "recommendation": "Batch load latest attempts for all runs"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch load latest attempts for all runs in a single query using run.LatestAttemptID",
+          "estimated_impact": "Reduce from O(n) to O(1) queries for attempts",
+          "implementation": "Collect all LatestAttemptIDs and batch fetch from action_run_attempt"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-279",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/tasks",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "LoadAttributes loads job->run->repo chain per task"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "ToActionTask calls LoadJob then LoadRun then LoadRepo individually per task",
+          "impact": "3 extra queries per task; with 50 tasks = 150 extra queries",
+          "file_path": "services/convert/convert.go",
+          "line_number": 228,
+          "code_snippet": "if err := t.LoadJob(ctx); err != nil {",
+          "recommendation": "TaskList.LoadAttributes should batch load all jobs, runs, repos"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Use TaskList.LoadAttributes batch loading instead of per-task loading",
+          "estimated_impact": "Reduce from O(3n) to O(3) queries",
+          "implementation": "The code already calls taskList.LoadAttributes which should batch - verify it does"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-280",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git"],
+        "note": "Reads git tree and workflow file contents"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "For each workflow entry, GetContentFromEntry reads blob content to parse workflow name - this is a git I/O operation per file",
+          "impact": "With many workflow files, sequential git blob reads can be slow",
+          "file_path": "services/convert/convert.go",
+          "line_number": 467,
+          "code_snippet": "content, err := actions.GetContentFromEntry(entry)",
+          "recommendation": "Consider caching workflow metadata or reading content lazily"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "caching",
+          "description": "Cache workflow metadata (name, state) keyed by commit SHA + workflow path",
+          "estimated_impact": "Avoid repeated git blob reads for unchanged workflows",
+          "implementation": "Use in-memory or Redis cache with commit SHA as cache key"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-281",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git"],
+        "note": "Lists all workflows then finds matching one"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "Lists all workflow entries to find one by name, reading all entries even though only one is needed",
+          "impact": "Minor - typically few workflow files per repo",
+          "file_path": "services/convert/convert.go",
+          "line_number": 545,
+          "code_snippet": "for _, entry := range entries {\n\tif entry.Name() == workflowID {",
+          "recommendation": "Could directly access the file by path instead of listing all"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Directly access workflow file by path instead of listing all entries",
+          "estimated_impact": "Minor improvement - avoids listing all entries",
+          "implementation": "Use commit.GetTreeEntryByPath(workflowDir + '/' + workflowID)"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-282",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Verifies workflow exists in git then updates DB"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-283",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Git operations + multiple DB inserts in transaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-284",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Verifies workflow exists in git then updates DB"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

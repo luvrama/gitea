@@ -1,0 +1,166 @@
+{
+  "total_findings": 7,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-135",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, only local DB",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - simple DB read",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-136",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/variables",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, only local DB",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - simple DB read",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-137",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/runs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, multiple DB queries but all local",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only DB operations",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-138",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/jobs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, multiple DB queries but all local",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only DB operations",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-139",
+      "http_method": "GET",
+      "path": "/api/v1/user/followers",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, single DB query with JOIN",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - simple DB read",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-140",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/followers",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, single DB query with JOIN",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - simple DB read",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-141",
+      "http_method": "GET",
+      "path": "/api/v1/user/following",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, single DB query with JOIN",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - simple DB read",
+      "graceful_degradation": "Returns 500 on DB failure"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled via modules/graceful package with SIGTERM handling",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in API rate limiting for these endpoints",
+      "recommendation": "Consider adding rate limiting middleware for API endpoints"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "These endpoints are synchronous read operations"
+    },
+    "single_points_of_failure": [
+      "Database - all endpoints depend on DB availability"
+    ],
+    "cascading_failure_paths": []
+  }
+}

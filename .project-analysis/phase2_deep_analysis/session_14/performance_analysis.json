@@ -1,0 +1,161 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-091",
+      "http_method": "GET",
+      "path": "/api/v1/admin/hooks",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 DB query (find+count) + N decryption operations for auth headers"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "Loop decrypts authorization header for each webhook using secret.DecryptSecret",
+          "impact": "For large numbers of system webhooks, decryption adds latency per item",
+          "file_path": "services/webhook/general.go",
+          "line_number": 407,
+          "code_snippet": "authorizationHeader, err := w.HeaderAuthorization()",
+          "recommendation": "Acceptable for admin endpoint with typically few system webhooks"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-092",
+      "http_method": "GET",
+      "path": "/api/v1/admin/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single DB lookup by ID"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-093",
+      "http_method": "POST",
+      "path": "/api/v1/admin/hooks",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single INSERT operation"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-094",
+      "http_method": "PATCH",
+      "path": "/api/v1/admin/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT + UPDATE + SELECT (re-fetch after update)"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "writes_on_reads",
+          "description": "EditSystemHook re-fetches the webhook after update instead of returning the mutated object",
+          "impact": "Extra DB read on every edit, but acceptable for admin endpoint",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "line_number": 222,
+          "code_snippet": "updated, err := webhook.GetSystemOrDefaultWebhook(ctx, hookID)",
+          "recommendation": "Could return the already-updated webhook object instead of re-fetching"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-095",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "DELETE webhook + DELETE hook_tasks in transaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-096",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/orgs",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT (check exists) + 6 INSERTs in transaction (org, org_user, team, team_units, team_user, avatar)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-097",
+      "http_method": "GET",
+      "path": "/api/v1/admin/orgs",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "COUNT query + SELECT query with pagination"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "Organization list is fetched from DB on every request with no caching",
+          "impact": "For instances with many organizations, repeated admin queries hit DB directly",
+          "file_path": "routers/api/v1/admin/org.go",
+          "line_number": 87,
+          "code_snippet": "users, maxResults, err := user_model.SearchUsers(ctx, ...)",
+          "recommendation": "Acceptable for admin-only endpoint; caching not needed unless high admin API traffic"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-098",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "external_api"],
+        "note": "1 external API call (HaveIBeenPwned) + 2 SELECT checks + 2 INSERTs + optional auth source lookup"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_timeout",
+          "description": "HaveIBeenPwned API call uses http.DefaultClient with no timeout configured",
+          "impact": "If pwnedpasswords.com is slow or unresponsive, the request thread blocks indefinitely",
+          "file_path": "modules/auth/password/pwn/pwn.go",
+          "line_number": 37,
+          "code_snippet": "http: http.DefaultClient,",
+          "recommendation": "Configure a timeout (e.g., 5s) on the HTTP client used for pwned password checks"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "timeout",
+          "description": "Add HTTP client timeout for HaveIBeenPwned API calls",
+          "estimated_impact": "Prevents request thread from blocking indefinitely on external API failure",
+          "implementation": "Create http.Client with Timeout: 5*time.Second instead of using http.DefaultClient"
+        }
+      ]
+    }
+  ]
+}

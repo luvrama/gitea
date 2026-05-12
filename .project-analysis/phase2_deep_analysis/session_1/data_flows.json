@@ -1,0 +1,358 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-001",
+      "http_method": "GET",
+      "path": "/api/v1/version",
+      "description": "Returns the application version from a global setting variable",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.Version",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/version.go",
+          "input": "APIContext",
+          "output": "JSON(ServerVersion)",
+          "operations": ["Read setting.AppVer", "Return JSON response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-002",
+      "http_method": "GET",
+      "path": "/api/v1/label/templates",
+      "description": "Returns display names of all loaded label template files from in-memory variable",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.ListLabelTemplates",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/label_templates.go",
+          "input": "APIContext",
+          "output": "JSON([]string)",
+          "operations": ["Iterate repo_module.LabelTemplateFiles", "Extract DisplayName from each", "Return JSON array"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]repo_module.OptionFile",
+          "to": "[]string",
+          "component": "misc.ListLabelTemplates",
+          "mappings": [{"source_field": "DisplayName", "target_field": "[]", "transformation": "direct_copy"}]
+        }
+      ],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-003",
+      "http_method": "GET",
+      "path": "/api/v1/label/templates/{name}",
+      "description": "Loads a label template file by display name and returns parsed labels",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.GetLabelTemplate",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/label_templates.go",
+          "input": "APIContext with path param 'name'",
+          "output": "JSON([]*api.LabelTemplate) or 404",
+          "operations": ["Sanitize name via util.PathJoinRelX", "Call repo_module.LoadTemplateLabelsByDisplayName"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_module.LoadTemplateLabelsByDisplayName",
+          "type": "utility",
+          "file_path": "modules/repository/init.go",
+          "input": "displayName string",
+          "output": "[]*label.Label or error",
+          "operations": ["Lookup displayName in labelTemplateFileMap", "Call label.LoadTemplateFile if found"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToLabelTemplateList",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "[]*label.Label",
+          "output": "[]*api.LabelTemplate",
+          "operations": ["Map each label to API struct, strip # from color"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*label.Label",
+          "to": "*api.LabelTemplate",
+          "component": "convert.ToLabelTemplate",
+          "mappings": [
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Exclusive", "target_field": "exclusive", "transformation": "direct_copy"},
+            {"source_field": "Color", "target_field": "color", "transformation": "computed"},
+            {"source_field": "Description", "target_field": "description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Template name not found in labelTemplateFileMap", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-004",
+      "http_method": "GET",
+      "path": "/api/v1/signing-key.gpg",
+      "description": "Returns the global GPG signing key by calling git config and gpg --export",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.SigningKeyGPG",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/signing.go",
+          "input": "APIContext",
+          "output": "text/plain GPG key or error",
+          "operations": ["Call getSigningKey with format=openpgp"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "asymkey_service.PublicSigningKey",
+          "type": "service",
+          "file_path": "services/asymkey/sign.go",
+          "input": "context.Context",
+          "output": "content string, format string, error",
+          "operations": ["Call git.GetSigningKey to get key info", "If SSH format: read file from disk", "If GPG format: exec gpg --export -a <keyID>"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "git.GetSigningKey",
+          "type": "utility",
+          "file_path": "modules/git/key.go",
+          "input": "context.Context",
+          "output": "*SigningKey, *Signature",
+          "operations": ["Check setting.Repository.Signing.SigningKey", "If 'none': return nil", "If 'default': read git global config", "Otherwise: use configured key"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "No signing key configured (format empty)", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "no signing key"},
+        {"condition": "Key format doesn't match expected (openpgp)", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "signing key format is <format>"},
+        {"condition": "Error reading key or running gpg", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-005",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/signing-key.gpg",
+      "description": "Returns the GPG signing key for a repository (same handler as ep-004, uses global key)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.SigningKeyGPG",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/signing.go",
+          "input": "APIContext with repo context",
+          "output": "text/plain GPG key or error",
+          "operations": ["Call getSigningKey with format=openpgp"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "asymkey_service.PublicSigningKey",
+          "type": "service",
+          "file_path": "services/asymkey/sign.go",
+          "input": "context.Context",
+          "output": "content string, format string, error",
+          "operations": ["Call git.GetSigningKey", "Export GPG key via process exec"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "No signing key configured", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "no signing key"},
+        {"condition": "Key format mismatch", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "signing key format is <format>"},
+        {"condition": "GPG export error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-006",
+      "http_method": "GET",
+      "path": "/api/v1/signing-key.pub",
+      "description": "Returns the global SSH signing key by reading the key file from disk",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.SigningKeySSH",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/signing.go",
+          "input": "APIContext",
+          "output": "text/plain SSH key or error",
+          "operations": ["Call getSigningKey with format=ssh"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "asymkey_service.PublicSigningKey",
+          "type": "service",
+          "file_path": "services/asymkey/sign.go",
+          "input": "context.Context",
+          "output": "content string, format string, error",
+          "operations": ["Call git.GetSigningKey", "If SSH: os.ReadFile(signingKey.KeyID)", "Return content"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "No signing key configured", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "no signing key"},
+        {"condition": "Key format mismatch (not ssh)", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "signing key format is <format>"},
+        {"condition": "File read error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-007",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/signing-key.pub",
+      "description": "Returns the SSH signing key for a repository (same handler as ep-006, uses global key)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.SigningKeySSH",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/signing.go",
+          "input": "APIContext with repo context",
+          "output": "text/plain SSH key or error",
+          "operations": ["Call getSigningKey with format=ssh"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "asymkey_service.PublicSigningKey",
+          "type": "service",
+          "file_path": "services/asymkey/sign.go",
+          "input": "context.Context",
+          "output": "content string, format string, error",
+          "operations": ["Call git.GetSigningKey", "Read SSH key file"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "No signing key configured", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "no signing key"},
+        {"condition": "Key format mismatch", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "signing key format is <format>"},
+        {"condition": "File read error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-008",
+      "http_method": "POST",
+      "path": "/api/v1/markup",
+      "description": "Renders markup text to HTML using configurable render modes (markdown, gfm, comment, wiki, file)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "misc.Markup",
+          "type": "controller",
+          "file_path": "routers/api/v1/misc/markup.go",
+          "input": "APIContext with MarkupOption body",
+          "output": "text/html rendered content",
+          "operations": ["Extract form via web.GetForm", "Determine mode (wiki deprecated flag overrides)", "Call common.RenderMarkup"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "common.RenderMarkup",
+          "type": "utility",
+          "file_path": "routers/common/markup.go",
+          "input": "Base context, repo context, mode, text, urlPathContext, filePath",
+          "output": "HTML written to response",
+          "operations": ["Parse urlPathContext to extract owner/repo/ref/tree", "Create appropriate RenderContext based on mode", "Call markdown.RenderRaw (for empty/markdown mode) or markup.Render (for other modes)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "markup.Render",
+          "type": "utility",
+          "file_path": "modules/markup/render.go",
+          "input": "RenderContext, io.Reader, io.Writer",
+          "output": "error",
+          "operations": ["Detect markup renderer by reader content", "Render with detected renderer", "Sanitize output HTML"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "structs.MarkupOption",
+          "to": "text/html",
+          "component": "common.RenderMarkup",
+          "mappings": [
+            {"source_field": "Text", "target_field": "rendered HTML body", "transformation": "computed"},
+            {"source_field": "Mode", "target_field": "render context type", "transformation": "computed"},
+            {"source_field": "Context", "target_field": "link resolution base", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Unsupported render mode", "handler": "ctx.HTTPError", "response_code": 422, "response": "unsupported render mode: <mode>"},
+        {"condition": "util.ErrInvalidArgument from renderer", "handler": "ctx.HTTPError", "response_code": 422, "response": "error message"},
+        {"condition": "Internal render error", "handler": "ctx.HTTPError", "response_code": 500, "response": "failed to render markup"}
+      ]
+    }
+  ]
+}

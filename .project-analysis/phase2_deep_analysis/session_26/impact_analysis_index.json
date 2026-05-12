@@ -1,0 +1,47 @@
+{
+  "endpoints_by_database_table": {
+    "action_runner": {"read": ["ep-176", "ep-177", "ep-178", "ep-179"], "write": ["ep-178", "ep-179"]},
+    "action_tasks_version": {"read": [], "write": ["ep-179"]},
+    "email_address": {"read": ["ep-180", "ep-181", "ep-182"], "write": ["ep-181", "ep-182"]},
+    "gpg_key": {"read": ["ep-183"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "service.RegisterEmailConfirm": ["ep-181"],
+    "setting.PanicInDevOrTesting": ["ep-176", "ep-177", "ep-178", "ep-179"]
+  },
+  "endpoints_by_model_class": {
+    "ActionRunner": ["ep-176", "ep-177", "ep-178", "ep-179"],
+    "EmailAddress": ["ep-180", "ep-181", "ep-182"],
+    "GPGKey": ["ep-183"]
+  },
+  "endpoints_by_service_class": {
+    "shared.ListRunners": ["ep-176"],
+    "shared.GetRunner": ["ep-177"],
+    "shared.DeleteRunner": ["ep-178"],
+    "shared.UpdateRunner": ["ep-179"],
+    "user_service.AddEmailAddresses": ["ep-181"],
+    "user_service.DeleteEmailAddresses": ["ep-182"],
+    "convert.ToActionRunner": ["ep-176", "ep-177", "ep-179"],
+    "convert.ToEmail": ["ep-180", "ep-181"],
+    "convert.ToGPGKey": ["ep-183"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-176": {"reads": ["action_runner"], "writes": []},
+    "ep-177": {"reads": ["action_runner"], "writes": []},
+    "ep-178": {"reads": ["action_runner"], "writes": ["action_runner"]},
+    "ep-179": {"reads": ["action_runner"], "writes": ["action_runner", "action_tasks_version"]},
+    "ep-180": {"reads": ["email_address"], "writes": []},
+    "ep-181": {"reads": ["email_address"], "writes": ["email_address"]},
+    "ep-182": {"reads": ["email_address"], "writes": ["email_address"]},
+    "ep-183": {"reads": ["gpg_key"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-176": ["setting.PanicInDevOrTesting"],
+    "ep-177": ["setting.PanicInDevOrTesting"],
+    "ep-178": ["setting.PanicInDevOrTesting"],
+    "ep-179": ["setting.PanicInDevOrTesting"],
+    "ep-181": ["service.RegisterEmailConfirm"]
+  }
+}

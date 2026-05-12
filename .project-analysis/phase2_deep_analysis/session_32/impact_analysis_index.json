@@ -1,0 +1,38 @@
+{
+  "endpoints_by_database_table": {
+    "user": {"read": ["ep-214", "ep-215", "ep-218", "ep-219"], "write": []},
+    "issue": {"read": ["ep-218", "ep-219"], "write": []},
+    "issue_watch": {"read": ["ep-218", "ep-219"], "write": ["ep-218", "ep-219"]},
+    "pull_request": {"read": ["ep-217"], "write": []},
+    "repository": {"read": ["ep-217"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "git.CommitsRangeSize": ["ep-215"],
+    "api.SwaggerURL": ["ep-215"]
+  },
+  "endpoints_by_model_class": {
+    "git.Commit": ["ep-214", "ep-215", "ep-216"],
+    "api.Commit": ["ep-214", "ep-215"],
+    "issues.PullRequest": ["ep-217"],
+    "issues.IssueWatch": ["ep-218", "ep-219"],
+    "issues.Issue": ["ep-218", "ep-219"]
+  },
+  "endpoints_by_service_class": {
+    "convert.ToCommit": ["ep-214", "ep-215"],
+    "convert.ToAPIPullRequest": ["ep-217"],
+    "git.GetRawDiff": ["ep-216"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-214": {"reads": ["user"], "writes": []},
+    "ep-215": {"reads": ["user"], "writes": []},
+    "ep-216": {"reads": [], "writes": []},
+    "ep-217": {"reads": ["pull_request", "issue", "repository"], "writes": []},
+    "ep-218": {"reads": ["issue", "user", "issue_watch"], "writes": ["issue_watch"]},
+    "ep-219": {"reads": ["issue", "user", "issue_watch"], "writes": ["issue_watch"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-215": ["git.CommitsRangeSize", "api.SwaggerURL"]
+  }
+}

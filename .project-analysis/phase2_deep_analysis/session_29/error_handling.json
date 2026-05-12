@@ -1,0 +1,36 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "any error", "status_code": 500, "response_type": "JSON error", "message_template": "APIErrorInternal"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "APIErrorNotFound"},
+      {"exception_type": "forbidden", "status_code": 403, "response_type": "JSON error", "message_template": "APIError with status"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-196", "path": "/api/v1/repos/{owner}/{repo}/subscription", "error_scenarios": [
+      {"exception": "not watching", "trigger": "IsWatching returns false", "status_code": 404, "response": "notFound", "logged": false, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-197", "path": "/api/v1/repos/{owner}/{repo}/subscription", "error_scenarios": [
+      {"exception": "ErrBlockedUser", "trigger": "User is blocked by repo owner", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false},
+      {"exception": "internal error", "trigger": "DB error in WatchRepo", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-198", "path": "/api/v1/repos/{owner}/{repo}/subscription", "error_scenarios": [
+      {"exception": "internal error", "trigger": "DB error in WatchRepo", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-199", "path": "/api/v1/packages/{owner}", "error_scenarios": [
+      {"exception": "internal error", "trigger": "DB error in SearchVersions or GetPackageDescriptors", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-200", "path": "/api/v1/packages/{owner}/{type}/{name}/{version}", "error_scenarios": [
+      {"exception": "ErrPackageNotExist", "trigger": "Package or version not found (middleware)", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "internal error", "trigger": "Error in convert.ToPackage", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-201", "path": "/api/v1/packages/{owner}/{type}/{name}", "error_scenarios": [
+      {"exception": "ErrPackageNotExist", "trigger": "Package not found (middleware)", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "internal error", "trigger": "Error during RemovePackage transaction", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrBlockedUser", "file_path": "models/user/block.go", "extends": "util.PermissionDeniedError", "used_in": ["repo_model.WatchRepo"], "http_status": 403}
+  ]
+}

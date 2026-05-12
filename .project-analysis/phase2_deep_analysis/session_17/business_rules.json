@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "All admin endpoints require site admin privileges via reqSiteAdmin() middleware",
+      "location": {"class": "api", "method": "route registration", "file_path": "routers/api/v1/api.go", "line_number": 1740},
+      "condition": "tokenRequiresScopes(AccessTokenScopeCategoryAdmin), reqToken(), reqSiteAdmin()",
+      "action": "Returns 403 if user is not site admin",
+      "affected_endpoints": ["ep-114", "ep-115", "ep-116", "ep-117", "ep-118", "ep-119", "ep-120", "ep-121", "ep-122"],
+      "code_snippet": "}, tokenRequiresScopes(auth_model.AccessTokenScopeCategoryAdmin), reqToken(), reqSiteAdmin())"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "business_logic",
+      "description": "Admin context (ownerID=0, repoID=0) allows editing any runner regardless of ownership",
+      "location": {"class": "ActionRunner", "method": "EditableInContext", "file_path": "models/actions/runner.go", "line_number": 119},
+      "condition": "ownerID == 0 && repoID == 0",
+      "action": "Returns true - admin can edit any runner",
+      "affected_endpoints": ["ep-115", "ep-116", "ep-117"],
+      "code_snippet": "if ownerID == 0 && repoID == 0 { return true }"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "UpdateRunner requires Disabled field to be non-nil",
+      "location": {"class": "shared", "method": "UpdateRunner", "file_path": "routers/api/v1/shared/runners.go", "line_number": 126},
+      "condition": "form.Disabled == nil",
+      "action": "Returns 422 with message '[Disabled]: Required'",
+      "affected_endpoints": ["ep-117"],
+      "code_snippet": "if form.Disabled == nil { ctx.APIError(http.StatusUnprocessableEntity, \"[Disabled]: Required\") }"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "SetRunnerDisabled is a no-op if the runner already has the desired disabled state",
+      "location": {"class": "actions_model", "method": "SetRunnerDisabled", "file_path": "models/actions/runner.go", "line_number": 237},
+      "condition": "runner.IsDisabled == isDisabled",
+      "action": "Returns nil immediately without DB update",
+      "affected_endpoints": ["ep-117"],
+      "code_snippet": "if runner.IsDisabled == isDisabled { return nil }"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Disabling/enabling a runner triggers IncreaseTaskVersion to notify runners of config changes",
+      "location": {"class": "actions_model", "method": "SetRunnerDisabled", "file_path": "models/actions/runner.go", "line_number": 243},
+      "condition": "Runner disabled state changes",
+      "action": "Increases task version for global, owner, and repo scopes in transaction",
+      "affected_endpoints": ["ep-117"],
+      "code_snippet": "return IncreaseTaskVersion(ctx, runner.OwnerID, runner.RepoID)"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "Email search filters only individual users (type=0), not organizations",
+      "location": {"class": "user_model", "method": "SearchEmails", "file_path": "models/user/email_address.go", "line_number": 401},
+      "condition": "Always applied",
+      "action": "Adds WHERE user.type = 0 (UserTypeIndividual)",
+      "affected_endpoints": ["ep-118", "ep-119"],
+      "code_snippet": "var cond builder.Cond = builder.Eq{\"`user`.`type`\": UserTypeIndividual}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Email search uses case-insensitive LIKE on full_name, lower_name, and lower_email",
+      "location": {"class": "user_model", "method": "SearchEmails", "file_path": "models/user/email_address.go", "line_number": 403},
+      "condition": "len(opts.Keyword) > 0",
+      "action": "Applies OR condition with LIKE on three fields",
+      "affected_endpoints": ["ep-119"],
+      "code_snippet": "likeStr := \"%\" + strings.ToLower(opts.Keyword) + \"%\""
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "AddUserBadges fails if badge slug does not exist in badge table",
+      "location": {"class": "user_model", "method": "AddUserBadges", "file_path": "models/user/badge.go", "line_number": 153},
+      "condition": "!has (badge not found by slug)",
+      "action": "Returns NotExist error, which handler converts to 500",
+      "affected_endpoints": ["ep-121"],
+      "code_snippet": "} else if !has { return util.NewNotExistErrorf(\"badge does not exist [slug: %s]\", badge.Slug) }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "AddUserBadges fails if user already has the badge",
+      "location": {"class": "user_model", "method": "AddUserBadges", "file_path": "models/user/badge.go", "line_number": 160},
+      "condition": "exists (user_badge already exists for badge_id + user_id)",
+      "action": "Returns AlreadyExist error, which handler converts to 500",
+      "affected_endpoints": ["ep-121"],
+      "code_snippet": "if exists { return util.NewAlreadyExistErrorf(\"user badge already exists\") }"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "RemoveUserBadges silently succeeds if no matching badges found (no error returned)",
+      "location": {"class": "user_model", "method": "RemoveUserBadges", "file_path": "models/user/badge.go", "line_number": 203},
+      "condition": "len(userBadgeIDs) == 0",
+      "action": "Returns nil without error",
+      "affected_endpoints": ["ep-122"],
+      "code_snippet": "if len(userBadgeIDs) == 0 { return nil }"
+    }
+  ]
+}

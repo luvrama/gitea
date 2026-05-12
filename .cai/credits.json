@@ -1,0 +1,292 @@
+[
+  {
+    "phase": "int-phase1",
+    "credits": 8.09,
+    "timestamp": "2026-05-12T05:33:08.279Z"
+  },
+  {
+    "phase": "int-phase1.5-plan",
+    "credits": 3.21,
+    "timestamp": "2026-05-12T05:35:29.134Z"
+  },
+  {
+    "phase": "int-phase2-s1",
+    "credits": 9.29,
+    "timestamp": "2026-05-12T05:42:13.881Z"
+  },
+  {
+    "phase": "int-phase2-s2",
+    "credits": 8.31,
+    "timestamp": "2026-05-12T05:49:06.577Z"
+  },
+  {
+    "phase": "int-phase2-s3",
+    "credits": 10.68,
+    "timestamp": "2026-05-12T05:57:36.450Z"
+  },
+  {
+    "phase": "int-phase2-s4",
+    "credits": 11.76,
+    "timestamp": "2026-05-12T06:05:54.288Z"
+  },
+  {
+    "phase": "int-phase2-s5",
+    "credits": 13.19,
+    "timestamp": "2026-05-12T06:15:23.906Z"
+  },
+  {
+    "phase": "int-phase2-s6",
+    "credits": 13.37,
+    "timestamp": "2026-05-12T06:24:56.146Z"
+  },
+  {
+    "phase": "int-phase2-s7",
+    "credits": 11.99,
+    "timestamp": "2026-05-12T06:34:11.445Z"
+  },
+  {
+    "phase": "int-phase2-s8",
+    "credits": 12.59,
+    "timestamp": "2026-05-12T06:43:02.558Z"
+  },
+  {
+    "phase": "int-phase2-s9",
+    "credits": 12.54,
+    "timestamp": "2026-05-12T06:54:05.436Z"
+  },
+  {
+    "phase": "int-phase2-s10",
+    "credits": 14.92,
+    "timestamp": "2026-05-12T07:03:29.242Z"
+  },
+  {
+    "phase": "int-phase2-s11",
+    "credits": 9.7,
+    "timestamp": "2026-05-12T07:11:25.282Z"
+  },
+  {
+    "phase": "int-phase2-s12",
+    "credits": 12.48,
+    "timestamp": "2026-05-12T07:19:32.248Z"
+  },
+  {
+    "phase": "int-phase2-s13",
+    "credits": 13.75,
+    "timestamp": "2026-05-12T07:29:11.249Z"
+  },
+  {
+    "phase": "int-phase2-s14",
+    "credits": 14.71,
+    "timestamp": "2026-05-12T07:39:09.295Z"
+  },
+  {
+    "phase": "int-phase2-s15",
+    "credits": 13.56,
+    "timestamp": "2026-05-12T07:48:35.640Z"
+  },
+  {
+    "phase": "int-phase2-s16",
+    "credits": 15.55,
+    "timestamp": "2026-05-12T07:58:20.969Z"
+  },
+  {
+    "phase": "int-phase2-s17",
+    "credits": 11.1,
+    "timestamp": "2026-05-12T08:06:59.147Z"
+  },
+  {
+    "phase": "int-phase2-s18",
+    "credits": 15.34,
+    "timestamp": "2026-05-12T08:16:29.720Z"
+  },
+  {
+    "phase": "int-phase2-s19",
+    "credits": 10.41,
+    "timestamp": "2026-05-12T08:23:33.280Z"
+  },
+  {
+    "phase": "int-phase2-s20",
+    "credits": 11.39,
+    "timestamp": "2026-05-12T08:31:06.661Z"
+  },
+  {
+    "phase": "int-phase2-s21",
+    "credits": 11.98,
+    "timestamp": "2026-05-12T08:39:24.054Z"
+  },
+  {
+    "phase": "int-phase2-s22",
+    "credits": 10.55,
+    "timestamp": "2026-05-12T08:47:18.582Z"
+  },
+  {
+    "phase": "int-phase2-s23",
+    "credits": 11.66,
+    "timestamp": "2026-05-12T08:55:13.661Z"
+  },
+  {
+    "phase": "int-phase2-s24",
+    "credits": 12.18,
+    "timestamp": "2026-05-12T09:04:26.401Z"
+  },
+  {
+    "phase": "int-phase2-s25",
+    "credits": 14.9,
+    "timestamp": "2026-05-12T09:13:41.325Z"
+  },
+  {
+    "phase": "int-phase2-s26",
+    "credits": 12.6,
+    "timestamp": "2026-05-12T09:21:56.027Z"
+  },
+  {
+    "phase": "int-phase2-s27",
+    "credits": 8.11,
+    "timestamp": "2026-05-12T09:29:11.158Z"
+  },
+  {
+    "phase": "int-phase2-s28",
+    "credits": 8.91,
+    "timestamp": "2026-05-12T09:36:03.210Z"
+  },
+  {
+    "phase": "int-phase2-s29",
+    "credits": 11.18,
+    "timestamp": "2026-05-12T09:44:15.131Z"
+  },
+  {
+    "phase": "int-phase2-s30",
+    "credits": 11.52,
+    "timestamp": "2026-05-12T09:51:40.499Z"
+  },
+  {
+    "phase": "int-phase2-s31",
+    "credits": 11.91,
+    "timestamp": "2026-05-12T09:59:57.833Z"
+  },
+  {
+    "phase": "int-phase2-s32",
+    "credits": 10.11,
+    "timestamp": "2026-05-12T10:07:24.377Z"
+  },
+  {
+    "phase": "int-phase2-s33",
+    "credits": 15.58,
+    "timestamp": "2026-05-12T10:16:18.896Z"
+  },
+  {
+    "phase": "int-phase2-s34",
+    "credits": 16.56,
+    "timestamp": "2026-05-12T10:25:58.756Z"
+  },
+  {
+    "phase": "int-phase2-s35",
+    "credits": 11.28,
+    "timestamp": "2026-05-12T10:33:26.750Z"
+  },
+  {
+    "phase": "int-phase2-s36",
+    "credits": 10.15,
+    "timestamp": "2026-05-12T10:40:50.377Z"
+  },
+  {
+    "phase": "int-phase2-s37",
+    "credits": 14.73,
+    "timestamp": "2026-05-12T10:49:23.750Z"
+  },
+  {
+    "phase": "int-phase2-s38",
+    "credits": 13.28,
+    "timestamp": "2026-05-12T10:59:16.475Z"
+  },
+  {
+    "phase": "int-phase2-s39",
+    "credits": 12.94,
+    "timestamp": "2026-05-12T11:06:24.198Z"
+  },
+  {
+    "phase": "int-phase2-s40",
+    "credits": 10.94,
+    "timestamp": "2026-05-12T11:13:05.912Z"
+  },
+  {
+    "phase": "int-phase2-s41",
+    "credits": 13.84,
+    "timestamp": "2026-05-12T11:21:22.685Z"
+  },
+  {
+    "phase": "int-phase2-s42",
+    "credits": 15.74,
+    "timestamp": "2026-05-12T11:30:04.084Z"
+  },
+  {
+    "phase": "int-phase2-s43",
+    "credits": 15.06,
+    "timestamp": "2026-05-12T11:39:18.309Z"
+  },
+  {
+    "phase": "int-phase2-s44",
+    "credits": 10.4,
+    "timestamp": "2026-05-12T11:46:04.269Z"
+  },
+  {
+    "phase": "int-phase2-s45",
+    "credits": 12.06,
+    "timestamp": "2026-05-12T11:53:51.067Z"
+  },
+  {
+    "phase": "int-phase2-s46",
+    "credits": 12.15,
+    "timestamp": "2026-05-12T12:01:29.501Z"
+  },
+  {
+    "phase": "int-phase2-s47",
+    "credits": 12.7,
+    "timestamp": "2026-05-12T12:08:24.708Z"
+  },
+  {
+    "phase": "int-phase2-s48",
+    "credits": 10.99,
+    "timestamp": "2026-05-12T12:15:40.732Z"
+  },
+  {
+    "phase": "int-phase2-s49",
+    "credits": 14.35,
+    "timestamp": "2026-05-12T12:24:14.379Z"
+  },
+  {
+    "phase": "int-phase2-s50",
+    "credits": 14.65,
+    "timestamp": "2026-05-12T12:33:55.447Z"
+  },
+  {
+    "phase": "int-phase2-s51",
+    "credits": 11.61,
+    "timestamp": "2026-05-12T12:41:47.645Z"
+  },
+  {
+    "phase": "int-phase2-s52",
+    "credits": 13.12,
+    "timestamp": "2026-05-12T12:49:33.050Z"
+  },
+  {
+    "phase": "int-phase2-s53",
+    "credits": 19.65,
+    "timestamp": "2026-05-12T14:12:58.456Z"
+  },
+  {
+    "phase": "int-phase2-s54",
+    "credits": 15.07,
+    "timestamp": "2026-05-12T14:21:09.334Z"
+  },
+  {
+    "phase": "int-phase2-s55",
+    "credits": 11.78,
+    "timestamp": "2026-05-12T14:29:34.326Z"
+  },
+  {
+    "phase": "int-phase3-merge",
+    "credits": 2.46,
+    "timestamp": "2026-05-12T14:53:24.683Z"
+  }
+]

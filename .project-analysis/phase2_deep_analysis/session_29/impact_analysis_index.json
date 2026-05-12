@@ -1,0 +1,48 @@
+{
+  "endpoints_by_database_table": {
+    "watch": {"read": ["ep-196", "ep-197", "ep-198"], "write": ["ep-197", "ep-198"]},
+    "user_blocking": {"read": ["ep-197"], "write": []},
+    "repository": {"read": ["ep-199", "ep-200"], "write": ["ep-197", "ep-198"]},
+    "package": {"read": ["ep-199", "ep-200", "ep-201"], "write": ["ep-201"]},
+    "package_version": {"read": ["ep-199", "ep-200", "ep-201"], "write": ["ep-201"]},
+    "package_file": {"read": ["ep-199", "ep-200"], "write": ["ep-201"]},
+    "package_property": {"read": ["ep-199", "ep-200"], "write": ["ep-201"]},
+    "package_blob": {"read": ["ep-199", "ep-200"], "write": []},
+    "user": {"read": ["ep-199", "ep-200"], "write": []},
+    "access": {"read": ["ep-199", "ep-200"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "service.auto_watch_on_changes": ["ep-197"],
+    "service.require_signin_view_strict": ["ep-199", "ep-200"],
+    "packages.limit_total_owner_count": ["ep-201"]
+  },
+  "endpoints_by_model_class": {
+    "repo_model.Watch": ["ep-196", "ep-197", "ep-198"],
+    "packages_model.Package": ["ep-199", "ep-200", "ep-201"],
+    "packages_model.PackageVersion": ["ep-199", "ep-200", "ep-201"],
+    "packages_model.PackageFile": ["ep-199", "ep-200", "ep-201"],
+    "packages_model.PackageDescriptor": ["ep-199", "ep-200", "ep-201"],
+    "api.WatchInfo": ["ep-196", "ep-197"],
+    "api.Package": ["ep-199", "ep-200"]
+  },
+  "endpoints_by_service_class": {
+    "packages_service.RemovePackage": ["ep-201"],
+    "convert.ToPackage": ["ep-199", "ep-200"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-196": {"reads": ["watch"], "writes": []},
+    "ep-197": {"reads": ["watch", "user_blocking"], "writes": ["watch", "repository"]},
+    "ep-198": {"reads": ["watch"], "writes": ["watch", "repository"]},
+    "ep-199": {"reads": ["package_version", "package", "user", "repository", "package_property", "package_file", "package_blob", "access"], "writes": []},
+    "ep-200": {"reads": ["package_version", "package", "user", "repository", "package_property", "package_file", "package_blob", "access"], "writes": []},
+    "ep-201": {"reads": ["package", "package_version", "user", "repository", "package_property", "package_file", "package_blob"], "writes": ["package", "package_version", "package_file", "package_property"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-197": ["service.auto_watch_on_changes"],
+    "ep-199": ["service.require_signin_view_strict"],
+    "ep-200": ["service.require_signin_view_strict"],
+    "ep-201": ["packages.limit_total_owner_count"]
+  }
+}

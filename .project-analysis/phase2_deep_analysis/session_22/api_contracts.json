@@ -1,0 +1,211 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-150",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/hooks/{id}",
+      "controller_class": "user",
+      "controller_method": "EditHook",
+      "description": "Update a webhook owned by the authenticated user",
+      "request": {
+        "path_params": [{"name": "id", "type": "integer (int64)", "required": true, "validation": ["must be valid int64"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "EditHookOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "config", "type": "map[string]string", "required": false, "validation": ["url must be valid URL", "content_type must be json or form"], "description": "Configuration settings (url, content_type, secret)"},
+            {"name": "events", "type": "[]string", "required": false, "validation": [], "description": "List of events that trigger this webhook"},
+            {"name": "branch_filter", "type": "string", "required": false, "validation": ["GlobPattern"], "description": "Branch filter pattern"},
+            {"name": "authorization_header", "type": "string", "required": false, "validation": [], "description": "Authorization header for webhook requests"},
+            {"name": "active", "type": "*bool", "required": false, "validation": [], "description": "Whether the webhook is active"},
+            {"name": "name", "type": "*string", "required": false, "validation": ["MaxSize(255)"], "description": "Human-readable name"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Webhook ID"},
+            {"name": "name", "type": "string", "description": "Webhook name"},
+            {"name": "type", "type": "string", "description": "Webhook type"},
+            {"name": "branch_filter", "type": "string", "description": "Branch filter pattern"},
+            {"name": "config", "type": "map[string]string", "description": "Configuration settings"},
+            {"name": "events", "type": "[]string", "description": "Events that trigger this webhook"},
+            {"name": "authorization_header", "type": "string", "description": "Authorization header"},
+            {"name": "active", "type": "bool", "description": "Whether active"},
+            {"name": "updated_at", "type": "datetime", "description": "Last updated time"},
+            {"name": "created_at", "type": "datetime", "description": "Creation time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Webhooks disabled by administrator"},
+          {"status_code": 404, "type": "notFound", "condition": "Webhook not found or not owned by user"},
+          {"status_code": 422, "type": "error", "condition": "Invalid URL or content type"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-151",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/hooks/{id}",
+      "controller_class": "user",
+      "controller_method": "DeleteHook",
+      "description": "Delete a webhook owned by the authenticated user",
+      "request": {
+        "path_params": [{"name": "id", "type": "integer (int64)", "required": true, "validation": ["must be valid int64"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Webhooks disabled by administrator"},
+          {"status_code": 404, "type": "notFound", "condition": "Webhook not found or not owned by user"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-152",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/starred",
+      "controller_class": "user",
+      "controller_method": "GetStarredRepos",
+      "description": "List repos that the given user has starred",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": []}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected to valid page size"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "RepositoryList",
+          "fields": [
+            {"name": "[]", "type": "Repository", "description": "Array of repository objects"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Stars disabled by administrator"},
+          {"status_code": 404, "type": "notFound", "condition": "User not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-153",
+      "http_method": "GET",
+      "path": "/api/v1/user/starred",
+      "controller_class": "user",
+      "controller_method": "GetMyStarredRepos",
+      "description": "List repos that the authenticated user has starred",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected to valid page size"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "RepositoryList",
+          "fields": [
+            {"name": "[]", "type": "Repository", "description": "Array of repository objects"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Stars disabled by administrator"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-154",
+      "http_method": "GET",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "controller_class": "user",
+      "controller_method": "IsStarring",
+      "description": "Check whether the authenticated user is starring a repo",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Stars disabled by administrator"},
+          {"status_code": 404, "type": "notFound", "condition": "Not starring the repo or repo not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-155",
+      "http_method": "PUT",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "controller_class": "user",
+      "controller_method": "Star",
+      "description": "Star the given repo as the authenticated user",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Stars disabled by administrator OR user is blocked by repo owner"},
+          {"status_code": 404, "type": "notFound", "condition": "Repo not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

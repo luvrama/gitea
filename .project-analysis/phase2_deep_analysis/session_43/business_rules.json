@@ -1,0 +1,85 @@
+{
+  "total_rules": 8,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Only finalized v4 artifacts are returned in list endpoints (status=confirmed/expired AND content_encoding contains '/')",
+      "location": {"class": "FindArtifactsOptions", "method": "ToConds", "file_path": "models/actions/artifact.go", "line_number": 163},
+      "condition": "FinalizedArtifactsV4 == true",
+      "action": "Filter by status IN (confirmed, expired) AND content_encoding LIKE '%/%'",
+      "affected_endpoints": ["ep-293", "ep-295"],
+      "code_snippet": "cond = cond.And(builder.Eq{\"status\": ArtifactStatusUploadConfirmed}.Or(builder.Eq{\"status\": ArtifactStatusExpired}))\ncond = cond.And(builder.Like{\"content_encoding\", \"%/%\"})"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Artifact must belong to the requesting repository and have valid status (confirmed or expired)",
+      "location": {"class": "repo", "method": "getArtifactByPathParam", "file_path": "routers/api/v1/repo/action.go", "line_number": 2078},
+      "condition": "!ok || art.RepoID != repo.ID || (art.Status != UploadConfirmed && art.Status != Expired)",
+      "action": "Return 404 'artifact not found'",
+      "affected_endpoints": ["ep-296", "ep-297", "ep-298"],
+      "code_snippet": "if !ok || art.RepoID != repo.ID || art.Status != actions_model.ArtifactStatusUploadConfirmed && art.Status != actions_model.ArtifactStatusExpired {"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Only v4 artifacts (content_encoding contains '/') are supported for single-artifact operations",
+      "location": {"class": "actions_service", "method": "IsArtifactV4", "file_path": "services/actions/artifacts.go", "line_number": 21},
+      "condition": "strings.Contains(art.ContentEncodingOrType, \"/\")",
+      "action": "If false, return 404 'Artifact not found' (v3 not supported)",
+      "affected_endpoints": ["ep-296", "ep-297", "ep-298"],
+      "code_snippet": "func IsArtifactV4(art *actions_model.ActionArtifact) bool {\n\treturn strings.Contains(art.ContentEncodingOrType, \"/\")\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "state_transition",
+      "description": "Workflow run must be in a done state (success/failure/cancelled/skipped) before deletion",
+      "location": {"class": "repo", "method": "DeleteActionRun", "file_path": "routers/api/v1/repo/action.go", "line_number": 1770},
+      "condition": "!run.Status.IsDone()",
+      "action": "Return 400 'this workflow run is not done'",
+      "affected_endpoints": ["ep-294"],
+      "code_snippet": "if !run.Status.IsDone() {\n\tctx.APIError(http.StatusBadRequest, \"this workflow run is not done\")\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "state_transition",
+      "description": "Artifact deletion is soft-delete: status changes to PendingDeletion, actual file removal by cron",
+      "location": {"class": "actions_model", "method": "SetArtifactNeedDeleteByID", "file_path": "models/actions/artifact.go", "line_number": 199},
+      "condition": "id=? AND status = UploadConfirmed",
+      "action": "Update status to PendingDeletion (only if currently confirmed)",
+      "affected_endpoints": ["ep-297"],
+      "code_snippet": "_, err := db.GetEngine(ctx).Where(\"id=? AND status = ?\", artifactID, ArtifactStatusUploadConfirmed).Cols(\"status\").Update(&ActionArtifact{Status: ArtifactStatusPendingDeletion})"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Download endpoint returns 404 for expired artifacts even if they exist in DB",
+      "location": {"class": "repo", "method": "DownloadArtifact", "file_path": "routers/api/v1/repo/action.go", "line_number": 1997},
+      "condition": "art.Status == ArtifactStatusExpired",
+      "action": "Return 404 'Artifact has expired'",
+      "affected_endpoints": ["ep-298"],
+      "code_snippet": "if art.Status == actions_model.ArtifactStatusExpired {\n\tctx.APIError(http.StatusNotFound, \"Artifact has expired\")\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Download uses signed URL with HMAC-SHA256 and 60-minute expiry for redirect-based downloads",
+      "location": {"class": "repo", "method": "buildSigURL", "file_path": "routers/api/v1/repo/action.go", "line_number": 1955},
+      "condition": "ServeDirect is false (no minio/azure direct URL)",
+      "action": "Build signed URL with 60-min expiry using app SecretKey, redirect 302",
+      "affected_endpoints": ["ep-298"],
+      "code_snippet": "expires := time.Now().Add(60 * time.Minute).Unix()\nuploadURL := httplib.GuessCurrentAppURL(ctx) + endPoint + \"?sig=\" + ..."
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "DeleteRun cleans up ephemeral runners within the same transaction before deleting run data",
+      "location": {"class": "actions_service", "method": "DeleteRun", "file_path": "services/actions/cleanup.go", "line_number": 240},
+      "condition": "Always during DeleteRun transaction",
+      "action": "Delete ephemeral runners that have finished tasks (prevents orphaned runners)",
+      "affected_endpoints": ["ep-294"],
+      "code_snippet": "if err := CleanupEphemeralRunners(ctx); err != nil {\n\treturn err\n}\nreturn db.DeleteBeans(ctx, recordsToDelete...)"
+    }
+  ]
+}

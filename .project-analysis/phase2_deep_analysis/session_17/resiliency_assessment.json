@@ -1,0 +1,216 @@
+{
+  "total_findings": 9,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-114",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/runners",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, only local DB",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - admin-only endpoint with no external deps",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-115",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Single DB query by primary key",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-116",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses soft delete (deleted timestamp), second delete would return 404",
+          "recommendation": "Safe to retry"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - deleting a runner doesn't affect running jobs",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-117",
+      "http_method": "PATCH",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "SetRunnerDisabled uses db.WithTx to wrap UPDATE + IncreaseTaskVersion atomically",
+          "recommendation": "Already handled with transaction"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Setting same disabled state is a no-op, safe to retry",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-118",
+      "http_method": "GET",
+      "path": "/api/v1/admin/emails",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only paginated query",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-119",
+      "http_method": "GET",
+      "path": "/api/v1/admin/emails/search",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only paginated query with LIKE filter",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-120",
+      "http_method": "GET",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only JOIN query",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-121",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Entire operation wrapped in db.WithTx - all badges added atomically or none",
+          "recommendation": "Already handled"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "If badge already exists for user, returns error instead of being idempotent",
+          "recommendation": "Consider using INSERT ... ON CONFLICT DO NOTHING or checking and skipping existing badges"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "Returns 500 if any badge slug doesn't exist or is already assigned"
+    },
+    {
+      "endpoint_id": "ep-122",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Removing non-existent badges is a no-op (returns success)",
+          "recommendation": "Already idempotent"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "Returns 500 on DB failure"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": "Consider adding a dedicated readiness endpoint that checks DB connectivity"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea handles SIGTERM via graceful module",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No rate limiting on admin API endpoints",
+      "recommendation": "Low priority since admin endpoints require authentication and site admin privileges"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": ["Database (single XORM connection)"],
+    "cascading_failure_paths": []
+  }
+}

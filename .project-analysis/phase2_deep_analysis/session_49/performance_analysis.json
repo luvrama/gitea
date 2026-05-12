@@ -1,0 +1,178 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-330",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "3 DB queries: get team, check team_repo, load team_units"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-331",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Multiple DB ops in transaction: check, insert, update, recalculate access, auto-watch"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Auto-watch iterates over team members and calls WatchRepo individually",
+          "impact": "For large teams, N+1 inserts into watch table",
+          "file_path": "services/repository/repo_team.go",
+          "line_number": 53,
+          "code_snippet": "for _, u := range t.Members {\n\trepo_model.WatchRepo(ctx, u, repo, true)\n}",
+          "recommendation": "Batch insert watches for all team members"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch watch insertions for team members",
+          "estimated_impact": "Reduce N individual inserts to 1 batch insert for large teams",
+          "implementation": "Use a bulk insert for watch records instead of iterating"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-332",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Multiple DB ops: check, get repo, delete, update, recalculate, check access per member, remove watches"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Iterates over team members checking HasAnyUnitAccess and removing watches individually",
+          "impact": "For large teams, N queries to check access + N deletes for watches",
+          "file_path": "services/repository/repo_team.go",
+          "line_number": 162,
+          "code_snippet": "for _, member := range teamMembers {\n\thas, err := access_model.HasAnyUnitAccess(ctx, member.ID, repo)\n}",
+          "recommendation": "Batch check access for all members, then batch remove watches"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch access check and watch removal for team members",
+          "estimated_impact": "Reduce 2N queries to 2 batch queries for large teams",
+          "implementation": "Query all member access in one query, then batch delete watches"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-333",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/forks",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Find forks + load owners + load units + N permission checks"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "GetDoerRepoPermission called in a loop for each fork",
+          "impact": "N additional queries for N forks returned",
+          "file_path": "routers/api/v1/repo/fork.go",
+          "line_number": 63,
+          "code_snippet": "for i, fork := range forks {\n\tpermission, err := access_model.GetDoerRepoPermission(ctx, fork, ctx.Doer)\n}",
+          "recommendation": "Batch load permissions for all forks at once"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch permission loading for fork list",
+          "estimated_impact": "Reduce N permission queries to 1 batch query",
+          "implementation": "Create a batch GetDoerRepoPermissions function"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-334",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/forks",
+      "resource_load": {
+        "operations_per_request": 12,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem", "git"],
+        "note": "Heavy operation: DB inserts + git clone + branch/tag sync"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "synchronous_blocking",
+          "description": "Git clone operation blocks the request thread with 10-minute timeout",
+          "impact": "Large repos can block for minutes; ties up a goroutine",
+          "file_path": "services/repository/fork.go",
+          "line_number": 121,
+          "code_snippet": "cloneOpts := git.CloneRepoOptions{Bare: true, Timeout: 10 * time.Minute}",
+          "recommendation": "Consider async fork creation with status polling (already returns 202)"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "async",
+          "description": "Fork creation could be fully async since it already returns 202",
+          "estimated_impact": "Free up request goroutine immediately for large repos",
+          "implementation": "Queue fork creation as background job, return 202 with status URL"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-335",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Get issue + LoadAttributes (loads many relations) + convert"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "unbounded_queries",
+          "description": "LoadAttributes loads all issue relations (labels, assignees, etc.) when only labels are needed",
+          "impact": "Extra unnecessary queries for poster, milestone, assignees, attachments",
+          "file_path": "routers/api/v1/repo/issue_label.go",
+          "line_number": 55,
+          "code_snippet": "if err := issue.LoadAttributes(ctx); err != nil {",
+          "recommendation": "Use issue.LoadLabels(ctx) instead of LoadAttributes to load only labels"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Load only labels instead of all attributes",
+          "estimated_impact": "Eliminate 4-5 unnecessary queries per request",
+          "implementation": "Replace issue.LoadAttributes(ctx) with issue.LoadLabels(ctx)"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+{
+  "endpoints_by_database_table": {
+    "gpg_key": {"read": ["ep-184", "ep-185", "ep-187", "ep-188"], "write": ["ep-187", "ep-188", "ep-189"]},
+    "gpg_key_import": {"read": [], "write": ["ep-188", "ep-189"]},
+    "email_address": {"read": ["ep-188"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "admin.USER_DISABLED_FEATURES": ["ep-188", "ep-189"],
+    "admin.EXTERNAL_USER_DISABLE_FEATURES": ["ep-188", "ep-189"]
+  },
+  "endpoints_by_model_class": {
+    "asymkey_model.GPGKey": ["ep-184", "ep-185", "ep-187", "ep-188", "ep-189"],
+    "asymkey_model.GPGKeyImport": ["ep-188", "ep-189"],
+    "api.GPGKey": ["ep-184", "ep-185", "ep-187", "ep-188"],
+    "api.CreateGPGKeyOption": ["ep-188"],
+    "api.VerifyGPGKeyOption": ["ep-187"]
+  },
+  "endpoints_by_service_class": {
+    "convert.ToGPGKey": ["ep-184", "ep-185", "ep-187", "ep-188"],
+    "asymkey_model.VerificationToken": ["ep-186", "ep-187", "ep-188"],
+    "asymkey_model.AddGPGKey": ["ep-188"],
+    "asymkey_model.VerifyGPGKey": ["ep-187"],
+    "asymkey_model.DeleteGPGKey": ["ep-189"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-184": {"reads": ["gpg_key"], "writes": []},
+    "ep-185": {"reads": ["gpg_key"], "writes": []},
+    "ep-186": {"reads": [], "writes": []},
+    "ep-187": {"reads": ["gpg_key"], "writes": ["gpg_key"]},
+    "ep-188": {"reads": ["gpg_key", "email_address"], "writes": ["gpg_key", "gpg_key_import"]},
+    "ep-189": {"reads": ["gpg_key"], "writes": ["gpg_key", "gpg_key_import"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-184": [],
+    "ep-185": [],
+    "ep-186": [],
+    "ep-187": [],
+    "ep-188": ["admin.USER_DISABLED_FEATURES"],
+    "ep-189": ["admin.USER_DISABLED_FEATURES"]
+  }
+}

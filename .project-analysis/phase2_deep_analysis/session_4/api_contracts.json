@@ -1,0 +1,253 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-023",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "controller_class": "notify",
+      "controller_method": "ReadRepoNotifications",
+      "description": "Mark notification threads as read, pinned or unread on a specific repo",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "all", "type": "string", "required": false, "default": "false", "validation": []},
+          {"name": "status-types", "type": "array[string]", "required": false, "default": "[\"unread\"]", "validation": ["values: unread, read, pinned"]},
+          {"name": "to-status", "type": "string", "required": false, "default": "read", "validation": ["values: unread, read, pinned"]},
+          {"name": "last_read_at", "type": "string", "required": false, "default": null, "validation": ["RFC 3339 format"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 205,
+          "type": "[]*NotificationThread",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "notification thread ID"},
+            {"name": "repository", "type": "Repository", "description": "associated repository"},
+            {"name": "subject", "type": "NotificationSubject", "description": "notification subject details"},
+            {"name": "unread", "type": "bool", "description": "whether notification is unread"},
+            {"name": "pinned", "type": "bool", "description": "whether notification is pinned"},
+            {"name": "updated_at", "type": "time.Time", "description": "last update time"},
+            {"name": "url", "type": "string", "description": "API URL for this thread"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid last_read_at format (not RFC 3339)"},
+          {"status_code": 500, "type": "error", "condition": "Database error during find or status update"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-024",
+      "http_method": "GET",
+      "path": "/api/v1/notifications/threads/{id}",
+      "controller_class": "notify",
+      "controller_method": "GetThread",
+      "description": "Get notification thread by ID",
+      "request": {
+        "path_params": [
+          {"name": "id", "type": "string", "required": true, "validation": ["parsed as int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "*NotificationThread",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "notification thread ID"},
+            {"name": "repository", "type": "Repository", "description": "associated repository"},
+            {"name": "subject", "type": "NotificationSubject", "description": "notification subject details"},
+            {"name": "unread", "type": "bool", "description": "whether notification is unread"},
+            {"name": "pinned", "type": "bool", "description": "whether notification is pinned"},
+            {"name": "updated_at", "type": "time.Time", "description": "last update time"},
+            {"name": "url", "type": "string", "description": "API URL for this thread"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "error", "condition": "User is not the notification owner and not admin"},
+          {"status_code": 404, "type": "error", "condition": "Notification ID does not exist"},
+          {"status_code": 500, "type": "error", "condition": "Database error loading attributes"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-025",
+      "http_method": "PATCH",
+      "path": "/api/v1/notifications/threads/{id}",
+      "controller_class": "notify",
+      "controller_method": "ReadThread",
+      "description": "Mark notification thread as read by ID",
+      "request": {
+        "path_params": [
+          {"name": "id", "type": "string", "required": true, "validation": ["parsed as int64"]}
+        ],
+        "query_params": [
+          {"name": "to-status", "type": "string", "required": false, "default": "read", "validation": ["values: unread, read, pinned"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 205,
+          "type": "*NotificationThread",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "notification thread ID"},
+            {"name": "repository", "type": "Repository", "description": "associated repository"},
+            {"name": "subject", "type": "NotificationSubject", "description": "notification subject details"},
+            {"name": "unread", "type": "bool", "description": "whether notification is unread"},
+            {"name": "pinned", "type": "bool", "description": "whether notification is pinned"},
+            {"name": "updated_at", "type": "time.Time", "description": "last update time"},
+            {"name": "url", "type": "string", "description": "API URL for this thread"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "error", "condition": "User is not the notification owner and not admin"},
+          {"status_code": 404, "type": "error", "condition": "Notification ID does not exist"},
+          {"status_code": 500, "type": "error", "condition": "Database error during status update or attribute loading"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-026",
+      "http_method": "GET",
+      "path": "/api/v1/user/orgs",
+      "controller_class": "org",
+      "controller_method": "ListMyOrgs",
+      "description": "List the current user's organizations",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": "1", "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": ["max setting.API.MaxResponseItems"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*Organization",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "organization ID"},
+            {"name": "name", "type": "string", "description": "organization name"},
+            {"name": "full_name", "type": "string", "description": "full display name"},
+            {"name": "email", "type": "string", "description": "email address"},
+            {"name": "avatar_url", "type": "string", "description": "avatar URL"},
+            {"name": "description", "type": "string", "description": "description"},
+            {"name": "website", "type": "string", "description": "website URL"},
+            {"name": "location", "type": "string", "description": "location"},
+            {"name": "visibility", "type": "string", "description": "visibility level"},
+            {"name": "repo_admin_change_team_access", "type": "bool", "description": "repo admin can change team access"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "error", "condition": "User not found (swagger doc only)"},
+          {"status_code": 500, "type": "error", "condition": "Database error"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-027",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/orgs",
+      "controller_class": "org",
+      "controller_method": "ListUserOrgs",
+      "description": "List a user's organizations",
+      "request": {
+        "path_params": [
+          {"name": "username", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": "1", "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": ["max setting.API.MaxResponseItems"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*Organization",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "organization ID"},
+            {"name": "name", "type": "string", "description": "organization name"},
+            {"name": "full_name", "type": "string", "description": "full display name"},
+            {"name": "email", "type": "string", "description": "email address"},
+            {"name": "avatar_url", "type": "string", "description": "avatar URL"},
+            {"name": "description", "type": "string", "description": "description"},
+            {"name": "website", "type": "string", "description": "website URL"},
+            {"name": "location", "type": "string", "description": "location"},
+            {"name": "visibility", "type": "string", "description": "visibility level"},
+            {"name": "repo_admin_change_team_access", "type": "bool", "description": "repo admin can change team access"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "error", "condition": "User not found"},
+          {"status_code": 500, "type": "error", "condition": "Database error"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-028",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/orgs/{org}/permissions",
+      "controller_class": "org",
+      "controller_method": "GetUserOrgsPermissions",
+      "description": "Get user permissions in organization",
+      "request": {
+        "path_params": [
+          {"name": "username", "type": "string", "required": true, "validation": []},
+          {"name": "org", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "OrganizationPermissions",
+          "fields": [
+            {"name": "is_owner", "type": "bool", "description": "user is org owner"},
+            {"name": "is_admin", "type": "bool", "description": "user is org admin"},
+            {"name": "can_write", "type": "bool", "description": "user can write"},
+            {"name": "can_read", "type": "bool", "description": "user can read"},
+            {"name": "can_create_repository", "type": "bool", "description": "user can create repos in org"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "error", "condition": "Doer cannot see the org (visibility check)"},
+          {"status_code": 404, "type": "error", "condition": "Org user not found or org not visible"},
+          {"status_code": 500, "type": "error", "condition": "Database error in GetOrgUserMaxAuthorizeLevel or CanCreateOrgRepo"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+{
+  "total_properties": 5,
+  "properties": [
+    {
+      "key": "avatar.MAX_WIDTH",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [{"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "usage": "setting.Avatar.MaxWidth", "impact": "Rejects images wider than this"}],
+      "affected_endpoints": ["ep-262"]
+    },
+    {
+      "key": "avatar.MAX_HEIGHT",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [{"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "usage": "setting.Avatar.MaxHeight", "impact": "Rejects images taller than this"}],
+      "affected_endpoints": ["ep-262"]
+    },
+    {
+      "key": "avatar.MAX_ORIGIN_SIZE",
+      "type": "Integer",
+      "default_value": "262144",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [{"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "usage": "setting.Avatar.MaxOriginSize", "impact": "If image smaller than this, use original without processing"}],
+      "affected_endpoints": ["ep-262"]
+    },
+    {
+      "key": "avatar.RENDERED_SIZE_FACTOR",
+      "type": "Integer",
+      "default_value": "2",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [{"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "usage": "setting.Avatar.RenderedSizeFactor", "impact": "Multiplied by 256 to get target avatar pixel size"}],
+      "affected_endpoints": ["ep-262"]
+    },
+    {
+      "key": "api.DEFAULT_PAGING_NUM",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "setting.API.DefaultPagingNum", "impact": "Default page size when limit not specified"}],
+      "affected_endpoints": ["ep-264"]
+    }
+  ]
+}

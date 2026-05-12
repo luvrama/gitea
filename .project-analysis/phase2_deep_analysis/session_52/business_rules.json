@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Draft releases are only visible to users with write access to releases unit",
+      "location": {"class": "repo", "method": "checkReleaseMatchRepo", "file_path": "routers/api/v1/repo/release_attachment.go", "line_number": 35},
+      "condition": "release.IsDraft && !canAccessReleaseDraft(ctx)",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-352", "ep-353", "ep-354", "ep-355", "ep-356"],
+      "code_snippet": "if release.IsDraft && !canAccessReleaseDraft(ctx) {\n\tctx.APIErrorNotFound()\n\treturn false\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Attachment must belong to the specified release",
+      "location": {"class": "repo", "method": "GetReleaseAttachment", "file_path": "routers/api/v1/repo/release_attachment.go", "line_number": 87},
+      "condition": "attach.ReleaseID != releaseID",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-352", "ep-355", "ep-356"],
+      "code_snippet": "if attach.ReleaseID != releaseID {\n\tctx.APIErrorNotFound()\n\treturn\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Release must belong to the current repository",
+      "location": {"class": "repo", "method": "checkReleaseMatchRepo", "file_path": "routers/api/v1/repo/release_attachment.go", "line_number": 30},
+      "condition": "release.RepoID != ctx.Repo.Repository.ID",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-352", "ep-353", "ep-354", "ep-355", "ep-356"],
+      "code_snippet": "if release.RepoID != ctx.Repo.Repository.ID {\n\tctx.APIErrorNotFound()\n\treturn false\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Attachments must be enabled in settings for upload",
+      "location": {"class": "repo", "method": "CreateReleaseAttachment", "file_path": "routers/api/v1/repo/release_attachment.go", "line_number": 155},
+      "condition": "!setting.Attachment.Enabled",
+      "action": "Return 404 with message 'Attachment is not enabled'",
+      "affected_endpoints": ["ep-354"],
+      "code_snippet": "if !setting.Attachment.Enabled {\n\tctx.APIErrorNotFound(\"Attachment is not enabled\")\n\treturn\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Filename must not be empty for attachment upload",
+      "location": {"class": "repo", "method": "CreateReleaseAttachment", "file_path": "routers/api/v1/repo/release_attachment.go", "line_number": 178},
+      "condition": "filename == \"\"",
+      "action": "Return 400 bad request",
+      "affected_endpoints": ["ep-354"],
+      "code_snippet": "if filename == \"\" {\n\tctx.APIError(http.StatusBadRequest, \"Could not determine name of attachment.\")\n\treturn\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "File type must be in allowed types list for release attachments",
+      "location": {"class": "attachment_service", "method": "uploadAttachment", "file_path": "services/attachment/attachment.go", "line_number": 75},
+      "condition": "upload.Verify(buf, attach.Name, allowedTypes) returns error",
+      "action": "Return ErrFileTypeForbidden",
+      "affected_endpoints": ["ep-354", "ep-355"],
+      "code_snippet": "if err := upload.Verify(buf, attach.Name, allowedTypes); err != nil {\n\treturn nil, err\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "File size must not exceed configured maximum for release attachments",
+      "location": {"class": "attachment_service", "method": "uploadAttachment", "file_path": "services/attachment/attachment.go", "line_number": 79},
+      "condition": "maxFileSize >= 0 && file.size > maxFileSize",
+      "action": "Return ErrContentTooLarge",
+      "affected_endpoints": ["ep-354"],
+      "code_snippet": "if maxFileSize >= 0 && file.size > maxFileSize {\n\treturn nil, util.ErrorWrap(util.ErrContentTooLarge, ...)\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "Label color must be a valid hex color (3 or 6 chars, with or without #)",
+      "location": {"class": "label", "method": "NormalizeColor", "file_path": "modules/label/label.go", "line_number": 29},
+      "condition": "!colorPattern().MatchString(color)",
+      "action": "Return invalid argument error",
+      "affected_endpoints": ["ep-357"],
+      "code_snippet": "if !colorPattern().MatchString(color) {\n\treturn \"\", util.NewInvalidArgumentErrorf(\"invalid color: %s\", color)\n}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "GetLabel supports lookup by both numeric ID and string name",
+      "location": {"class": "repo", "method": "GetLabel", "file_path": "routers/api/v1/repo/label.go", "line_number": 82},
+      "condition": "strconv.ParseInt(strID, 10, 64) fails",
+      "action": "Use GetLabelInRepoByName instead of GetLabelInRepoByID",
+      "affected_endpoints": ["ep-358"],
+      "code_snippet": "if intID, err2 := strconv.ParseInt(strID, 10, 64); err2 != nil {\n\tl, err = issues_model.GetLabelInRepoByName(ctx, ...)\n}"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "authorization",
+      "description": "API token must have repository write scope to access draft releases",
+      "location": {"class": "repo", "method": "canAccessReleaseDraft", "file_path": "routers/api/v1/repo/release.go", "line_number": 24},
+      "condition": "ctx.Data[\"IsApiToken\"] == true && scope lacks write:repository",
+      "action": "Return false (draft not accessible)",
+      "affected_endpoints": ["ep-352", "ep-353", "ep-354", "ep-355", "ep-356"],
+      "code_snippet": "scope := ctx.Data[\"ApiTokenScope\"].(auth_model.AccessTokenScope)\nallow, _ := scope.HasScope(requiredScopes...)\nreturn allow"
+    }
+  ]
+}

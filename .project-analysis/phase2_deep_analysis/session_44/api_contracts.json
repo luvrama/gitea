@@ -1,0 +1,280 @@
+{
+  "total_endpoints": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-299",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/notes/{sha}",
+      "controller_class": "repo",
+      "controller_method": "GetNote",
+      "description": "Get a note corresponding to a single commit from a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "sha", "type": "string", "required": true, "validation": ["must pass git.IsValidRefPattern"]}
+        ],
+        "query_params": [
+          {"name": "verification", "type": "boolean", "required": false, "default": "true", "validation": []},
+          {"name": "files", "type": "boolean", "required": false, "default": "true", "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Note",
+          "fields": [
+            {"name": "message", "type": "string", "description": "The content message of the git note"},
+            {"name": "commit", "type": "api.Commit", "description": "The commit that this note is attached to"}
+          ]
+        },
+        "errors": [
+          {"status_code": 422, "type": "validationError", "condition": "sha is not a valid git ref pattern"},
+          {"status_code": 404, "type": "notFound", "condition": "commit or note does not exist"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-300",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "controller_class": "repo",
+      "controller_method": "GetIssueCommentReactions",
+      "description": "Get a list of reactions from a comment of an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Reaction",
+          "fields": [
+            {"name": "user", "type": "api.User", "description": "The user who created the reaction"},
+            {"name": "content", "type": "string", "description": "The reaction type/emoji"},
+            {"name": "created_at", "type": "time.Time", "description": "When the reaction was created"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "no permission to read issues/pulls"},
+          {"status_code": 404, "type": "notFound", "condition": "comment not found or belongs to different repo"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-301",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "controller_class": "repo",
+      "controller_method": "PostIssueCommentReaction",
+      "description": "Add a reaction to a comment of an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "api.EditReactionOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "content", "type": "string", "required": true, "validation": ["must be in setting.UI.ReactionsLookup"], "description": "The reaction content (emoji type)"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.Reaction",
+          "fields": [
+            {"name": "user", "type": "api.User", "description": "The user who created the reaction"},
+            {"name": "content", "type": "string", "description": "The reaction type/emoji"},
+            {"name": "created_at", "type": "time.Time", "description": "When the reaction was created"}
+          ]
+        },
+        "errors": [
+          {"status_code": 200, "type": "api.Reaction", "condition": "reaction already exists (returns existing)"},
+          {"status_code": 403, "type": "forbidden", "condition": "forbidden reaction type, blocked user, or locked issue without write permission"},
+          {"status_code": 404, "type": "notFound", "condition": "comment not found or belongs to different repo"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-302",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "controller_class": "repo",
+      "controller_method": "DeleteIssueCommentReaction",
+      "description": "Remove a reaction from a comment of an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "api.EditReactionOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "content", "type": "string", "required": true, "validation": [], "description": "The reaction content to remove"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "locked issue without write permission"},
+          {"status_code": 404, "type": "notFound", "condition": "comment not found or belongs to different repo"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-303",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "controller_class": "repo",
+      "controller_method": "GetIssueReactions",
+      "description": "Get a list of reactions of an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": "1", "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Reaction",
+          "fields": [
+            {"name": "user", "type": "api.User", "description": "The user who created the reaction"},
+            {"name": "content", "type": "string", "description": "The reaction type/emoji"},
+            {"name": "created_at", "type": "time.Time", "description": "When the reaction was created"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "no permission to read issues/pulls"},
+          {"status_code": 404, "type": "notFound", "condition": "issue not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-304",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "controller_class": "repo",
+      "controller_method": "PostIssueReaction",
+      "description": "Add a reaction to an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "api.EditReactionOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "content", "type": "string", "required": true, "validation": ["must be in setting.UI.ReactionsLookup"], "description": "The reaction content (emoji type)"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.Reaction",
+          "fields": [
+            {"name": "user", "type": "api.User", "description": "The user who created the reaction"},
+            {"name": "content", "type": "string", "description": "The reaction type/emoji"},
+            {"name": "created_at", "type": "time.Time", "description": "When the reaction was created"}
+          ]
+        },
+        "errors": [
+          {"status_code": 200, "type": "api.Reaction", "condition": "reaction already exists (returns existing)"},
+          {"status_code": 403, "type": "forbidden", "condition": "forbidden reaction type, blocked user, or locked issue without write permission"},
+          {"status_code": 404, "type": "notFound", "condition": "issue not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-305",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "controller_class": "repo",
+      "controller_method": "DeleteIssueReaction",
+      "description": "Remove a reaction from an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "api.EditReactionOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "content", "type": "string", "required": true, "validation": [], "description": "The reaction content to remove"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "locked issue without write permission"},
+          {"status_code": 404, "type": "notFound", "condition": "issue not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

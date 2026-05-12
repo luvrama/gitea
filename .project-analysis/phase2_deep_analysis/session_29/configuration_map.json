@@ -1,0 +1,29 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "service.auto_watch_on_changes",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/service.go",
+      "used_by": [{"class": "repo_model", "method": "WatchIfAuto", "file_path": "models/repo/watch.go", "usage": "Controls whether auto-watch is triggered on repo changes", "impact": "If false, users won't be auto-subscribed when they push to a repo"}],
+      "affected_endpoints": ["ep-197"]
+    },
+    {
+      "key": "service.require_signin_view_strict",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/service.go",
+      "used_by": [{"class": "context", "method": "determineAccessMode", "file_path": "services/context/package.go", "usage": "If true, unauthenticated users get AccessModeNone for packages", "impact": "Blocks anonymous package access when enabled"}],
+      "affected_endpoints": ["ep-199", "ep-200"]
+    },
+    {
+      "key": "packages.limit_total_owner_count",
+      "type": "Integer",
+      "default_value": "-1",
+      "source_file": "modules/setting/packages.go",
+      "used_by": [{"class": "packages_service", "method": "CheckCountQuotaExceeded", "file_path": "services/packages/packages.go", "usage": "Maximum number of package versions an owner can have", "impact": "If exceeded, new package creation is blocked (not directly used in delete but related)"}],
+      "affected_endpoints": ["ep-201"]
+    }
+  ]
+}

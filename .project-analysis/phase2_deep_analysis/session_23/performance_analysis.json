@@ -1,0 +1,124 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-156",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["star", "repository", "user"],
+        "note": "total_operations_per_sec_target populated only when traffic data available"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-157",
+      "http_method": "GET",
+      "path": "/api/v1/user/keys",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["public_key", "user"],
+        "note": "total_operations_per_sec_target populated only when traffic data available"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "appendPrivateInformation may fetch user by ID for each key if owner differs from default user",
+          "impact": "For admin viewing another user's keys, each key with a different owner triggers a separate DB query",
+          "file_path": "routers/api/v1/user/key.go",
+          "line_number": 30,
+          "code_snippet": "user, err := user_model.GetUserByID(ctx, key.OwnerID)",
+          "recommendation": "In practice, all keys belong to the same user in this endpoint, so impact is minimal. No fix needed."
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-158",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/keys",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["public_key", "user"],
+        "note": "total_operations_per_sec_target populated only when traffic data available"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-159",
+      "http_method": "GET",
+      "path": "/api/v1/user/keys/{id}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["public_key", "user"],
+        "note": "total_operations_per_sec_target populated only when traffic data available"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-160",
+      "http_method": "POST",
+      "path": "/api/v1/user/keys",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["public_key", "filesystem"],
+        "note": "total_operations_per_sec_target populated only when traffic data available"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "appendAuthorizedKeysToFile performs filesystem I/O synchronously during the request, writing to the authorized_keys file",
+          "impact": "File I/O can block under high concurrency; authorized_keys file grows linearly with keys",
+          "file_path": "models/asymkey/ssh_key.go",
+          "line_number": 79,
+          "code_snippet": "return appendAuthorizedKeysToFile(key)",
+          "recommendation": "Acceptable for typical usage patterns. Builtin SSH server skips this entirely."
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-161",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/keys/{id}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["public_key", "login_source", "filesystem"],
+        "note": "total_operations_per_sec_target populated only when traffic data available"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "synchronous_blocking",
+          "description": "RewriteAllPublicKeys rewrites the entire authorized_keys file from all keys in DB after every single key deletion",
+          "impact": "Full table scan of public_key + full file rewrite. With many keys, this is O(n) per delete. Acquires global SSH op lock.",
+          "file_path": "services/asymkey/ssh_key_authorized_keys.go",
+          "line_number": 22,
+          "code_snippet": "return asymkey_model.WithSSHOpLocker(func() error { return rewriteAllPublicKeys(ctx) })",
+          "recommendation": "Consider incremental authorized_keys updates instead of full rewrite. Builtin SSH server avoids this."
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "async",
+          "description": "Queue authorized_keys rewrite as async task instead of blocking the API response",
+          "estimated_impact": "Reduces DELETE latency from O(n) file rewrite to O(1) DB delete",
+          "implementation": "Use existing queue infrastructure to defer RewriteAllPublicKeys"
+        }
+      ]
+    }
+  ]
+}

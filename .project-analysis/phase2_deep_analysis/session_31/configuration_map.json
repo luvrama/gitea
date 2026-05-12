@@ -1,0 +1,29 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "service.DEFAULT_ENABLE_DEPENDENCIES",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/service.go",
+      "used_by": [{"class": "Repository", "method": "IsDependenciesEnabled", "file_path": "models/repo/issue.go", "usage": "Fallback when repo unit not found", "impact": "Controls whether dependencies are enabled by default for repos without explicit config"}],
+      "affected_endpoints": ["ep-208", "ep-209", "ep-210", "ep-212", "ep-213"]
+    },
+    {
+      "key": "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/service.go",
+      "used_by": [{"class": "repo", "method": "getFormIssue", "file_path": "routers/api/v1/repo/issue_dependency.go", "usage": "Gate for cross-repo dependency creation", "impact": "If false, dependencies can only be created within the same repository"}],
+      "affected_endpoints": ["ep-209", "ep-210", "ep-212", "ep-213"]
+    },
+    {
+      "key": "api.DEFAULT_PAGING_NUM",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Default page size when limit not specified", "impact": "Controls default number of results returned"}],
+      "affected_endpoints": ["ep-208", "ep-211"]
+    }
+  ]
+}

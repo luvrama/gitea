@@ -1,0 +1,39 @@
+{
+  "endpoints_by_database_table": {
+    "star": {"read": ["ep-156"], "write": ["ep-156"]},
+    "repository": {"read": [], "write": ["ep-156"]},
+    "user": {"read": ["ep-157", "ep-158", "ep-159"], "write": ["ep-156"]},
+    "public_key": {"read": ["ep-157", "ep-158", "ep-159", "ep-160", "ep-161"], "write": ["ep-160", "ep-161"]},
+    "login_source": {"read": ["ep-161"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "admin.USER_DISABLED_FEATURES": ["ep-160", "ep-161"],
+    "admin.EXTERNAL_USER_DISABLE_FEATURES": ["ep-160", "ep-161"],
+    "ssh.MINIMUM_KEY_SIZE_CHECK": ["ep-160"],
+    "ssh.START_BUILTIN_SERVER": ["ep-161"]
+  },
+  "endpoints_by_model_class": {
+    "repo_model.Star": ["ep-156"],
+    "asymkey_model.PublicKey": ["ep-157", "ep-158", "ep-159", "ep-160", "ep-161"],
+    "auth.Source": ["ep-161"]
+  },
+  "endpoints_by_service_class": {
+    "repo_model.StarRepo": ["ep-156"],
+    "asymkey_service.DeletePublicKey": ["ep-161"],
+    "asymkey_service.RewriteAllPublicKeys": ["ep-161"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-156": {"reads": ["star"], "writes": ["star", "repository", "user"]},
+    "ep-157": {"reads": ["public_key", "user"], "writes": []},
+    "ep-158": {"reads": ["public_key", "user"], "writes": []},
+    "ep-159": {"reads": ["public_key", "user"], "writes": []},
+    "ep-160": {"reads": ["public_key"], "writes": ["public_key"]},
+    "ep-161": {"reads": ["public_key", "login_source"], "writes": ["public_key"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-160": ["admin.USER_DISABLED_FEATURES", "admin.EXTERNAL_USER_DISABLE_FEATURES", "ssh.MINIMUM_KEY_SIZE_CHECK"],
+    "ep-161": ["admin.USER_DISABLED_FEATURES", "admin.EXTERNAL_USER_DISABLE_FEATURES", "ssh.START_BUILTIN_SERVER"]
+  }
+}

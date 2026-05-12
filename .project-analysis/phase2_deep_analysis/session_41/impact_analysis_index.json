@@ -1,0 +1,48 @@
+{
+  "endpoints_by_database_table": {
+    "action_run_job": {"read": ["ep-277"], "write": []},
+    "action_run": {"read": ["ep-277", "ep-278", "ep-279"], "write": ["ep-283"]},
+    "action_task": {"read": ["ep-277", "ep-279"], "write": []},
+    "action_runner": {"read": ["ep-277"], "write": []},
+    "action_task_step": {"read": ["ep-277"], "write": []},
+    "action_run_attempt": {"read": ["ep-278"], "write": ["ep-283"]},
+    "repo_unit": {"read": ["ep-280", "ep-281", "ep-282", "ep-283", "ep-284"], "write": ["ep-282", "ep-284"]},
+    "repository": {"read": ["ep-277", "ep-278", "ep-279"], "write": []},
+    "user": {"read": ["ep-278"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "actions.workflow_dirs": ["ep-280", "ep-281", "ep-283"]
+  },
+  "endpoints_by_model_class": {
+    "ActionRunJob": ["ep-277"],
+    "ActionRun": ["ep-277", "ep-278", "ep-283"],
+    "ActionTask": ["ep-277", "ep-279"],
+    "ActionWorkflow": ["ep-280", "ep-281"],
+    "RepoUnit": ["ep-282", "ep-283", "ep-284"]
+  },
+  "endpoints_by_service_class": {
+    "shared.ListJobs": ["ep-277"],
+    "shared.ListRuns": ["ep-278"],
+    "convert.ListActionWorkflows": ["ep-280"],
+    "convert.GetActionWorkflow": ["ep-281"],
+    "actions_service.EnableOrDisableWorkflow": ["ep-282", "ep-284"],
+    "actions_service.DispatchActionWorkflow": ["ep-283"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-277": {"reads": ["action_run_job", "action_run", "action_task", "action_runner", "action_task_step", "repository"], "writes": []},
+    "ep-278": {"reads": ["action_run", "user", "repository", "action_run_attempt"], "writes": []},
+    "ep-279": {"reads": ["action_task", "action_run_job", "action_run", "repository"], "writes": []},
+    "ep-280": {"reads": ["repo_unit"], "writes": []},
+    "ep-281": {"reads": ["repo_unit"], "writes": []},
+    "ep-282": {"reads": ["repo_unit"], "writes": ["repo_unit"]},
+    "ep-283": {"reads": ["repo_unit"], "writes": ["action_run", "action_run_job", "action_run_attempt"]},
+    "ep-284": {"reads": ["repo_unit"], "writes": ["repo_unit"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-280": ["actions.workflow_dirs"],
+    "ep-281": ["actions.workflow_dirs"],
+    "ep-283": ["actions.workflow_dirs"]
+  }
+}

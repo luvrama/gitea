@@ -1,0 +1,72 @@
+{
+  "total_patterns": 3,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "generic error", "status_code": 500, "response_type": "error JSON", "message_template": "internal server error"},
+        {"exception_type": "not found", "status_code": 404, "response_type": "error JSON", "message_template": "not found"},
+        {"exception_type": "bad request", "status_code": 400, "response_type": "error JSON", "message_template": "error message from err"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-135",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "error_scenarios": [
+        {"exception": "util.ErrNotExist", "trigger": "variable not found for user", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+        {"exception": "generic error", "trigger": "database failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-136",
+      "path": "/api/v1/user/actions/variables",
+      "error_scenarios": [
+        {"exception": "generic error", "trigger": "database failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-137",
+      "path": "/api/v1/user/actions/runs",
+      "error_scenarios": [
+        {"exception": "invalid status", "trigger": "invalid status query param", "status_code": 400, "response": "error", "logged": false, "retryable": false},
+        {"exception": "user not found", "trigger": "actor username does not exist", "status_code": 500, "response": "internal error", "logged": true, "retryable": false},
+        {"exception": "generic error", "trigger": "database failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-138",
+      "path": "/api/v1/user/actions/jobs",
+      "error_scenarios": [
+        {"exception": "invalid status", "trigger": "invalid status query param", "status_code": 400, "response": "error", "logged": false, "retryable": false},
+        {"exception": "missing run/repo", "trigger": "job has nil run or repo after load", "status_code": 500, "response": "internal error", "logged": true, "retryable": false},
+        {"exception": "generic error", "trigger": "database failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-139",
+      "path": "/api/v1/user/followers",
+      "error_scenarios": [
+        {"exception": "generic error", "trigger": "database failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-140",
+      "path": "/api/v1/users/{username}/followers",
+      "error_scenarios": [
+        {"exception": "user not found", "trigger": "username path param does not exist", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+        {"exception": "generic error", "trigger": "database failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-141",
+      "path": "/api/v1/user/following",
+      "error_scenarios": [
+        {"exception": "generic error", "trigger": "database failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    }
+  ],
+  "custom_exceptions": []
+}

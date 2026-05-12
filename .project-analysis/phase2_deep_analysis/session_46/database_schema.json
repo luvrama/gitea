@@ -1,0 +1,106 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 1,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "protected_branch",
+      "entity_class": "git_model.ProtectedBranch",
+      "file_path": "models/git/protected_branch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s) with branch_name"]},
+        {"name": "branch_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s) with repo_id"]},
+        {"name": "priority", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL DEFAULT 0"]},
+        {"name": "can_push", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "enable_whitelist", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "whitelist_user_i_ds", "type": "TEXT", "code_type": "[]int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["JSON TEXT"]},
+        {"name": "whitelist_team_i_ds", "type": "TEXT", "code_type": "[]int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["JSON TEXT"]},
+        {"name": "enable_merge_whitelist", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "whitelist_deploy_keys", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "merge_whitelist_user_i_ds", "type": "TEXT", "code_type": "[]int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["JSON TEXT"]},
+        {"name": "merge_whitelist_team_i_ds", "type": "TEXT", "code_type": "[]int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["JSON TEXT"]},
+        {"name": "can_force_push", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "enable_force_push_allowlist", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "force_push_allowlist_user_i_ds", "type": "TEXT", "code_type": "[]int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["JSON TEXT"]},
+        {"name": "force_push_allowlist_team_i_ds", "type": "TEXT", "code_type": "[]int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["JSON TEXT"]},
+        {"name": "force_push_allowlist_deploy_keys", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "enable_status_check", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "status_check_contexts", "type": "TEXT", "code_type": "[]string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["JSON TEXT"]},
+        {"name": "enable_approvals_whitelist", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "approvals_whitelist_user_i_ds", "type": "TEXT", "code_type": "[]int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["JSON TEXT"]},
+        {"name": "approvals_whitelist_team_i_ds", "type": "TEXT", "code_type": "[]int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["JSON TEXT"]},
+        {"name": "required_approvals", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL DEFAULT 0"]},
+        {"name": "block_on_rejected_reviews", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "block_on_official_review_requests", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "block_on_outdated_branch", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "dismiss_stale_approvals", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "ignore_stale_approvals", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "require_signed_commits", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "protected_file_patterns", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "unprotected_file_patterns", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "block_admin_merge_override", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_protected_branch_s", "columns": ["repo_id", "branch_name"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-312",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "operations": [
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.GetProtectedBranchRuleByName", "description": "Get rule by repo_id and branch_name"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-313",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections",
+      "operations": [
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.FindRepoProtectedBranchRules", "description": "Get all rules for repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-314",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections",
+      "operations": [
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.GetProtectedBranchRuleByName", "description": "Check if rule exists"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "INSERT", "method": "git_model.UpdateProtectBranch", "description": "Insert new rule"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.GetProtectedBranchRuleByName", "description": "Reload after insert"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-315",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "operations": [
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.GetProtectedBranchRuleByName", "description": "Get existing rule"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "UPDATE", "method": "git_model.UpdateProtectBranch", "description": "Update rule with all columns"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.GetProtectedBranchRuleByName", "description": "Reload after update"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-316",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "operations": [
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.GetProtectedBranchRuleByName", "description": "Get rule to delete"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "DELETE", "method": "git_model.DeleteProtectedBranch", "description": "Delete rule by ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-317",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/priority",
+      "operations": [
+        {"store_type": "database", "store_name": "protected_branch", "operation": "UPDATE", "method": "git_model.UpdateProtectBranchPriorities", "description": "Update priority for each ID in transaction"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,414 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-324",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks",
+      "description": "Creates a new webhook for a repository after validating type, config, and URL",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/hook.go",
+          "input": "context.APIContext",
+          "output": "delegates to utils.AddRepoHook",
+          "operations": ["Extract form from context as CreateHookOption"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.AddRepoHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *CreateHookOption",
+          "output": "delegates to addHook",
+          "operations": ["Get repo from context", "Call addHook with ownerID=0, repoID=repo.ID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "utils.checkCreateHookOption",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "*CreateHookOption",
+          "output": "bool (valid or not)",
+          "operations": ["Validate hook type via IsValidHookTaskType", "Check config has 'url' and 'content_type'", "Validate content_type", "Validate URL format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "utils.addHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "validated CreateHookOption",
+          "output": "*webhook.Webhook",
+          "operations": ["Build Webhook struct with URL, ContentType, Secret, HTTPMethod=POST", "Set HookEvent with events from form", "Encrypt authorization header", "Handle Slack-specific meta (channel validation)", "Call w.UpdateEvent to serialize events to JSON", "Call webhook.CreateWebhook to persist"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "webhook", "description": "Insert new webhook record"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "webhook_service.ToHook",
+          "type": "service",
+          "file_path": "services/webhook/general.go",
+          "input": "*webhook.Webhook",
+          "output": "*api.Hook",
+          "operations": ["Build config map with url and content_type", "Add Slack fields if applicable", "Decrypt authorization header", "Build API Hook response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "CreateHookOption",
+          "to": "webhook.Webhook",
+          "component": "utils.addHook",
+          "mappings": [
+            {"source_field": "Config[url]", "target_field": "URL", "transformation": "direct_copy"},
+            {"source_field": "Config[content_type]", "target_field": "ContentType", "transformation": "computed"},
+            {"source_field": "Events", "target_field": "HookEvent.HookEvents", "transformation": "computed"},
+            {"source_field": "Type", "target_field": "Type", "transformation": "direct_copy"}
+          ]
+        },
+        {
+          "from": "webhook.Webhook",
+          "to": "api.Hook",
+          "component": "webhook_service.ToHook",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "URL", "target_field": "Config[url]", "transformation": "direct_copy"},
+            {"source_field": "EventsArray()", "target_field": "Events", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid hook type", "handler": "checkCreateHookOption", "response_code": 422, "response": "Invalid hook type"},
+        {"condition": "Missing url or content_type in config", "handler": "checkCreateHookOption", "response_code": 422, "response": "Missing config option"},
+        {"condition": "Invalid URL format", "handler": "checkCreateHookOption", "response_code": 422, "response": "Invalid url"},
+        {"condition": "Invalid Slack channel", "handler": "addHook", "response_code": 400, "response": "Invalid slack channel name"},
+        {"condition": "DB insert fails", "handler": "addHook", "response_code": 500, "response": "Internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-325",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "description": "Edit an existing webhook in a repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.EditHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/hook.go",
+          "input": "context.APIContext",
+          "output": "delegates to utils.EditRepoHook",
+          "operations": ["Extract form as EditHookOption", "Get hookID from path param"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.EditRepoHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *EditHookOption, hookID",
+          "output": "JSON response",
+          "operations": ["Get hook by repo ID and hook ID", "Call editHook", "Re-fetch updated hook", "Convert to API response"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "webhook", "description": "Fetch webhook by repo_id and id (twice: before and after edit)"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "utils.editHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "*EditHookOption, *webhook.Webhook",
+          "output": "bool (success)",
+          "operations": ["Update URL if provided and valid", "Update ContentType if provided and valid", "Update Slack meta if applicable", "Update events via updateHookEvents", "Set branch filter", "Encrypt authorization header", "Serialize events", "Update active status and name", "Call webhook.UpdateWebhook"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "webhook", "description": "Update all columns of webhook"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "webhook_service.ToHook",
+          "type": "service",
+          "file_path": "services/webhook/general.go",
+          "input": "*webhook.Webhook",
+          "output": "*api.Hook",
+          "operations": ["Convert to API response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "EditHookOption",
+          "to": "webhook.Webhook (mutated)",
+          "component": "utils.editHook",
+          "mappings": [
+            {"source_field": "Config[url]", "target_field": "URL", "transformation": "direct_copy"},
+            {"source_field": "Config[content_type]", "target_field": "ContentType", "transformation": "computed"},
+            {"source_field": "Events", "target_field": "HookEvents", "transformation": "computed"},
+            {"source_field": "Active", "target_field": "IsActive", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Webhook not found for repo", "handler": "GetRepoHook", "response_code": 404, "response": "not found"},
+        {"condition": "Invalid URL", "handler": "editHook", "response_code": 422, "response": "Invalid url"},
+        {"condition": "Invalid content_type", "handler": "editHook", "response_code": 422, "response": "Invalid content type"},
+        {"condition": "DB update fails", "handler": "editHook", "response_code": 500, "response": "Internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-326",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "description": "Delete a webhook from a repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/hook.go",
+          "input": "context.APIContext",
+          "output": "204 No Content",
+          "operations": ["Get hook ID from path", "Call webhook.DeleteWebhookByRepoID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "webhook.DeleteWebhookByRepoID",
+          "type": "repository",
+          "file_path": "models/webhook/webhook.go",
+          "input": "repoID, hookID",
+          "output": "error",
+          "operations": ["Verify webhook belongs to repo via GetWebhookByRepoID", "Call DeleteWebhookByID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "webhook", "description": "Verify webhook exists for repo"}, {"operation": "DELETE", "table": "webhook", "description": "Delete webhook record"}, {"operation": "DELETE", "table": "hook_task", "description": "Delete associated hook tasks"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Webhook not found for repo", "handler": "DeleteHook", "response_code": 404, "response": "not found"},
+        {"condition": "DB error", "handler": "DeleteHook", "response_code": 500, "response": "Internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-327",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/stargazers",
+      "description": "List users who starred the repository with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListStargazers",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/star.go",
+          "input": "context.APIContext",
+          "output": "[]api.User",
+          "operations": ["Get list options from query params", "Call repo_model.GetStargazers", "Convert each user to API user", "Set total count header from repo.NumStars"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.GetStargazers",
+          "type": "repository",
+          "file_path": "models/repo/star.go",
+          "input": "repo, ListOptions",
+          "output": "[]*user_model.User",
+          "operations": ["Query user table joined with star table on star.repo_id", "Apply pagination if page > 0"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user JOIN star", "description": "Get users who starred the repo with pagination"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToUser",
+          "type": "service",
+          "file_path": "services/convert/user.go",
+          "input": "*user_model.User",
+          "output": "*api.User",
+          "operations": ["Convert user model to API user representation"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.User",
+          "to": "api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB query fails", "handler": "ListStargazers", "response_code": 500, "response": "Internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-328",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/subscribers",
+      "description": "List users watching (subscribed to) the repository with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListSubscribers",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/subscriber.go",
+          "input": "context.APIContext",
+          "output": "[]api.User",
+          "operations": ["Get list options from query params", "Call repo_model.GetRepoWatchers", "Convert each user to API user", "Set total count header from repo.NumWatches"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.GetRepoWatchers",
+          "type": "repository",
+          "file_path": "models/repo/watch.go",
+          "input": "repoID, ListOptions",
+          "output": "[]*user_model.User",
+          "operations": ["Query user table joined with watch table on watch.repo_id", "Filter out WatchModeDont entries", "Apply pagination if page > 0"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user JOIN watch", "description": "Get users watching the repo, excluding WatchModeDont"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToUser",
+          "type": "service",
+          "file_path": "services/convert/user.go",
+          "input": "*user_model.User",
+          "output": "*api.User",
+          "operations": ["Convert user model to API user representation"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.User",
+          "to": "api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB query fails", "handler": "ListSubscribers", "response_code": 500, "response": "Internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-329",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/teams",
+      "description": "List teams that have access to the repository (organization repos only)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListTeams",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/teams.go",
+          "input": "context.APIContext",
+          "output": "[]api.Team",
+          "operations": ["Check if repo owner is organization", "Call organization.GetRepoTeams", "Convert to API teams"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "organization.GetRepoTeams",
+          "type": "repository",
+          "file_path": "models/organization/team_list.go",
+          "input": "orgID, repoID",
+          "output": "TeamList",
+          "operations": ["Join team with team_repo on team_id", "Filter by org_id and repo_id", "Order by name (Owners first)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team JOIN team_repo", "description": "Get teams with access to repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToTeams",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "TeamList, loadOrgs=false",
+          "output": "[]*api.Team",
+          "operations": ["For each team: load units", "Build API team with permissions and unit maps"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_unit", "description": "Load units for each team"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "organization.Team",
+          "to": "api.Team",
+          "component": "convert.ToTeams",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "AccessMode", "target_field": "Permission", "transformation": "computed"},
+            {"source_field": "GetUnitNames()", "target_field": "Units", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Repo not owned by organization", "handler": "ListTeams", "response_code": 405, "response": "repo is not owned by an organization"},
+        {"condition": "DB query fails", "handler": "ListTeams", "response_code": 500, "response": "Internal error"}
+      ]
+    }
+  ]
+}

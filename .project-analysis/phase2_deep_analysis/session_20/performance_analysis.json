@@ -1,0 +1,167 @@
+{
+  "total_endpoints_analyzed": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-135",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single SELECT query on action_variable table"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-136",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/variables",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single paginated SELECT query on action_variable table"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-137",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/runs",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Main query + LoadTriggerUser + LoadRepos + LoadOwners"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "convert.ToActionWorkflowRun is called per-run in a loop; each call may load run attempts individually",
+          "impact": "Additional queries per run for attempt loading",
+          "file_path": "routers/api/v1/shared/action.go",
+          "line_number": 155,
+          "code_snippet": "// TODO: load run attempts in batch",
+          "recommendation": "Batch-load run attempts before the conversion loop"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch-load run attempts instead of per-run loading",
+          "estimated_impact": "Reduce N additional queries to 1 batch query",
+          "implementation": "Load all run attempts for the page of runs in a single query before the conversion loop"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-138",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/jobs",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Main query + LoadAttributes (loads run + repo + task steps)"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "convert.ToActionWorkflowJob is called per-job in a loop after LoadAttributes; each conversion may trigger additional queries",
+          "impact": "Potential additional queries per job for conversion",
+          "file_path": "routers/api/v1/shared/action.go",
+          "line_number": 68,
+          "code_snippet": "convertedWorkflowJob, err := convert.ToActionWorkflowJob(ctx, repository, nil, jobs[i])",
+          "recommendation": "Ensure all needed data is pre-loaded in LoadAttributes"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Verify LoadAttributes loads all data needed by ToActionWorkflowJob to avoid hidden N+1",
+          "estimated_impact": "Prevent potential N additional queries",
+          "implementation": "Audit convert.ToActionWorkflowJob for any lazy-loading patterns"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-139",
+      "http_method": "GET",
+      "path": "/api/v1/user/followers",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single JOIN query with visibility subqueries"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "missing_indexes",
+          "description": "The visibility condition uses subqueries on follow and team_user tables which may be slow for users with many org memberships",
+          "impact": "Subquery performance degrades with large team_user tables",
+          "file_path": "models/user/user.go",
+          "line_number": 1384,
+          "code_snippet": "builder.In(\"`user`.id\", builder.Select(\"`team_user`.uid\").From(\"team_user\")...)",
+          "recommendation": "Consider caching visibility results or materializing visible user sets"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-140",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/followers",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single JOIN query with visibility subqueries"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "missing_indexes",
+          "description": "Same visibility subquery concern as ep-139",
+          "impact": "Subquery performance degrades with large team_user tables",
+          "file_path": "models/user/user.go",
+          "line_number": 1384,
+          "code_snippet": "builder.In(\"`user`.id\", builder.Select(\"`team_user`.uid\").From(\"team_user\")...)",
+          "recommendation": "Consider caching visibility results or materializing visible user sets"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-141",
+      "http_method": "GET",
+      "path": "/api/v1/user/following",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single JOIN query with visibility subqueries"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "missing_indexes",
+          "description": "Same visibility subquery concern as ep-139",
+          "impact": "Subquery performance degrades with large team_user tables",
+          "file_path": "models/user/user.go",
+          "line_number": 1384,
+          "code_snippet": "builder.In(\"`user`.id\", builder.Select(\"`team_user`.uid\").From(\"team_user\")...)",
+          "recommendation": "Consider caching visibility results or materializing visible user sets"
+        }
+      ],
+      "optimization_recommendations": []
+    }
+  ]
+}

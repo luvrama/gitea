@@ -1,0 +1,171 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "oauth2_application",
+      "entity_class": "auth.OAuth2Application",
+      "file_path": "models/auth/oauth2.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "client_id", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["unique"]},
+        {"name": "client_secret", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "confidential_client", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "TRUE", "constraints": ["NOT NULL DEFAULT TRUE"]},
+        {"name": "skip_secondary_authorization", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "FALSE", "constraints": ["NOT NULL DEFAULT FALSE"]},
+        {"name": "redirect_uris", "type": "TEXT", "code_type": "[]string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["JSON"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX updated"]}
+      ],
+      "indexes": [
+        {"name": "idx_uid", "columns": ["uid"], "unique": false},
+        {"name": "idx_client_id", "columns": ["client_id"], "unique": true},
+        {"name": "idx_created_unix", "columns": ["created_unix"], "unique": false},
+        {"name": "idx_updated_unix", "columns": ["updated_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"},
+        {"type": "one-to-many", "target_table": "oauth2_grant", "join_column": "application_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "email_address",
+      "entity_class": "user_model.EmailAddress",
+      "file_path": "models/user/email_address.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX NOT NULL"]},
+        {"name": "email", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE NOT NULL"]},
+        {"name": "lower_email", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE NOT NULL"]},
+        {"name": "is_activated", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_primary", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["DEFAULT(false) NOT NULL"]}
+      ],
+      "indexes": [
+        {"name": "idx_uid", "columns": ["uid"], "unique": false},
+        {"name": "idx_email", "columns": ["email"], "unique": true},
+        {"name": "idx_lower_email", "columns": ["lower_email"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "action_runner_token",
+      "entity_class": "actions_model.ActionRunnerToken",
+      "file_path": "models/actions/runner_token.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "token", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "is_active", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]},
+        {"name": "deleted", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["deleted"]}
+      ],
+      "indexes": [
+        {"name": "idx_token", "columns": ["token"], "unique": true},
+        {"name": "idx_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "idx_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "repository",
+      "entity_class": "repo_model.Repository",
+      "file_path": "models/repo/repo.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "is_private", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_owner_id", "columns": ["owner_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-168",
+      "path": "/api/v1/user/applications/oauth2",
+      "operations": [
+        {"store_type": "database", "store_name": "oauth2_application", "operation": "SELECT", "method": "db.FindAndCount", "description": "List apps by uid with pagination"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-169",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "oauth2_application", "operation": "SELECT", "method": "GetOAuth2ApplicationByID", "description": "Get app to check builtin"},
+        {"store_type": "database", "store_name": "oauth2_application", "operation": "DELETE", "method": "deleteOAuth2Application", "description": "Delete app"},
+        {"store_type": "database", "store_name": "oauth2_authorization_code", "operation": "DELETE", "method": "deleteOAuth2Application", "description": "Delete related auth codes"},
+        {"store_type": "database", "store_name": "oauth2_grant", "operation": "DELETE", "method": "deleteOAuth2Application", "description": "Delete related grants"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-170",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "oauth2_application", "operation": "SELECT", "method": "GetOAuth2ApplicationByID", "description": "Get app by ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-171",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "oauth2_application", "operation": "SELECT", "method": "GetOAuth2ApplicationByID", "description": "Get app by ID in tx"},
+        {"store_type": "database", "store_name": "oauth2_application", "operation": "UPDATE", "method": "updateOAuth2Application", "description": "Update app fields"},
+        {"store_type": "database", "store_name": "oauth2_application", "operation": "UPDATE", "method": "GenerateClientSecret", "description": "Update client_secret hash"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-172",
+      "path": "/api/v1/users/{username}/repos",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "GetUserRepositories", "description": "Get repos by owner_id"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "GetDoerRepoPermission", "description": "Get permission per repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-173",
+      "path": "/api/v1/user/repos",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "SearchRepository", "description": "Search repos by owner"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "LoadOwner", "description": "Load owner per repo"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "GetDoerRepoPermission", "description": "Get permission per repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-174",
+      "path": "/api/v1/orgs/{org}/repos",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "GetUserRepositories", "description": "Get repos by org owner_id"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "GetDoerRepoPermission", "description": "Get permission per repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-175",
+      "path": "/api/v1/user/actions/runners/registration-token",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner_token", "operation": "SELECT", "method": "GetLatestRunnerToken", "description": "Get latest token"},
+        {"store_type": "database", "store_name": "action_runner_token", "operation": "UPDATE", "method": "NewRunnerTokenWithValue", "description": "Deactivate old tokens"},
+        {"store_type": "database", "store_name": "action_runner_token", "operation": "INSERT", "method": "NewRunnerTokenWithValue", "description": "Insert new active token"}
+      ]
+    }
+  ]
+}

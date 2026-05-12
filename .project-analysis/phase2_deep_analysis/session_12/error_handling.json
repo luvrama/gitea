@@ -1,0 +1,51 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "generic error", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"},
+        {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "not found"},
+        {"exception_type": "validation error", "status_code": 422, "response_type": "JSON error", "message_template": "dynamic message"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-077",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "error_scenarios": [
+        {"exception": "db error", "trigger": "FindAndCount fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true},
+        {"exception": "decrypt error", "trigger": "HeaderAuthorization decrypt fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-079",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "error_scenarios": [
+        {"exception": "validation", "trigger": "Invalid hook type", "status_code": 422, "response": "Invalid hook type: X", "logged": false, "retryable": false},
+        {"exception": "validation", "trigger": "Missing config option", "status_code": 422, "response": "Missing config option: X", "logged": false, "retryable": false},
+        {"exception": "validation", "trigger": "Invalid URL", "status_code": 422, "response": "Invalid url", "logged": false, "retryable": false},
+        {"exception": "validation", "trigger": "Invalid content type", "status_code": 422, "response": "Invalid content type", "logged": false, "retryable": false},
+        {"exception": "validation", "trigger": "Invalid slack channel", "status_code": 400, "response": "Invalid slack channel name", "logged": false, "retryable": false}
+      ]
+    }
+  ],
+  "custom_exceptions": [
+    {
+      "class": "ErrWebhookNotExist",
+      "file_path": "models/webhook/webhook.go",
+      "extends": "util.ErrNotExist",
+      "used_in": ["webhook.GetWebhookByOwnerID", "webhook.DeleteWebhookByID"],
+      "http_status": 404
+    },
+    {
+      "class": "ErrOrgLabelNotExist",
+      "file_path": "models/issues/label.go",
+      "extends": "util.ErrNotExist",
+      "used_in": ["issues_model.GetLabelInOrgByID", "issues_model.GetLabelInOrgByName"],
+      "http_status": 404
+    }
+  ]
+}

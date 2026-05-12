@@ -1,0 +1,158 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-285",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "4 SELECTs: run, attempt, repo, user"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-286",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "5 SELECTs: run, attempt, repo, user (run trigger), user (attempt trigger)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-287",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun",
+      "resource_load": {
+        "operations_per_request": 12,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Multiple SELECTs + INSERTs + UPDATEs within transaction"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "YAML unmarshal and concurrency evaluation happen before the DB transaction but still on the request thread",
+          "impact": "Adds latency for runs with complex concurrency expressions",
+          "file_path": "services/actions/rerun.go",
+          "line_number": 145,
+          "code_snippet": "if err := yaml.Unmarshal([]byte(plan.run.RawConcurrency), &rawConcurrency); err != nil {",
+          "recommendation": "Acceptable for now; YAML payloads are small"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch insert cloned jobs instead of inserting one-by-one in loop",
+          "estimated_impact": "Reduces DB round-trips from N to 1 for job creation",
+          "implementation": "Use db.Insert(ctx, newJobs...) instead of per-job insert"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-288",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun-failed-jobs",
+      "resource_load": {
+        "operations_per_request": 12,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Same as ep-287 but with filtered job set"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-289",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs/{job_id}/rerun",
+      "resource_load": {
+        "operations_per_request": 14,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Same as ep-287 plus extra queries to find rerun job and convert it"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-290",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT run + 1 FindAndCount jobs + LoadAttributes (runs batch + repos batch) + N task loads in convert"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "ToActionWorkflowJob loads task and steps individually per job in the convert loop",
+          "impact": "For runs with many jobs (up to 256), this causes N+1 queries for tasks and steps",
+          "file_path": "services/convert/convert.go",
+          "line_number": 370,
+          "code_snippet": "task, _, err = db.GetByID[actions_model.ActionTask](ctx, effectiveTaskID)",
+          "recommendation": "Batch-load tasks and steps for all jobs before the conversion loop"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch-load ActionTask and ActionTaskStep for all jobs in one query",
+          "estimated_impact": "Reduces queries from 2N to 2 for task/step loading",
+          "implementation": "Collect all effectiveTaskIDs, batch SELECT tasks, then batch SELECT steps by task IDs"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-291",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}/jobs",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Same as ep-290 plus attempt lookup"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Same N+1 task/step loading as ep-290",
+          "impact": "Same as ep-290",
+          "file_path": "services/convert/convert.go",
+          "line_number": 370,
+          "code_snippet": "task, _, err = db.GetByID[actions_model.ActionTask](ctx, effectiveTaskID)",
+          "recommendation": "Same batch-load fix as ep-290"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-292",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 job + 1 run + 1 task + 1 steps + 1 runner"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

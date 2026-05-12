@@ -1,0 +1,95 @@
+{
+  "total_rules": 9,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Hook type must be a valid registered webhook type",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 83},
+      "condition": "!webhook_service.IsValidHookTaskType(form.Type)",
+      "action": "Return 422 with invalid hook type message",
+      "affected_endpoints": ["ep-324"],
+      "code_snippet": "if !webhook_service.IsValidHookTaskType(form.Type) {\n\tctx.APIError(http.StatusUnprocessableEntity, \"Invalid hook type: \"+form.Type)"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Config must contain 'url' and 'content_type' keys",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 87},
+      "condition": "Missing 'url' or 'content_type' in form.Config",
+      "action": "Return 422 with missing config option message",
+      "affected_endpoints": ["ep-324"],
+      "code_snippet": "for _, name := range []string{\"url\", \"content_type\"} {\n\tif _, ok := form.Config[name]; !ok {"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "URL must be a valid URL format",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 96},
+      "condition": "!validation.IsValidURL(form.Config[\"url\"])",
+      "action": "Return 422 with invalid url message",
+      "affected_endpoints": ["ep-324", "ep-325"],
+      "code_snippet": "if !validation.IsValidURL(form.Config[\"url\"]) {\n\tctx.APIError(http.StatusUnprocessableEntity, \"Invalid url\")"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Slack webhooks require a valid channel name in config",
+      "location": {"class": "utils", "method": "addHook", "file_path": "routers/api/v1/utils/hook.go", "line_number": 175},
+      "condition": "w.Type == webhook_module.SLACK && channel missing or invalid",
+      "action": "Return 422 or 400 with channel error",
+      "affected_endpoints": ["ep-324"],
+      "code_snippet": "if !webhook_service.IsValidSlackChannel(channel) {\n\tctx.APIError(http.StatusBadRequest, \"Invalid slack channel name\")"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Default events to ['push'] when no events specified",
+      "location": {"class": "utils", "method": "updateHookEvents", "file_path": "routers/api/v1/utils/hook.go", "line_number": 139},
+      "condition": "len(events) == 0",
+      "action": "Set events to [\"push\"]",
+      "affected_endpoints": ["ep-324", "ep-325"],
+      "code_snippet": "if len(events) == 0 {\n\tevents = []string{\"push\"}\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Delete webhook also deletes all associated hook_task records in a transaction",
+      "location": {"class": "webhook", "method": "DeleteWebhookByID", "file_path": "models/webhook/webhook.go", "line_number": 318},
+      "condition": "Webhook deletion requested",
+      "action": "Delete webhook and all hook_tasks in transaction",
+      "affected_endpoints": ["ep-326"],
+      "code_snippet": "return db.WithTx(ctx, func(ctx context.Context) error {\n\tif count, err := db.DeleteByID[Webhook](ctx, id); err != nil {"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Webhook must belong to the specified repository",
+      "location": {"class": "webhook", "method": "GetWebhookByRepoID", "file_path": "models/webhook/webhook.go", "line_number": 270},
+      "condition": "Webhook id does not match repo_id",
+      "action": "Return ErrWebhookNotExist (mapped to 404)",
+      "affected_endpoints": ["ep-325", "ep-326"],
+      "code_snippet": "has, err := db.GetEngine(ctx).Where(\"id=? AND repo_id=?\", id, repoID).Get(webhook)"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "Repository must be owned by an organization to list teams",
+      "location": {"class": "repo", "method": "ListTeams", "file_path": "routers/api/v1/repo/teams.go", "line_number": 38},
+      "condition": "!ctx.Repo.Owner.IsOrganization()",
+      "action": "Return 405 Method Not Allowed",
+      "affected_endpoints": ["ep-329"],
+      "code_snippet": "if !ctx.Repo.Owner.IsOrganization() {\n\tctx.APIError(http.StatusMethodNotAllowed, \"repo is not owned by an organization\")"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Stargazers total count uses cached NumStars from repository, not a COUNT query",
+      "location": {"class": "repo", "method": "ListStargazers", "file_path": "routers/api/v1/repo/star.go", "line_number": 53},
+      "condition": "Always",
+      "action": "Set X-Total-Count header from repo.NumStars",
+      "affected_endpoints": ["ep-327"],
+      "code_snippet": "ctx.SetTotalCountHeader(int64(ctx.Repo.Repository.NumStars))"
+    }
+  ]
+}

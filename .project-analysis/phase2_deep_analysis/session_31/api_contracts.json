@@ -1,0 +1,262 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-208",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "controller_class": "repo",
+      "controller_method": "GetIssueDependencies",
+      "description": "List issues that block the given issue (its dependencies)",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "index", "type": "integer", "required": true, "validation": ["positive integer"]}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": ["1 to MaxResponseItems"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.Issue",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "issue ID"},
+            {"name": "index", "type": "int64", "description": "issue index in repo"},
+            {"name": "title", "type": "string", "description": "issue title"},
+            {"name": "state", "type": "string", "description": "open/closed"},
+            {"name": "repo", "type": "RepositoryMeta", "description": "repository metadata"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Dependencies disabled on repo, issue not found, or no read permission"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-209",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "controller_class": "repo",
+      "controller_method": "CreateIssueDependency",
+      "description": "Make the issue in the URL depend on the issue specified in the body",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "index", "type": "integer", "required": true, "validation": ["positive integer"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "IssueMeta",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "index", "type": "int64", "required": true, "validation": ["positive integer"], "description": "index of the dependency issue"},
+            {"name": "owner", "type": "string", "required": true, "validation": [], "description": "owner of the dependency issue's repo"},
+            {"name": "repo", "type": "string", "required": true, "validation": [], "description": "name of the dependency issue's repo"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "*api.Issue",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "issue ID"},
+            {"name": "index", "type": "int64", "description": "issue index"},
+            {"name": "title", "type": "string", "description": "issue title"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "string", "condition": "Cross-repository dependencies not enabled"},
+          {"status_code": 404, "type": "notFound", "condition": "Issue not found, repo not found, dependencies disabled, no write perm on target, no read perm on dependency"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Target repository is archived"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-210",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "controller_class": "repo",
+      "controller_method": "RemoveIssueDependency",
+      "description": "Remove a dependency from the issue in the URL",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "index", "type": "integer", "required": true, "validation": ["positive integer"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "IssueMeta",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "index", "type": "int64", "required": true, "validation": ["positive integer"], "description": "index of the dependency issue to remove"},
+            {"name": "owner", "type": "string", "required": true, "validation": [], "description": "owner of the dependency issue's repo"},
+            {"name": "repo", "type": "string", "required": true, "validation": [], "description": "name of the dependency issue's repo"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "*api.Issue",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "issue ID"},
+            {"name": "index", "type": "int64", "description": "issue index"},
+            {"name": "title", "type": "string", "description": "issue title"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "string", "condition": "Cross-repository dependencies not enabled"},
+          {"status_code": 404, "type": "notFound", "condition": "Issue not found, repo not found, dependencies disabled, no write perm on target, no read perm on dependency"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Target repository is archived"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-211",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "controller_class": "repo",
+      "controller_method": "GetIssueBlocks",
+      "description": "List issues that are blocked by this issue (issues this issue blocks)",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "index", "type": "integer", "required": true, "validation": ["positive integer"]}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": [">=1"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.Issue",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "issue ID"},
+            {"name": "index", "type": "int64", "description": "issue index"},
+            {"name": "title", "type": "string", "description": "issue title"},
+            {"name": "state", "type": "string", "description": "open/closed"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Issue not found or no read permission"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-212",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "controller_class": "repo",
+      "controller_method": "CreateIssueBlocking",
+      "description": "Block the issue given in the body by the issue in the URL path",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "index", "type": "integer", "required": true, "validation": ["positive integer"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "IssueMeta",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "index", "type": "int64", "required": true, "validation": ["positive integer"], "description": "index of the target issue to be blocked"},
+            {"name": "owner", "type": "string", "required": true, "validation": [], "description": "owner of the target issue's repo"},
+            {"name": "repo", "type": "string", "required": true, "validation": [], "description": "name of the target issue's repo"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "*api.Issue",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "issue ID of the blocker (URL issue)"},
+            {"name": "index", "type": "int64", "description": "issue index"},
+            {"name": "title", "type": "string", "description": "issue title"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "string", "condition": "Cross-repository dependencies not enabled"},
+          {"status_code": 404, "type": "notFound", "condition": "Issue not found, repo not found, dependencies disabled, no write perm on target, no read perm on dependency"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-213",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "controller_class": "repo",
+      "controller_method": "RemoveIssueBlocking",
+      "description": "Unblock the issue given in the body by the issue in the URL path",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["non-empty"]},
+          {"name": "index", "type": "integer", "required": true, "validation": ["positive integer"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "IssueMeta",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "index", "type": "int64", "required": true, "validation": ["positive integer"], "description": "index of the target issue to unblock"},
+            {"name": "owner", "type": "string", "required": true, "validation": [], "description": "owner of the target issue's repo"},
+            {"name": "repo", "type": "string", "required": true, "validation": [], "description": "name of the target issue's repo"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "*api.Issue",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "issue ID of the blocker (URL issue)"},
+            {"name": "index", "type": "int64", "description": "issue index"},
+            {"name": "title", "type": "string", "description": "issue title"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "string", "condition": "Cross-repository dependencies not enabled"},
+          {"status_code": 404, "type": "notFound", "condition": "Issue not found, repo not found, dependencies disabled, no write perm on target, no read perm on dependency"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

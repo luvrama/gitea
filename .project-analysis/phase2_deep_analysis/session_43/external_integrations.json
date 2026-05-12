@@ -1,0 +1,28 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "Object Storage (Minio/Azure/Local)",
+      "type": "cloud_service",
+      "base_url": "configured via app.ini [actions.artifact_storage]",
+      "client_class": "storage.ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "http_library": "minio-go / azure-blob SDK",
+      "endpoints_called": [
+        {"method": "GET", "path": "ServeDirectURL", "request": {"type": "string", "key_fields": ["storagePath"]}, "response": {"type": "URL", "key_fields": ["presigned_url"]}, "purpose": "Generate presigned download URL for direct serve"},
+        {"method": "DELETE", "path": "Delete", "request": {"type": "string", "key_fields": ["storagePath"]}, "response": {"type": "error", "key_fields": []}, "purpose": "Delete artifact file from storage"},
+        {"method": "GET", "path": "Open", "request": {"type": "string", "key_fields": ["storagePath"]}, "response": {"type": "io.ReadCloser", "key_fields": []}, "purpose": "Open artifact file for streaming"}
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": "If ServeDirect fails, falls back to reading from storage and serving via app"
+      },
+      "authentication": "api-key",
+      "used_by_endpoints": ["ep-294", "ep-298"],
+      "config_keys": ["actions.artifact_storage.STORAGE_TYPE", "actions.artifact_storage.SERVE_DIRECT", "actions.artifact_storage.MINIO_ENDPOINT"]
+    }
+  ]
+}

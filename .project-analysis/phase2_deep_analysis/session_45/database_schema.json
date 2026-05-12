@@ -1,0 +1,139 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 2,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "branch",
+      "entity_class": "git_model.Branch",
+      "file_path": "models/git/branch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "commit_id", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "commit_message", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "pusher_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_deleted", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "deleted_by_id", "type": "BIGINT", "code_type": "int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "deleted_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "commit_time", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_branch_s", "columns": ["repo_id", "name"], "unique": true},
+        {"name": "IDX_branch_is_deleted", "columns": ["is_deleted"], "unique": false},
+        {"name": "IDX_branch_deleted_unix", "columns": ["deleted_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "pusher_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "protected_branch",
+      "entity_class": "git_model.ProtectedBranch",
+      "file_path": "models/git/protected_branch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "branch_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "priority", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL DEFAULT 0"]},
+        {"name": "can_push", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "enable_whitelist", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "whitelist_user_i_ds", "type": "JSON TEXT", "code_type": "[]int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "whitelist_team_i_ds", "type": "JSON TEXT", "code_type": "[]int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "required_approvals", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "enable_status_check", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "status_check_contexts", "type": "JSON TEXT", "code_type": "[]string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "require_signed_commits", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "protected_file_patterns", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_protected_branch_s", "columns": ["repo_id", "branch_name"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    }
+  ],
+  "cache_stores": [
+    {
+      "store_id": "cache-001",
+      "name": "branch_divergence_cache",
+      "technology": "in-memory/Redis (configurable)",
+      "key_pattern": "{repoID}-{branchName}",
+      "ttl_seconds": 2592000,
+      "description": "Caches divergence info (ahead/behind) for branches relative to default branch"
+    }
+  ],
+  "message_queues": [
+    {
+      "queue_id": "mq-001",
+      "name": "branch_sync",
+      "technology": "internal queue (level/channel/redis)",
+      "message_type": "BranchSyncOptions{RepoID}",
+      "description": "Queue for syncing branches from git to database"
+    }
+  ],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-306",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "operations": [
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "git_model.IsBranchExist", "description": "Check branch exists"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.GetFirstMatchProtectedBranchRule", "description": "Get matching protection rule"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-307",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "operations": [
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "db.Count", "description": "Count active branches"},
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "git_model.IsBranchExist", "description": "Check branch exists"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.IsBranchProtected", "description": "Check if protected"},
+        {"store_type": "database", "store_name": "branch", "operation": "UPDATE", "method": "git_model.MarkBranchAsDeleted", "description": "Mark branch deleted"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-308",
+      "path": "/api/v1/repos/{owner}/{repo}/branches",
+      "operations": [
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "git_model.IsBranchExist", "description": "Check old branch exists (if OldBranchName used)"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.GetFirstMatchProtectedBranchRule", "description": "Get protection for new branch"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-309",
+      "path": "/api/v1/repos/{owner}/{repo}/branches",
+      "operations": [
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "db.Count", "description": "Count total branches"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.FindRepoProtectedBranchRules", "description": "Load all protection rules"},
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "db.Find", "description": "Get paginated branches"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-310",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "operations": [
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "git_model.GetBranch", "description": "Get current branch state"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-311",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "operations": [
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "git_model.IsBranchExist", "description": "Check target branch exists"},
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "git_model.GetBranch", "description": "Get source branch"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.GetProtectedBranchRuleByName", "description": "Check protection on source"},
+        {"store_type": "database", "store_name": "protected_branch", "operation": "SELECT", "method": "git_model.GetFirstMatchProtectedBranchRule", "description": "Check protection on target"},
+        {"store_type": "database", "store_name": "branch", "operation": "UPDATE", "method": "git_model.RenameBranch", "description": "Rename branch in DB"}
+      ]
+    }
+  ]
+}

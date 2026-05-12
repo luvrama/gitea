@@ -1,0 +1,148 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-202",
+      "http_method": "DELETE",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Middleware loads full descriptor (5 queries), then deletion does 4 DELETE operations in transaction"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "PackageDescriptor loading fetches blob for each file individually via cache.GetWithEphemeralCache",
+          "impact": "For versions with many files, N+1 queries on package_blob table",
+          "file_path": "models/packages/descriptor.go",
+          "line_number": 115,
+          "code_snippet": "for _, pf := range pfs {\n\tpfd, err := getPackageFileDescriptor(ctx, pf, c)\n}",
+          "recommendation": "Batch load blobs for all files in a single query"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch load package file blobs instead of individual lookups",
+          "estimated_impact": "Reduce N queries to 1 for file blob loading",
+          "implementation": "Use IN clause to load all blobs by IDs collected from files"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-203",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}/files",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "All data loaded by middleware; handler just transforms"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Middleware loads blob for each file individually when building PackageDescriptor",
+          "impact": "N+1 queries for versions with many files",
+          "file_path": "models/packages/descriptor.go",
+          "line_number": 115,
+          "code_snippet": "for _, pf := range pfs {\n\tpfd, err := getPackageFileDescriptor(ctx, pf, c)\n}",
+          "recommendation": "Batch load blobs"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "caching",
+          "description": "File list for a version rarely changes; could cache the response",
+          "estimated_impact": "Eliminate DB queries for repeated requests",
+          "implementation": "Add ETag/Last-Modified based on version created_unix"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-204",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 query for search + N descriptors (each with multiple queries)"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "GetPackageDescriptors iterates over each version and loads full descriptor individually",
+          "impact": "For packages with many versions, each version triggers multiple DB queries (package, user, repo, files, blobs, properties)",
+          "file_path": "models/packages/descriptor.go",
+          "line_number": 213,
+          "code_snippet": "for _, pv := range pvs {\n\tpd, err := GetPackageDescriptorWithCache(ctx, pv, c)\n}",
+          "recommendation": "Use ephemeral cache (already used) but also batch-load files/properties"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch load all files and properties for all versions in the page at once",
+          "estimated_impact": "Reduce from O(N*5) queries to O(5) queries for a page of N versions",
+          "implementation": "Collect all version IDs, batch query files/properties/blobs"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-205",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/latest",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 query for latest version + full descriptor loading"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Latest version changes infrequently; could be cached with short TTL",
+          "estimated_impact": "Reduce DB load for frequently accessed latest version",
+          "implementation": "Cache with invalidation on new version creation"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-206",
+      "http_method": "POST",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/link/{repo_name}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Simple lookup + permission check + single UPDATE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-207",
+      "http_method": "POST",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/unlink",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Lookup + permission checks + org admin check + single UPDATE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

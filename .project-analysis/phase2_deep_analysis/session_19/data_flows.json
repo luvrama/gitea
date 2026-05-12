@@ -1,0 +1,376 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-129",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/avatar",
+      "description": "Deletes user's custom avatar from DB and storage within a transaction",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.DeleteAvatar",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/avatar.go",
+          "input": "APIContext (authenticated user)",
+          "output": "204 No Content or error",
+          "operations": ["Calls user_service.DeleteAvatar with ctx.Doer"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_service.DeleteAvatar",
+          "type": "service",
+          "file_path": "services/user/avatar.go",
+          "input": "context.Context, *user_model.User",
+          "output": "error",
+          "operations": ["Gets avatar path from user", "Starts DB transaction", "Sets UseCustomAvatar=false and Avatar=''", "Updates user in DB", "Deletes avatar file from storage if existed"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "user", "description": "Set avatar='' and use_custom_avatar=false"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "storage.Avatars.Delete",
+          "type": "utility",
+          "file_path": "modules/storage/storage.go",
+          "input": "avatar relative path (string)",
+          "output": "error",
+          "operations": ["Deletes avatar file from configured storage backend"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "DB update fails", "handler": "user_service.DeleteAvatar", "response_code": 500, "response": "APIError"},
+        {"condition": "Storage delete fails (not ErrNotExist)", "handler": "user_service.DeleteAvatar", "response_code": 500, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-130",
+      "http_method": "PUT",
+      "path": "/api/v1/user/actions/secrets/{secretname}",
+      "description": "Creates or updates an encrypted secret for the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.CreateOrUpdateSecret",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/action.go",
+          "input": "APIContext with CreateOrUpdateSecretOption form",
+          "output": "201 Created or 204 No Content",
+          "operations": ["Extracts form data", "Calls secret_service.CreateOrUpdateSecret"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "secret_service.CreateOrUpdateSecret",
+          "type": "service",
+          "file_path": "services/secrets/secrets.go",
+          "input": "ownerID, repoID, name, data, description",
+          "output": "*Secret, bool (created), error",
+          "operations": ["Validates name via ValidateName", "Finds existing secret by owner/repo/name", "If not found: inserts new encrypted secret", "If found: updates existing secret data"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "secret", "description": "Find existing secret by owner_id, repo_id, name"},
+            {"operation": "INSERT", "table": "secret", "description": "Insert new encrypted secret (if not exists)"},
+            {"operation": "UPDATE", "table": "secret", "description": "Update existing secret data (if exists)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "secrets.ValidateName",
+          "type": "utility",
+          "file_path": "services/secrets/validation.go",
+          "input": "name string",
+          "output": "error",
+          "operations": ["Validates name matches ^[A-Z_][A-Z0-9_]*$", "Rejects GITEA_/GITHUB_ prefix", "Rejects 'CI' name"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "secret_model.InsertEncryptedSecret",
+          "type": "repository",
+          "file_path": "models/secret/secret.go",
+          "input": "ownerID, repoID, name, data, description",
+          "output": "*Secret, error",
+          "operations": ["Validates data length <= 65536", "Truncates description to 4096 runes", "Encrypts data with setting.SecretKey", "Uppercases name", "Inserts into DB"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "secret", "description": "Insert encrypted secret record"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "CreateOrUpdateSecretOption",
+          "to": "Secret (DB model)",
+          "component": "secret_model.InsertEncryptedSecret",
+          "mappings": [
+            {"source_field": "data", "target_field": "Data", "transformation": "computed"},
+            {"source_field": "description", "target_field": "Description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid name format", "handler": "user.CreateOrUpdateSecret", "response_code": 400, "response": "APIError"},
+        {"condition": "Secret not found (for update path)", "handler": "user.CreateOrUpdateSecret", "response_code": 404, "response": "APIError"},
+        {"condition": "Encryption or DB error", "handler": "user.CreateOrUpdateSecret", "response_code": 500, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-131",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/actions/secrets/{secretname}",
+      "description": "Deletes a secret by name in the user scope",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.DeleteSecret",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/action.go",
+          "input": "APIContext with secretname path param",
+          "output": "204 No Content or error",
+          "operations": ["Calls secret_service.DeleteSecretByName"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "secret_service.DeleteSecretByName",
+          "type": "service",
+          "file_path": "services/secrets/secrets.go",
+          "input": "ownerID, repoID, name",
+          "output": "error",
+          "operations": ["Finds secret by owner/repo/name", "If not found (len != 1): returns ErrSecretNotFound", "Deletes by ID"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "secret", "description": "Find secret by owner_id=doer.ID, repo_id=0, name"},
+            {"operation": "DELETE", "table": "secret", "description": "Delete secret by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Invalid argument", "handler": "user.DeleteSecret", "response_code": 400, "response": "APIError"},
+        {"condition": "Secret not found", "handler": "user.DeleteSecret", "response_code": 404, "response": "APIError"},
+        {"condition": "DB error", "handler": "user.DeleteSecret", "response_code": 500, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-132",
+      "http_method": "POST",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "description": "Creates a user-level action variable after checking for duplicates",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.CreateVariable",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/action.go",
+          "input": "APIContext with CreateVariableOption form and variablename path param",
+          "output": "201 Created or error",
+          "operations": ["Extracts form data", "Checks if variable already exists", "If exists: returns 409", "Creates variable via service"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.GetVariable",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "FindVariablesOpts{OwnerID, Name}",
+          "output": "*ActionVariable, error",
+          "operations": ["Finds variables matching opts", "Returns ErrNotExist if len != 1"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_variable", "description": "Find variable by owner_id and name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions_service.CreateVariable",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "ownerID, repoID, name, data, description",
+          "output": "*ActionVariable, error",
+          "operations": ["Validates name", "Normalizes EOL in data", "Calls model InsertVariable"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "actions_model.InsertVariable",
+          "type": "repository",
+          "file_path": "models/actions/variable.go",
+          "input": "ownerID, repoID, name, data, description",
+          "output": "*ActionVariable, error",
+          "operations": ["Validates data length <= 65536 runes", "Truncates description to 4096 runes", "Uppercases name", "Inserts into DB"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "action_variable", "description": "Insert new variable record"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "CreateVariableOption",
+          "to": "ActionVariable (DB model)",
+          "component": "actions_model.InsertVariable",
+          "mappings": [
+            {"source_field": "value", "target_field": "Data", "transformation": "computed"},
+            {"source_field": "description", "target_field": "Description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Variable already exists", "handler": "user.CreateVariable", "response_code": 409, "response": "APIError"},
+        {"condition": "Invalid variable name", "handler": "user.CreateVariable", "response_code": 400, "response": "APIError"},
+        {"condition": "DB error", "handler": "user.CreateVariable", "response_code": 500, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-133",
+      "http_method": "PUT",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "description": "Updates a user-level action variable's name, value, and description",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.UpdateVariable",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/action.go",
+          "input": "APIContext with UpdateVariableOption form and variablename path param",
+          "output": "204 No Content or error",
+          "operations": ["Extracts form data", "Finds existing variable", "Updates fields", "Calls service update"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.GetVariable",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "FindVariablesOpts{OwnerID, Name}",
+          "output": "*ActionVariable, error",
+          "operations": ["Finds variable by owner and name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_variable", "description": "Find variable by owner_id and name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions_service.UpdateVariableNameData",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "*ActionVariable",
+          "output": "bool, error",
+          "operations": ["Validates name", "Normalizes EOL in data", "Calls model UpdateVariableCols"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "actions_model.UpdateVariableCols",
+          "type": "repository",
+          "file_path": "models/actions/variable.go",
+          "input": "*ActionVariable, cols",
+          "output": "bool, error",
+          "operations": ["Validates data length", "Truncates description", "Uppercases name", "Updates via XORM by ID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "action_variable", "description": "Update variable name, data, description columns"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "UpdateVariableOption",
+          "to": "ActionVariable (DB model)",
+          "component": "user.UpdateVariable",
+          "mappings": [
+            {"source_field": "name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "value", "target_field": "Data", "transformation": "computed"},
+            {"source_field": "description", "target_field": "Description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Variable not found", "handler": "user.UpdateVariable", "response_code": 404, "response": "APIError"},
+        {"condition": "Invalid variable name", "handler": "user.UpdateVariable", "response_code": 400, "response": "APIError"},
+        {"condition": "DB error", "handler": "user.UpdateVariable", "response_code": 500, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-134",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "description": "Deletes a user-level action variable by name",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.DeleteVariable",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/action.go",
+          "input": "APIContext with variablename path param",
+          "output": "204 No Content or error",
+          "operations": ["Calls actions_service.DeleteVariableByName"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.DeleteVariableByName",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "ownerID, repoID, name",
+          "output": "error",
+          "operations": ["Gets variable by name", "If not found: returns ErrNotExist", "Deletes by ID"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_variable", "description": "Find variable by owner_id, repo_id=0, name"},
+            {"operation": "DELETE", "table": "action_variable", "description": "Delete variable by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Invalid argument", "handler": "user.DeleteVariable", "response_code": 400, "response": "APIError"},
+        {"condition": "Variable not found", "handler": "user.DeleteVariable", "response_code": 404, "response": "APIError"},
+        {"condition": "DB error", "handler": "user.DeleteVariable", "response_code": 500, "response": "APIError"}
+      ]
+    }
+  ]
+}

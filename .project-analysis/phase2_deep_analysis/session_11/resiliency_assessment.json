@@ -1,0 +1,146 @@
+{
+  "total_findings": 5,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-070",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/members",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - database only",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-071",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/public_members",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - database only",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-072",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/members/{username}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - database only",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-073",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - database only",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-074",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "ChangeOrgUserStatus is idempotent - setting is_public to same value is a no-op UPDATE",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single UPDATE",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-075",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "ChangeOrgUserStatus is idempotent - setting is_public to same value is a no-op UPDATE",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single UPDATE",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-076",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/members/{username}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "All operations wrapped in db.WithTx - transaction ensures atomicity. However, the transaction can be long-running for users in many teams with many repos.",
+          "recommendation": "Monitor transaction duration for large orgs"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "RemoveOrgUser is idempotent - if user is not a member, returns nil (no-op). Safe to retry.",
+          "recommendation": "No action needed"
+        },
+        {
+          "pattern": "cascading_failure",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies. All operations are database-local within a transaction.",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - all within single DB transaction",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses graceful.GetManager() for shutdown coordination",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No rate limiting on these endpoints",
+      "recommendation": "Consider rate limiting on member list endpoints for large orgs"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": ["Database (single point for all operations)"],
+    "cascading_failure_paths": []
+  }
+}

@@ -1,0 +1,29 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "MIN_PASSWORD_LENGTH",
+      "type": "Integer",
+      "default_value": "6",
+      "source_file": "modules/setting/security.go",
+      "used_by": [{"class": "user_service", "method": "UpdateAuth", "file_path": "services/user/update.go", "usage": "setting.MinPasswordLength", "impact": "Minimum password length for user creation/edit"}],
+      "affected_endpoints": ["ep-099"]
+    },
+    {
+      "key": "PASSWORD_CHECK_PWN",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/security.go",
+      "used_by": [{"class": "password", "method": "IsPwned", "file_path": "modules/auth/password/pwn.go", "usage": "Check if password is in HaveIBeenPwned database", "impact": "When enabled, passwords are checked against HIBP API"}],
+      "affected_endpoints": ["ep-099"]
+    },
+    {
+      "key": "USER_DELETE_WITH_COMMENTS_MAX_TIME",
+      "type": "Duration",
+      "default_value": "0",
+      "source_file": "modules/setting/service.go",
+      "used_by": [{"class": "user_service", "method": "deleteUser", "file_path": "services/user/delete.go", "usage": "setting.Service.UserDeleteWithCommentsMaxTime", "impact": "If non-zero and user is younger than this duration, comments are deleted with user"}],
+      "affected_endpoints": ["ep-100"]
+    }
+  ]
+}

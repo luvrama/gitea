@@ -1,0 +1,29 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "git.MAX_GIT_DIFF_LINES",
+      "type": "Integer",
+      "default_value": "1000",
+      "source_file": "modules/setting/git.go",
+      "used_by": [{"class": "repo", "method": "GetPullRequestFiles", "file_path": "routers/api/v1/repo/pull.go", "usage": "setting.Git.MaxGitDiffLines", "impact": "Limits max lines parsed in diff output"}],
+      "affected_endpoints": ["ep-233"]
+    },
+    {
+      "key": "git.MAX_GIT_DIFF_LINE_CHARACTERS",
+      "type": "Integer",
+      "default_value": "5000",
+      "source_file": "modules/setting/git.go",
+      "used_by": [{"class": "repo", "method": "GetPullRequestFiles", "file_path": "routers/api/v1/repo/pull.go", "usage": "setting.Git.MaxGitDiffLineCharacters", "impact": "Limits max characters per line in diff"}],
+      "affected_endpoints": ["ep-233"]
+    },
+    {
+      "key": "repository.PULL_REQUEST_DEFAULT_MERGE_STYLE",
+      "type": "String",
+      "default_value": "merge",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "pull_service", "method": "Merge", "file_path": "services/pull/merge.go", "usage": "prConfig.IsMergeStyleAllowed(mergeStyle)", "impact": "Controls which merge styles are allowed per repo"}],
+      "affected_endpoints": ["ep-229"]
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "endpoints_by_database_table": {
+    "org_user": {"read": ["ep-070", "ep-071", "ep-072", "ep-073", "ep-074", "ep-075", "ep-076"], "write": ["ep-074", "ep-075", "ep-076"]},
+    "user": {"read": ["ep-070", "ep-071", "ep-072", "ep-073", "ep-074", "ep-075", "ep-076"], "write": ["ep-076"]},
+    "team": {"read": ["ep-072", "ep-074", "ep-075", "ep-076"], "write": ["ep-076"]},
+    "team_user": {"read": ["ep-072", "ep-074", "ep-075", "ep-076"], "write": ["ep-076"]},
+    "access": {"read": [], "write": ["ep-076"]},
+    "watch": {"read": [], "write": ["ep-076"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "setting.API.DefaultPagingNum": ["ep-070", "ep-071"],
+    "setting.API.MaxResponseItems": ["ep-070", "ep-071"]
+  },
+  "endpoints_by_model_class": {
+    "organization.OrgUser": ["ep-070", "ep-071", "ep-072", "ep-073", "ep-074", "ep-075", "ep-076"],
+    "user_model.User": ["ep-070", "ep-071", "ep-072", "ep-073", "ep-074", "ep-075", "ep-076"],
+    "organization.Team": ["ep-076"],
+    "organization.TeamUser": ["ep-076"],
+    "access_model.Access": ["ep-076"]
+  },
+  "endpoints_by_service_class": {
+    "org_service.RemoveOrgUser": ["ep-076"],
+    "convert.ToUser": ["ep-070", "ep-071"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-070": {"reads": ["user", "org_user"], "writes": []},
+    "ep-071": {"reads": ["user", "org_user"], "writes": []},
+    "ep-072": {"reads": ["user", "org_user"], "writes": []},
+    "ep-073": {"reads": ["user", "org_user"], "writes": []},
+    "ep-074": {"reads": ["user", "org_user", "team", "team_user"], "writes": ["org_user"]},
+    "ep-075": {"reads": ["user", "org_user", "team", "team_user"], "writes": ["org_user"]},
+    "ep-076": {"reads": ["user", "org_user", "team", "team_user", "team_repo", "repository"], "writes": ["org_user", "user", "access", "watch", "team_user", "team"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-070": ["setting.API.DefaultPagingNum", "setting.API.MaxResponseItems"],
+    "ep-071": ["setting.API.DefaultPagingNum", "setting.API.MaxResponseItems"]
+  }
+}

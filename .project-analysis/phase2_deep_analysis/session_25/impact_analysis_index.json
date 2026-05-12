@@ -1,0 +1,41 @@
+{
+  "endpoints_by_database_table": {
+    "oauth2_application": {"read": ["ep-168", "ep-170", "ep-171"], "write": ["ep-169", "ep-171"]},
+    "oauth2_authorization_code": {"read": [], "write": ["ep-169"]},
+    "oauth2_grant": {"read": [], "write": ["ep-169"]},
+    "repository": {"read": ["ep-172", "ep-173", "ep-174"], "write": []},
+    "access": {"read": ["ep-172", "ep-173", "ep-174"], "write": []},
+    "user": {"read": ["ep-173"], "write": []},
+    "action_runner_token": {"read": ["ep-175"], "write": ["ep-175"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "OAuth2.DefaultApplications": ["ep-169", "ep-171"],
+    "OAuth2.CustomSchemes": ["ep-171"]
+  },
+  "endpoints_by_model_class": {
+    "auth.OAuth2Application": ["ep-168", "ep-169", "ep-170", "ep-171"],
+    "repo_model.Repository": ["ep-172", "ep-173", "ep-174"],
+    "actions_model.ActionRunnerToken": ["ep-175"]
+  },
+  "endpoints_by_service_class": {
+    "convert.ToOAuth2Application": ["ep-168", "ep-170", "ep-171"],
+    "convert.ToRepo": ["ep-172", "ep-173", "ep-174"],
+    "shared.GetRegistrationToken": ["ep-175"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-168": {"reads": ["oauth2_application"], "writes": []},
+    "ep-169": {"reads": ["oauth2_application"], "writes": ["oauth2_application", "oauth2_authorization_code", "oauth2_grant"]},
+    "ep-170": {"reads": ["oauth2_application"], "writes": []},
+    "ep-171": {"reads": ["oauth2_application"], "writes": ["oauth2_application"]},
+    "ep-172": {"reads": ["repository", "access"], "writes": []},
+    "ep-173": {"reads": ["repository", "user", "access"], "writes": []},
+    "ep-174": {"reads": ["repository", "access"], "writes": []},
+    "ep-175": {"reads": ["action_runner_token"], "writes": ["action_runner_token"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-169": ["OAuth2.DefaultApplications"],
+    "ep-171": ["OAuth2.DefaultApplications", "OAuth2.CustomSchemes"]
+  }
+}

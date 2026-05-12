@@ -1,0 +1,113 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-162",
+      "http_method": "GET",
+      "path": "/api/v1/user/settings",
+      "resource_load": {
+        "operations_per_request": 0,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": [],
+        "note": "Zero DB operations - reads from already-loaded ctx.Doer"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-163",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/settings",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single UPDATE query with specific columns"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-164",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/tokens",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "FindAndCount = COUNT + SELECT with pagination"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-165",
+      "http_method": "POST",
+      "path": "/api/v1/users/{username}/tokens",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "EXISTS check + INSERT"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-166",
+      "http_method": "DELETE",
+      "path": "/api/v1/users/{username}/tokens/{token}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Potential SELECT by name + DELETE by ID"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "missing_indexes",
+          "description": "Token name lookup (when deleting by name) queries by name+uid but name column is not indexed",
+          "impact": "Full table scan filtered by uid index for name-based deletion",
+          "file_path": "models/auth/access_token.go",
+          "line_number": 200,
+          "code_snippet": "cond = cond.And(builder.Eq{\"name\": opts.Name})",
+          "recommendation": "Add composite index on (uid, name) if name-based deletion is frequent"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "indexing",
+          "description": "Add composite index on access_token(uid, name)",
+          "estimated_impact": "Faster name-based token lookups",
+          "implementation": "Add xorm tag or migration for composite index"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-167",
+      "http_method": "POST",
+      "path": "/api/v1/user/applications/oauth2",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "INSERT + UPDATE (for client secret). bcrypt hashing is CPU-intensive."
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "bcrypt.GenerateFromPassword with DefaultCost (10) is CPU-intensive, blocking the request goroutine for ~100ms",
+          "impact": "Under high concurrency, bcrypt operations can saturate CPU and increase latency",
+          "file_path": "models/auth/oauth2.go",
+          "line_number": 194,
+          "code_snippet": "hashedSecret, err := bcrypt.GenerateFromPassword([]byte(clientSecret), bcrypt.DefaultCost)",
+          "recommendation": "Acceptable for OAuth2 app creation (low frequency). No action needed unless abuse is detected."
+        }
+      ],
+      "optimization_recommendations": []
+    }
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "total_patterns": 7,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic error", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "not found"},
+      {"exception_type": "validation error", "status_code": 400, "response_type": "JSON error", "message_template": "varies"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-163", "path": "/api/v1/user/settings", "error_scenarios": [
+      {"exception": "UpdateUser error", "trigger": "Database update failure or validation error", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-165", "path": "/api/v1/users/{username}/tokens", "error_scenarios": [
+      {"exception": "name exists", "trigger": "Token name already used by this user", "status_code": 400, "response": "access token name has been used already", "logged": false, "retryable": false},
+      {"exception": "invalid scope", "trigger": "Scope string contains invalid scope names", "status_code": 400, "response": "invalid access token scope provided: <err>", "logged": false, "retryable": false},
+      {"exception": "empty scope", "trigger": "No valid scopes after normalization", "status_code": 400, "response": "access token must have a scope", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-166", "path": "/api/v1/users/{username}/tokens/{token}", "error_scenarios": [
+      {"exception": "not found", "trigger": "Token ID or name doesn't exist for user", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+      {"exception": "multiple matches", "trigger": "Multiple tokens share the same name", "status_code": 422, "response": "multiple matches for token name", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-167", "path": "/api/v1/user/applications/oauth2", "error_scenarios": [
+      {"exception": "invalid URI", "trigger": "Redirect URI fails validation", "status_code": 400, "response": "invalid redirect URI: <uri>", "logged": false, "retryable": false},
+      {"exception": "create error", "trigger": "DB insert fails", "status_code": 400, "response": "error creating oauth2 application", "logged": false, "retryable": true},
+      {"exception": "secret error", "trigger": "bcrypt or DB update fails", "status_code": 400, "response": "error creating application secret", "logged": false, "retryable": true}
+    ]}
+  ],
+  "custom_exceptions": []
+}

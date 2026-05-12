@@ -1,0 +1,26 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {"class": "APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "any error", "status_code": 500, "response_type": "APIError", "message_template": "{message, url}"},
+      {"exception_type": "any error", "status_code": 400, "response_type": "APIError", "message_template": "{message, url}"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-129", "path": "/api/v1/user/avatar", "error_scenarios": [
+      {"exception": "any error from DeleteAvatar", "trigger": "DB update or storage delete failure", "status_code": 500, "response": "APIError", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-130", "path": "/api/v1/user/actions/secrets/{secretname}", "error_scenarios": [
+      {"exception": "util.ErrInvalidArgument", "trigger": "Invalid secret name format", "status_code": 400, "response": "APIError", "logged": false, "retryable": false},
+      {"exception": "util.ErrNotExist", "trigger": "Secret not found (unlikely in create/update)", "status_code": 404, "response": "APIError", "logged": false, "retryable": false},
+      {"exception": "encryption/DB error", "trigger": "EncryptSecret or DB operation fails", "status_code": 500, "response": "APIError", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-131", "path": "/api/v1/user/actions/secrets/{secretname}", "error_scenarios": [
+      {"exception": "util.ErrInvalidArgument", "trigger": "Invalid argument", "status_code": 400, "response": "APIError", "logged": false, "retryable": false},
+      {"exception": "ErrSecretNotFound (wraps util.ErrNotExist)", "trigger": "Secret does not exist", "status_code": 404, "response": "APIError", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrSecretNotFound", "file_path": "models/secret/secret.go", "extends": "util.ErrNotExist (via Unwrap)", "used_in": ["secret_service.DeleteSecretByName", "secret_service.DeleteSecretByID"], "http_status": 404}
+  ]
+}

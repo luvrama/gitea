@@ -1,0 +1,302 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-015",
+      "http_method": "GET",
+      "path": "/api/v1/settings/ui",
+      "controller_class": "settings",
+      "controller_method": "GetGeneralUISettings",
+      "description": "Returns instance's global UI settings including default theme, allowed reactions, and custom emojis",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "GeneralUISettings",
+          "fields": [
+            {"name": "default_theme", "type": "string", "description": "Default UI theme name"},
+            {"name": "allowed_reactions", "type": "[]string", "description": "List of allowed emoji reactions"},
+            {"name": "custom_emojis", "type": "[]string", "description": "List of custom emojis"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-016",
+      "http_method": "GET",
+      "path": "/api/v1/settings/api",
+      "controller_class": "settings",
+      "controller_method": "GetGeneralAPISettings",
+      "description": "Returns instance's global API settings including pagination defaults and size limits",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "GeneralAPISettings",
+          "fields": [
+            {"name": "max_response_items", "type": "int", "description": "Maximum number of items returned in API responses"},
+            {"name": "default_paging_num", "type": "int", "description": "Default number of items per page"},
+            {"name": "default_git_trees_per_page", "type": "int", "description": "Default number of Git tree items per page"},
+            {"name": "default_max_blob_size", "type": "int64", "description": "Default maximum blob size for API responses"},
+            {"name": "default_max_response_size", "type": "int64", "description": "Default maximum response size"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-017",
+      "http_method": "GET",
+      "path": "/api/v1/settings/repository",
+      "controller_class": "settings",
+      "controller_method": "GetGeneralRepoSettings",
+      "description": "Returns instance's global repository settings indicating which features are disabled",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "GeneralRepoSettings",
+          "fields": [
+            {"name": "mirrors_disabled", "type": "bool", "description": "Whether repository mirroring is disabled"},
+            {"name": "http_git_disabled", "type": "bool", "description": "Whether HTTP Git operations are disabled"},
+            {"name": "migrations_disabled", "type": "bool", "description": "Whether repository migrations are disabled"},
+            {"name": "stars_disabled", "type": "bool", "description": "Whether repository starring is disabled"},
+            {"name": "time_tracking_disabled", "type": "bool", "description": "Whether time tracking is disabled"},
+            {"name": "lfs_disabled", "type": "bool", "description": "Whether Git LFS support is disabled"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-018",
+      "http_method": "GET",
+      "path": "/api/v1/settings/attachment",
+      "controller_class": "settings",
+      "controller_method": "GetGeneralAttachmentSettings",
+      "description": "Returns instance's global attachment settings including allowed types, max size, and max files",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "GeneralAttachmentSettings",
+          "fields": [
+            {"name": "enabled", "type": "bool", "description": "Whether file attachments are enabled"},
+            {"name": "allowed_types", "type": "string", "description": "Comma-separated list of allowed file types"},
+            {"name": "max_size", "type": "int64", "description": "Maximum size for individual attachments in MB"},
+            {"name": "max_files", "type": "int", "description": "Maximum number of files per attachment"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-019",
+      "http_method": "GET",
+      "path": "/api/v1/notifications",
+      "controller_class": "notify",
+      "controller_method": "ListNotifications",
+      "description": "List current user's notification threads with filtering by status, subject type, and time range",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "all", "type": "boolean", "required": false, "default": false, "validation": ["If true, show notifications marked as read"]},
+          {"name": "status-types", "type": "[]string", "required": false, "default": "[\"unread\", \"pinned\"]", "validation": ["Options: unread, read, pinned"]},
+          {"name": "subject-type", "type": "[]string", "required": false, "default": null, "validation": ["Options: issue, pull, commit, repository"]},
+          {"name": "since", "type": "string (RFC3339)", "required": false, "default": null, "validation": ["Must be valid RFC3339 timestamp"]},
+          {"name": "before", "type": "string (RFC3339)", "required": false, "default": null, "validation": ["Must be valid RFC3339 timestamp"]},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["minimum 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": 30, "validation": ["clamped to 1-50 by API settings"]}
+        ],
+        "headers": [
+          {"name": "Authorization", "required": true, "description": "Token with notification scope"}
+        ],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]NotificationThread",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Notification thread ID"},
+            {"name": "repository", "type": "Repository", "description": "Associated repository (null if access revoked)"},
+            {"name": "subject", "type": "NotificationSubject", "description": "Notification subject details"},
+            {"name": "unread", "type": "bool", "description": "Whether notification is unread"},
+            {"name": "pinned", "type": "bool", "description": "Whether notification is pinned"},
+            {"name": "updated_at", "type": "time.Time", "description": "Last update timestamp"},
+            {"name": "url", "type": "string", "description": "API URL for this thread"}
+          ]
+        },
+        "errors": [
+          {"status_code": 401, "type": "APIError", "condition": "No valid token provided"},
+          {"status_code": 403, "type": "APIError", "condition": "Token lacks notification scope"},
+          {"status_code": 422, "type": "APIError", "condition": "Invalid before/since timestamp format"}
+        ]
+      },
+      "authentication": "bearer (notification scope)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-020",
+      "http_method": "PUT",
+      "path": "/api/v1/notifications",
+      "controller_class": "notify",
+      "controller_method": "ReadNotifications",
+      "description": "Mark notification threads as read, unread, or pinned for the current user",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "last_read_at", "type": "string (RFC3339)", "required": false, "default": null, "validation": ["Must be valid RFC3339 timestamp; only notifications updated before this time are affected"]},
+          {"name": "all", "type": "string", "required": false, "default": "false", "validation": ["If true, mark all notifications regardless of status"]},
+          {"name": "status-types", "type": "[]string", "required": false, "default": "[\"unread\"]", "validation": ["Options: unread, read, pinned"]},
+          {"name": "to-status", "type": "string", "required": false, "default": "read", "validation": ["Target status: unread, read, or pinned"]}
+        ],
+        "headers": [
+          {"name": "Authorization", "required": true, "description": "Token with notification scope (write)"}
+        ],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 205,
+          "type": "[]NotificationThread",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Notification thread ID"},
+            {"name": "repository", "type": "Repository", "description": "Associated repository"},
+            {"name": "subject", "type": "NotificationSubject", "description": "Notification subject details"},
+            {"name": "unread", "type": "bool", "description": "Whether notification is unread"},
+            {"name": "pinned", "type": "bool", "description": "Whether notification is pinned"},
+            {"name": "updated_at", "type": "time.Time", "description": "Last update timestamp"},
+            {"name": "url", "type": "string", "description": "API URL for this thread"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "APIError", "condition": "Invalid last_read_at timestamp format"},
+          {"status_code": 401, "type": "APIError", "condition": "No valid token provided"},
+          {"status_code": 403, "type": "APIError", "condition": "Token lacks notification write scope"}
+        ]
+      },
+      "authentication": "bearer (notification scope, write)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-021",
+      "http_method": "GET",
+      "path": "/api/v1/notifications/new",
+      "controller_class": "notify",
+      "controller_method": "NewAvailable",
+      "description": "Check if unread notifications exist and return the count",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [
+          {"name": "Authorization", "required": true, "description": "Token with notification scope"}
+        ],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "NotificationCount",
+          "fields": [
+            {"name": "new", "type": "int64", "description": "Number of unread notifications"}
+          ]
+        },
+        "errors": [
+          {"status_code": 401, "type": "APIError", "condition": "No valid token provided"},
+          {"status_code": 403, "type": "APIError", "condition": "Token lacks notification scope"},
+          {"status_code": 422, "type": "APIError", "condition": "Database error during count"}
+        ]
+      },
+      "authentication": "bearer (notification scope)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-022",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "controller_class": "notify",
+      "controller_method": "ListRepoNotifications",
+      "description": "List current user's notification threads for a specific repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["Must be valid repository owner"]},
+          {"name": "repo", "type": "string", "required": true, "validation": ["Must be valid repository name"]}
+        ],
+        "query_params": [
+          {"name": "all", "type": "boolean", "required": false, "default": false, "validation": ["If true, show notifications marked as read"]},
+          {"name": "status-types", "type": "[]string", "required": false, "default": "[\"unread\", \"pinned\"]", "validation": ["Options: unread, read, pinned"]},
+          {"name": "subject-type", "type": "[]string", "required": false, "default": null, "validation": ["Options: issue, pull, commit, repository"]},
+          {"name": "since", "type": "string (RFC3339)", "required": false, "default": null, "validation": ["Must be valid RFC3339 timestamp"]},
+          {"name": "before", "type": "string (RFC3339)", "required": false, "default": null, "validation": ["Must be valid RFC3339 timestamp"]},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["minimum 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": 30, "validation": ["clamped to 1-50 by API settings"]}
+        ],
+        "headers": [
+          {"name": "Authorization", "required": true, "description": "Token with notification scope"}
+        ],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]NotificationThread",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Notification thread ID"},
+            {"name": "repository", "type": "Repository", "description": "Associated repository"},
+            {"name": "subject", "type": "NotificationSubject", "description": "Notification subject details"},
+            {"name": "unread", "type": "bool", "description": "Whether notification is unread"},
+            {"name": "pinned", "type": "bool", "description": "Whether notification is pinned"},
+            {"name": "updated_at", "type": "time.Time", "description": "Last update timestamp"},
+            {"name": "url", "type": "string", "description": "API URL for this thread"}
+          ]
+        },
+        "errors": [
+          {"status_code": 401, "type": "APIError", "condition": "No valid token provided"},
+          {"status_code": 403, "type": "APIError", "condition": "Token lacks notification scope"},
+          {"status_code": 404, "type": "APIError", "condition": "Repository not found or no access"},
+          {"status_code": 422, "type": "APIError", "condition": "Invalid before/since timestamp format"}
+        ]
+      },
+      "authentication": "bearer (notification scope)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

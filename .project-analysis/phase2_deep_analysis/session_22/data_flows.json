@@ -1,0 +1,353 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-150",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/hooks/{id}",
+      "description": "Updates a user-owned webhook by ID, validating config and persisting changes",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.EditHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/hook.go",
+          "input": "APIContext with EditHookOption form",
+          "output": "delegates to EditOwnerHook",
+          "operations": ["Extract form from context", "Get hook ID from path", "Call EditOwnerHook"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.EditOwnerHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, owner User, EditHookOption, hookID",
+          "output": "JSON Hook response",
+          "operations": ["Get webhook by owner ID", "Call editHook to apply changes", "Re-fetch updated webhook", "Convert to API Hook"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "webhook", "description": "Get webhook by id and owner_id"},
+            {"operation": "SELECT", "table": "webhook", "description": "Re-fetch updated webhook after edit"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "utils.editHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, EditHookOption, Webhook",
+          "output": "bool (success)",
+          "operations": ["Validate URL if provided", "Validate content_type if provided", "Update Slack meta if applicable", "Update hook events", "Set branch filter", "Encrypt authorization header", "Update active status", "Update name", "Persist to database"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "webhook", "description": "Update all columns of webhook"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "webhook_service.ToHook",
+          "type": "service",
+          "file_path": "services/webhook/general.go",
+          "input": "repoLink string, Webhook",
+          "output": "api.Hook",
+          "operations": ["Build config map", "Decrypt authorization header", "Construct API Hook struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "EditHookOption",
+          "to": "webhook.Webhook",
+          "component": "utils.editHook",
+          "mappings": [
+            {"source_field": "config.url", "target_field": "URL", "transformation": "direct_copy"},
+            {"source_field": "config.content_type", "target_field": "ContentType", "transformation": "computed"},
+            {"source_field": "events", "target_field": "HookEvents", "transformation": "computed"},
+            {"source_field": "active", "target_field": "IsActive", "transformation": "direct_copy"},
+            {"source_field": "name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "authorization_header", "target_field": "HeaderAuthorizationEncrypted", "transformation": "computed"}
+          ]
+        },
+        {
+          "from": "webhook.Webhook",
+          "to": "api.Hook",
+          "component": "webhook_service.ToHook",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "URL", "target_field": "Config.url", "transformation": "direct_copy"},
+            {"source_field": "ContentType", "target_field": "Config.content_type", "transformation": "computed"},
+            {"source_field": "IsActive", "target_field": "Active", "transformation": "direct_copy"},
+            {"source_field": "EventsArray()", "target_field": "Events", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Webhook not found by owner_id+id", "handler": "utils.GetOwnerHook", "response_code": 404, "response": "notFound"},
+        {"condition": "Invalid URL in config", "handler": "utils.editHook", "response_code": 422, "response": "Invalid url"},
+        {"condition": "Invalid content_type in config", "handler": "utils.editHook", "response_code": 422, "response": "Invalid content type"},
+        {"condition": "DB update error", "handler": "utils.editHook", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-151",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/hooks/{id}",
+      "description": "Deletes a user-owned webhook by ID, including associated hook tasks",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.DeleteHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/hook.go",
+          "input": "APIContext",
+          "output": "delegates to DeleteOwnerHook",
+          "operations": ["Get hook ID from path", "Call DeleteOwnerHook"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.DeleteOwnerHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, owner User, hookID",
+          "output": "204 No Content",
+          "operations": ["Call webhook.DeleteWebhookByOwnerID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "webhook.DeleteWebhookByOwnerID",
+          "type": "repository",
+          "file_path": "models/webhook/webhook.go",
+          "input": "ownerID, hookID",
+          "output": "error",
+          "operations": ["Verify webhook exists by owner_id+id", "Delete webhook by ID", "Delete associated hook_task records"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "webhook", "description": "Verify webhook exists with owner_id and id"},
+            {"operation": "DELETE", "table": "webhook", "description": "Delete webhook record"},
+            {"operation": "DELETE", "table": "hook_task", "description": "Delete all hook tasks for this webhook"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Webhook not found", "handler": "utils.DeleteOwnerHook", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "utils.DeleteOwnerHook", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-152",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/starred",
+      "description": "Lists repos starred by a given user, filtering private repos unless viewing own profile",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetStarredRepos",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/star.go",
+          "input": "APIContext with ContextUser",
+          "output": "JSON RepositoryList",
+          "operations": ["Determine if private repos should be included (only if viewing own profile)", "Call getStarredRepos", "Set link and count headers"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.getStarredRepos",
+          "type": "service",
+          "file_path": "routers/api/v1/user/star.go",
+          "input": "APIContext, user, private bool",
+          "output": "[]*api.Repository",
+          "operations": ["Query starred repos with pagination", "For each repo get user permission", "Convert each repo to API format"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository JOIN star", "description": "Get starred repos with optional private filter"},
+            {"operation": "SELECT", "table": "repository/repo_unit/collaboration/org_user", "description": "Get permission for each repo (N+1)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToRepo",
+          "type": "utility",
+          "file_path": "services/convert/repository.go",
+          "input": "context, Repository, Permission",
+          "output": "*api.Repository",
+          "operations": ["Load repo units", "Build clone links", "Build permission object", "Load base repo if fork"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repo_unit", "description": "Load units for permission calculation"},
+            {"operation": "SELECT", "table": "repository", "description": "Load base repo if fork"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Repository",
+          "to": "api.Repository",
+          "component": "convert.ToRepo",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Owner", "target_field": "Owner", "transformation": "enriched"},
+            {"source_field": "IsPrivate", "target_field": "Private", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error fetching starred repos", "handler": "user.GetStarredRepos", "response_code": 500, "response": "internal error"},
+        {"condition": "User not found", "handler": "context.UserAssignmentAPI middleware", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-153",
+      "http_method": "GET",
+      "path": "/api/v1/user/starred",
+      "description": "Lists repos starred by the authenticated user (includes private repos)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetMyStarredRepos",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/star.go",
+          "input": "APIContext with Doer",
+          "output": "JSON RepositoryList",
+          "operations": ["Call getStarredRepos with private=true", "Set link and count headers"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.getStarredRepos",
+          "type": "service",
+          "file_path": "routers/api/v1/user/star.go",
+          "input": "APIContext, user, private=true",
+          "output": "[]*api.Repository",
+          "operations": ["Query starred repos with pagination (includes private)", "For each repo get user permission", "Convert each repo to API format"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository JOIN star", "description": "Get all starred repos including private"},
+            {"operation": "SELECT", "table": "repository/repo_unit/collaboration/org_user", "description": "Get permission for each repo (N+1)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Repository",
+          "to": "api.Repository",
+          "component": "convert.ToRepo",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Owner", "target_field": "Owner", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "user.GetMyStarredRepos", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-154",
+      "http_method": "GET",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "description": "Check if the authenticated user is starring a specific repo",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.IsStarring",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/star.go",
+          "input": "APIContext with Doer and Repo",
+          "output": "204 or 404",
+          "operations": ["Check if star record exists for user+repo", "Return 204 if starring, 404 if not"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "star", "description": "Check existence of star record by uid+repo_id"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Not starring the repo", "handler": "user.IsStarring", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-155",
+      "http_method": "PUT",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "description": "Star a repo as the authenticated user, within a transaction updating star table and counters",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.Star",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/star.go",
+          "input": "APIContext with Doer and Repo",
+          "output": "204 No Content",
+          "operations": ["Call repo_model.StarRepo with star=true"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.StarRepo",
+          "type": "repository",
+          "file_path": "models/repo/star.go",
+          "input": "context, doer User, repo Repository, star=true",
+          "output": "error",
+          "operations": ["Check if user is blocked by repo owner", "Check if already starring (idempotent)", "Insert star record", "Increment repository.num_stars", "Increment user.num_stars"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user_blocking", "description": "Check if doer is blocked by repo owner"},
+            {"operation": "SELECT", "table": "star", "description": "Check if already starring"},
+            {"operation": "INSERT", "table": "star", "description": "Insert star record"},
+            {"operation": "UPDATE", "table": "repository", "description": "Increment num_stars"},
+            {"operation": "UPDATE", "table": "user", "description": "Increment num_stars for doer"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User blocked by repo owner", "handler": "user.Star", "response_code": 403, "response": "user is blocked"},
+        {"condition": "DB error", "handler": "user.Star", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

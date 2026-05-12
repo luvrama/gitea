@@ -1,0 +1,134 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 2,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "attachment",
+      "entity_class": "repo_model.Attachment",
+      "file_path": "models/repo/attachment.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "uuid", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "release_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "uploader_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": ["INDEX DEFAULT 0"]},
+        {"name": "comment_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "download_count", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["DEFAULT 0"]},
+        {"name": "size", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["DEFAULT 0"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]}
+      ],
+      "indexes": [
+        {"name": "UQE_attachment_uuid", "columns": ["uuid"], "unique": true},
+        {"name": "IDX_attachment_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "IDX_attachment_issue_id", "columns": ["issue_id"], "unique": false},
+        {"name": "IDX_attachment_release_id", "columns": ["release_id"], "unique": false},
+        {"name": "IDX_attachment_uploader_id", "columns": ["uploader_id"], "unique": false},
+        {"name": "IDX_attachment_comment_id", "columns": ["comment_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "release", "join_column": "release_id"},
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "comment", "join_column": "comment_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "label",
+      "entity_class": "issues_model.Label",
+      "file_path": "models/issues/label.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "exclusive", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "exclusive_order", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["DEFAULT 0"]},
+        {"name": "description", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "color", "type": "VARCHAR(7)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_issues", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_closed_issues", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX updated"]},
+        {"name": "archived_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": "NULL", "constraints": ["DEFAULT NULL"]}
+      ],
+      "indexes": [
+        {"name": "IDX_label_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "IDX_label_org_id", "columns": ["org_id"], "unique": false},
+        {"name": "IDX_label_created_unix", "columns": ["created_unix"], "unique": false},
+        {"name": "IDX_label_updated_unix", "columns": ["updated_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "user (org)", "join_column": "org_id"},
+        {"type": "one-to-many", "target_table": "issue_label", "join_column": "id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-352",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "release", "operation": "SELECT", "method": "repo_model.GetReleaseByID", "description": "Get release to validate ownership"},
+        {"store_type": "database", "store_name": "attachment", "operation": "SELECT", "method": "repo_model.GetAttachmentByID", "description": "Get attachment by ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-353",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets",
+      "operations": [
+        {"store_type": "database", "store_name": "release", "operation": "SELECT", "method": "repo_model.GetReleaseByID", "description": "Get release by ID"},
+        {"store_type": "database", "store_name": "attachment", "operation": "SELECT", "method": "release.LoadAttributes", "description": "Load all attachments for release"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-354",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets",
+      "operations": [
+        {"store_type": "database", "store_name": "release", "operation": "SELECT", "method": "repo_model.GetReleaseByID", "description": "Validate release exists"},
+        {"store_type": "database", "store_name": "attachment", "operation": "INSERT", "method": "attachment_service.NewAttachment", "description": "Create attachment record"},
+        {"store_type": "database", "store_name": "storage", "operation": "INSERT", "method": "storage.Attachments.Save", "description": "Save file to object storage"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-355",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "release", "operation": "SELECT", "method": "repo_model.GetReleaseByID", "description": "Validate release exists"},
+        {"store_type": "database", "store_name": "attachment", "operation": "SELECT", "method": "repo_model.GetAttachmentByID", "description": "Get attachment"},
+        {"store_type": "database", "store_name": "attachment", "operation": "UPDATE", "method": "repo_model.UpdateAttachment", "description": "Update attachment name"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-356",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "release", "operation": "SELECT", "method": "repo_model.GetReleaseByID", "description": "Validate release exists"},
+        {"store_type": "database", "store_name": "attachment", "operation": "SELECT", "method": "repo_model.GetAttachmentByID", "description": "Get attachment"},
+        {"store_type": "database", "store_name": "attachment", "operation": "DELETE", "method": "repo_model.DeleteAttachment", "description": "Delete attachment record and file"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-357",
+      "path": "/api/v1/repos/{owner}/{repo}/labels",
+      "operations": [
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelsByRepoID", "description": "Get labels with sort and pagination"},
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.CountLabelsByRepoID", "description": "Count total labels"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-358",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelInRepoByID/Name", "description": "Get single label by ID or name"}
+      ]
+    }
+  ]
+}

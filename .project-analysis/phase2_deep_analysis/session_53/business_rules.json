@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Label color must be a valid 3 or 6 character hex color code",
+      "location": {"class": "label", "method": "NormalizeColor", "file_path": "modules/label/label.go", "line_number": 30},
+      "condition": "Color does not match pattern ^#([\\da-fA-F]{3}|[\\da-fA-F]{6})$",
+      "action": "Return invalid argument error",
+      "affected_endpoints": ["ep-359", "ep-360"],
+      "code_snippet": "if !colorPattern().MatchString(color) {\n\treturn \"\", util.NewInvalidArgumentErrorf(\"invalid color: %s\", color)\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Label color is normalized to lowercase 6-char hex with # prefix",
+      "location": {"class": "label", "method": "NormalizeColor", "file_path": "modules/label/label.go", "line_number": 42},
+      "condition": "Color is 3-char shorthand",
+      "action": "Expand to 6-char format (e.g. #abc -> #aabbcc)",
+      "affected_endpoints": ["ep-359", "ep-360"],
+      "code_snippet": "if len(color) == 4 {\n\tcolor = fmt.Sprintf(\"#%c%c%c%c%c%c\", r, r, g, g, b, b)\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "DeleteLabel verifies label belongs to the specified repo before deleting",
+      "location": {"class": "issues_model", "method": "DeleteLabel", "file_path": "models/issues/label.go", "line_number": 253},
+      "condition": "l.BelongsToRepo() && l.RepoID != id",
+      "action": "Return nil (no-op) without deleting",
+      "affected_endpoints": ["ep-361"],
+      "code_snippet": "if l.BelongsToRepo() && l.RepoID != id {\n\treturn nil\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "DeleteLabel cascades to remove issue_label associations and related comments",
+      "location": {"class": "issues_model", "method": "DeleteLabel", "file_path": "models/issues/label.go", "line_number": 258},
+      "condition": "Label is successfully deleted",
+      "action": "Delete from issue_label and comment tables where label_id matches",
+      "affected_endpoints": ["ep-361"],
+      "code_snippet": "db.GetEngine(ctx).Where(\"label_id = ?\", labelID).Delete(new(IssueLabel))"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "UpdateLabel recalculates num_issues and num_closed_issues via subqueries",
+      "location": {"class": "issues_model", "method": "updateLabelCols", "file_path": "models/issues/label.go", "line_number": 497},
+      "condition": "Any label update",
+      "action": "Set num_issues = count(*) from issue_label, num_closed_issues = count where issue.is_closed",
+      "affected_endpoints": ["ep-360"],
+      "code_snippet": "SetExpr(\"num_issues\", builder.Select(\"count(*)\").From(\"issue_label\").Where(...))"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "authorization",
+      "description": "Repo search respects private visibility based on authentication",
+      "location": {"class": "repo", "method": "Search", "file_path": "routers/api/v1/repo/repo.go", "line_number": 137},
+      "condition": "User is signed in and private param is not explicitly false",
+      "action": "Include private repos user has access to",
+      "affected_endpoints": ["ep-362"],
+      "code_snippet": "private := ctx.IsSigned && (ctx.FormString(\"private\") == \"\" || ctx.FormBool(\"private\"))"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "Repo search validates sort mode against allowed values",
+      "location": {"class": "repo", "method": "Search", "file_path": "routers/api/v1/repo/repo.go", "line_number": 183},
+      "condition": "Sort mode not in OrderByMap",
+      "action": "Return 422 with invalid sort mode error",
+      "affected_endpoints": ["ep-362"],
+      "code_snippet": "if orderBy, ok := searchModeMap[sortMode]; ok { ... } else {\n\tctx.APIError(http.StatusUnprocessableEntity, ...)\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Repository creation applies ForcePrivate setting override",
+      "location": {"class": "repo", "method": "CreateUserRepo", "file_path": "routers/api/v1/repo/repo.go", "line_number": 263},
+      "condition": "setting.Repository.ForcePrivate is true",
+      "action": "Repository is always created as private regardless of user input",
+      "affected_endpoints": ["ep-363", "ep-364", "ep-365", "ep-366"],
+      "code_snippet": "IsPrivate: opt.Private || setting.Repository.ForcePrivate,"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "validation",
+      "description": "CreateUserRepo validates readme template exists when auto_init is true",
+      "location": {"class": "repo", "method": "CreateUserRepo", "file_path": "routers/api/v1/repo/repo.go", "line_number": 251},
+      "condition": "opt.AutoInit && len(opt.Readme) > 0 && readme not in available list",
+      "action": "Return 400 error",
+      "affected_endpoints": ["ep-363", "ep-365", "ep-366"],
+      "code_snippet": "if opt.AutoInit && len(opt.Readme) > 0 && !slices.Contains(repo_module.Readmes, opt.Readme) {"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "authorization",
+      "description": "Generate repo requires admin or org membership to create for other users",
+      "location": {"class": "repo", "method": "Generate", "file_path": "routers/api/v1/repo/repo.go", "line_number": 408},
+      "condition": "Target owner is different from doer and doer is not admin",
+      "action": "Return 403 if target is not org, or check org create permission",
+      "affected_endpoints": ["ep-364"],
+      "code_snippet": "if !ctx.Doer.IsAdmin && !ctxUser.IsOrganization() {\n\tctx.APIError(http.StatusForbidden, ...)\n}"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "validation",
+      "description": "Generate repo requires at least one template option to be selected",
+      "location": {"class": "GenerateRepoOptions", "method": "IsValid", "file_path": "services/repository/generate.go", "line_number": 314},
+      "condition": "No template items selected (all booleans false)",
+      "action": "Return 422 error",
+      "affected_endpoints": ["ep-364"],
+      "code_snippet": "return gro.GitContent || gro.Topics || gro.GitHooks || gro.Webhooks || gro.Avatar || gro.IssueLabels || gro.ProtectedBranch"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "authorization",
+      "description": "Org repo creation requires user to have create permission in org",
+      "location": {"class": "repo", "method": "prepareDoerCreateRepoInOrg", "file_path": "routers/api/v1/repo/fork.go", "line_number": 103},
+      "condition": "User is not admin and cannot create org repo",
+      "action": "Return 403 forbidden",
+      "affected_endpoints": ["ep-365", "ep-366"],
+      "code_snippet": "if !canCreate {\n\tctx.APIError(http.StatusForbidden, \"User is not allowed to create repositories in this organization.\")\n}"
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "total_patterns": 7,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic error", "status_code": 500, "response_type": "JSON error", "message_template": "Internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "not found"},
+      {"exception_type": "forbidden", "status_code": 403, "response_type": "JSON error", "message_template": "forbidden"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-156", "path": "/api/v1/user/starred/{owner}/{repo}", "error_scenarios": [
+      {"exception": "generic DB error", "trigger": "StarRepo fails", "status_code": 500, "response": "Internal server error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-159", "path": "/api/v1/user/keys/{id}", "error_scenarios": [
+      {"exception": "ErrKeyNotExist", "trigger": "Key ID not found in DB", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-160", "path": "/api/v1/user/keys", "error_scenarios": [
+      {"exception": "SSH disabled", "trigger": "IsFeatureDisabledWithLoginType returns true", "status_code": 404, "response": "Not Found", "logged": false, "retryable": false},
+      {"exception": "ErrKeyUnableVerify", "trigger": "Key content cannot be verified", "status_code": 422, "response": "Unable to verify key content", "logged": false, "retryable": false},
+      {"exception": "ErrKeyAlreadyExist", "trigger": "Fingerprint already exists", "status_code": 422, "response": "Key content has been used as non-deploy key", "logged": false, "retryable": false},
+      {"exception": "ErrKeyNameAlreadyUsed", "trigger": "Name already used by owner", "status_code": 422, "response": "Key title has been used", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-161", "path": "/api/v1/user/keys/{id}", "error_scenarios": [
+      {"exception": "SSH disabled", "trigger": "IsFeatureDisabledWithLoginType returns true", "status_code": 404, "response": "Not Found", "logged": false, "retryable": false},
+      {"exception": "ErrKeyNotExist", "trigger": "Key ID not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "externally managed", "trigger": "Key is managed by external auth source", "status_code": 403, "response": "SSH Key is externally managed for this user", "logged": false, "retryable": false},
+      {"exception": "ErrKeyAccessDenied", "trigger": "User is not admin and not key owner", "status_code": 403, "response": "You do not have access to this key", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrKeyNotExist", "file_path": "models/asymkey/error.go", "extends": "util.ErrNotExist", "used_in": ["asymkey_model.GetPublicKeyByID", "asymkey_model.PublicKeyIsExternallyManaged"], "http_status": 404},
+    {"class": "ErrKeyAlreadyExist", "file_path": "models/asymkey/error.go", "extends": "util.ErrAlreadyExist", "used_in": ["asymkey_model.AddPublicKey"], "http_status": 422},
+    {"class": "ErrKeyNameAlreadyUsed", "file_path": "models/asymkey/error.go", "extends": "util.ErrAlreadyExist", "used_in": ["asymkey_model.AddPublicKey"], "http_status": 422},
+    {"class": "ErrKeyAccessDenied", "file_path": "models/asymkey/error.go", "extends": "util.ErrPermissionDenied", "used_in": ["asymkey_service.DeletePublicKey"], "http_status": 403}
+  ]
+}

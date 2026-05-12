@@ -1,0 +1,33 @@
+{
+  "total_patterns": 7,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic error", "status_code": 500, "response_type": "APIError", "message_template": "internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "APIError", "message_template": "not found"},
+      {"exception_type": "validation", "status_code": 422, "response_type": "APIError", "message_template": "validation error"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-359", "path": "/api/v1/repos/{owner}/{repo}/labels", "error_scenarios": [
+      {"exception": "invalid color", "trigger": "Color fails regex validation", "status_code": 422, "response": "validationError", "logged": false, "retryable": false},
+      {"exception": "db error", "trigger": "Insert fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-360", "path": "/api/v1/repos/{owner}/{repo}/labels/{id}", "error_scenarios": [
+      {"exception": "ErrRepoLabelNotExist", "trigger": "Label ID not found in repo", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "invalid color", "trigger": "New color fails validation", "status_code": 422, "response": "validationError", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-362", "path": "/api/v1/repos/search", "error_scenarios": [
+      {"exception": "invalid mode", "trigger": "Mode not in allowed set", "status_code": 422, "response": "validationError", "logged": false, "retryable": false},
+      {"exception": "search error", "trigger": "DB query fails", "status_code": 500, "response": "SearchError{OK:false}", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-363", "path": "/api/v1/user/repos", "error_scenarios": [
+      {"exception": "ErrRepoAlreadyExist", "trigger": "Repo with same name exists", "status_code": 409, "response": "conflict", "logged": false, "retryable": false},
+      {"exception": "ErrNameReserved", "trigger": "Name is reserved", "status_code": 422, "response": "validationError", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrRepoLabelNotExist", "file_path": "models/issues/label.go", "extends": "error", "used_in": ["issues_model.GetLabelInRepoByID"], "http_status": 404},
+    {"class": "ErrRepoAlreadyExist", "file_path": "models/repo/repo.go", "extends": "error", "used_in": ["repo_service.CreateRepositoryDirectly"], "http_status": 409},
+    {"class": "ErrReachLimitOfRepo", "file_path": "models/repo/repo.go", "extends": "error", "used_in": ["repo_service.GenerateRepository"], "http_status": 403}
+  ]
+}

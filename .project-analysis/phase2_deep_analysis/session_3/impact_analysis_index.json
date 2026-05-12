@@ -1,0 +1,67 @@
+{
+  "endpoints_by_database_table": {
+    "notification": {"read": ["ep-019", "ep-020", "ep-021", "ep-022"], "write": ["ep-020"]},
+    "repository": {"read": ["ep-019", "ep-020", "ep-022"], "write": []},
+    "issue": {"read": ["ep-019", "ep-020", "ep-022"], "write": []},
+    "user": {"read": ["ep-019", "ep-020", "ep-022"], "write": []},
+    "comment": {"read": ["ep-019", "ep-020", "ep-022"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "ui.DEFAULT_THEME": ["ep-015"],
+    "ui.REACTIONS": ["ep-015"],
+    "ui.CUSTOM_EMOJIS": ["ep-015"],
+    "api.MAX_RESPONSE_ITEMS": ["ep-016", "ep-019", "ep-022"],
+    "api.DEFAULT_PAGING_NUM": ["ep-016", "ep-019", "ep-022"],
+    "api.DEFAULT_GIT_TREES_PER_PAGE": ["ep-016"],
+    "api.DEFAULT_MAX_BLOB_SIZE": ["ep-016"],
+    "api.DEFAULT_MAX_RESPONSE_SIZE": ["ep-016"],
+    "mirror.ENABLED": ["ep-017"],
+    "repository.DISABLE_HTTP_GIT": ["ep-017"],
+    "attachment.ENABLED": ["ep-018"],
+    "attachment.MAX_SIZE": ["ep-018"]
+  },
+  "endpoints_by_model_class": {
+    "Notification": ["ep-019", "ep-020", "ep-021", "ep-022"],
+    "GeneralUISettings": ["ep-015"],
+    "GeneralAPISettings": ["ep-016"],
+    "GeneralRepoSettings": ["ep-017"],
+    "GeneralAttachmentSettings": ["ep-018"],
+    "NotificationThread": ["ep-019", "ep-020", "ep-022"],
+    "NotificationCount": ["ep-021"]
+  },
+  "endpoints_by_service_class": {
+    "convert.ToNotificationThread": ["ep-019", "ep-020", "ep-022"],
+    "convert.ToNotifications": ["ep-019", "ep-022"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-015": {"reads": [], "writes": []},
+    "ep-016": {"reads": [], "writes": []},
+    "ep-017": {"reads": [], "writes": []},
+    "ep-018": {"reads": [], "writes": []},
+    "ep-019": {"reads": ["notification", "repository", "issue", "user", "comment"], "writes": []},
+    "ep-020": {"reads": ["notification", "repository", "issue", "user", "comment"], "writes": ["notification"]},
+    "ep-021": {"reads": ["notification"], "writes": []},
+    "ep-022": {"reads": ["notification", "repository", "issue", "user", "comment"], "writes": []}
+  },
+  "external_services_by_endpoint": {
+    "ep-015": [],
+    "ep-016": [],
+    "ep-017": [],
+    "ep-018": [],
+    "ep-019": [],
+    "ep-020": [],
+    "ep-021": [],
+    "ep-022": []
+  },
+  "config_properties_by_endpoint": {
+    "ep-015": ["ui.DEFAULT_THEME", "ui.REACTIONS", "ui.CUSTOM_EMOJIS"],
+    "ep-016": ["api.MAX_RESPONSE_ITEMS", "api.DEFAULT_PAGING_NUM", "api.DEFAULT_GIT_TREES_PER_PAGE", "api.DEFAULT_MAX_BLOB_SIZE", "api.DEFAULT_MAX_RESPONSE_SIZE"],
+    "ep-017": ["mirror.ENABLED", "repository.DISABLE_HTTP_GIT"],
+    "ep-018": ["attachment.ENABLED", "attachment.MAX_SIZE"],
+    "ep-019": ["api.MAX_RESPONSE_ITEMS", "api.DEFAULT_PAGING_NUM"],
+    "ep-020": [],
+    "ep-021": [],
+    "ep-022": ["api.MAX_RESPONSE_ITEMS", "api.DEFAULT_PAGING_NUM"]
+  }
+}

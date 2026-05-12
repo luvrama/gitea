@@ -1,0 +1,105 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite (via XORM)",
+  "total_tables_or_collections": 2,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "gpg_key",
+      "entity_class": "asymkey_model.GPGKey",
+      "file_path": "models/asymkey/gpg_key.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX NOT NULL"]},
+        {"name": "key_id", "type": "CHAR(16)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX CHAR(16) NOT NULL"]},
+        {"name": "primary_key_id", "type": "CHAR(16)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": "''", "constraints": ["CHAR(16)"]},
+        {"name": "content", "type": "MEDIUMTEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["MEDIUMTEXT NOT NULL"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "expired_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "added_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "verified", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "can_sign", "type": "BOOLEAN", "code_type": "bool", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "can_encrypt_comms", "type": "BOOLEAN", "code_type": "bool", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "can_encrypt_storage", "type": "BOOLEAN", "code_type": "bool", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "can_certify", "type": "BOOLEAN", "code_type": "bool", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_gpg_key_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "IDX_gpg_key_key_id", "columns": ["key_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "one-to-many", "target_table": "gpg_key", "join_column": "primary_key_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "gpg_key_import",
+      "entity_class": "asymkey_model.GPGKeyImport",
+      "file_path": "models/asymkey/gpg_key_import.go",
+      "columns": [
+        {"name": "key_id", "type": "CHAR(16)", "code_type": "string", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["pk CHAR(16) NOT NULL"]},
+        {"name": "content", "type": "MEDIUMTEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["MEDIUMTEXT NOT NULL"]}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "one-to-one", "target_table": "gpg_key", "join_column": "key_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-184",
+      "path": "/api/v1/user/gpg_keys",
+      "operations": [
+        {"store_type": "database", "store_name": "gpg_key", "operation": "SELECT", "method": "db.FindAndCount", "description": "List primary keys by owner_id with pagination"},
+        {"store_type": "database", "store_name": "gpg_key", "operation": "SELECT", "method": "GPGKeyList.LoadSubKeys", "description": "Batch load subkeys via IN clause"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-185",
+      "path": "/api/v1/user/gpg_keys/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "gpg_key", "operation": "SELECT", "method": "GetGPGKeyForUserByID", "description": "Get key by id and owner_id"},
+        {"store_type": "database", "store_name": "gpg_key", "operation": "SELECT", "method": "GPGKey.LoadSubKeys", "description": "Load subkeys for single key"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-186",
+      "path": "/api/v1/user/gpg_key_token",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-187",
+      "path": "/api/v1/user/gpg_key_verify",
+      "operations": [
+        {"store_type": "database", "store_name": "gpg_key", "operation": "SELECT", "method": "VerifyGPGKey", "description": "Find key by owner_id and key_id"},
+        {"store_type": "database", "store_name": "gpg_key", "operation": "SELECT", "method": "LoadSubKeys", "description": "Load subkeys for verification"},
+        {"store_type": "database", "store_name": "gpg_key", "operation": "UPDATE", "method": "VerifyGPGKey", "description": "Set verified=true"},
+        {"store_type": "database", "store_name": "gpg_key", "operation": "SELECT", "method": "db.Find", "description": "Re-fetch key for response"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-188",
+      "path": "/api/v1/user/gpg_keys",
+      "operations": [
+        {"store_type": "database", "store_name": "gpg_key", "operation": "SELECT", "method": "AddGPGKey", "description": "Check duplicate key_id"},
+        {"store_type": "database", "store_name": "email_address", "operation": "SELECT", "method": "GetEmailAddresses", "description": "Get user emails for matching"},
+        {"store_type": "database", "store_name": "gpg_key_import", "operation": "INSERT", "method": "addGPGKey", "description": "Store original armored key"},
+        {"store_type": "database", "store_name": "gpg_key", "operation": "INSERT", "method": "addGPGKey", "description": "Insert primary key"},
+        {"store_type": "database", "store_name": "gpg_key", "operation": "INSERT", "method": "addGPGSubKey", "description": "Insert each subkey"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-189",
+      "path": "/api/v1/user/gpg_keys/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "gpg_key", "operation": "SELECT", "method": "GetGPGKeyForUserByID", "description": "Verify ownership"},
+        {"store_type": "database", "store_name": "gpg_key_import", "operation": "DELETE", "method": "deleteGPGKey", "description": "Delete import record"},
+        {"store_type": "database", "store_name": "gpg_key", "operation": "DELETE", "method": "deleteGPGKey", "description": "Delete key and subkeys"}
+      ]
+    }
+  ]
+}

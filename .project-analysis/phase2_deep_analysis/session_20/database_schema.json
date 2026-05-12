@@ -1,0 +1,148 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "action_variable",
+      "entity_class": "ActionVariable",
+      "file_path": "models/actions/variable.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(owner_repo_name)"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "UNIQUE(owner_repo_name)"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL", "UNIQUE(owner_repo_name)"]},
+        {"name": "data", "type": "LONGTEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL", "max 65536 runes"]},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["max 4096 runes"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created NOT NULL"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_owner_repo_name", "columns": ["owner_id", "repo_id", "name"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "action_run",
+      "entity_class": "ActionRun",
+      "file_path": "models/actions/run.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "trigger_user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "ref", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "commit_sha", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "trigger_event", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "status", "type": "INT", "code_type": "Status", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]}
+      ],
+      "indexes": [
+        {"name": "IDX_action_run_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "IDX_action_run_status", "columns": ["status"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "trigger_user_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "action_run_job",
+      "entity_class": "ActionRunJob",
+      "file_path": "models/actions/run_job.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "run_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "status", "type": "INT", "code_type": "Status", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]}
+      ],
+      "indexes": [
+        {"name": "IDX_action_run_job_run_id", "columns": ["run_id"], "unique": false},
+        {"name": "IDX_action_run_job_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "action_run", "join_column": "run_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "follow",
+      "entity_class": "Follow",
+      "file_path": "models/user/follow.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(follow)"]},
+        {"name": "follow_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(follow)"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]}
+      ],
+      "indexes": [
+        {"name": "UQE_follow", "columns": ["user_id", "follow_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "follow_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-135",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "actions_model.FindVariables", "description": "find variable by owner_id and name"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-136",
+      "path": "/api/v1/user/actions/variables",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "db.FindAndCount[ActionVariable]", "description": "list variables by owner_id with pagination"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-137",
+      "path": "/api/v1/user/actions/runs",
+      "operations": [
+        {"store_type": "database", "store_name": "action_run", "operation": "SELECT", "method": "db.FindAndCount[ActionRun]", "description": "find runs joined with repository by owner_id"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "runList.LoadTriggerUser", "description": "load trigger users"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "runList.LoadRepos", "description": "load repos for runs"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-138",
+      "path": "/api/v1/user/actions/jobs",
+      "operations": [
+        {"store_type": "database", "store_name": "action_run_job", "operation": "SELECT", "method": "db.FindAndCount[ActionRunJob]", "description": "find jobs joined with repository by owner_id"},
+        {"store_type": "database", "store_name": "action_run", "operation": "SELECT", "method": "jobList.LoadAttributes", "description": "load run for each job"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "jobList.LoadAttributes", "description": "load repo for each job"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-139",
+      "path": "/api/v1/user/followers",
+      "operations": [
+        {"store_type": "database", "store_name": "user JOIN follow", "operation": "SELECT", "method": "user_model.GetUserFollowers", "description": "get followers with visibility filtering and pagination"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-140",
+      "path": "/api/v1/users/{username}/followers",
+      "operations": [
+        {"store_type": "database", "store_name": "user JOIN follow", "operation": "SELECT", "method": "user_model.GetUserFollowers", "description": "get followers with visibility filtering and pagination"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-141",
+      "path": "/api/v1/user/following",
+      "operations": [
+        {"store_type": "database", "store_name": "user JOIN follow", "operation": "SELECT", "method": "user_model.GetUserFollowing", "description": "get following users with visibility filtering and pagination"}
+      ]
+    }
+  ]
+}

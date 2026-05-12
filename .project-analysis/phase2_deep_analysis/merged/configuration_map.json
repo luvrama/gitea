@@ -1,0 +1,2156 @@
+{
+  "total_properties": 109,
+  "properties": [
+    {
+      "key": "APP_VER",
+      "type": "String",
+      "default_value": "dev",
+      "source_file": "modules/setting/setting.go",
+      "used_by": [
+        {
+          "class": "misc",
+          "method": "Version",
+          "file_path": "routers/api/v1/misc/version.go",
+          "usage": "setting.AppVer",
+          "impact": "Determines version string returned"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-001"
+      ]
+    },
+    {
+      "key": "repository.SIGNING_KEY",
+      "type": "String",
+      "default_value": "default",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "git",
+          "method": "GetSigningKey",
+          "file_path": "modules/git/key.go",
+          "usage": "setting.Repository.Signing.SigningKey",
+          "impact": "Determines which signing key to use (none/default/specific key ID)"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-004",
+        "ep-005",
+        "ep-006",
+        "ep-007"
+      ]
+    },
+    {
+      "key": "repository.SIGNING_FORMAT",
+      "type": "String",
+      "default_value": "openpgp",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "git",
+          "method": "GetSigningKey",
+          "file_path": "modules/git/key.go",
+          "usage": "setting.Repository.Signing.SigningFormat",
+          "impact": "Determines key format when using explicit key"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-004",
+        "ep-005",
+        "ep-006",
+        "ep-007"
+      ]
+    },
+    {
+      "key": "git.HOME_PATH",
+      "type": "String",
+      "default_value": "",
+      "source_file": "modules/setting/git.go",
+      "used_by": [
+        {
+          "class": "asymkey_service",
+          "method": "PublicSigningKey",
+          "file_path": "services/asymkey/sign.go",
+          "usage": "setting.Git.HomePath as exec dir for gpg",
+          "impact": "Working directory for GPG key export"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-004",
+        "ep-005"
+      ]
+    },
+    {
+      "key": "server.APP_URL",
+      "type": "String",
+      "default_value": "http://localhost:3000/",
+      "source_file": "modules/setting/server.go",
+      "used_by": [
+        {
+          "class": "common",
+          "method": "RenderMarkup",
+          "file_path": "routers/common/markup.go",
+          "usage": "setting.AppSubURL for URL path parsing",
+          "impact": "Base URL for link resolution in rendered markup"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-008",
+        "ep-352",
+        "ep-353",
+        "ep-354",
+        "ep-355"
+      ]
+    },
+    {
+      "key": "repository.PREFERRED_LICENSES",
+      "type": "[]String",
+      "default_value": "[]",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "repo_module",
+          "method": "LoadRepoConfig",
+          "file_path": "modules/repository/init.go",
+          "usage": "setting.Repository.PreferredLicenses",
+          "impact": "Determines sort order of license list (preferred first)"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-002"
+      ]
+    },
+    {
+      "key": "setting.AppURL",
+      "type": "String",
+      "default_value": "protocol://domain:port/",
+      "source_file": "modules/setting/server.go",
+      "used_by": [
+        {
+          "class": "misc",
+          "method": "ListLicenseTemplates",
+          "file_path": "routers/api/v1/misc/licenses.go",
+          "usage": "Build license API URL",
+          "impact": "Changes the URL field in license list response"
+        },
+        {
+          "class": "misc",
+          "method": "GetLicenseTemplateInfo",
+          "file_path": "routers/api/v1/misc/licenses.go",
+          "usage": "Build license API URL",
+          "impact": "Changes the URL field in license detail response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-013",
+        "ep-014"
+      ]
+    },
+    {
+      "key": "setting.AppSubURL",
+      "type": "String",
+      "default_value": "",
+      "source_file": "modules/setting/server.go",
+      "used_by": [
+        {
+          "class": "common",
+          "method": "RenderMarkup",
+          "file_path": "routers/common/markup.go",
+          "usage": "Strip subpath prefix from urlPathContext to parse owner/repo",
+          "impact": "Affects link resolution in rendered markdown"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-009"
+      ]
+    },
+    {
+      "key": "setting.Repository.PreferredLicenses",
+      "type": "[]string",
+      "default_value": "[\"Apache License 2.0\", \"MIT License\"]",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "repository",
+          "method": "LoadRepoConfig",
+          "file_path": "modules/repository/init.go",
+          "usage": "Sort preferred licenses to top of list",
+          "impact": "Changes ordering of license list response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-013"
+      ]
+    },
+    {
+      "key": "setting.CustomPath",
+      "type": "String",
+      "default_value": "custom",
+      "source_file": "modules/setting/setting.go",
+      "used_by": [
+        {
+          "class": "options",
+          "method": "CustomAssets",
+          "file_path": "modules/options/base.go",
+          "usage": "Base path for custom template overrides",
+          "impact": "Determines where custom gitignore/license files are loaded from"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-012",
+        "ep-014"
+      ]
+    },
+    {
+      "key": "ui.DEFAULT_THEME",
+      "type": "String",
+      "default_value": "gitea-auto",
+      "source_file": "modules/setting/ui.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralUISettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "setting.UI.DefaultTheme",
+          "impact": "Changes default_theme in response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-015"
+      ]
+    },
+    {
+      "key": "ui.REACTIONS",
+      "type": "[]String",
+      "default_value": "[+1, -1, laugh, hooray, confused, heart, rocket, eyes]",
+      "source_file": "modules/setting/ui.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralUISettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "setting.UI.Reactions",
+          "impact": "Changes allowed_reactions in response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-015",
+        "ep-300",
+        "ep-301",
+        "ep-303",
+        "ep-304"
+      ]
+    },
+    {
+      "key": "ui.CUSTOM_EMOJIS",
+      "type": "[]String",
+      "default_value": "[git, gitea, codeberg, gitlab, github, gogs]",
+      "source_file": "modules/setting/ui.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralUISettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "setting.UI.CustomEmojis",
+          "impact": "Changes custom_emojis in response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-015"
+      ]
+    },
+    {
+      "key": "api.MAX_RESPONSE_ITEMS",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralAPISettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "setting.API.MaxResponseItems",
+          "impact": "Changes max_response_items in response"
+        },
+        {
+          "class": "convert",
+          "method": "ToCorrectPageSize",
+          "file_path": "services/convert/utils.go",
+          "usage": "Clamps page size upper bound",
+          "impact": "Limits pagination size for all list endpoints"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-016",
+        "ep-019",
+        "ep-022",
+        "ep-242"
+      ]
+    },
+    {
+      "key": "api.DEFAULT_PAGING_NUM",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralAPISettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "setting.API.DefaultPagingNum",
+          "impact": "Changes default_paging_num in response"
+        },
+        {
+          "class": "convert",
+          "method": "ToCorrectPageSize",
+          "file_path": "services/convert/utils.go",
+          "usage": "Default page size when not specified",
+          "impact": "Default pagination for all list endpoints"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-016",
+        "ep-019",
+        "ep-022",
+        "ep-208",
+        "ep-211",
+        "ep-242",
+        "ep-264"
+      ]
+    },
+    {
+      "key": "api.DEFAULT_GIT_TREES_PER_PAGE",
+      "type": "Integer",
+      "default_value": "1000",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralAPISettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "setting.API.DefaultGitTreesPerPage",
+          "impact": "Changes default_git_trees_per_page in response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-016"
+      ]
+    },
+    {
+      "key": "api.DEFAULT_MAX_BLOB_SIZE",
+      "type": "Integer (int64)",
+      "default_value": "10485760 (10MB)",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralAPISettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "setting.API.DefaultMaxBlobSize",
+          "impact": "Changes default_max_blob_size in response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-016"
+      ]
+    },
+    {
+      "key": "api.DEFAULT_MAX_RESPONSE_SIZE",
+      "type": "Integer (int64)",
+      "default_value": "104857600 (100MB)",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralAPISettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "setting.API.DefaultMaxResponseSize",
+          "impact": "Changes default_max_response_size in response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-016"
+      ]
+    },
+    {
+      "key": "mirror.ENABLED",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/mirror.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralRepoSettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "!setting.Mirror.Enabled",
+          "impact": "Changes mirrors_disabled in response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-017",
+        "ep-234",
+        "ep-235",
+        "ep-236",
+        "ep-237",
+        "ep-238",
+        "ep-239"
+      ]
+    },
+    {
+      "key": "repository.DISABLE_HTTP_GIT",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralRepoSettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "setting.Repository.DisableHTTPGit",
+          "impact": "Changes http_git_disabled in response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-017"
+      ]
+    },
+    {
+      "key": "attachment.ENABLED",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/attachment.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralAttachmentSettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "setting.Attachment.Enabled",
+          "impact": "Changes enabled in response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-018",
+        "ep-259",
+        "ep-260",
+        "ep-261",
+        "ep-354"
+      ]
+    },
+    {
+      "key": "attachment.MAX_SIZE",
+      "type": "Integer (int64)",
+      "default_value": "100",
+      "source_file": "modules/setting/attachment.go",
+      "used_by": [
+        {
+          "class": "settings",
+          "method": "GetGeneralAttachmentSettings",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "usage": "setting.Attachment.MaxSize",
+          "impact": "Changes max_size in response"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-018",
+        "ep-259"
+      ]
+    },
+    {
+      "key": "api.default_paging_num",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "custom/conf/app.ini [api]",
+      "used_by": [
+        {
+          "class": "convert",
+          "method": "ToCorrectPageSize",
+          "file_path": "services/convert/utils.go",
+          "usage": "Default page size when limit param is 0 or negative",
+          "impact": "Controls default number of results per page"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-026",
+        "ep-027"
+      ]
+    },
+    {
+      "key": "api.max_response_items",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "custom/conf/app.ini [api]",
+      "used_by": [
+        {
+          "class": "convert",
+          "method": "ToCorrectPageSize",
+          "file_path": "services/convert/utils.go",
+          "usage": "Maximum allowed page size",
+          "impact": "Caps the limit parameter to prevent excessive result sets"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-026",
+        "ep-027"
+      ]
+    },
+    {
+      "key": "service.default_org_member_visible",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "custom/conf/app.ini [service]",
+      "used_by": [
+        {
+          "class": "organization",
+          "method": "CreateOrganization",
+          "file_path": "models/organization/org.go",
+          "usage": "Default is_public value for new org members",
+          "impact": "Controls whether new org memberships are public by default"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-026",
+        "ep-027"
+      ]
+    },
+    {
+      "key": "setting.API.DefaultPagingNum",
+      "type": "Integer",
+      "default_value": "20",
+      "source_file": "custom/conf/app.ini [api]",
+      "used_by": [
+        {
+          "class": "convert",
+          "method": "ToCorrectPageSize",
+          "file_path": "services/convert/utils.go",
+          "usage": "Default page size when limit not specified",
+          "impact": "Controls default number of results per page"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-029",
+        "ep-043",
+        "ep-048",
+        "ep-070",
+        "ep-071",
+        "ep-077",
+        "ep-082",
+        "ep-190",
+        "ep-194",
+        "ep-195"
+      ]
+    },
+    {
+      "key": "setting.API.MaxResponseItems",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "custom/conf/app.ini [api]",
+      "used_by": [
+        {
+          "class": "convert",
+          "method": "ToCorrectPageSize",
+          "file_path": "services/convert/utils.go",
+          "usage": "Maximum allowed page size",
+          "impact": "Caps the limit parameter to prevent excessive results"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-029",
+        "ep-043",
+        "ep-048",
+        "ep-070",
+        "ep-071",
+        "ep-077",
+        "ep-082",
+        "ep-190",
+        "ep-194",
+        "ep-195"
+      ]
+    },
+    {
+      "key": "setting.Admin.DisableRegularOrgCreation",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "custom/conf/app.ini [admin]",
+      "used_by": [
+        {
+          "class": "User",
+          "method": "CanCreateOrganization",
+          "file_path": "models/user/user.go",
+          "usage": "If true, only admins can create orgs",
+          "impact": "Non-admin users get 403 on POST /orgs"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-030"
+      ]
+    },
+    {
+      "key": "setting.Service.DefaultOrgMemberVisible",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "custom/conf/app.ini [service]",
+      "used_by": [
+        {
+          "class": "organization",
+          "method": "CreateOrganization",
+          "file_path": "models/organization/org.go",
+          "usage": "Sets initial is_public value for org_user record",
+          "impact": "Controls whether new org members are publicly visible by default"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-030"
+      ]
+    },
+    {
+      "key": "AVATAR_MAX_WIDTH",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "app.ini [picture]",
+      "used_by": [
+        {
+          "class": "avatar",
+          "method": "processAvatarImage",
+          "file_path": "modules/avatar/avatar.go",
+          "usage": "max allowed image width",
+          "impact": "images wider than this are rejected"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-037"
+      ]
+    },
+    {
+      "key": "AVATAR_MAX_HEIGHT",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "app.ini [picture]",
+      "used_by": [
+        {
+          "class": "avatar",
+          "method": "processAvatarImage",
+          "file_path": "modules/avatar/avatar.go",
+          "usage": "max allowed image height",
+          "impact": "images taller than this are rejected"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-037"
+      ]
+    },
+    {
+      "key": "AVATAR_MAX_ORIGIN_SIZE",
+      "type": "Integer",
+      "default_value": "262144",
+      "source_file": "app.ini [picture]",
+      "used_by": [
+        {
+          "class": "avatar",
+          "method": "processAvatarImage",
+          "file_path": "modules/avatar/avatar.go",
+          "usage": "threshold for skipping image processing",
+          "impact": "images smaller than 256KB are stored as-is without crop/resize"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-037"
+      ]
+    },
+    {
+      "key": "AVATAR_RENDERED_SIZE_FACTOR",
+      "type": "Integer",
+      "default_value": "2",
+      "source_file": "app.ini [picture]",
+      "used_by": [
+        {
+          "class": "avatar",
+          "method": "processAvatarImage",
+          "file_path": "modules/avatar/avatar.go",
+          "usage": "multiplier for target avatar size (256 * factor)",
+          "impact": "determines final avatar resolution after resize"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-037"
+      ]
+    },
+    {
+      "key": "SECRET_KEY",
+      "type": "String",
+      "default_value": "auto-generated",
+      "source_file": "app.ini [security]",
+      "used_by": [
+        {
+          "class": "secret_module",
+          "method": "EncryptSecret/DecryptSecret",
+          "file_path": "modules/secret/secret.go",
+          "usage": "encryption key for secret data",
+          "impact": "all secret values are encrypted/decrypted with this key"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-040",
+        "ep-130"
+      ]
+    },
+    {
+      "key": "setting.PanicInDevOrTesting",
+      "type": "function",
+      "default_value": "panics in dev/test mode only",
+      "source_file": "modules/setting/setting.go",
+      "used_by": [
+        {
+          "class": "shared",
+          "method": "ListRunners/GetRunner/DeleteRunner/UpdateRunner",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "usage": "assert ownerID and repoID not both set",
+          "impact": "panics in dev/test if invalid state detected"
+        },
+        {
+          "class": "shared",
+          "method": "ListJobs/ListRuns",
+          "file_path": "routers/api/v1/shared/action.go",
+          "usage": "assert ownerID and repoID not both set",
+          "impact": "panics in dev/test if invalid state detected"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-050",
+        "ep-051",
+        "ep-052",
+        "ep-053",
+        "ep-114",
+        "ep-115",
+        "ep-116",
+        "ep-117",
+        "ep-176",
+        "ep-177",
+        "ep-178",
+        "ep-179"
+      ]
+    },
+    {
+      "key": "service.AutoWatchNewRepos",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/service.go",
+      "used_by": [
+        {
+          "class": "org_service",
+          "method": "AddTeamMember",
+          "file_path": "services/org/team.go",
+          "usage": "conditional auto-watch",
+          "impact": "If true, new team members auto-watch all team repos in a goroutine"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-062"
+      ]
+    },
+    {
+      "key": "service.AUTO_WATCH_NEW_REPOS",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/service.go",
+      "used_by": [
+        {
+          "class": "repository",
+          "method": "addRepositoryToTeam",
+          "file_path": "services/repository/repo_team.go",
+          "usage": "conditional auto-watch",
+          "impact": "If true, all team members auto-watch repos added to the team"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-066",
+        "ep-331"
+      ]
+    },
+    {
+      "key": "setting.SecretKey",
+      "type": "String",
+      "default_value": "auto-generated",
+      "source_file": "modules/setting/security.go",
+      "used_by": [
+        {
+          "class": "Webhook",
+          "method": "SetHeaderAuthorization/HeaderAuthorization",
+          "file_path": "models/webhook/webhook.go",
+          "usage": "Encrypt/decrypt authorization header",
+          "impact": "Required for webhook auth header encryption"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-077",
+        "ep-078",
+        "ep-079",
+        "ep-080"
+      ]
+    },
+    {
+      "key": "API.DefaultPagingNum",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {
+          "class": "convert",
+          "method": "ToCorrectPageSize",
+          "file_path": "services/convert/utils.go",
+          "usage": "Default page size when not specified",
+          "impact": "Controls default number of results returned"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-084",
+        "ep-087",
+        "ep-123",
+        "ep-127",
+        "ep-135",
+        "ep-136",
+        "ep-137",
+        "ep-138",
+        "ep-139",
+        "ep-140",
+        "ep-141",
+        "ep-142",
+        "ep-147",
+        "ep-221",
+        "ep-222"
+      ]
+    },
+    {
+      "key": "API.MaxResponseItems",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {
+          "class": "convert",
+          "method": "ToCorrectPageSize",
+          "file_path": "services/convert/utils.go",
+          "usage": "Maximum page size cap",
+          "impact": "Limits maximum results per page"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-084",
+        "ep-087",
+        "ep-123",
+        "ep-127",
+        "ep-135",
+        "ep-136",
+        "ep-137",
+        "ep-138",
+        "ep-139",
+        "ep-140",
+        "ep-141",
+        "ep-142",
+        "ep-147"
+      ]
+    },
+    {
+      "key": "PasswordCheckPwn",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/security.go",
+      "used_by": [
+        {
+          "class": "password",
+          "method": "IsPwned",
+          "file_path": "modules/auth/password/pwn.go",
+          "usage": "Gate for HaveIBeenPwned API check",
+          "impact": "If true, passwords are checked against breach database; if false, check is skipped"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-098"
+      ]
+    },
+    {
+      "key": "MinPasswordLength",
+      "type": "Integer",
+      "default_value": "6",
+      "source_file": "modules/setting/security.go",
+      "used_by": [
+        {
+          "class": "admin",
+          "method": "CreateUser",
+          "file_path": "routers/api/v1/admin/user.go",
+          "usage": "Minimum password length validation",
+          "impact": "Passwords shorter than this value are rejected"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-098"
+      ]
+    },
+    {
+      "key": "AppURL",
+      "type": "String",
+      "default_value": "http://localhost:3000/",
+      "source_file": "modules/setting/server.go",
+      "used_by": [
+        {
+          "class": "admin",
+          "method": "ListHooks/EditHook",
+          "file_path": "routers/api/v1/admin/hooks.go",
+          "usage": "Base URL for webhook admin link generation",
+          "impact": "Affects the URL field in hook API responses"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-091",
+        "ep-094"
+      ]
+    },
+    {
+      "key": "Service.DefaultOrgMemberVisible",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/service.go",
+      "used_by": [
+        {
+          "class": "organization",
+          "method": "CreateOrganization",
+          "file_path": "models/organization/org.go",
+          "usage": "Sets IsPublic on org_user record for initial owner",
+          "impact": "Controls whether org membership is public by default"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-096"
+      ]
+    },
+    {
+      "key": "MIN_PASSWORD_LENGTH",
+      "type": "Integer",
+      "default_value": "6",
+      "source_file": "modules/setting/security.go",
+      "used_by": [
+        {
+          "class": "user_service",
+          "method": "UpdateAuth",
+          "file_path": "services/user/update.go",
+          "usage": "setting.MinPasswordLength",
+          "impact": "Minimum password length for user creation/edit"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-099"
+      ]
+    },
+    {
+      "key": "PASSWORD_CHECK_PWN",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/security.go",
+      "used_by": [
+        {
+          "class": "password",
+          "method": "IsPwned",
+          "file_path": "modules/auth/password/pwn.go",
+          "usage": "Check if password is in HaveIBeenPwned database",
+          "impact": "When enabled, passwords are checked against HIBP API"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-099"
+      ]
+    },
+    {
+      "key": "USER_DELETE_WITH_COMMENTS_MAX_TIME",
+      "type": "Duration",
+      "default_value": "0",
+      "source_file": "modules/setting/service.go",
+      "used_by": [
+        {
+          "class": "user_service",
+          "method": "deleteUser",
+          "file_path": "services/user/delete.go",
+          "usage": "setting.Service.UserDeleteWithCommentsMaxTime",
+          "impact": "If non-zero and user is younger than this duration, comments are deleted with user"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-100"
+      ]
+    },
+    {
+      "key": "repository.force_private",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "repo",
+          "method": "CreateUserRepo",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "usage": "OR'd with user's private flag",
+          "impact": "Forces all new repos to be private"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-112"
+      ]
+    },
+    {
+      "key": "repository.root_path",
+      "type": "String",
+      "default_value": "data/gitea-repositories",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "repo_service",
+          "method": "ListUnadoptedRepositories",
+          "file_path": "services/repository/adopt.go",
+          "usage": "Root directory for filesystem walk",
+          "impact": "Determines where to look for unadopted repos"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-107",
+        "ep-108",
+        "ep-109"
+      ]
+    },
+    {
+      "key": "database.iterate_buffer_size",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/database.go",
+      "used_by": [
+        {
+          "class": "repo_service",
+          "method": "ListUnadoptedRepositories",
+          "file_path": "services/repository/adopt.go",
+          "usage": "Batch size for checking repos against DB",
+          "impact": "Controls memory usage during filesystem walk"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-107"
+      ]
+    },
+    {
+      "key": "Avatar.MaxWidth",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [
+        {
+          "class": "avatar",
+          "method": "processAvatarImage",
+          "file_path": "modules/avatar/avatar.go",
+          "usage": "Maximum allowed image width",
+          "impact": "Rejects images wider than this"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-128"
+      ]
+    },
+    {
+      "key": "Avatar.MaxHeight",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [
+        {
+          "class": "avatar",
+          "method": "processAvatarImage",
+          "file_path": "modules/avatar/avatar.go",
+          "usage": "Maximum allowed image height",
+          "impact": "Rejects images taller than this"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-128"
+      ]
+    },
+    {
+      "key": "Avatar.MaxOriginSize",
+      "type": "Integer",
+      "default_value": "262144",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [
+        {
+          "class": "avatar",
+          "method": "ProcessAvatarImage",
+          "file_path": "modules/avatar/avatar.go",
+          "usage": "If original image is smaller than this, skip processing",
+          "impact": "Small images are stored as-is (preserving animation)"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-128"
+      ]
+    },
+    {
+      "key": "avatar.STORAGE_TYPE",
+      "type": "String",
+      "default_value": "local",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [
+        {
+          "class": "storage",
+          "method": "initAvatars",
+          "file_path": "modules/storage/storage.go",
+          "usage": "Determines avatar storage backend type",
+          "impact": "Controls where avatar files are stored/deleted"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-129"
+      ]
+    },
+    {
+      "key": "SecretKey",
+      "type": "String",
+      "default_value": "auto-generated",
+      "source_file": "modules/setting/security.go",
+      "used_by": [
+        {
+          "class": "webhook.Webhook",
+          "method": "HeaderAuthorization/SetHeaderAuthorization",
+          "file_path": "models/webhook/webhook.go",
+          "usage": "encrypt/decrypt authorization header",
+          "impact": "if changed, existing encrypted headers become unreadable"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-147",
+        "ep-148",
+        "ep-149"
+      ]
+    },
+    {
+      "key": "setting.DisableWebhooks",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/webhook.go",
+      "used_by": [
+        {
+          "class": "api",
+          "method": "reqWebhooksEnabled",
+          "file_path": "routers/api/v1/api.go",
+          "usage": "Middleware check",
+          "impact": "Returns 403 if true, blocking all webhook endpoints"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-150",
+        "ep-151"
+      ]
+    },
+    {
+      "key": "setting.Repository.DisableStars",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "api",
+          "method": "reqStarsEnabled",
+          "file_path": "routers/api/v1/api.go",
+          "usage": "Middleware check",
+          "impact": "Returns 403 if true, blocking all star endpoints"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-152",
+        "ep-153",
+        "ep-154",
+        "ep-155"
+      ]
+    },
+    {
+      "key": "admin.USER_DISABLED_FEATURES",
+      "type": "[]string",
+      "default_value": "empty",
+      "source_file": "modules/setting/admin.go",
+      "used_by": [
+        {
+          "class": "user_model",
+          "method": "IsFeatureDisabledWithLoginType",
+          "file_path": "models/user/user.go",
+          "usage": "Check if manage_ssh_keys is in disabled features set",
+          "impact": "If disabled, SSH key create/delete returns 404"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-160",
+        "ep-161"
+      ]
+    },
+    {
+      "key": "admin.EXTERNAL_USER_DISABLE_FEATURES",
+      "type": "[]string",
+      "default_value": "empty",
+      "source_file": "modules/setting/admin.go",
+      "used_by": [
+        {
+          "class": "user_model",
+          "method": "IsFeatureDisabledWithLoginType",
+          "file_path": "models/user/user.go",
+          "usage": "Check if manage_ssh_keys is disabled for external login users",
+          "impact": "If disabled, external users cannot manage SSH keys"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-160",
+        "ep-161"
+      ]
+    },
+    {
+      "key": "ssh.MINIMUM_KEY_SIZE_CHECK",
+      "type": "bool",
+      "default_value": "true",
+      "source_file": "modules/setting/ssh.go",
+      "used_by": [
+        {
+          "class": "asymkey_model",
+          "method": "CheckPublicKeyString",
+          "file_path": "models/asymkey/ssh_key_parse.go",
+          "usage": "Controls whether key size validation is performed",
+          "impact": "If false, any key size is accepted"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-160"
+      ]
+    },
+    {
+      "key": "ssh.START_BUILTIN_SERVER",
+      "type": "bool",
+      "default_value": "false",
+      "source_file": "modules/setting/ssh.go",
+      "used_by": [
+        {
+          "class": "asymkey_service",
+          "method": "RewriteAllPublicKeys",
+          "file_path": "services/asymkey/ssh_key_authorized_keys.go",
+          "usage": "If true, skip rewriting authorized_keys file",
+          "impact": "Builtin SSH server does not use authorized_keys file"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-161"
+      ]
+    },
+    {
+      "key": "setting.OAuth2.CustomSchemes",
+      "type": "[]string",
+      "default_value": "[]",
+      "source_file": "custom/conf/app.ini [oauth2]",
+      "used_by": [
+        {
+          "class": "forms",
+          "method": "DetectInvalidOAuth2ApplicationRedirectURI",
+          "file_path": "services/forms/user_form.go",
+          "usage": "Check if redirect URI scheme is in custom schemes list",
+          "impact": "Allows non-standard URI schemes for OAuth2 redirect URIs"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-167"
+      ]
+    },
+    {
+      "key": "setting.SuccessfulTokensCacheSize",
+      "type": "int",
+      "default_value": "20",
+      "source_file": "custom/conf/app.ini",
+      "used_by": [
+        {
+          "class": "auth_model",
+          "method": "init (AccessToken model registration)",
+          "file_path": "models/auth/access_token.go",
+          "usage": "Initialize LRU cache for successful token lookups",
+          "impact": "Controls size of in-memory token validation cache"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-164",
+        "ep-165",
+        "ep-166"
+      ]
+    },
+    {
+      "key": "OAuth2.DefaultApplications",
+      "type": "[]string",
+      "default_value": "[\"git-credential-oauth\", \"git-credential-manager\", \"tea\"]",
+      "source_file": "modules/setting/oauth2.go",
+      "used_by": [
+        {
+          "class": "auth_model",
+          "method": "Init",
+          "file_path": "models/auth/oauth2.go",
+          "usage": "Determines which builtin apps to register",
+          "impact": "Controls which apps are locked/unlocked"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-169",
+        "ep-171"
+      ]
+    },
+    {
+      "key": "OAuth2.CustomSchemes",
+      "type": "[]string",
+      "default_value": "[]",
+      "source_file": "modules/setting/oauth2.go",
+      "used_by": [
+        {
+          "class": "forms",
+          "method": "DetectInvalidOAuth2ApplicationRedirectURI",
+          "file_path": "services/forms/user_form.go",
+          "usage": "Additional allowed URI schemes for redirect URIs",
+          "impact": "Allows custom URI schemes beyond standard http/https"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-171"
+      ]
+    },
+    {
+      "key": "service.RegisterEmailConfirm",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/service.go",
+      "used_by": [
+        {
+          "class": "user_service",
+          "method": "AddEmailAddresses",
+          "file_path": "services/user/email.go",
+          "usage": "Determines if new emails are auto-activated",
+          "impact": "If true, new emails require confirmation before being marked as verified"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-181"
+      ]
+    },
+    {
+      "key": "admin.USER_DISABLED_FEATURES / admin.EXTERNAL_USER_DISABLE_FEATURES",
+      "type": "container.Set[string]",
+      "default_value": "empty set",
+      "source_file": "modules/setting/admin.go",
+      "used_by": [
+        {
+          "class": "user_model",
+          "method": "IsFeatureDisabledWithLoginType",
+          "file_path": "models/user/user.go",
+          "usage": "Check if manage_gpg_keys feature is disabled",
+          "impact": "Returns 404 if disabled"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-188",
+        "ep-189"
+      ]
+    },
+    {
+      "key": "setting.UserFeatureManageGPGKeys",
+      "type": "string constant",
+      "default_value": "manage_gpg_keys",
+      "source_file": "modules/setting/admin.go",
+      "used_by": [
+        {
+          "class": "user",
+          "method": "CreateUserGPGKey/DeleteGPGKey",
+          "file_path": "routers/api/v1/user/gpg_key.go",
+          "usage": "Feature flag name for GPG key management",
+          "impact": "Controls whether create/delete operations are allowed"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-188",
+        "ep-189"
+      ]
+    },
+    {
+      "key": "service.auto_watch_on_changes",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/service.go",
+      "used_by": [
+        {
+          "class": "repo_model",
+          "method": "WatchIfAuto",
+          "file_path": "models/repo/watch.go",
+          "usage": "Controls whether auto-watch is triggered on repo changes",
+          "impact": "If false, users won't be auto-subscribed when they push to a repo"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-197"
+      ]
+    },
+    {
+      "key": "service.require_signin_view_strict",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/service.go",
+      "used_by": [
+        {
+          "class": "context",
+          "method": "determineAccessMode",
+          "file_path": "services/context/package.go",
+          "usage": "If true, unauthenticated users get AccessModeNone for packages",
+          "impact": "Blocks anonymous package access when enabled"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-199",
+        "ep-200"
+      ]
+    },
+    {
+      "key": "packages.limit_total_owner_count",
+      "type": "Integer",
+      "default_value": "-1",
+      "source_file": "modules/setting/packages.go",
+      "used_by": [
+        {
+          "class": "packages_service",
+          "method": "CheckCountQuotaExceeded",
+          "file_path": "services/packages/packages.go",
+          "usage": "Maximum number of package versions an owner can have",
+          "impact": "If exceeded, new package creation is blocked (not directly used in delete but related)"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-201"
+      ]
+    },
+    {
+      "key": "packages.ENABLED",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/packages.go",
+      "used_by": [
+        {
+          "class": "setting",
+          "method": "loadPackagesFrom",
+          "file_path": "modules/setting/packages.go",
+          "usage": "Enable/disable package registry",
+          "impact": "If false, all package endpoints are disabled"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-202",
+        "ep-203",
+        "ep-204",
+        "ep-205",
+        "ep-206",
+        "ep-207"
+      ]
+    },
+    {
+      "key": "packages.LIMIT_TOTAL_OWNER_COUNT",
+      "type": "Integer",
+      "default_value": "-1 (no limit)",
+      "source_file": "modules/setting/packages.go",
+      "used_by": [
+        {
+          "class": "packages_service",
+          "method": "CheckCountQuotaExceeded",
+          "file_path": "services/packages/packages.go",
+          "usage": "Limit total package versions per owner",
+          "impact": "Prevents creation of new versions if exceeded"
+        }
+      ],
+      "affected_endpoints": []
+    },
+    {
+      "key": "service.REQUIRE_SIGNIN_VIEW",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/service.go",
+      "used_by": [
+        {
+          "class": "context",
+          "method": "determineAccessMode",
+          "file_path": "services/context/package.go",
+          "usage": "If strict, unauthenticated users get AccessModeNone",
+          "impact": "Blocks anonymous access to packages"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-202",
+        "ep-203",
+        "ep-204",
+        "ep-205",
+        "ep-206",
+        "ep-207"
+      ]
+    },
+    {
+      "key": "service.DEFAULT_ENABLE_DEPENDENCIES",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/service.go",
+      "used_by": [
+        {
+          "class": "Repository",
+          "method": "IsDependenciesEnabled",
+          "file_path": "models/repo/issue.go",
+          "usage": "Fallback when repo unit not found",
+          "impact": "Controls whether dependencies are enabled by default for repos without explicit config"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-208",
+        "ep-209",
+        "ep-210",
+        "ep-212",
+        "ep-213"
+      ]
+    },
+    {
+      "key": "service.ALLOW_CROSS_REPOSITORY_DEPENDENCIES",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/service.go",
+      "used_by": [
+        {
+          "class": "repo",
+          "method": "getFormIssue",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "usage": "Gate for cross-repo dependency creation",
+          "impact": "If false, dependencies can only be created within the same repository"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-209",
+        "ep-210",
+        "ep-212",
+        "ep-213"
+      ]
+    },
+    {
+      "key": "git.CommitsRangeSize",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/git.go",
+      "used_by": [
+        {
+          "class": "repo",
+          "method": "GetAllCommits",
+          "file_path": "routers/api/v1/repo/commits.go",
+          "usage": "caps page size",
+          "impact": "limits maximum commits per page"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-215"
+      ]
+    },
+    {
+      "key": "api.SwaggerURL",
+      "type": "String",
+      "default_value": "",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {
+          "class": "repo",
+          "method": "GetAllCommits",
+          "file_path": "routers/api/v1/repo/commits.go",
+          "usage": "included in error response URL field",
+          "impact": "informational only"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-215"
+      ]
+    },
+    {
+      "key": "setting.IsInTesting",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/testenv.go",
+      "used_by": [
+        {
+          "class": "pull_service",
+          "method": "StartPullRequestCheckOnView",
+          "file_path": "services/pull/check.go",
+          "usage": "Determines whether to use global lock or immediate queue for PR check",
+          "impact": "In testing mode, skips global lock to avoid deadlock with immediate queue"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-223",
+        "ep-224"
+      ]
+    },
+    {
+      "key": "git.MAX_GIT_DIFF_LINES",
+      "type": "Integer",
+      "default_value": "1000",
+      "source_file": "modules/setting/git.go",
+      "used_by": [
+        {
+          "class": "repo",
+          "method": "GetPullRequestFiles",
+          "file_path": "routers/api/v1/repo/pull.go",
+          "usage": "setting.Git.MaxGitDiffLines",
+          "impact": "Limits max lines parsed in diff output"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-233"
+      ]
+    },
+    {
+      "key": "git.MAX_GIT_DIFF_LINE_CHARACTERS",
+      "type": "Integer",
+      "default_value": "5000",
+      "source_file": "modules/setting/git.go",
+      "used_by": [
+        {
+          "class": "repo",
+          "method": "GetPullRequestFiles",
+          "file_path": "routers/api/v1/repo/pull.go",
+          "usage": "setting.Git.MaxGitDiffLineCharacters",
+          "impact": "Limits max characters per line in diff"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-233"
+      ]
+    },
+    {
+      "key": "repository.PULL_REQUEST_DEFAULT_MERGE_STYLE",
+      "type": "String",
+      "default_value": "merge",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "pull_service",
+          "method": "Merge",
+          "file_path": "services/pull/merge.go",
+          "usage": "prConfig.IsMergeStyleAllowed(mergeStyle)",
+          "impact": "Controls which merge styles are allowed per repo"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-229"
+      ]
+    },
+    {
+      "key": "mirror.MIN_INTERVAL",
+      "type": "Duration",
+      "default_value": "10m",
+      "source_file": "modules/setting/mirror.go",
+      "used_by": [
+        {
+          "class": "repo",
+          "method": "CreatePushMirror",
+          "file_path": "routers/api/v1/repo/mirror.go",
+          "usage": "Validate interval >= MinInterval",
+          "impact": "Rejects push mirror creation with interval below minimum"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-238"
+      ]
+    },
+    {
+      "key": "git.TIMEOUT.MIRROR",
+      "type": "Integer (seconds)",
+      "default_value": "300",
+      "source_file": "modules/setting/git.go",
+      "used_by": [
+        {
+          "class": "mirror",
+          "method": "runPushSync",
+          "file_path": "services/mirror/mirror_push.go",
+          "usage": "Timeout for git push operation",
+          "impact": "Controls how long push mirror sync waits before timing out"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-235"
+      ]
+    },
+    {
+      "key": "lfs.START_SERVER",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/lfs.go",
+      "used_by": [
+        {
+          "class": "mirror",
+          "method": "runPushSync",
+          "file_path": "services/mirror/mirror_push.go",
+          "usage": "Determines if LFS objects are synced during push",
+          "impact": "If enabled, LFS objects are uploaded to remote during push mirror sync"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-235"
+      ]
+    },
+    {
+      "key": "api.DefaultGitTreesPerPage",
+      "type": "Integer",
+      "default_value": "1000",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {
+          "class": "files",
+          "method": "GetTreeBySHA",
+          "file_path": "services/repository/files/tree.go",
+          "usage": "Cap per_page parameter",
+          "impact": "Limits maximum entries returned per page"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-246"
+      ]
+    },
+    {
+      "key": "api.DefaultPagingNum",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {
+          "class": "utils",
+          "method": "GetListOptions",
+          "file_path": "routers/api/v1/utils/page.go",
+          "usage": "Default page size for list endpoints",
+          "impact": "Controls default number of collaborators returned"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-250"
+      ]
+    },
+    {
+      "key": "api.MaxResponseItems",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/api.go",
+      "used_by": [
+        {
+          "class": "utils",
+          "method": "GetListOptions",
+          "file_path": "routers/api/v1/utils/page.go",
+          "usage": "Maximum page size for list endpoints",
+          "impact": "Caps maximum collaborators per page"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-250"
+      ]
+    },
+    {
+      "key": "attachment.ALLOWED_TYPES",
+      "type": "String",
+      "default_value": ".avif,.cpuprofile,.csv,.dmp,.docx,.fodg,.fodp,.fods,.fodt,.gif,.gz,.jpeg,.jpg,.json,.jsonc,.log,.md,.mov,.mp4,.odf,.odg,.odp,.ods,.odt,.patch,.pdf,.png,.pptx,.svg,.tgz,.txt,.webm,.webp,.xls,.xlsx,.zip",
+      "source_file": "modules/setting/attachment.go",
+      "used_by": [
+        {
+          "class": "attachment_service",
+          "method": "UploadAttachmentForIssue",
+          "file_path": "services/attachment/attachment.go",
+          "usage": "Passed to upload.Verify for type validation",
+          "impact": "Controls which file types can be uploaded"
+        },
+        {
+          "class": "attachment_service",
+          "method": "UpdateAttachment",
+          "file_path": "services/attachment/attachment.go",
+          "usage": "Passed to upload.Verify for rename validation",
+          "impact": "Controls which file extensions are allowed for rename"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-259",
+        "ep-260"
+      ]
+    },
+    {
+      "key": "avatar.MAX_WIDTH",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [
+        {
+          "class": "avatar",
+          "method": "processAvatarImage",
+          "file_path": "modules/avatar/avatar.go",
+          "usage": "setting.Avatar.MaxWidth",
+          "impact": "Rejects images wider than this"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-262"
+      ]
+    },
+    {
+      "key": "avatar.MAX_HEIGHT",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [
+        {
+          "class": "avatar",
+          "method": "processAvatarImage",
+          "file_path": "modules/avatar/avatar.go",
+          "usage": "setting.Avatar.MaxHeight",
+          "impact": "Rejects images taller than this"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-262"
+      ]
+    },
+    {
+      "key": "avatar.MAX_ORIGIN_SIZE",
+      "type": "Integer",
+      "default_value": "262144",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [
+        {
+          "class": "avatar",
+          "method": "processAvatarImage",
+          "file_path": "modules/avatar/avatar.go",
+          "usage": "setting.Avatar.MaxOriginSize",
+          "impact": "If image smaller than this, use original without processing"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-262"
+      ]
+    },
+    {
+      "key": "avatar.RENDERED_SIZE_FACTOR",
+      "type": "Integer",
+      "default_value": "2",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [
+        {
+          "class": "avatar",
+          "method": "processAvatarImage",
+          "file_path": "modules/avatar/avatar.go",
+          "usage": "setting.Avatar.RenderedSizeFactor",
+          "impact": "Multiplied by 256 to get target avatar pixel size"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-262"
+      ]
+    },
+    {
+      "key": "actions.workflow_dirs",
+      "type": "[]string",
+      "default_value": "[\".gitea/workflows\", \".github/workflows\"]",
+      "source_file": "modules/setting/actions.go",
+      "used_by": [
+        {
+          "class": "actions",
+          "method": "ListWorkflows",
+          "file_path": "modules/actions/workflows.go",
+          "usage": "iterate workflow dirs to find workflow files",
+          "impact": "determines which directories are scanned for workflow YAML files"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-280",
+        "ep-281",
+        "ep-283"
+      ]
+    },
+    {
+      "key": "actions.max_rerun_attempts",
+      "type": "int64",
+      "default_value": "10",
+      "source_file": "modules/setting/actions.go",
+      "used_by": [
+        {
+          "class": "actions_service",
+          "method": "validateRerun",
+          "file_path": "services/actions/rerun.go",
+          "usage": "cap maximum number of rerun attempts",
+          "impact": "prevents infinite reruns of a workflow run"
+        }
+      ],
+      "affected_endpoints": []
+    },
+    {
+      "key": "actions.MAX_RERUN_ATTEMPTS",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/actions.go",
+      "used_by": [
+        {
+          "class": "actions_service",
+          "method": "validateRerun",
+          "file_path": "services/actions/rerun.go",
+          "usage": "Compare latest attempt number against cap",
+          "impact": "Limits how many times a workflow run can be rerun"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-287",
+        "ep-288",
+        "ep-289"
+      ]
+    },
+    {
+      "key": "actions.artifact_storage.STORAGE_TYPE",
+      "type": "String",
+      "default_value": "local",
+      "source_file": "app.ini",
+      "used_by": [
+        {
+          "class": "storage",
+          "method": "Init",
+          "file_path": "modules/storage/storage.go",
+          "usage": "Determines storage backend type",
+          "impact": "Controls whether artifacts are stored locally or in object storage"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-294",
+        "ep-298"
+      ]
+    },
+    {
+      "key": "actions.artifact_storage.SERVE_DIRECT",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "app.ini",
+      "used_by": [
+        {
+          "class": "actions_service",
+          "method": "DownloadArtifactV4ServeDirect",
+          "file_path": "services/actions/artifacts.go",
+          "usage": "Determines if presigned URLs are used for downloads",
+          "impact": "If true and using minio/azure, redirects directly to storage; otherwise serves through app"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-298"
+      ]
+    },
+    {
+      "key": "SECRET_KEY (general token signing)",
+      "type": "String",
+      "default_value": "generated",
+      "source_file": "app.ini",
+      "used_by": [
+        {
+          "class": "repo",
+          "method": "buildSignature",
+          "file_path": "routers/api/v1/repo/action.go",
+          "usage": "HMAC key for signing artifact download URLs",
+          "impact": "Used to create time-limited signed URLs for artifact downloads"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-298"
+      ]
+    },
+    {
+      "key": "ui.REACTION_MAX_USER_NUM",
+      "type": "int",
+      "default_value": "10",
+      "source_file": "modules/setting/ui.go",
+      "used_by": [
+        {
+          "class": "issues_model.ReactionList",
+          "method": "GetFirstUsers",
+          "file_path": "models/issues/reaction.go",
+          "usage": "limit displayed user names",
+          "impact": "controls how many user names shown in tooltip"
+        }
+      ],
+      "affected_endpoints": []
+    },
+    {
+      "key": "SSH.MinimumKeySizeCheck",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/ssh.go",
+      "used_by": [
+        {
+          "class": "asymkey_model",
+          "method": "CheckPublicKeyString",
+          "file_path": "models/asymkey/ssh_key_parse.go",
+          "usage": "Gate for key size validation",
+          "impact": "If false, any key size is accepted"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-342"
+      ]
+    },
+    {
+      "key": "SSH.StartBuiltinServer",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/ssh.go",
+      "used_by": [
+        {
+          "class": "asymkey_service",
+          "method": "RewriteAllPublicKeys",
+          "file_path": "services/asymkey/ssh_key_authorized_keys.go",
+          "usage": "Skip authorized_keys rewrite if builtin SSH server",
+          "impact": "If true, no filesystem I/O on key deletion"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-343"
+      ]
+    },
+    {
+      "key": "repository.release.ALLOWED_TYPES",
+      "type": "String",
+      "default_value": "",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "attachment_service",
+          "method": "UploadAttachmentForRelease",
+          "file_path": "services/attachment/attachment.go",
+          "usage": "Validate file type on upload",
+          "impact": "Empty means all types allowed"
+        },
+        {
+          "class": "repo",
+          "method": "EditReleaseAttachment",
+          "file_path": "routers/api/v1/repo/release_attachment.go",
+          "usage": "Validate new filename extension on edit",
+          "impact": "Rejects rename if new extension not allowed"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-354",
+        "ep-355"
+      ]
+    },
+    {
+      "key": "repository.release.FILE_MAX_SIZE",
+      "type": "Integer (MB)",
+      "default_value": "2048",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "attachment_service",
+          "method": "UploadAttachmentForRelease",
+          "file_path": "services/attachment/attachment.go",
+          "usage": "Max file size limit (value << 20 for bytes)",
+          "impact": "Files exceeding limit return 413"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-354"
+      ]
+    },
+    {
+      "key": "repository.FORCE_PRIVATE",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "repo",
+          "method": "CreateUserRepo",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "usage": "OR'd with user private flag",
+          "impact": "Forces all new repos to be private"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-363",
+        "ep-364",
+        "ep-365",
+        "ep-366"
+      ]
+    },
+    {
+      "key": "repository.ForcePrivate",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "repo",
+          "method": "updateBasicProperties",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "usage": "Prevent changing private to public",
+          "impact": "Non-admin users cannot make repos public"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-369"
+      ]
+    },
+    {
+      "key": "mirror.MinInterval",
+      "type": "Duration",
+      "default_value": "10m0s",
+      "source_file": "modules/setting/mirror.go",
+      "used_by": [
+        {
+          "class": "repo",
+          "method": "updateMirror",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "usage": "Validate mirror interval minimum",
+          "impact": "Rejects intervals shorter than configured minimum"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-369"
+      ]
+    },
+    {
+      "key": "repository.issue.MaxPinned",
+      "type": "Integer",
+      "default_value": "3",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "issues_model",
+          "method": "PinIssue",
+          "file_path": "models/issues/issue_pin.go",
+          "usage": "Limit max pinned issues per repo",
+          "impact": "Returns error when max reached"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-371"
+      ]
+    },
+    {
+      "key": "repository.issue.MAX_PINNED",
+      "type": "Integer",
+      "default_value": "3",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {
+          "class": "issues_model",
+          "method": "PinIssue",
+          "file_path": "models/issues/issue_pin.go",
+          "usage": "Compare pin count against max",
+          "impact": "Determines max number of pinned issues/PRs per repo"
+        },
+        {
+          "class": "issues_model",
+          "method": "IsNewPinAllowed",
+          "file_path": "models/issues/issue_pin.go",
+          "usage": "Check if new pin is allowed",
+          "impact": "Controls whether new pins can be created"
+        }
+      ],
+      "affected_endpoints": [
+        "ep-376",
+        "ep-381"
+      ]
+    }
+  ]
+}

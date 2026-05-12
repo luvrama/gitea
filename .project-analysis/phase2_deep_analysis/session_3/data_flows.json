@@ -1,0 +1,500 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-015",
+      "http_method": "GET",
+      "path": "/api/v1/settings/ui",
+      "description": "Returns in-memory UI settings directly as JSON",
+      "steps": [
+        {
+          "step": 1,
+          "component": "settings.GetGeneralUISettings",
+          "type": "controller",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "input": "APIContext",
+          "output": "GeneralUISettings JSON",
+          "operations": ["Read setting.UI.DefaultTheme, setting.UI.Reactions, setting.UI.CustomEmojis from package-level variables", "Serialize to JSON response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "setting.UI struct fields",
+          "to": "api.GeneralUISettings",
+          "component": "settings.GetGeneralUISettings",
+          "mappings": [
+            {"source_field": "UI.DefaultTheme", "target_field": "default_theme", "transformation": "direct_copy"},
+            {"source_field": "UI.Reactions", "target_field": "allowed_reactions", "transformation": "direct_copy"},
+            {"source_field": "UI.CustomEmojis", "target_field": "custom_emojis", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-016",
+      "http_method": "GET",
+      "path": "/api/v1/settings/api",
+      "description": "Returns in-memory API settings directly as JSON",
+      "steps": [
+        {
+          "step": 1,
+          "component": "settings.GetGeneralAPISettings",
+          "type": "controller",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "input": "APIContext",
+          "output": "GeneralAPISettings JSON",
+          "operations": ["Read setting.API fields from package-level variable", "Serialize to JSON response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "setting.API struct fields",
+          "to": "api.GeneralAPISettings",
+          "component": "settings.GetGeneralAPISettings",
+          "mappings": [
+            {"source_field": "API.MaxResponseItems", "target_field": "max_response_items", "transformation": "direct_copy"},
+            {"source_field": "API.DefaultPagingNum", "target_field": "default_paging_num", "transformation": "direct_copy"},
+            {"source_field": "API.DefaultGitTreesPerPage", "target_field": "default_git_trees_per_page", "transformation": "direct_copy"},
+            {"source_field": "API.DefaultMaxBlobSize", "target_field": "default_max_blob_size", "transformation": "direct_copy"},
+            {"source_field": "API.DefaultMaxResponseSize", "target_field": "default_max_response_size", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-017",
+      "http_method": "GET",
+      "path": "/api/v1/settings/repository",
+      "description": "Returns in-memory repository feature flags as JSON",
+      "steps": [
+        {
+          "step": 1,
+          "component": "settings.GetGeneralRepoSettings",
+          "type": "controller",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "input": "APIContext",
+          "output": "GeneralRepoSettings JSON",
+          "operations": ["Read setting.Mirror.Enabled, setting.Repository.DisableHTTPGit, etc.", "Negate boolean values where needed (MirrorsDisabled = !Mirror.Enabled)", "Serialize to JSON response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "setting.Mirror/Repository/Service/LFS struct fields",
+          "to": "api.GeneralRepoSettings",
+          "component": "settings.GetGeneralRepoSettings",
+          "mappings": [
+            {"source_field": "Mirror.Enabled", "target_field": "mirrors_disabled", "transformation": "computed (negated)"},
+            {"source_field": "Repository.DisableHTTPGit", "target_field": "http_git_disabled", "transformation": "direct_copy"},
+            {"source_field": "Repository.DisableMigrations", "target_field": "migrations_disabled", "transformation": "direct_copy"},
+            {"source_field": "Repository.DisableStars", "target_field": "stars_disabled", "transformation": "direct_copy"},
+            {"source_field": "Service.EnableTimetracking", "target_field": "time_tracking_disabled", "transformation": "computed (negated)"},
+            {"source_field": "LFS.StartServer", "target_field": "lfs_disabled", "transformation": "computed (negated)"}
+          ]
+        }
+      ],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-018",
+      "http_method": "GET",
+      "path": "/api/v1/settings/attachment",
+      "description": "Returns in-memory attachment settings directly as JSON",
+      "steps": [
+        {
+          "step": 1,
+          "component": "settings.GetGeneralAttachmentSettings",
+          "type": "controller",
+          "file_path": "routers/api/v1/settings/settings.go",
+          "input": "APIContext",
+          "output": "GeneralAttachmentSettings JSON",
+          "operations": ["Read setting.Attachment fields from package-level variable", "Serialize to JSON response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "setting.Attachment struct fields",
+          "to": "api.GeneralAttachmentSettings",
+          "component": "settings.GetGeneralAttachmentSettings",
+          "mappings": [
+            {"source_field": "Attachment.Enabled", "target_field": "enabled", "transformation": "direct_copy"},
+            {"source_field": "Attachment.AllowedTypes", "target_field": "allowed_types", "transformation": "direct_copy"},
+            {"source_field": "Attachment.MaxSize", "target_field": "max_size", "transformation": "direct_copy"},
+            {"source_field": "Attachment.MaxFiles", "target_field": "max_files", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-019",
+      "http_method": "GET",
+      "path": "/api/v1/notifications",
+      "description": "Lists user notifications with pagination, filtering by status/subject/time, loading all related attributes",
+      "steps": [
+        {
+          "step": 1,
+          "component": "notify.getFindNotificationOptions",
+          "type": "utility",
+          "file_path": "routers/api/v1/notify/notifications.go",
+          "input": "APIContext (query params)",
+          "output": "FindNotificationOptions",
+          "operations": ["Parse before/since timestamps via GetQueryBeforeSince", "Parse page/limit via GetListOptions", "Parse status-types with default [unread, pinned]", "Parse subject-type filter"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "db.Count[Notification]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindNotificationOptions",
+          "output": "int64 (total count)",
+          "operations": ["Execute COUNT query on notification table with conditions"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT COUNT", "table": "notification", "description": "Count notifications matching filters"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "db.Find[Notification]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindNotificationOptions",
+          "output": "[]*Notification",
+          "operations": ["Execute paginated SELECT on notification table ordered by updated_unix DESC"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "notification", "description": "Fetch paginated notifications matching filters"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "NotificationList.LoadAttributes",
+          "type": "repository",
+          "file_path": "models/activities/notification_list.go",
+          "input": "[]*Notification",
+          "output": "[]*Notification (with loaded relations)",
+          "operations": ["Batch load repositories by IDs", "Batch load issues by IDs", "Batch load users by IDs", "Batch load comments by IDs"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Batch load repos for notifications"},
+            {"operation": "SELECT", "table": "issue", "description": "Batch load issues for notifications"},
+            {"operation": "SELECT", "table": "user", "description": "Batch load users for notifications"},
+            {"operation": "SELECT", "table": "comment", "description": "Batch load comments for notifications"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToNotifications",
+          "type": "utility",
+          "file_path": "services/convert/notification.go",
+          "input": "[]*Notification",
+          "output": "[]*api.NotificationThread",
+          "operations": ["For each notification: check repo permission via GetIndividualUserRepoPermission", "Convert repo to API format", "Build subject based on source type", "For issue/PR subjects: call Issue.GetLastComment to get latest comment URL"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "access/collaboration", "description": "GetIndividualUserRepoPermission per notification"},
+            {"operation": "SELECT", "table": "comment", "description": "GetLastComment per issue notification"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "activities_model.Notification",
+          "to": "api.NotificationThread",
+          "component": "convert.ToNotificationThread",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Repository", "target_field": "repository", "transformation": "computed (ToRepo with permission check)"},
+            {"source_field": "Status", "target_field": "unread", "transformation": "computed (status != Read && status != Pinned)"},
+            {"source_field": "Status", "target_field": "pinned", "transformation": "computed (status == Pinned)"},
+            {"source_field": "UpdatedUnix", "target_field": "updated_at", "transformation": "computed (AsTime())"},
+            {"source_field": "ID", "target_field": "url", "transformation": "computed (APIURL())"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid before/since timestamp", "handler": "context.GetQueryBeforeSince", "response_code": 422, "response": "APIError"},
+        {"condition": "Database error on count", "handler": "notify.ListNotifications", "response_code": 500, "response": "APIErrorInternal"},
+        {"condition": "Database error on find", "handler": "notify.ListNotifications", "response_code": 500, "response": "APIErrorInternal"},
+        {"condition": "LoadAttributes fails", "handler": "notify.ListNotifications", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-020",
+      "http_method": "PUT",
+      "path": "/api/v1/notifications",
+      "description": "Marks matching notifications to a target status (default: read), returns changed notifications",
+      "steps": [
+        {
+          "step": 1,
+          "component": "notify.ReadNotifications",
+          "type": "controller",
+          "file_path": "routers/api/v1/notify/user.go",
+          "input": "APIContext (query params)",
+          "output": "parsed options",
+          "operations": ["Parse last_read_at as RFC3339 timestamp", "Parse all flag", "Parse status-types with default [unread]", "Parse to-status with default read"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "db.Find[Notification]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindNotificationOptions",
+          "output": "[]*Notification",
+          "operations": ["Find all notifications matching user/status/time filters (NO pagination)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "notification", "description": "Find all matching notifications (unbounded)"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "activities_model.SetNotificationStatus (loop)",
+          "type": "repository",
+          "file_path": "models/activities/notification.go",
+          "input": "notification ID, user, target status",
+          "output": "*Notification",
+          "operations": ["For each notification: fetch by ID, verify ownership, update status column"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "notification", "description": "GetNotificationByID per notification"},
+            {"operation": "UPDATE", "table": "notification", "description": "Update status column per notification"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "Notification.LoadAttributes (loop)",
+          "type": "repository",
+          "file_path": "models/activities/notification.go",
+          "input": "*Notification",
+          "output": "*Notification (with loaded relations)",
+          "operations": ["For each notification: load repo, issue, user, comment individually"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load repo per notification"},
+            {"operation": "SELECT", "table": "issue", "description": "Load issue per notification"},
+            {"operation": "SELECT", "table": "user", "description": "Load user per notification"},
+            {"operation": "SELECT", "table": "comment", "description": "Load comment per notification"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToNotificationThread (loop)",
+          "type": "utility",
+          "file_path": "services/convert/notification.go",
+          "input": "*Notification",
+          "output": "*api.NotificationThread",
+          "operations": ["Convert each notification to API format with permission check and subject building"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "access/collaboration", "description": "GetIndividualUserRepoPermission per notification"},
+            {"operation": "SELECT", "table": "comment", "description": "GetLastComment per issue notification"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "activities_model.Notification",
+          "to": "api.NotificationThread",
+          "component": "convert.ToNotificationThread",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Status (updated)", "target_field": "unread", "transformation": "computed"},
+            {"source_field": "Status (updated)", "target_field": "pinned", "transformation": "computed"},
+            {"source_field": "UpdatedUnix", "target_field": "updated_at", "transformation": "computed"},
+            {"source_field": "ID", "target_field": "url", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid last_read_at format", "handler": "notify.ReadNotifications", "response_code": 400, "response": "APIError"},
+        {"condition": "Database error on find", "handler": "notify.ReadNotifications", "response_code": 500, "response": "APIErrorInternal"},
+        {"condition": "SetNotificationStatus fails", "handler": "notify.ReadNotifications", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-021",
+      "http_method": "GET",
+      "path": "/api/v1/notifications/new",
+      "description": "Returns count of unread notifications for the current user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "db.Count[Notification]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindNotificationOptions{UserID, Status: [Unread]}",
+          "output": "int64",
+          "operations": ["Execute COUNT query on notification table for user with status=unread"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT COUNT", "table": "notification", "description": "Count unread notifications for user"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "int64 (count)",
+          "to": "api.NotificationCount",
+          "component": "notify.NewAvailable",
+          "mappings": [
+            {"source_field": "total", "target_field": "new", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Database error on count", "handler": "notify.NewAvailable", "response_code": 422, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-022",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "description": "Lists user notifications for a specific repository with pagination and filtering",
+      "steps": [
+        {
+          "step": 1,
+          "component": "notify.getFindNotificationOptions",
+          "type": "utility",
+          "file_path": "routers/api/v1/notify/notifications.go",
+          "input": "APIContext (query params)",
+          "output": "FindNotificationOptions",
+          "operations": ["Parse before/since timestamps", "Parse page/limit", "Parse status-types with default [unread, pinned]", "Parse subject-type filter"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "notify.ListRepoNotifications (set RepoID)",
+          "type": "controller",
+          "file_path": "routers/api/v1/notify/repo.go",
+          "input": "FindNotificationOptions + ctx.Repo.Repository.ID",
+          "output": "FindNotificationOptions with RepoID",
+          "operations": ["Set opts.RepoID from the resolved repository context"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "db.Count[Notification]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindNotificationOptions (with RepoID)",
+          "output": "int64 (total count)",
+          "operations": ["Execute COUNT query on notification table with user+repo+status filters"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT COUNT", "table": "notification", "description": "Count repo notifications matching filters"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "db.Find[Notification]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindNotificationOptions (with RepoID)",
+          "output": "[]*Notification",
+          "operations": ["Execute paginated SELECT on notification table"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "notification", "description": "Fetch paginated repo notifications"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "NotificationList.LoadAttributes",
+          "type": "repository",
+          "file_path": "models/activities/notification_list.go",
+          "input": "[]*Notification",
+          "output": "[]*Notification (with loaded relations)",
+          "operations": ["Batch load repositories, issues, users, comments"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Batch load repos"},
+            {"operation": "SELECT", "table": "issue", "description": "Batch load issues"},
+            {"operation": "SELECT", "table": "user", "description": "Batch load users"},
+            {"operation": "SELECT", "table": "comment", "description": "Batch load comments"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 6,
+          "component": "convert.ToNotifications",
+          "type": "utility",
+          "file_path": "services/convert/notification.go",
+          "input": "[]*Notification",
+          "output": "[]*api.NotificationThread",
+          "operations": ["Convert each notification with permission check and subject building"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "access/collaboration", "description": "GetIndividualUserRepoPermission per notification"},
+            {"operation": "SELECT", "table": "comment", "description": "GetLastComment per issue notification"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "activities_model.Notification",
+          "to": "api.NotificationThread",
+          "component": "convert.ToNotificationThread",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Repository", "target_field": "repository", "transformation": "computed (ToRepo)"},
+            {"source_field": "Status", "target_field": "unread", "transformation": "computed"},
+            {"source_field": "Status", "target_field": "pinned", "transformation": "computed"},
+            {"source_field": "UpdatedUnix", "target_field": "updated_at", "transformation": "computed"},
+            {"source_field": "ID", "target_field": "url", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid before/since timestamp", "handler": "context.GetQueryBeforeSince", "response_code": 422, "response": "APIError"},
+        {"condition": "Database error on count/find", "handler": "notify.ListRepoNotifications", "response_code": 500, "response": "APIErrorInternal"},
+        {"condition": "LoadAttributes fails", "handler": "notify.ListRepoNotifications", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    }
+  ]
+}

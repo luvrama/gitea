@@ -1,0 +1,461 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-168",
+      "http_method": "GET",
+      "path": "/api/v1/user/applications/oauth2",
+      "description": "Lists all OAuth2 applications owned by the authenticated user with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListOauth2Applications",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/app.go",
+          "input": "APIContext with Doer",
+          "output": "[]*api.OAuth2Application",
+          "operations": ["Extract pagination options", "Query OAuth2 applications by OwnerID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "oauth2_application", "description": "Find apps by uid with pagination, ordered by id DESC"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToOAuth2Application",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*auth.OAuth2Application",
+          "output": "*api.OAuth2Application",
+          "operations": ["Map model fields to API struct", "Clear ClientSecret to empty string"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "auth.OAuth2Application",
+          "to": "api.OAuth2Application",
+          "component": "convert.ToOAuth2Application",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "ClientID", "target_field": "ClientID", "transformation": "direct_copy"},
+            {"source_field": "ClientSecret", "target_field": "ClientSecret", "transformation": "computed"},
+            {"source_field": "CreatedUnix", "target_field": "Created", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Database query fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-169",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "description": "Deletes an OAuth2 application and all related grants and auth codes",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.DeleteOauth2Application",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/app.go",
+          "input": "APIContext with path param id",
+          "output": "204 No Content",
+          "operations": ["Parse appID from path", "Call auth_model.DeleteOAuth2Application"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "auth_model.DeleteOAuth2Application",
+          "type": "service",
+          "file_path": "models/auth/oauth2.go",
+          "input": "ctx, id, userid",
+          "output": "error",
+          "operations": ["Check if app is builtin (locked)", "Delete app by id+uid", "Delete related auth codes via grant join", "Delete related grants"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "oauth2_application", "description": "Get app by ID to check if builtin"},
+            {"operation": "DELETE", "table": "oauth2_application", "description": "Delete app where id=? and uid=?"},
+            {"operation": "SELECT", "table": "oauth2_authorization_code", "description": "Find auth codes via grant join"},
+            {"operation": "DELETE", "table": "oauth2_authorization_code", "description": "Delete related auth codes"},
+            {"operation": "DELETE", "table": "oauth2_grant", "description": "Delete grants for application"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "App not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "App is builtin/locked", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-170",
+      "http_method": "GET",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "description": "Gets a specific OAuth2 application by ID, verifying ownership",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetOauth2Application",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/app.go",
+          "input": "APIContext with path param id",
+          "output": "*api.OAuth2Application",
+          "operations": ["Parse appID from path", "Get app by ID", "Verify UID matches Doer", "Clear ClientSecret"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "oauth2_application", "description": "Get app by primary key ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToOAuth2Application",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*auth.OAuth2Application",
+          "output": "*api.OAuth2Application",
+          "operations": ["Map model to API struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "auth.OAuth2Application",
+          "to": "api.OAuth2Application",
+          "component": "convert.ToOAuth2Application",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "ClientID", "target_field": "ClientID", "transformation": "direct_copy"},
+            {"source_field": "ClientSecret", "target_field": "ClientSecret", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "App not found or invalid client ID", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "App UID != Doer ID", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-171",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "description": "Updates an OAuth2 application and regenerates the client secret",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.UpdateOauth2Application",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/app.go",
+          "input": "APIContext with path param id and body",
+          "output": "*api.OAuth2Application",
+          "operations": ["Parse appID", "Validate redirect URIs", "Call UpdateOAuth2Application", "Generate new client secret"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "auth_model.UpdateOAuth2Application",
+          "type": "service",
+          "file_path": "models/auth/oauth2.go",
+          "input": "UpdateOAuth2ApplicationOptions",
+          "output": "*OAuth2Application, error",
+          "operations": ["Get app by ID in transaction", "Verify UID matches", "Check not builtin", "Update app fields"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "oauth2_application", "description": "Get app by ID"},
+            {"operation": "UPDATE", "table": "oauth2_application", "description": "Update name, redirect_uris, confidential_client, skip_secondary_authorization"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "OAuth2Application.GenerateClientSecret",
+          "type": "service",
+          "file_path": "models/auth/oauth2.go",
+          "input": "context",
+          "output": "string (plaintext secret), error",
+          "operations": ["Generate 32 random bytes", "Encode as base32 with gto_ prefix", "Hash with bcrypt", "Store hash in DB"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "oauth2_application", "description": "Update client_secret column with bcrypt hash"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.CreateOAuth2ApplicationOptions",
+          "to": "auth.UpdateOAuth2ApplicationOptions",
+          "component": "user.UpdateOauth2Application",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "RedirectURIs", "target_field": "RedirectURIs", "transformation": "direct_copy"},
+            {"source_field": "ConfidentialClient", "target_field": "ConfidentialClient", "transformation": "direct_copy"},
+            {"source_field": "SkipSecondaryAuthorization", "target_field": "SkipSecondaryAuthorization", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid redirect URI", "handler": "ctx.APIError", "response_code": 400, "response": "invalid redirect URI"},
+        {"condition": "App not found or UID mismatch", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "App is builtin/locked", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "Error generating secret", "handler": "ctx.APIError", "response_code": 400, "response": "error updating application secret"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-172",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/repos",
+      "description": "Lists repositories owned by a specific user with visibility filtering",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListUserRepos",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/repo.go",
+          "input": "APIContext with ContextUser",
+          "output": "[]*api.Repository",
+          "operations": ["Determine private visibility based on IsSigned", "Call listUserRepos"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.listUserRepos",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/repo.go",
+          "input": "APIContext, user, private bool",
+          "output": "[]*api.Repository",
+          "operations": ["Get pagination options", "Query repos with GetUserRepositories", "Load repo attributes", "Check permissions per repo"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Get repos by owner_id with optional private filter, ordered by id ASC"},
+            {"operation": "SELECT", "table": "repository", "description": "LoadAttributes - load owner, units, etc."}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "access_model.GetDoerRepoPermission",
+          "type": "service",
+          "file_path": "models/perm/access/repo_permission.go",
+          "input": "ctx, repo, doer",
+          "output": "Permission, error",
+          "operations": ["Calculate user permission for each repo"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "Get access level for user on repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToRepo",
+          "type": "utility",
+          "file_path": "services/convert/repository.go",
+          "input": "ctx, repo, permission",
+          "output": "*api.Repository",
+          "operations": ["Convert repo model to API struct with permission info"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Repository",
+          "to": "api.Repository",
+          "component": "convert.ToRepo",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "IsPrivate", "target_field": "Private", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Database query fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "User not found", "handler": "middleware", "response_code": 404, "response": "not found"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-173",
+      "http_method": "GET",
+      "path": "/api/v1/user/repos",
+      "description": "Lists repositories owned by the authenticated user using SearchRepository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListMyRepos",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/repo.go",
+          "input": "APIContext with Doer",
+          "output": "[]*api.Repository",
+          "operations": ["Build SearchRepoOptions with OwnerID=Doer.ID", "Call SearchRepository", "Load owner for each repo", "Get permissions"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Search repos by owner with complex condition builder"},
+            {"operation": "SELECT", "table": "user", "description": "LoadOwner for each repo"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "access_model.GetDoerRepoPermission",
+          "type": "service",
+          "file_path": "models/perm/access/repo_permission.go",
+          "input": "ctx, repo, doer",
+          "output": "Permission, error",
+          "operations": ["Calculate permission per repo"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "Get access level"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToRepo",
+          "type": "utility",
+          "file_path": "services/convert/repository.go",
+          "input": "ctx, repo, permission",
+          "output": "*api.Repository",
+          "operations": ["Convert to API struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Repository",
+          "to": "api.Repository",
+          "component": "convert.ToRepo",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "IsPrivate", "target_field": "Private", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "SearchRepository fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "LoadOwner fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-174",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/repos",
+      "description": "Lists repositories of an organization using listUserRepos with org as user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListOrgRepos",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/repo.go",
+          "input": "APIContext with Org context",
+          "output": "[]*api.Repository",
+          "operations": ["Call listUserRepos with org.AsUser() and IsSigned for private"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.listUserRepos",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/repo.go",
+          "input": "APIContext, org-as-user, private bool",
+          "output": "[]*api.Repository",
+          "operations": ["Get pagination", "Query repos by owner_id", "Load attributes", "Check permissions"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Get repos by owner_id (org ID) with optional private filter"},
+            {"operation": "SELECT", "table": "repository", "description": "LoadAttributes"},
+            {"operation": "SELECT", "table": "access", "description": "GetDoerRepoPermission per repo"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Repository",
+          "to": "api.Repository",
+          "component": "convert.ToRepo",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "middleware", "response_code": 404, "response": "not found"},
+        {"condition": "Database error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-175",
+      "http_method": "POST",
+      "path": "/api/v1/user/actions/runners/registration-token",
+      "description": "Gets or creates a runner registration token for the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.CreateRegistrationToken",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/runners.go",
+          "input": "APIContext with Doer",
+          "output": "RegistrationToken JSON",
+          "operations": ["Delegate to shared.GetRegistrationToken with ownerID=Doer.ID, repoID=0"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.GetRegistrationToken",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ctx, ownerID, repoID",
+          "output": "RegistrationToken",
+          "operations": ["Get latest token", "If not found or inactive, create new token", "Return token string"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner_token", "description": "Get latest token by owner_id and repo_id ordered by id DESC"},
+            {"operation": "UPDATE", "table": "action_runner_token", "description": "Deactivate old tokens (conditional)"},
+            {"operation": "INSERT", "table": "action_runner_token", "description": "Insert new active token (conditional)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Database error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

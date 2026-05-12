@@ -1,0 +1,210 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite (via XORM)",
+  "total_tables_or_collections": 6,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "attachment",
+      "entity_class": "repo_model.Attachment",
+      "file_path": "models/repo/attachment.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "uuid", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "release_id", "type": "BIGINT", "code_type": "int64", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "uploader_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": ["INDEX"]},
+        {"name": "comment_id", "type": "BIGINT", "code_type": "int64", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "download_count", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "size", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]}
+      ],
+      "indexes": [
+        {"name": "UQE_attachment_uuid", "columns": ["uuid"], "unique": true},
+        {"name": "IDX_attachment_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "IDX_attachment_issue_id", "columns": ["issue_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "uploader_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "issue",
+      "entity_class": "issues_model.Issue",
+      "file_path": "models/issues/issue.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "index", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "poster_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "content", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_pull", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_issue_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "UQE_issue_repo_id_index", "columns": ["repo_id", "index"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "one-to-many", "target_table": "attachment", "join_column": "issue_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "collaboration",
+      "entity_class": "repo_model.Collaboration",
+      "file_path": "models/repo/collaboration.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "mode", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_collaboration_repo_id_user_id", "columns": ["repo_id", "user_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "access",
+      "entity_class": "access_model.Access",
+      "file_path": "models/perm/access/access.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "mode", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_access_user_id_repo_id", "columns": ["user_id", "repo_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "user",
+      "entity_class": "user_model.User",
+      "file_path": "models/user/user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_active", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_user_lower_name", "columns": ["lower_name"], "unique": true}
+      ],
+      "relationships": []
+    },
+    {
+      "entity_id": "db-006",
+      "table_or_collection": "repo_unit",
+      "entity_class": "repo_model.RepoUnit",
+      "file_path": "models/repo/repo_unit.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "type", "type": "INT", "code_type": "unit.Type", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_repo_unit_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-254",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Find collaborator by name"},
+        {"store_type": "database", "store_name": "repo_unit", "operation": "SELECT", "method": "repo.LoadUnits", "description": "Load repo units"},
+        {"store_type": "database", "store_name": "collaboration", "operation": "SELECT", "method": "repo_model.IsCollaborator", "description": "Check collaborator status"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "repo.LoadOwner", "description": "Load repo owner"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "accessLevel", "description": "Get access level"},
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "GetUserRepoTeams", "description": "Get user repo teams"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-255",
+      "path": "/api/v1/repos/{owner}/{repo}/reviewers",
+      "operations": [
+        {"store_type": "database", "store_name": "collaboration", "operation": "SELECT", "method": "repo_model.IsCollaborator", "description": "Check doer is collaborator"},
+        {"store_type": "database", "store_name": "team", "operation": "SELECT", "method": "GetTeamsWithAccessToAnyRepoUnit", "description": "Get teams with PR access"},
+        {"store_type": "database", "store_name": "team_user", "operation": "SELECT", "method": "IsTeamMember", "description": "Check team membership"},
+        {"store_type": "database", "store_name": "collaboration", "operation": "SELECT", "method": "pull_service.GetReviewers", "description": "Get collaborator IDs with read access"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "pull_service.GetReviewers", "description": "Fetch reviewer users"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-256",
+      "path": "/api/v1/repos/{owner}/{repo}/assignees",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "repo.LoadOwner", "description": "Load repo owner"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "GetRepoAssignees", "description": "Get user IDs with write access"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetRepoAssignees", "description": "Fetch assignee users by IDs"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-257",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get issue by repo_id and index"},
+        {"store_type": "database", "store_name": "attachment", "operation": "SELECT", "method": "GetAttachmentByID", "description": "Get attachment by ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-258",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get issue by repo_id and index"},
+        {"store_type": "database", "store_name": "attachment", "operation": "SELECT", "method": "issue.LoadAttachments", "description": "Load issue attachments"},
+        {"store_type": "database", "store_name": "comment", "operation": "SELECT", "method": "issue.loadComments", "description": "Load all comments (unnecessary)"},
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issue.LoadLabels", "description": "Load labels (unnecessary)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-259",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get issue by repo_id and index"},
+        {"store_type": "database", "store_name": "attachment", "operation": "INSERT", "method": "NewAttachment", "description": "Insert attachment record"},
+        {"store_type": "database", "store_name": "issue", "operation": "UPDATE", "method": "ChangeIssueContent", "description": "Update issue content version"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-260",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get issue by index"},
+        {"store_type": "database", "store_name": "attachment", "operation": "SELECT", "method": "GetAttachmentByID", "description": "Get attachment by ID"},
+        {"store_type": "database", "store_name": "attachment", "operation": "UPDATE", "method": "UpdateAttachment", "description": "Update attachment name"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-261",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetIssueByIndex", "description": "Get issue by index"},
+        {"store_type": "database", "store_name": "attachment", "operation": "SELECT", "method": "GetAttachmentByID", "description": "Get attachment by ID"},
+        {"store_type": "database", "store_name": "attachment", "operation": "DELETE", "method": "DeleteAttachment", "description": "Delete attachment record"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,178 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-064",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/repos",
+      "resource_load": {
+        "operations_per_request": "2 + N (where N = number of repos returned, each needs permission check)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "N+1 query pattern: 1 query for repos + N queries for permissions"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "For each repository in the team, GetDoerRepoPermission is called individually, resulting in N+1 database queries",
+          "impact": "If a team has 50 repos, this results in 51+ DB queries per request",
+          "file_path": "routers/api/v1/org/team.go",
+          "line_number": 355,
+          "code_snippet": "for i, repo := range teamRepos { permission, err := access_model.GetDoerRepoPermission(ctx, repo, ctx.Doer) }",
+          "recommendation": "Batch permission loading or use a single query with JOIN to get permissions for all repos at once"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch permission resolution for team repos",
+          "estimated_impact": "Reduce from N+1 queries to 2 queries for listing team repos",
+          "implementation": "Create a batch GetDoerRepoPermissions function that accepts multiple repos"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-065",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/repos/{org}/{repo}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Fixed number of queries: team load, membership check, repo lookup, team_repo check, permission"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-066",
+      "http_method": "PUT",
+      "path": "/api/v1/teams/{id}/repos/{org}/{repo}",
+      "resource_load": {
+        "operations_per_request": "7 + M (where M = team members if AutoWatchNewRepos)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Transaction with multiple writes; if AutoWatchNewRepos, loads all team members and inserts watch records"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "When AutoWatchNewRepos is enabled, WatchRepo is called individually for each team member inside the transaction",
+          "impact": "For a team with 100 members, this adds 100 individual INSERT/UPDATE operations within the transaction",
+          "file_path": "services/repository/repo_team.go",
+          "line_number": 55,
+          "code_snippet": "for _, u := range t.Members { if err = repo_model.WatchRepo(ctx, u, repo, true); err != nil { ... } }",
+          "recommendation": "Batch insert watch records for all team members in a single query"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch watch insertion for team members",
+          "estimated_impact": "Reduce M individual inserts to 1 batch insert",
+          "implementation": "Use bulk INSERT for watch records when adding repo to team"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-067",
+      "http_method": "DELETE",
+      "path": "/api/v1/teams/{id}/repos/{org}/{repo}",
+      "resource_load": {
+        "operations_per_request": "8 + 2*M (where M = team members, each needs access check + potential unwatch)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Transaction with multiple writes; checks each member's remaining access individually"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "For each team member, HasAnyUnitAccess is called individually to check if they still have access, then WatchRepo/RemoveIssueWatchersByRepoID if not",
+          "impact": "For a team with 100 members, this results in 100+ permission checks plus potential 200 delete operations",
+          "file_path": "services/repository/repo_team.go",
+          "line_number": 185,
+          "code_snippet": "for _, member := range teamMembers { has, err := access_model.HasAnyUnitAccess(ctx, member.ID, repo) ... }",
+          "recommendation": "Batch check remaining access for all members, then batch unwatch/remove issue watches"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch access check and unwatch for team members on repo removal",
+          "estimated_impact": "Reduce from 2*M queries to 2-3 queries total",
+          "implementation": "Use subquery to find members who have no other access, then batch delete watches"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-068",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/teams/search",
+      "resource_load": {
+        "operations_per_request": "3 + N (where N = number of teams returned, each needs LoadUnits)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "N+1 for LoadUnits: 1 search query + N LoadUnits queries"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "convert.ToTeams calls LoadUnits for each team individually",
+          "impact": "If search returns 20 teams, this results in 20 additional queries to team_unit table",
+          "file_path": "services/convert/convert.go",
+          "line_number": 731,
+          "code_snippet": "for _, t := range teams { if err := t.LoadUnits(ctx); err != nil { return nil, err } }",
+          "recommendation": "Batch load units for all teams in a single query using IN clause on team_id"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch LoadUnits for multiple teams",
+          "estimated_impact": "Reduce from N+1 to 2 queries for team search",
+          "implementation": "Add a LoadUnitsForTeams batch function that queries team_unit WHERE team_id IN (...)"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-069",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/activities/feeds",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Complex query with subqueries for team repo IDs and activity visibility"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "AccessibleTeamReposEnv.RepoIDs fetches all repo IDs for the team without limit, which are then used in an IN clause for the action query",
+          "impact": "If a team has thousands of repos, the IN clause could be very large",
+          "file_path": "models/activities/action.go",
+          "line_number": 525,
+          "code_snippet": "teamRepoIDs, err := env.RepoIDs(ctx) ... cond = cond.And(builder.In(\"repo_id\", teamRepoIDs))",
+          "recommendation": "Use a subquery instead of materializing all repo IDs into an IN clause"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Use subquery for team repo IDs in activity feed query",
+          "estimated_impact": "Avoid materializing large ID lists in memory and SQL",
+          "implementation": "Replace RepoIDs() call with a builder subquery that selects repo_id from team_repo WHERE team_id = X"
+        }
+      ]
+    }
+  ]
+}

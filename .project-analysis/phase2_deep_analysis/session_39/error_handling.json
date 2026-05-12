@@ -1,0 +1,42 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "generic error", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"},
+        {"exception_type": "util.ErrNotExist", "status_code": 404, "response_type": "JSON error", "message_template": "not found"},
+        {"exception_type": "util.ErrInvalidArgument", "status_code": 400, "response_type": "JSON error", "message_template": "invalid argument"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-262",
+      "path": "/api/v1/repos/{owner}/{repo}/avatar",
+      "error_scenarios": [
+        {"exception": "base64 decode error", "trigger": "Invalid base64 in image field", "status_code": 400, "response": "error message", "logged": false, "retryable": true},
+        {"exception": "image processing error", "trigger": "Unsupported format or oversized image", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-265",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}",
+      "error_scenarios": [
+        {"exception": "util.ErrInvalidArgument", "trigger": "Invalid secret name format", "status_code": 400, "response": "error", "logged": false, "retryable": false},
+        {"exception": "util.ErrNotExist", "trigger": "Secret not found for update", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+        {"exception": "encryption error", "trigger": "Secret key misconfiguration", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+      ]
+    }
+  ],
+  "custom_exceptions": [
+    {
+      "class": "secret_model.ErrSecretNotFound",
+      "file_path": "models/secret/secret.go",
+      "extends": "util.ErrNotExist (via Unwrap)",
+      "used_in": ["secret_service.DeleteSecretByName", "secret_service.DeleteSecretByID"],
+      "http_status": 404
+    }
+  ]
+}

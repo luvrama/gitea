@@ -1,0 +1,159 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-324",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 INSERT for webhook creation, 1 event serialization"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-325",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "2 SELECTs (before and after edit) + 1 UPDATE + 1 event serialization"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "Re-fetches webhook after update instead of using the already-updated in-memory object",
+          "impact": "Extra SELECT query per edit request",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "line_number": 213,
+          "code_snippet": "updated, err := GetRepoHook(ctx, repo.Repository.ID, hookID)",
+          "recommendation": "Return the already-updated webhook object instead of re-fetching"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Avoid re-fetching webhook after update",
+          "estimated_impact": "Eliminates 1 SELECT per edit request",
+          "implementation": "Use the in-memory webhook object after UpdateWebhook succeeds"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-326",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT to verify, 1 DELETE webhook, 1 DELETE hook_tasks (in transaction)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-327",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/stargazers",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT with JOIN for paginated stargazers"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "When page=0, query returns all stargazers without limit",
+          "impact": "Could return thousands of users for popular repos",
+          "file_path": "models/repo/star.go",
+          "line_number": 84,
+          "code_snippet": "users := make([]*user_model.User, 0, 8)\nreturn users, sess.Find(&users)",
+          "recommendation": "Always enforce a maximum limit even when page is not specified"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "pagination",
+          "description": "Enforce default pagination when page param is 0",
+          "estimated_impact": "Prevents unbounded result sets for popular repos",
+          "implementation": "Set a default page size when opts.Page == 0"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-328",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/subscribers",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT with JOIN for paginated watchers"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "When page=0, query returns all watchers without limit",
+          "impact": "Could return thousands of users for popular repos",
+          "file_path": "models/repo/watch.go",
+          "line_number": 161,
+          "code_snippet": "users := make([]*user_model.User, 0, 8)\nreturn users, sess.Find(&users)",
+          "recommendation": "Always enforce a maximum limit even when page is not specified"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "pagination",
+          "description": "Enforce default pagination when page param is 0",
+          "estimated_impact": "Prevents unbounded result sets for popular repos",
+          "implementation": "Set a default page size when opts.Page == 0"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-329",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/teams",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT for teams + N SELECTs for loading units per team"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "LoadUnits is called for each team individually in convert.ToTeams loop",
+          "impact": "N+1 queries where N is number of teams with repo access",
+          "file_path": "services/convert/convert.go",
+          "line_number": 735,
+          "code_snippet": "if err := t.LoadUnits(ctx); err != nil {\n\treturn nil, err\n}",
+          "recommendation": "Batch load units for all teams in a single query"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch load team units instead of per-team queries",
+          "estimated_impact": "Reduces N+1 to 2 queries total",
+          "implementation": "Add a LoadUnitsForTeams batch method that fetches all team_unit records in one query"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,301 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-056",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}",
+      "controller_class": "org",
+      "controller_method": "GetTeam",
+      "description": "Get a team by its ID",
+      "request": {
+        "path_params": [{"name": "id", "type": "integer (int64)", "required": true, "validation": ["format: int64"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Team",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "team ID"},
+            {"name": "name", "type": "string", "description": "team name"},
+            {"name": "description", "type": "string", "description": "team description"},
+            {"name": "organization", "type": "Organization", "description": "org details (loaded)"},
+            {"name": "includes_all_repositories", "type": "bool", "description": "whether team has access to all repos"},
+            {"name": "permission", "type": "string", "description": "access level name"},
+            {"name": "units", "type": "[]string", "description": "unit names (deprecated)"},
+            {"name": "units_map", "type": "map[string]string", "description": "unit permissions map"},
+            {"name": "can_create_org_repo", "type": "bool", "description": "whether team can create repos"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "team ID does not exist"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-057",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/teams",
+      "controller_class": "org",
+      "controller_method": "CreateTeam",
+      "description": "Create a team in an organization",
+      "request": {
+        "path_params": [{"name": "org", "type": "string", "required": true, "validation": ["org name"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": {
+          "type": "api.CreateTeamOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": true, "validation": ["Required", "AlphaDashDot", "MaxSize(255)"], "description": "team name"},
+            {"name": "description", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "team description"},
+            {"name": "includes_all_repositories", "type": "bool", "required": false, "validation": [], "description": "include all repos"},
+            {"name": "permission", "type": "string", "required": false, "validation": ["none|read|write|admin"], "description": "team permission level"},
+            {"name": "units", "type": "[]string", "required": false, "validation": [], "description": "unit names (deprecated)"},
+            {"name": "units_map", "type": "map[string]string", "required": false, "validation": [], "description": "unit permissions map"},
+            {"name": "can_create_org_repo", "type": "bool", "required": false, "validation": [], "description": "can create org repos"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.Team",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "team ID"},
+            {"name": "name", "type": "string", "description": "team name"},
+            {"name": "description", "type": "string", "description": "team description"},
+            {"name": "organization", "type": "Organization", "description": "org details"},
+            {"name": "includes_all_repositories", "type": "bool", "description": "includes all repos"},
+            {"name": "permission", "type": "string", "description": "access level"},
+            {"name": "units", "type": "[]string", "description": "unit names"},
+            {"name": "units_map", "type": "map[string]string", "description": "unit permissions"},
+            {"name": "can_create_org_repo", "type": "bool", "description": "can create repos"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "org does not exist"},
+          {"status_code": 422, "type": "validationError", "condition": "team name already exists in org"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-058",
+      "http_method": "PATCH",
+      "path": "/api/v1/teams/{id}",
+      "controller_class": "org",
+      "controller_method": "EditTeam",
+      "description": "Edit a team",
+      "request": {
+        "path_params": [{"name": "id", "type": "integer", "required": true, "validation": []}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": {
+          "type": "api.EditTeamOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": false, "validation": ["AlphaDashDot", "MaxSize(255)"], "description": "team name"},
+            {"name": "description", "type": "*string", "required": false, "validation": ["MaxSize(255)"], "description": "team description"},
+            {"name": "includes_all_repositories", "type": "*bool", "required": false, "validation": [], "description": "include all repos"},
+            {"name": "permission", "type": "string", "required": false, "validation": ["none|read|write|admin"], "description": "permission level"},
+            {"name": "units", "type": "[]string", "required": false, "validation": [], "description": "unit names (deprecated)"},
+            {"name": "units_map", "type": "map[string]string", "required": false, "validation": [], "description": "unit permissions map"},
+            {"name": "can_create_org_repo", "type": "*bool", "required": false, "validation": [], "description": "can create repos"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Team",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "team ID"},
+            {"name": "name", "type": "string", "description": "team name"},
+            {"name": "description", "type": "string", "description": "team description"},
+            {"name": "organization", "type": "Organization", "description": "org details"},
+            {"name": "includes_all_repositories", "type": "bool", "description": "includes all repos"},
+            {"name": "permission", "type": "string", "description": "access level"},
+            {"name": "units", "type": "[]string", "description": "unit names"},
+            {"name": "units_map", "type": "map[string]string", "description": "unit permissions"},
+            {"name": "can_create_org_repo", "type": "bool", "description": "can create repos"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "team does not exist"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-059",
+      "http_method": "DELETE",
+      "path": "/api/v1/teams/{id}",
+      "controller_class": "org",
+      "controller_method": "DeleteTeam",
+      "description": "Delete a team",
+      "request": {
+        "path_params": [{"name": "id", "type": "integer (int64)", "required": true, "validation": ["format: int64"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "team does not exist"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-060",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/members",
+      "controller_class": "org",
+      "controller_method": "GetTeamMembers",
+      "description": "List a team's members",
+      "request": {
+        "path_params": [{"name": "id", "type": "integer (int64)", "required": true, "validation": ["format: int64"]}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["1-based"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "user ID"},
+            {"name": "login", "type": "string", "description": "username"},
+            {"name": "full_name", "type": "string", "description": "full name"},
+            {"name": "email", "type": "string", "description": "email"},
+            {"name": "avatar_url", "type": "string", "description": "avatar URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "team does not exist or user is not org member/admin"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-061",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "controller_class": "org",
+      "controller_method": "GetTeamMember",
+      "description": "Get a particular member of a team",
+      "request": {
+        "path_params": [
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": ["format: int64"]},
+          {"name": "username", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "user ID"},
+            {"name": "login", "type": "string", "description": "username"},
+            {"name": "full_name", "type": "string", "description": "full name"},
+            {"name": "email", "type": "string", "description": "email"},
+            {"name": "avatar_url", "type": "string", "description": "avatar URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "team or user does not exist, or user is not team member"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-062",
+      "http_method": "PUT",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "controller_class": "org",
+      "controller_method": "AddTeamMember",
+      "description": "Add a team member",
+      "request": {
+        "path_params": [
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": ["format: int64"]},
+          {"name": "username", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "user is blocked by the organization"},
+          {"status_code": 404, "type": "notFound", "condition": "team or user does not exist"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-063",
+      "http_method": "DELETE",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "controller_class": "org",
+      "controller_method": "RemoveTeamMember",
+      "description": "Remove a team member",
+      "request": {
+        "path_params": [
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": ["format: int64"]},
+          {"name": "username", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "token authentication"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "team or user does not exist"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

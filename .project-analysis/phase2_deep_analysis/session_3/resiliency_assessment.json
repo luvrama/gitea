@@ -1,0 +1,202 @@
+{
+  "total_findings": 7,
+  "overall_risk": "medium",
+  "dependency_resiliency": [
+    {
+      "dependency": "SQL Database (notification table)",
+      "client_class": "db.GetEngine / db.Find / db.Count",
+      "file_path": "models/db/list.go",
+      "used_by_endpoints": ["ep-019", "ep-020", "ep-021", "ep-022"],
+      "timeout": {
+        "status": "configured",
+        "value_ms": null,
+        "recommendation": "Database connection timeout is configured at the XORM engine level via app.ini [database] settings. Per-query timeouts are not set."
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "No retry logic for transient DB errors. Consider retry with backoff for connection errors."
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "No circuit breaker on DB calls. XORM handles connection pooling but has no circuit breaker pattern."
+      },
+      "bulkhead": {
+        "status": "configured",
+        "isolation_type": "connection_pool",
+        "recommendation": "XORM connection pool provides basic isolation. Pool size configured via [database] MAX_OPEN_CONNS."
+      },
+      "fallback": {
+        "status": "missing",
+        "behavior": null,
+        "recommendation": "No fallback for DB failures. Endpoints return 500 error. Consider returning cached/stale data for read endpoints."
+      },
+      "idempotency": {
+        "safe_to_retry": true,
+        "reason": "Read operations (ep-019, ep-021, ep-022) are inherently idempotent. ep-020 writes are idempotent (setting status to same value is safe)."
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-019", "ep-020", "ep-021", "ep-022"],
+        "impact": "All notification endpoints become unavailable. Users cannot view or manage notifications."
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-015",
+      "http_method": "GET",
+      "path": "/api/v1/settings/ui",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure in-memory read",
+      "graceful_degradation": "Always available as long as the process is running"
+    },
+    {
+      "endpoint_id": "ep-016",
+      "http_method": "GET",
+      "path": "/api/v1/settings/api",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure in-memory read",
+      "graceful_degradation": "Always available as long as the process is running"
+    },
+    {
+      "endpoint_id": "ep-017",
+      "http_method": "GET",
+      "path": "/api/v1/settings/repository",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure in-memory read",
+      "graceful_degradation": "Always available as long as the process is running"
+    },
+    {
+      "endpoint_id": "ep-018",
+      "http_method": "GET",
+      "path": "/api/v1/settings/attachment",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure in-memory read",
+      "graceful_degradation": "Always available as long as the process is running"
+    },
+    {
+      "endpoint_id": "ep-019",
+      "http_method": "GET",
+      "path": "/api/v1/notifications",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "retry",
+          "status": "missing",
+          "severity": "low",
+          "detail": "No retry on transient DB errors for notification reads",
+          "recommendation": "Low priority - read endpoint, client can retry"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "DB down → 500 error → client sees no notifications",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-020",
+      "http_method": "PUT",
+      "path": "/api/v1/notifications",
+      "risk_level": "medium",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Updates notifications one-by-one in a loop without a transaction. If the loop fails midway, some notifications are marked read while others remain unread.",
+          "recommendation": "Wrap the update loop in a database transaction to ensure atomicity"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Setting notification status is idempotent - retrying sets the same status again",
+          "recommendation": "Safe to retry"
+        }
+      ],
+      "non_atomic_operations": ["Loop of SetNotificationStatus calls without transaction wrapper - partial failure leaves inconsistent state"],
+      "cascading_failure_risk": "DB down → 500 error → notifications stuck in current state",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-021",
+      "http_method": "GET",
+      "path": "/api/v1/notifications/new",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "retry",
+          "status": "missing",
+          "severity": "low",
+          "detail": "No retry on transient DB errors for count query",
+          "recommendation": "Low priority - simple count query, client can retry"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "DB down → 422 error → client cannot check for new notifications",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-022",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "retry",
+          "status": "missing",
+          "severity": "low",
+          "detail": "No retry on transient DB errors for notification reads",
+          "recommendation": "Low priority - read endpoint, client can retry"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "DB down → 500 error → client sees no repo notifications",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version (no auth, no DB)",
+      "readiness": null,
+      "recommendation": "Version endpoint serves as basic liveness. No dedicated readiness probe that checks DB connectivity."
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses graceful module (modules/graceful) for signal handling and request draining",
+      "recommendation": "Already implemented"
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in API rate limiting. Relies on external reverse proxy.",
+      "recommendation": "Consider adding rate limiting for notification polling endpoints (ep-021 especially)"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "These endpoints are synchronous request-response. No async message processing."
+    },
+    "single_points_of_failure": [
+      "SQL database - all notification endpoints depend on it with no fallback"
+    ],
+    "cascading_failure_paths": [
+      "Database down → all notification endpoints (ep-019 to ep-022) return errors → UI notification badge broken"
+    ]
+  }
+}

@@ -1,0 +1,145 @@
+{
+  "total_rules": 14,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Head branch must differ from base branch when creating PR",
+      "location": {"class": "repo", "method": "CreatePullRequest", "file_path": "routers/api/v1/repo/pull.go", "line_number": 408},
+      "condition": "form.Head == form.Base",
+      "action": "Return 422 Unprocessable Entity",
+      "affected_endpoints": ["ep-226"],
+      "code_snippet": "if form.Head == form.Base { ctx.APIError(http.StatusUnprocessableEntity, ...) }"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Base and head refs must be branches (not tags or commits) for PR creation",
+      "location": {"class": "repo", "method": "CreatePullRequest", "file_path": "routers/api/v1/repo/pull.go", "line_number": 425},
+      "condition": "!compareResult.BaseRef.IsBranch() || !compareResult.HeadRef.IsBranch()",
+      "action": "Return 422 Unprocessable Entity",
+      "affected_endpoints": ["ep-226"],
+      "code_snippet": "if !compareResult.BaseRef.IsBranch() || !compareResult.HeadRef.IsBranch() {"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Cannot create duplicate PR with same head/base targets",
+      "location": {"class": "repo", "method": "CreatePullRequest", "file_path": "routers/api/v1/repo/pull.go", "line_number": 428},
+      "condition": "Unmerged PR exists with same head repo, base repo, head branch, base branch",
+      "action": "Return 409 Conflict",
+      "affected_endpoints": ["ep-226"],
+      "code_snippet": "existingPr, err := issues_model.GetUnmergedPullRequest(ctx, ...)"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "authorization",
+      "description": "User must be poster or have write permission to edit PR",
+      "location": {"class": "repo", "method": "EditPullRequest", "file_path": "routers/api/v1/repo/pull.go", "line_number": 654},
+      "condition": "!issue.IsPoster(ctx.Doer.ID) && !ctx.Repo.Permission.CanWrite(unit.TypePullRequests)",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-227"],
+      "code_snippet": "if !issue.IsPoster(ctx.Doer.ID) && !ctx.Repo.Permission.CanWrite(unit.TypePullRequests) {"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Optimistic concurrency control on PR content edits",
+      "location": {"class": "repo", "method": "EditPullRequest", "file_path": "routers/api/v1/repo/pull.go", "line_number": 661},
+      "condition": "form.ContentVersion != nil && *form.ContentVersion != issue.ContentVersion",
+      "action": "Return 409 Conflict",
+      "affected_endpoints": ["ep-227"],
+      "code_snippet": "if form.ContentVersion != nil && *form.ContentVersion != issue.ContentVersion {"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "state_transition",
+      "description": "Cannot change state of already-merged PR",
+      "location": {"class": "repo", "method": "EditPullRequest", "file_path": "routers/api/v1/repo/pull.go", "line_number": 770},
+      "condition": "pr.HasMerged && form.State != nil",
+      "action": "Return 412 Precondition Failed",
+      "affected_endpoints": ["ep-227"],
+      "code_snippet": "if pr.HasMerged { ctx.APIError(http.StatusPreconditionFailed, ...) }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Merge permission check with multiple conditions (WIP, status, branch protection, signing, dependencies)",
+      "location": {"class": "pull_service", "method": "CheckPullMergeable", "file_path": "services/pull/check.go", "line_number": 142},
+      "condition": "Various: HasMerged, IsClosed, !AllowedToMerge, IsWIP, !Mergeable, BranchProtection, SigningRequired, DependenciesLeft",
+      "action": "Return specific error for each condition",
+      "affected_endpoints": ["ep-229"],
+      "code_snippet": "if !allowedMerge { return ErrNoPermissionToMerge }"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "authorization",
+      "description": "Admin force merge can bypass branch protection unless BlockAdminMergeOverride is set",
+      "location": {"class": "pull_service", "method": "CheckPullMergeable", "file_path": "services/pull/check.go", "line_number": 199},
+      "condition": "adminForceMerge && isRepoAdmin && !blockAdminForceMerge",
+      "action": "Clear branch protection error, allow merge",
+      "affected_endpoints": ["ep-229"],
+      "code_snippet": "if isRepoAdmin && !blockAdminForceMerge { err = nil }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Merge style must be allowed by repository PR configuration",
+      "location": {"class": "pull_service", "method": "Merge", "file_path": "services/pull/merge.go", "line_number": 243},
+      "condition": "!prConfig.IsMergeStyleAllowed(mergeStyle)",
+      "action": "Return ErrInvalidMergeStyle",
+      "affected_endpoints": ["ep-229"],
+      "code_snippet": "if !prConfig.IsMergeStyleAllowed(mergeStyle) { return ErrInvalidMergeStyle{...} }"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Delete branch after merge respects user option, then falls back to repo default",
+      "location": {"class": "pull_service", "method": "ShouldDeleteBranchAfterMerge", "file_path": "services/pull/merge.go", "line_number": 738},
+      "condition": "userOption != nil uses user choice; otherwise uses prUnit.PullRequestsConfig().DefaultDeleteBranchAfterMerge",
+      "action": "Return whether to delete branch",
+      "affected_endpoints": ["ep-229"],
+      "code_snippet": "if userOption != nil { return *userOption, nil }"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "authorization",
+      "description": "Update PR requires push permission on head repo (or maintainer edit permission)",
+      "location": {"class": "pull_service", "method": "IsUserAllowedToUpdate", "file_path": "services/pull/update.go", "line_number": 136},
+      "condition": "User must have push permission on head branch, or be maintainer with AllowMaintainerEdit",
+      "action": "Return pushAllowed/rebaseAllowed booleans",
+      "affected_endpoints": ["ep-230"],
+      "code_snippet": "pushAllowed, rebaseAllowed, err = isUserAllowedToPushOrForcePushInRepoBranch(...)"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "state_transition",
+      "description": "Cannot update a merged or closed PR",
+      "location": {"class": "repo", "method": "UpdatePullRequest", "file_path": "routers/api/v1/repo/pull.go", "line_number": 1232},
+      "condition": "pr.HasMerged || pr.Issue.IsClosed",
+      "action": "Return 422 Unprocessable Entity",
+      "affected_endpoints": ["ep-230"],
+      "code_snippet": "if pr.HasMerged { ctx.APIError(http.StatusUnprocessableEntity, err) }"
+    },
+    {
+      "rule_id": "br-013",
+      "category": "authorization",
+      "description": "Cancel auto-merge requires being the scheduler or having merge permission",
+      "location": {"class": "repo", "method": "CancelScheduledAutoMerge", "file_path": "routers/api/v1/repo/pull.go", "line_number": 1340},
+      "condition": "ctx.Doer.ID != autoMerge.DoerID && !allowed",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-231"],
+      "code_snippet": "if ctx.Doer.ID != autoMerge.DoerID { allowed, err := pull_service.IsUserAllowedToMerge(...) }"
+    },
+    {
+      "rule_id": "br-014",
+      "category": "authorization",
+      "description": "PR creator must be collaborator/member/org-member or have write on head repo",
+      "location": {"class": "pull_service", "method": "NewPullRequest", "file_path": "services/pull/pull.go", "line_number": 72},
+      "condition": "!canCreate && !perm.CanWrite(unit.TypeCode)",
+      "action": "Return ErrMustCollaborator",
+      "affected_endpoints": ["ep-226"],
+      "code_snippet": "if !perm.CanWrite(unit.TypeCode) { return issues_model.ErrMustCollaborator }"
+    }
+  ]
+}

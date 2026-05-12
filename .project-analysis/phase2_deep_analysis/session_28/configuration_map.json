@@ -1,0 +1,21 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "setting.API.DefaultPagingNum",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "default page size when not specified", "impact": "controls number of results per page"}],
+      "affected_endpoints": ["ep-190", "ep-194", "ep-195"]
+    },
+    {
+      "key": "setting.API.MaxResponseItems",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "maximum page size cap", "impact": "limits maximum results per page"}],
+      "affected_endpoints": ["ep-190", "ep-194", "ep-195"]
+    }
+  ]
+}

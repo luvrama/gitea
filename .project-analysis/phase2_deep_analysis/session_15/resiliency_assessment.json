@@ -1,0 +1,184 @@
+{
+  "total_findings": 9,
+  "overall_risk": "medium",
+  "dependency_resiliency": [
+    {
+      "dependency": "HaveIBeenPwned API",
+      "client_class": "password.IsPwned",
+      "file_path": "modules/auth/password/pwn/pwn.go",
+      "used_by_endpoints": ["ep-099"],
+      "timeout": {
+        "status": "missing",
+        "value_ms": null,
+        "recommendation": "Add 5000ms timeout to HTTP client for HIBP API calls"
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Add single retry with 1s backoff for transient network errors"
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "Add circuit breaker to prevent cascading failures when HIBP is down"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Not critical for admin-only endpoint"
+      },
+      "fallback": {
+        "status": "configured",
+        "behavior": "Error is logged but password check failure is propagated as 400 error",
+        "recommendation": "Consider allowing password when HIBP is unreachable (fail-open for availability)"
+      },
+      "idempotency": {
+        "safe_to_retry": true,
+        "reason": "Read-only API call, safe to retry"
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-099"],
+        "impact": "Admin cannot update user passwords when HIBP API is down (if PASSWORD_CHECK_PWN enabled)"
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-099",
+      "http_method": "PATCH",
+      "path": "/api/v1/admin/users/{username}",
+      "risk_level": "medium",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "No timeout on HIBP API call",
+          "recommendation": "Add context timeout for external call"
+        }
+      ],
+      "non_atomic_operations": ["Email replacement (delete old + insert new) is in transaction, but auth update and profile update are separate operations"],
+      "cascading_failure_risk": "HIBP API down blocks password updates",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-100",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/users/{username}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Purge mode performs multi-step operations (disable user, delete repos, delete orgs) outside transaction",
+          "recommendation": "Acceptable design - each step is independently consistent"
+        }
+      ],
+      "non_atomic_operations": ["Purge: disable user → delete repos → remove from orgs → delete user (each step outside main transaction)"],
+      "cascading_failure_risk": "Partial purge could leave orphaned data if process crashes mid-way",
+      "graceful_degradation": "User is disabled first, preventing further actions even if purge fails"
+    },
+    {
+      "endpoint_id": "ep-101",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/keys",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-102",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/users/{username}/keys/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Key deletion and authorized_keys rewrite are separate operations",
+          "recommendation": "If rewrite fails, key is deleted from DB but still in authorized_keys file until next rewrite"
+        }
+      ],
+      "non_atomic_operations": ["Delete key from DB then rewrite authorized_keys file"],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-103",
+      "http_method": "GET",
+      "path": "/api/v1/admin/users",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-104",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/rename",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "DB transaction commits then filesystem rename happens; if rename fails, rollback is attempted",
+          "recommendation": "Current rollback logic is adequate but could leave inconsistent state on double failure"
+        }
+      ],
+      "non_atomic_operations": ["DB transaction (update repos, create redirect, update user) then filesystem directory rename"],
+      "cascading_failure_risk": "If filesystem rename fails after DB commit, rollback is attempted but could fail",
+      "graceful_degradation": "Rollback logic attempts to restore old directory name"
+    },
+    {
+      "endpoint_id": "ep-105",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/jobs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none needed"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Graceful shutdown via modules/graceful package handles SIGTERM",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in rate limiting on API endpoints",
+      "recommendation": "Add rate limiting middleware or use reverse proxy rate limiting"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "These endpoints are synchronous"
+    },
+    "single_points_of_failure": [
+      "HaveIBeenPwned API for password validation (when enabled)"
+    ],
+    "cascading_failure_paths": [
+      "HIBP API down → ep-099 password updates fail (when PASSWORD_CHECK_PWN enabled)"
+    ]
+  }
+}

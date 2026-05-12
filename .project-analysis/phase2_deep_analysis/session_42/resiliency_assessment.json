@@ -1,0 +1,150 @@
+{
+  "total_findings": 8,
+  "overall_risk": "medium",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-285",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure DB read",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-286",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure DB read",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-287",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Legacy backfill runs in a separate transaction from the rerun plan execution. If the second tx fails, the backfill is idempotent and subsequent reruns will succeed.",
+          "recommendation": "Design is intentional and documented; no change needed"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Concurrent rerun attempts are detected via unique constraint on (run_id, attempt) and return 409 Conflict",
+          "recommendation": "Already handled correctly"
+        }
+      ],
+      "non_atomic_operations": ["Legacy backfill + rerun plan are separate transactions (by design, idempotent-safe)"],
+      "cascading_failure_risk": "If DB fails mid-transaction, new attempt is rolled back cleanly",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-288",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun-failed-jobs",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Same multi-transaction pattern as ep-287",
+          "recommendation": "Same as ep-287"
+        }
+      ],
+      "non_atomic_operations": ["Same as ep-287"],
+      "cascading_failure_risk": "Same as ep-287",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-289",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs/{job_id}/rerun",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Same multi-transaction pattern as ep-287",
+          "recommendation": "Same as ep-287"
+        }
+      ],
+      "non_atomic_operations": ["Same as ep-287"],
+      "cascading_failure_risk": "Same as ep-287",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-290",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure DB read",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-291",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}/jobs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure DB read",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-292",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure DB read",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled by modules/graceful package with SIGTERM drain",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting for actions API",
+      "recommendation": "Consider rate limiting rerun endpoints to prevent abuse"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "These endpoints are synchronous request/response"
+    },
+    "single_points_of_failure": ["Database (all endpoints depend on it)"],
+    "cascading_failure_paths": []
+  }
+}

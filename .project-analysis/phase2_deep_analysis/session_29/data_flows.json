@@ -1,0 +1,391 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-196",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "description": "Checks if the authenticated user is watching the specified repository by querying the watch table",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.IsWatching",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/watch.go",
+          "input": "APIContext with Doer and Repo",
+          "output": "WatchInfo JSON or 404",
+          "operations": ["Call repo_model.IsWatching to check watch status"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "watch", "description": "Get watch record for user_id and repo_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.IsWatching",
+          "type": "repository",
+          "file_path": "models/repo/watch.go",
+          "input": "ctx, userID int64, repoID int64",
+          "output": "bool",
+          "operations": ["Call GetWatch to get watch record", "Check if mode is watchable via IsWatchMode"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "watch", "description": "SELECT from watch WHERE user_id=? AND repo_id=?"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "Watch model + Repository",
+          "to": "api.WatchInfo",
+          "component": "user.IsWatching",
+          "mappings": [
+            {"source_field": "constant true", "target_field": "Subscribed", "transformation": "direct_copy"},
+            {"source_field": "Repository.CreatedUnix", "target_field": "CreatedAt", "transformation": "computed"},
+            {"source_field": "Repository.APIURL()", "target_field": "RepositoryURL", "transformation": "computed"},
+            {"source_field": "Repository.APIURL()+/subscription", "target_field": "URL", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "User is not watching repo", "handler": "user.IsWatching", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-197",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "description": "Subscribes the authenticated user to watch the specified repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.Watch",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/watch.go",
+          "input": "APIContext with Doer and Repo",
+          "output": "WatchInfo JSON or error",
+          "operations": ["Call repo_model.WatchRepo to subscribe user"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.WatchRepo",
+          "type": "repository",
+          "file_path": "models/repo/watch.go",
+          "input": "ctx, doer *User, repo *Repository, doWatch bool",
+          "output": "error",
+          "operations": ["Get existing watch record", "Check if user is blocked by repo owner", "Set watch mode to WatchModeNormal"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "watch", "description": "Get existing watch record"},
+            {"operation": "SELECT", "table": "user_blocking", "description": "Check if user is blocked by repo owner"},
+            {"operation": "INSERT", "table": "watch", "description": "Insert new watch record if none exists"},
+            {"operation": "UPDATE", "table": "watch", "description": "Update existing watch record mode"},
+            {"operation": "UPDATE", "table": "repository", "description": "Increment num_watches counter"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "Repository",
+          "to": "api.WatchInfo",
+          "component": "user.Watch",
+          "mappings": [
+            {"source_field": "constant true", "target_field": "Subscribed", "transformation": "direct_copy"},
+            {"source_field": "Repository.CreatedUnix", "target_field": "CreatedAt", "transformation": "computed"},
+            {"source_field": "Repository.APIURL()", "target_field": "RepositoryURL", "transformation": "computed"},
+            {"source_field": "Repository.APIURL()+/subscription", "target_field": "URL", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "User is blocked by repo owner", "handler": "user.Watch", "response_code": 403, "response": "forbidden"},
+        {"condition": "Internal error", "handler": "user.Watch", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-198",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "description": "Unsubscribes the authenticated user from watching the specified repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.Unwatch",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/watch.go",
+          "input": "APIContext with Doer and Repo",
+          "output": "204 No Content or error",
+          "operations": ["Call repo_model.WatchRepo with doWatch=false"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.WatchRepo",
+          "type": "repository",
+          "file_path": "models/repo/watch.go",
+          "input": "ctx, doer *User, repo *Repository, doWatch=false",
+          "output": "error",
+          "operations": ["Get existing watch record", "If mode is WatchModeAuto, set to WatchModeDont", "Otherwise set to WatchModeNone (delete record)"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "watch", "description": "Get existing watch record"},
+            {"operation": "UPDATE", "table": "watch", "description": "Update mode to WatchModeDont if was auto"},
+            {"operation": "DELETE", "table": "watch", "description": "Delete watch record if mode becomes None"},
+            {"operation": "UPDATE", "table": "repository", "description": "Decrement num_watches counter"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Internal error", "handler": "user.Unwatch", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-199",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}",
+      "description": "Lists all packages of an owner with optional type and name filtering, paginated",
+      "steps": [
+        {
+          "step": 1,
+          "component": "packages.ListPackages",
+          "type": "controller",
+          "file_path": "routers/api/v1/packages/package.go",
+          "input": "APIContext with Package.Owner",
+          "output": "[]api.Package JSON",
+          "operations": ["Get list options from query params", "Build search options", "Call searchPackages helper"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "packages.searchPackages",
+          "type": "service",
+          "file_path": "routers/api/v1/packages/package.go",
+          "input": "PackageSearchOptions",
+          "output": "[]*api.Package, int64, error",
+          "operations": ["Call packages_model.SearchVersions", "Call packages_model.GetPackageDescriptors", "Convert each descriptor to api.Package"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "packages_model.SearchVersions",
+          "type": "repository",
+          "file_path": "models/packages/package_version.go",
+          "input": "PackageSearchOptions",
+          "output": "[]*PackageVersion, int64, error",
+          "operations": ["Build SQL query with JOIN on package table", "Apply conditions (owner_id, type, name LIKE, is_internal=false)", "Apply pagination"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "package_version JOIN package", "description": "Search versions with filters and pagination"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "packages_model.GetPackageDescriptors",
+          "type": "repository",
+          "file_path": "models/packages/descriptor.go",
+          "input": "[]*PackageVersion",
+          "output": "[]*PackageDescriptor, error",
+          "operations": ["For each version: get package, owner, repository, creator, properties, files"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "package", "description": "Get package by ID (cached)"},
+            {"operation": "SELECT", "table": "user", "description": "Get owner by ID (cached)"},
+            {"operation": "SELECT", "table": "repository", "description": "Get linked repo if repo_id > 0 (cached)"},
+            {"operation": "SELECT", "table": "user", "description": "Get creator by ID (cached)"},
+            {"operation": "SELECT", "table": "package_property", "description": "Get package and version properties"},
+            {"operation": "SELECT", "table": "package_file", "description": "Get files for version"},
+            {"operation": "SELECT", "table": "package_blob", "description": "Get blob for each file (cached)"}
+          ],
+          "cache_ops": [{"operation": "GET/SET", "store": "EphemeralCache", "description": "In-memory cache for package, user, repo, blob lookups within request"}],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToPackage",
+          "type": "utility",
+          "file_path": "services/convert/package.go",
+          "input": "PackageDescriptor, doer",
+          "output": "*api.Package, error",
+          "operations": ["Get doer repo permission if repository linked", "Convert to API struct"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "Check doer permission on linked repository"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "PackageDescriptor",
+          "to": "api.Package",
+          "component": "convert.ToPackage",
+          "mappings": [
+            {"source_field": "Version.ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Owner", "target_field": "Owner", "transformation": "computed"},
+            {"source_field": "Repository", "target_field": "Repository", "transformation": "computed"},
+            {"source_field": "Creator", "target_field": "Creator", "transformation": "computed"},
+            {"source_field": "Package.Type", "target_field": "Type", "transformation": "direct_copy"},
+            {"source_field": "Package.Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Version.Version", "target_field": "Version", "transformation": "direct_copy"},
+            {"source_field": "Version.CreatedUnix", "target_field": "CreatedAt", "transformation": "computed"},
+            {"source_field": "VersionHTMLURL()", "target_field": "HTMLURL", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Internal error in search or conversion", "handler": "packages.ListPackages", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-200",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "description": "Gets a specific package version, descriptor pre-loaded by middleware",
+      "steps": [
+        {
+          "step": 1,
+          "component": "PackageAssignmentAPI middleware",
+          "type": "utility",
+          "file_path": "services/context/package.go",
+          "input": "path params: owner, type, name, version",
+          "output": "ctx.Package with Descriptor populated",
+          "operations": ["Determine access mode for owner", "Look up package version by name and version", "Build PackageDescriptor"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "package_version JOIN package", "description": "Find version by owner, type, name, version"},
+            {"operation": "SELECT", "table": "package", "description": "Get package details"},
+            {"operation": "SELECT", "table": "user", "description": "Get owner and creator"},
+            {"operation": "SELECT", "table": "repository", "description": "Get linked repo if any"},
+            {"operation": "SELECT", "table": "package_property", "description": "Get properties"},
+            {"operation": "SELECT", "table": "package_file", "description": "Get files"},
+            {"operation": "SELECT", "table": "package_blob", "description": "Get blobs"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "packages.GetPackage",
+          "type": "controller",
+          "file_path": "routers/api/v1/packages/package.go",
+          "input": "APIContext with Package.Descriptor",
+          "output": "api.Package JSON",
+          "operations": ["Call convert.ToPackage with pre-loaded descriptor"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "Check doer permission on linked repository"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToPackage",
+          "type": "utility",
+          "file_path": "services/convert/package.go",
+          "input": "PackageDescriptor, doer",
+          "output": "*api.Package, error",
+          "operations": ["Get doer repo permission if repository linked", "Build API response struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "PackageDescriptor",
+          "to": "api.Package",
+          "component": "convert.ToPackage",
+          "mappings": [
+            {"source_field": "Version.ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Owner", "target_field": "Owner", "transformation": "computed"},
+            {"source_field": "Package.Type", "target_field": "Type", "transformation": "direct_copy"},
+            {"source_field": "Package.Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Version.Version", "target_field": "Version", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Package/version not found (handled by middleware)", "handler": "PackageAssignmentAPI", "response_code": 404, "response": "notFound"},
+        {"condition": "Internal error in conversion", "handler": "packages.GetPackage", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-201",
+      "http_method": "DELETE",
+      "path": "/api/v1/packages/{owner}/{type}/{name}",
+      "description": "Deletes a package and all its versions, files, and properties",
+      "steps": [
+        {
+          "step": 1,
+          "component": "PackageAssignmentAPI middleware",
+          "type": "utility",
+          "file_path": "services/context/package.go",
+          "input": "path params: owner, type, name (no version)",
+          "output": "ctx.Package with Descriptor containing Package only",
+          "operations": ["Determine access mode", "Look up package by name", "Build minimal PackageDescriptor with Package and Owner"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "package", "description": "Get package by owner_id, type, lower_name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "packages.DeletePackage",
+          "type": "controller",
+          "file_path": "routers/api/v1/packages/package.go",
+          "input": "APIContext with Package.Descriptor.Package",
+          "output": "204 No Content or error",
+          "operations": ["Call packages_service.RemovePackage"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "packages_service.RemovePackage",
+          "type": "service",
+          "file_path": "services/packages/packages.go",
+          "input": "ctx, doer, *Package",
+          "output": "error",
+          "operations": ["Get all package descriptors", "Call spec manager OnBeforeRemovePackageAll", "Within transaction: delete properties, files, versions, package", "Notify PackageDelete for each version"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "package_version", "description": "Get all versions of package"},
+            {"operation": "SELECT", "table": "package, user, repository, package_property, package_file, package_blob", "description": "Build descriptors for all versions"},
+            {"operation": "DELETE", "table": "package_property", "description": "Delete all package-level properties"},
+            {"operation": "DELETE", "table": "package_property", "description": "Delete all file-level properties"},
+            {"operation": "DELETE", "table": "package_property", "description": "Delete all version-level properties"},
+            {"operation": "DELETE", "table": "package_file", "description": "Delete all files for package"},
+            {"operation": "DELETE", "table": "package_version", "description": "Delete all versions"},
+            {"operation": "DELETE", "table": "package", "description": "Delete the package record"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Package not found (handled by middleware)", "handler": "PackageAssignmentAPI", "response_code": 404, "response": "notFound"},
+        {"condition": "Internal error during deletion", "handler": "packages.DeletePackage", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

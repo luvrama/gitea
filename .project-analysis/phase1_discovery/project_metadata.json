@@ -1,0 +1,24 @@
+{
+  "project_name": "gitea",
+  "language": "Go",
+  "language_version": "1.26.3",
+  "framework": "go-chi/chi v5 + XORM",
+  "framework_version": "chi v5.2.5, xorm v1.3.11",
+  "build_tool": "Make",
+  "package_manager": "go modules (go.mod)",
+  "source_file_count": 1996,
+  "project_type": "single-module",
+  "modules": [
+    "cmd",
+    "models",
+    "modules",
+    "routers",
+    "services",
+    "web_src"
+  ],
+  "api_style": "REST",
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "analysis_timestamp": "2026-05-11T23:26:38-06:00",
+  "analysis_scope": "/Users/relumalai/workshop/gitea"
+}

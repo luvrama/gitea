@@ -1,0 +1,50 @@
+{
+  "endpoints_by_database_table": {
+    "user": {"read": ["ep-254", "ep-255", "ep-256"], "write": []},
+    "collaboration": {"read": ["ep-254", "ep-255"], "write": []},
+    "access": {"read": ["ep-254", "ep-256"], "write": []},
+    "repo_unit": {"read": ["ep-254"], "write": []},
+    "team": {"read": ["ep-254", "ep-255", "ep-256"], "write": []},
+    "issue": {"read": ["ep-257", "ep-258", "ep-259", "ep-260", "ep-261"], "write": ["ep-259"]},
+    "attachment": {"read": ["ep-257", "ep-258", "ep-260", "ep-261"], "write": ["ep-259", "ep-260", "ep-261"]}
+  },
+  "endpoints_by_external_service": {
+    "Object Storage (Attachments)": ["ep-259", "ep-261"]
+  },
+  "endpoints_by_config_property": {
+    "attachment.ALLOWED_TYPES": ["ep-259", "ep-260"],
+    "attachment.MAX_SIZE": ["ep-259"],
+    "attachment.ENABLED": ["ep-259", "ep-260", "ep-261"]
+  },
+  "endpoints_by_model_class": {
+    "repo_model.Attachment": ["ep-257", "ep-258", "ep-259", "ep-260", "ep-261"],
+    "issues_model.Issue": ["ep-257", "ep-258", "ep-259", "ep-260", "ep-261"],
+    "user_model.User": ["ep-254", "ep-255", "ep-256"],
+    "access_model.Permission": ["ep-254"]
+  },
+  "endpoints_by_service_class": {
+    "attachment_service": ["ep-259", "ep-260"],
+    "issue_service": ["ep-255", "ep-259"],
+    "pull_service": ["ep-255"],
+    "convert": ["ep-254", "ep-255", "ep-256", "ep-257", "ep-258", "ep-259", "ep-260"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-254": {"reads": ["user", "repo_unit", "collaboration", "access", "team"], "writes": []},
+    "ep-255": {"reads": ["user", "collaboration", "team", "team_user"], "writes": []},
+    "ep-256": {"reads": ["user", "access", "team", "team_user"], "writes": []},
+    "ep-257": {"reads": ["issue", "attachment"], "writes": []},
+    "ep-258": {"reads": ["issue", "attachment", "comment", "label", "milestone", "user"], "writes": []},
+    "ep-259": {"reads": ["issue"], "writes": ["attachment", "issue"]},
+    "ep-260": {"reads": ["issue", "attachment"], "writes": ["attachment"]},
+    "ep-261": {"reads": ["issue", "attachment"], "writes": ["attachment"]}
+  },
+  "external_services_by_endpoint": {
+    "ep-259": ["Object Storage (Attachments)"],
+    "ep-261": ["Object Storage (Attachments)"]
+  },
+  "config_properties_by_endpoint": {
+    "ep-259": ["attachment.ALLOWED_TYPES", "attachment.MAX_SIZE"],
+    "ep-260": ["attachment.ALLOWED_TYPES"],
+    "ep-261": []
+  }
+}

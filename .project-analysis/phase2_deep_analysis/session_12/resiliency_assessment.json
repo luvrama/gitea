@@ -1,0 +1,164 @@
+{
+  "total_findings": 7,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-077",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external calls, only DB access via XORM connection pool",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-078",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Single DB query only",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-079",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Creates new webhook - duplicate calls create duplicate webhooks but no data corruption",
+          "recommendation": "Consider deduplication by URL+owner if needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-080",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "PATCH is idempotent - same update applied multiple times yields same result",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-081",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Delete webhook + hook_tasks wrapped in db.WithTx transaction",
+          "recommendation": "Already properly handled with transaction"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-082",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/labels",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "DB-only read operation",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-083",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/labels",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "missing",
+          "severity": "low",
+          "detail": "No uniqueness constraint on label name per org - duplicate labels can be created",
+          "recommendation": "Consider adding unique constraint on (org_id, name) or check before insert"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled by modules/graceful package with SIGTERM handling",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in API rate limiting for these endpoints",
+      "recommendation": "Consider adding rate limiting middleware"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": ["Database (single connection pool)"],
+    "cascading_failure_paths": []
+  }
+}

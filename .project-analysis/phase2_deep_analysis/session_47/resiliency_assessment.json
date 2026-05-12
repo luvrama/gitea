@@ -1,0 +1,105 @@
+{
+  "total_findings": 4,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-318",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/merge-upstream",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Git push attempt followed by fallback to merge via fake PR - if merge fails after push attempt, state may be inconsistent",
+          "recommendation": "The fake PR merge approach is a workaround; consider proper merge-upstream git operation"
+        },
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Git operations use context cancellation but no explicit timeout on the merge operation",
+          "recommendation": "Ensure request context has appropriate deadline for long-running git operations"
+        }
+      ],
+      "non_atomic_operations": ["Git push attempt + fallback merge via fake PR if push fails"],
+      "cascading_failure_risk": "Git operations on disk could block if filesystem is slow",
+      "graceful_degradation": "Returns error if merge fails"
+    },
+    {
+      "endpoint_id": "ep-319",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/lock",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - simple DB transaction",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-320",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/lock",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - simple DB transaction",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-323",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}/tests",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Each test creates a new hook_task - safe to retry but will create duplicate deliveries",
+          "recommendation": "Acceptable behavior for test endpoint"
+        },
+        {
+          "pattern": "fallback",
+          "status": "configured",
+          "severity": "low",
+          "detail": "If webhooks are disabled globally (setting.DisableWebhooks), PrepareWebhook silently returns nil",
+          "recommendation": "Could return a more informative response to the user"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - delivery is async via queue",
+      "graceful_degradation": "Webhook delivery failures don't affect the API response"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled by modules/graceful package",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting for webhook APIs",
+      "recommendation": "Consider rate limiting webhook test endpoint to prevent abuse"
+    },
+    "dead_letter_queues": {
+      "status": "configured",
+      "detail": "Failed webhook deliveries are tracked in hook_task with status"
+    },
+    "single_points_of_failure": [],
+    "cascading_failure_paths": []
+  }
+}

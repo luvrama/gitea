@@ -1,0 +1,45 @@
+{
+  "endpoints_by_database_table": {
+    "repository": {"read": ["ep-367", "ep-368", "ep-369"], "write": ["ep-369", "ep-370"]},
+    "repo_unit": {"read": ["ep-367", "ep-368"], "write": ["ep-369"]},
+    "language_stat": {"read": ["ep-367", "ep-368"], "write": []},
+    "access": {"read": ["ep-368"], "write": []},
+    "mirror": {"read": ["ep-367", "ep-368"], "write": ["ep-369"]},
+    "action": {"read": ["ep-374"], "write": []},
+    "issue_pin": {"read": [], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "repository.ForcePrivate": ["ep-369"],
+    "mirror.MinInterval": ["ep-369"],
+    "repository.issue.MaxPinned": ["ep-371"]
+  },
+  "endpoints_by_model_class": {
+    "repo_model.Repository": ["ep-367", "ep-368", "ep-369", "ep-370", "ep-371", "ep-372", "ep-373", "ep-374"],
+    "repo_model.LanguageStat": ["ep-367", "ep-368"],
+    "activities_model.Action": ["ep-374"],
+    "repo_model.Mirror": ["ep-367", "ep-368", "ep-369"]
+  },
+  "endpoints_by_service_class": {
+    "convert.ToRepo": ["ep-367", "ep-368", "ep-369"],
+    "repo_service.DeleteRepository": ["ep-370"],
+    "feed_service.GetFeeds": ["ep-374"],
+    "issue.ParseTemplatesFromDefaultBranch": ["ep-371"],
+    "issue.GetTemplateConfigFromDefaultBranch": ["ep-372", "ep-373"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-367": {"reads": ["repository", "repo_unit", "language_stat", "release", "branch", "mirror", "repo_license"], "writes": []},
+    "ep-368": {"reads": ["repository", "access", "repo_unit", "language_stat", "release", "branch"], "writes": []},
+    "ep-369": {"reads": ["repository", "repo_unit", "mirror"], "writes": ["repository", "repo_unit", "mirror"]},
+    "ep-370": {"reads": ["repository", "org_user"], "writes": ["repository"]},
+    "ep-371": {"reads": [], "writes": []},
+    "ep-372": {"reads": [], "writes": []},
+    "ep-373": {"reads": [], "writes": []},
+    "ep-374": {"reads": ["action"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-369": ["repository.ForcePrivate", "mirror.MinInterval"],
+    "ep-371": ["repository.issue.MaxPinned"]
+  }
+}

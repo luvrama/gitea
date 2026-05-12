@@ -1,0 +1,53 @@
+{
+  "endpoints_by_database_table": {
+    "collaboration": {"read": ["ep-250", "ep-251"], "write": ["ep-252", "ep-253"]},
+    "access": {"read": [], "write": ["ep-252", "ep-253"]},
+    "user": {"read": ["ep-250", "ep-251", "ep-252", "ep-253"], "write": []},
+    "branch": {"read": ["ep-249"], "write": []},
+    "protected_branch": {"read": ["ep-249"], "write": []},
+    "issue_assignees": {"read": [], "write": ["ep-253"]},
+    "watch": {"read": [], "write": ["ep-253"]},
+    "stopwatch": {"read": [], "write": ["ep-253"]},
+    "issue_watch": {"read": [], "write": ["ep-253"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "api.DefaultGitTreesPerPage": ["ep-246"],
+    "api.DefaultPagingNum": ["ep-250"],
+    "api.MaxResponseItems": ["ep-250"]
+  },
+  "endpoints_by_model_class": {
+    "repo_model.Collaboration": ["ep-250", "ep-251", "ep-252", "ep-253"],
+    "api.GitTreeResponse": ["ep-246"],
+    "api.Reference": ["ep-247", "ep-248"],
+    "api.AddCollaboratorOption": ["ep-252"],
+    "api.ApplyDiffPatchFileOptions": ["ep-249"]
+  },
+  "endpoints_by_service_class": {
+    "files_service.GetTreeBySHA": ["ep-246"],
+    "files_service.ApplyDiffPatch": ["ep-249"],
+    "repo_service.AddOrUpdateCollaborator": ["ep-252"],
+    "repo_service.DeleteCollaboration": ["ep-253"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-246": {"reads": [], "writes": []},
+    "ep-247": {"reads": [], "writes": []},
+    "ep-248": {"reads": [], "writes": []},
+    "ep-249": {"reads": ["branch", "protected_branch"], "writes": []},
+    "ep-250": {"reads": ["collaboration", "user"], "writes": []},
+    "ep-251": {"reads": ["user", "collaboration"], "writes": []},
+    "ep-252": {"reads": ["user", "collaboration", "blocked_user"], "writes": ["collaboration", "access"]},
+    "ep-253": {"reads": ["user"], "writes": ["collaboration", "access", "watch", "stopwatch", "issue_watch", "issue_assignees"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-246": ["api.DefaultGitTreesPerPage"],
+    "ep-247": [],
+    "ep-248": [],
+    "ep-249": [],
+    "ep-250": ["api.DefaultPagingNum", "api.MaxResponseItems"],
+    "ep-251": [],
+    "ep-252": [],
+    "ep-253": []
+  }
+}

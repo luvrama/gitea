@@ -1,0 +1,17 @@
+{
+  "phase": "none",
+  "integrationPhase": "task-planned",
+  "lang": "",
+  "projectConfig": {},
+  "classes": [],
+  "stats": {
+    "total": 0,
+    "pojo": 0,
+    "nonPojo": 0,
+    "planned": 0,
+    "implemented": 0,
+    "failed": 0
+  },
+  "startedAt": "2026-05-12T05:33:08.282Z",
+  "updatedAt": "2026-05-12T05:35:29.135Z"
+}

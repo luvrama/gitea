@@ -1,0 +1,419 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-367",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "description": "Load repository attributes and convert to API response",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.Get",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "context with repo loaded by middleware",
+          "output": "api.Repository JSON",
+          "operations": ["Load repository attributes (owner, primary language)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Load owner"}, {"operation": "SELECT", "table": "language_stat", "description": "Load primary language"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToRepo",
+          "type": "service",
+          "file_path": "services/convert/repository.go",
+          "input": "Repository, Permission",
+          "output": "api.Repository",
+          "operations": ["Load units", "Load base repo if fork", "Count releases", "Count branches", "Load mirror info", "Load transfer info", "Load licenses"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repo_unit", "description": "Load repo units"},
+            {"operation": "SELECT", "table": "repository", "description": "Load base repo"},
+            {"operation": "SELECT", "table": "release", "description": "Count releases"},
+            {"operation": "SELECT", "table": "branch", "description": "Count branches"},
+            {"operation": "SELECT", "table": "mirror", "description": "Load mirror if applicable"},
+            {"operation": "SELECT", "table": "repo_transfer", "description": "Load pending transfer"},
+            {"operation": "SELECT", "table": "repo_license", "description": "Load licenses"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Repository",
+          "to": "api.Repository",
+          "component": "convert.ToRepo",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Size", "target_field": "size", "transformation": "computed"},
+            {"source_field": "IsPrivate", "target_field": "private", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "LoadAttributes fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-368",
+      "http_method": "GET",
+      "path": "/api/v1/repositories/{id}",
+      "description": "Get repository by numeric ID, check permissions, return API response",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetByID",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "path param id",
+          "output": "api.Repository JSON",
+          "operations": ["Get repo by ID", "Get doer permission", "Check access"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repository", "description": "Get repo by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "access_model.GetDoerRepoPermission",
+          "type": "service",
+          "file_path": "models/perm/access/repo_permission.go",
+          "input": "repo, doer",
+          "output": "Permission",
+          "operations": ["Calculate user permission for repo"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access", "description": "Get access level"}, {"operation": "SELECT", "table": "team_unit", "description": "Check team permissions if org"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToRepo",
+          "type": "service",
+          "file_path": "services/convert/repository.go",
+          "input": "Repository, Permission",
+          "output": "api.Repository",
+          "operations": ["Convert to API struct with all attributes"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Repo not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "No unit access", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-369",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "description": "Edit repository properties: basic info, units, archive state, mirror settings",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.Edit",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "EditRepoOption body",
+          "output": "api.Repository JSON",
+          "operations": ["Parse form", "Dispatch to sub-functions"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.updateBasicProperties",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "EditRepoOption",
+          "output": "error or nil",
+          "operations": ["Rename repo if name changed", "Update description/website/visibility", "Update default branch", "Queue license update"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "repository", "description": "Update repo properties"},
+            {"operation": "UPDATE", "table": "repository", "description": "Rename if needed"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo.updateRepoUnits",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "EditRepoOption",
+          "output": "error or nil",
+          "operations": ["Enable/disable issues, wiki, PRs, projects, releases, packages, actions units"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "repo_unit", "description": "Add new units"},
+            {"operation": "DELETE", "table": "repo_unit", "description": "Remove disabled units"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "repo.updateRepoArchivedState",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "EditRepoOption.Archived",
+          "output": "error or nil",
+          "operations": ["Archive or unarchive repo", "Clean/detect scheduled actions"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "repository", "description": "Set archived state"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "repo.updateMirror",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "EditRepoOption mirror fields",
+          "output": "error or nil",
+          "operations": ["Update mirror interval", "Update prune setting", "Update remote auth credentials"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "mirror", "description": "Update mirror settings"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Name already exists", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "Cannot change private to public (ForcePrivate)", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "Mirror interval too short", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"},
+        {"condition": "Cannot archive mirror", "handler": "ctx.APIError", "response_code": 422, "response": "validation error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-370",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "description": "Delete a repository after permission check",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.Delete",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "context with repo",
+          "output": "204 No Content",
+          "operations": ["Check CanUserDelete", "Close git repo", "Call DeleteRepository service"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_module.CanUserDelete",
+          "type": "utility",
+          "file_path": "modules/repository/delete.go",
+          "input": "repo, user",
+          "output": "bool, error",
+          "operations": ["Check if user is admin or owner", "Check if user is org admin"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "org_user", "description": "Check org admin status"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_service.DeleteRepository",
+          "type": "service",
+          "file_path": "services/repository/delete.go",
+          "input": "doer, repo, notify=true",
+          "output": "error",
+          "operations": ["Delete all repo data from DB", "Remove git repo from disk", "Remove LFS objects", "Notify watchers"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "DELETE", "table": "repository", "description": "Delete repo record"},
+            {"operation": "DELETE", "table": "issue", "description": "Delete issues"},
+            {"operation": "DELETE", "table": "star", "description": "Delete stars"},
+            {"operation": "DELETE", "table": "watch", "description": "Delete watches"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User cannot delete", "handler": "ctx.APIError", "response_code": 403, "response": "forbidden"},
+        {"condition": "DeleteRepository fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-371",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_templates",
+      "description": "Parse issue templates from the repo's default branch",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetIssueTemplates",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "context with repo and gitRepo",
+          "output": "[]*api.IssueTemplate JSON",
+          "operations": ["Call ParseTemplatesFromDefaultBranch", "Add warning header if errors"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issue.ParseTemplatesFromDefaultBranch",
+          "type": "service",
+          "file_path": "services/issue/template.go",
+          "input": "repo, gitRepo",
+          "output": "IssueTemplates, TemplateErrors",
+          "operations": ["Get branch commit", "Iterate template dir candidates", "List entries", "Unmarshal each template file"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Repo is empty", "handler": "returns empty list", "response_code": 200, "response": "empty array"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-372",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_config",
+      "description": "Returns the issue config (blank issues enabled, contact links) from default branch",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetIssueConfig",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "context with repo and gitRepo",
+          "output": "api.IssueConfig JSON",
+          "operations": ["Call GetTemplateConfigFromDefaultBranch"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issue.GetTemplateConfigFromDefaultBranch",
+          "type": "service",
+          "file_path": "services/issue/template.go",
+          "input": "repo, gitRepo",
+          "output": "api.IssueConfig, error",
+          "operations": ["Get branch commit", "Search for config.yaml/yml in candidate dirs", "Parse YAML config"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Config not found or parse error", "handler": "returns default config", "response_code": 200, "response": "default IssueConfig"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-373",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_config/validate",
+      "description": "Validates the issue config and returns whether it's valid",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ValidateIssueConfig",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "context with repo and gitRepo",
+          "output": "api.IssueConfigValidation JSON",
+          "operations": ["Call GetTemplateConfigFromDefaultBranch", "Return valid=true or valid=false with error message"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-374",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/activities/feeds",
+      "description": "List activity feeds for a repository with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListRepoActivityFeeds",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "input": "context with repo, query params",
+          "output": "[]api.Activity JSON",
+          "operations": ["Build GetFeedsOptions", "Call feed_service.GetFeeds", "Convert to API activities"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "feed_service.GetFeeds",
+          "type": "service",
+          "file_path": "services/feed/feed.go",
+          "input": "GetFeedsOptions",
+          "output": "ActionList, count, error",
+          "operations": ["Delegate to activities_model.GetFeeds"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action", "description": "Query actions with conditions and pagination"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToActivities",
+          "type": "service",
+          "file_path": "services/convert/activity.go",
+          "input": "ActionList, doer",
+          "output": "[]api.Activity",
+          "operations": ["Convert each action to API activity struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "activities_model.Action",
+          "to": "api.Activity",
+          "component": "convert.ToActivities",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "OpType", "target_field": "op_type", "transformation": "computed"},
+            {"source_field": "ActUser", "target_field": "act_user", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "GetFeeds fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

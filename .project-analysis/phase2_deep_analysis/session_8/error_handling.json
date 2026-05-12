@@ -1,0 +1,48 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "internal error", "status_code": 500, "response_type": "error", "message_template": "internal server error"},
+        {"exception_type": "not found", "status_code": 404, "response_type": "notFound", "message_template": null},
+        {"exception_type": "validation error", "status_code": 422, "response_type": "validationError", "message_template": null}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-050",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "error_scenarios": [
+        {"exception": "util.ErrNotExist", "trigger": "runner ID not found in DB", "status_code": 404, "response": "Runner not found", "logged": false, "retryable": false},
+        {"exception": "permission check", "trigger": "runner not editable in org context", "status_code": 404, "response": "No permission to access this runner", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-051",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "error_scenarios": [
+        {"exception": "util.ErrNotExist", "trigger": "runner ID not found", "status_code": 404, "response": "Runner not found", "logged": false, "retryable": false},
+        {"exception": "nil disabled field", "trigger": "form.Disabled == nil", "status_code": 422, "response": "[Disabled]: Required", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-052",
+      "path": "/api/v1/orgs/{org}/actions/jobs",
+      "error_scenarios": [
+        {"exception": "invalid status", "trigger": "unrecognized status filter value", "status_code": 400, "response": "Invalid status {value}", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-053",
+      "path": "/api/v1/orgs/{org}/actions/runs",
+      "error_scenarios": [
+        {"exception": "invalid status", "trigger": "unrecognized status filter value", "status_code": 400, "response": "Invalid status {value}", "logged": false, "retryable": false},
+        {"exception": "user not found", "trigger": "actor username does not exist", "status_code": 500, "response": "internal server error", "logged": true, "retryable": false}
+      ]
+    }
+  ],
+  "custom_exceptions": []
+}

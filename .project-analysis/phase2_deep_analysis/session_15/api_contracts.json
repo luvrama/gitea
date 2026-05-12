@@ -1,0 +1,275 @@
+{
+  "total_endpoints": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-099",
+      "http_method": "PATCH",
+      "path": "/api/v1/admin/users/{username}",
+      "controller_class": "admin",
+      "controller_method": "EditUser",
+      "description": "Edit an existing user's profile, auth, and permission settings",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": []}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin bearer token"}],
+        "body": {
+          "type": "EditUserOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "source_id", "type": "int64", "required": true, "validation": [], "description": "Auth source ID"},
+            {"name": "login_name", "type": "string", "required": true, "validation": ["Required"], "description": "External auth identifier"},
+            {"name": "email", "type": "*string", "required": false, "validation": ["MaxSize(254)"], "description": "Primary email"},
+            {"name": "full_name", "type": "*string", "required": false, "validation": ["MaxSize(100)"], "description": "Display name"},
+            {"name": "password", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "New password"},
+            {"name": "must_change_password", "type": "*bool", "required": false, "validation": [], "description": "Force password change"},
+            {"name": "website", "type": "*string", "required": false, "validation": ["OmitEmpty", "ValidUrl", "MaxSize(255)"], "description": "Website URL"},
+            {"name": "location", "type": "*string", "required": false, "validation": ["MaxSize(50)"], "description": "Location"},
+            {"name": "description", "type": "*string", "required": false, "validation": ["MaxSize(255)"], "description": "Bio"},
+            {"name": "active", "type": "*bool", "required": false, "validation": [], "description": "Account active status"},
+            {"name": "admin", "type": "*bool", "required": false, "validation": [], "description": "Admin privileges"},
+            {"name": "allow_git_hook", "type": "*bool", "required": false, "validation": [], "description": "Git hook permission"},
+            {"name": "allow_import_local", "type": "*bool", "required": false, "validation": [], "description": "Local import permission"},
+            {"name": "max_repo_creation", "type": "*int", "required": false, "validation": [], "description": "Max repos limit"},
+            {"name": "prohibit_login", "type": "*bool", "required": false, "validation": [], "description": "Prohibit login"},
+            {"name": "allow_create_organization", "type": "*bool", "required": false, "validation": [], "description": "Org creation permission"},
+            {"name": "restricted", "type": "*bool", "required": false, "validation": [], "description": "Restricted access"},
+            {"name": "visibility", "type": "string", "required": false, "validation": ["In(,public,limited,private)"], "description": "Visibility level"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "User ID"},
+            {"name": "login", "type": "string", "description": "Username"},
+            {"name": "full_name", "type": "string", "description": "Display name"},
+            {"name": "email", "type": "string", "description": "Email (if visible)"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Password too short, not complex, or pwned; email invalid/in-use; last admin removal"},
+          {"status_code": 403, "type": "forbidden", "condition": "Not admin"},
+          {"status_code": 422, "type": "validationError", "condition": "Validation failure"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-100",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/users/{username}",
+      "controller_class": "admin",
+      "controller_method": "DeleteUser",
+      "description": "Delete a user account, optionally purging all owned data",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": []}],
+        "query_params": [{"name": "purge", "type": "boolean", "required": false, "default": false, "validation": []}],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin bearer token"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Not admin"},
+          {"status_code": 404, "type": "notFound", "condition": "User not found"},
+          {"status_code": 422, "type": "validationError", "condition": "User is org, self-delete, owns repos/orgs/packages, or is last admin"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-101",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/keys",
+      "controller_class": "admin",
+      "controller_method": "CreatePublicKey",
+      "description": "Add a public SSH key on behalf of a user",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": []}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin bearer token"}],
+        "body": {
+          "type": "CreateKeyOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "title", "type": "string", "required": true, "validation": ["Required"], "description": "Key title"},
+            {"name": "key", "type": "string", "required": true, "validation": ["Required"], "description": "SSH public key content"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "PublicKey",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Key ID"},
+            {"name": "key", "type": "string", "description": "Key content"},
+            {"name": "title", "type": "string", "description": "Key title"},
+            {"name": "fingerprint", "type": "string", "description": "Key fingerprint"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Not admin"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid key format or key already exists"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-102",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/users/{username}/keys/{id}",
+      "controller_class": "admin",
+      "controller_method": "DeleteUserPublicKey",
+      "description": "Delete a user's public SSH key",
+      "request": {
+        "path_params": [
+          {"name": "username", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "int64", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin bearer token"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Not admin or access denied to key"},
+          {"status_code": 404, "type": "notFound", "condition": "Key not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-103",
+      "http_method": "GET",
+      "path": "/api/v1/admin/users",
+      "controller_class": "admin",
+      "controller_method": "SearchUsers",
+      "description": "Search users with various filter conditions (admin only)",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "source_id", "type": "int64", "required": false, "default": null, "validation": []},
+          {"name": "login_name", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []},
+          {"name": "sort", "type": "string", "required": false, "default": "name", "validation": ["In(name,created,updated,id)"]},
+          {"name": "order", "type": "string", "required": false, "default": "asc", "validation": ["In(asc,desc)"]},
+          {"name": "q", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "visibility", "type": "string", "required": false, "default": null, "validation": ["In(public,limited,private)"]},
+          {"name": "is_active", "type": "boolean", "required": false, "default": null, "validation": []},
+          {"name": "is_admin", "type": "boolean", "required": false, "default": null, "validation": []},
+          {"name": "is_restricted", "type": "boolean", "required": false, "default": null, "validation": []},
+          {"name": "is_2fa_enabled", "type": "boolean", "required": false, "default": null, "validation": []},
+          {"name": "is_prohibit_login", "type": "boolean", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin bearer token"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "UserList",
+          "fields": [
+            {"name": "[]", "type": "array of User", "description": "List of matching users"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Not admin"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid sort/order/visibility value"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-104",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/rename",
+      "controller_class": "admin",
+      "controller_method": "RenameUser",
+      "description": "Rename a user account",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": []}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin bearer token"}],
+        "body": {
+          "type": "RenameUserOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "new_username", "type": "string", "required": true, "validation": ["Required"], "description": "New username"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Not admin"},
+          {"status_code": 422, "type": "validationError", "condition": "User is org, name already exists, reserved, or invalid chars"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-105",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/jobs",
+      "controller_class": "admin",
+      "controller_method": "ListWorkflowJobs",
+      "description": "List all workflow jobs across all repositories (admin only)",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "status", "type": "string", "required": false, "default": null, "validation": ["In(pending,queued,in_progress,failure,success,skipped,completed,cancelled)"]},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin bearer token"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionWorkflowJobsResponse",
+          "fields": [
+            {"name": "total_count", "type": "int64", "description": "Total matching jobs"},
+            {"name": "workflow_jobs", "type": "array of ActionWorkflowJob", "description": "Job entries"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid status value"},
+          {"status_code": 404, "type": "notFound", "condition": "Not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

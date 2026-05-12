@@ -1,0 +1,145 @@
+{
+  "total_rules": 14,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "All admin endpoints require admin-level authentication",
+      "location": {"class": "admin", "method": "all", "file_path": "routers/api/v1/api.go", "line_number": 0},
+      "condition": "User must be authenticated and have IsAdmin=true",
+      "action": "Return 403 forbidden if not admin",
+      "affected_endpoints": ["ep-091", "ep-092", "ep-093", "ep-094", "ep-095", "ep-096", "ep-097", "ep-098"],
+      "code_snippet": "// reqSiteAdmin middleware enforces admin access"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Hook type must be a valid webhook type",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 84},
+      "condition": "form.Type not in valid hook types",
+      "action": "Return 422 with 'Invalid hook type' message",
+      "affected_endpoints": ["ep-093"],
+      "code_snippet": "if !webhook_service.IsValidHookTaskType(form.Type) {"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Hook config must contain url and content_type",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 88},
+      "condition": "form.Config missing 'url' or 'content_type' key",
+      "action": "Return 422 with 'Missing config option' message",
+      "affected_endpoints": ["ep-093"],
+      "code_snippet": "if _, ok := form.Config[name]; !ok {"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Hook URL must be a valid URL",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 96},
+      "condition": "!validation.IsValidURL(form.Config[\"url\"])",
+      "action": "Return 422 with 'Invalid url' message",
+      "affected_endpoints": ["ep-093", "ep-094"],
+      "code_snippet": "if !validation.IsValidURL(form.Config[\"url\"]) {"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Slack webhook requires valid channel name",
+      "location": {"class": "utils", "method": "addHook", "file_path": "routers/api/v1/utils/hook.go", "line_number": 175},
+      "condition": "w.Type == SLACK && channel missing or invalid",
+      "action": "Return 422 or 400 with channel error",
+      "affected_endpoints": ["ep-093"],
+      "code_snippet": "if !webhook_service.IsValidSlackChannel(channel) {"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "System webhook filter defaults to system-only for backward compatibility",
+      "location": {"class": "admin", "method": "ListHooks", "file_path": "routers/api/v1/admin/hooks.go", "line_number": 48},
+      "condition": "type param not specified or equals 'system'",
+      "action": "Filter to is_system_webhook=true only",
+      "affected_endpoints": ["ep-091"],
+      "code_snippet": "isSystemWebhook := optional.Some(true)"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Delete webhook cascades to hook_task records in a transaction",
+      "location": {"class": "webhook", "method": "DeleteDefaultSystemWebhook", "file_path": "models/webhook/webhook_system.go", "line_number": 82},
+      "condition": "Webhook deletion requested",
+      "action": "Delete webhook and all associated hook_task records atomically",
+      "affected_endpoints": ["ep-095"],
+      "code_snippet": "_, err = db.DeleteByBean(ctx, &HookTask{HookID: id})"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "Organization name must be unique and valid",
+      "location": {"class": "organization", "method": "CreateOrganization", "file_path": "models/organization/org.go", "line_number": 289},
+      "condition": "Org name already exists or is reserved/invalid",
+      "action": "Return error (ErrUserAlreadyExist, ErrNameReserved, etc.)",
+      "affected_endpoints": ["ep-096"],
+      "code_snippet": "if err = user_model.IsUsableUsername(org.Name); err != nil {"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Organization creation creates Owners team with full permissions",
+      "location": {"class": "organization", "method": "CreateOrganization", "file_path": "models/organization/org.go", "line_number": 330},
+      "condition": "Organization successfully created",
+      "action": "Create Owners team with AccessModeOwner and all repo unit types",
+      "affected_endpoints": ["ep-096"],
+      "code_snippet": "t := &Team{OrgID: org.ID, Name: OwnerTeamName, AccessMode: perm.AccessModeOwner}"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "validation",
+      "description": "Password must meet minimum length requirement for plain auth",
+      "location": {"class": "admin", "method": "CreateUser", "file_path": "routers/api/v1/admin/user.go", "line_number": 97},
+      "condition": "u.LoginType == auth.Plain && len(password) < setting.MinPasswordLength",
+      "action": "Return 400 with PasswordIsRequired error",
+      "affected_endpoints": ["ep-098"],
+      "code_snippet": "if len(form.Password) < setting.MinPasswordLength {"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "validation",
+      "description": "Password must meet complexity requirements",
+      "location": {"class": "admin", "method": "CreateUser", "file_path": "routers/api/v1/admin/user.go", "line_number": 103},
+      "condition": "!password.IsComplexEnough(form.Password)",
+      "action": "Return 400 with PasswordComplexity error",
+      "affected_endpoints": ["ep-098"],
+      "code_snippet": "if !password.IsComplexEnough(form.Password) {"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "validation",
+      "description": "Password must not be in known breach databases (HaveIBeenPwned)",
+      "location": {"class": "admin", "method": "CreateUser", "file_path": "routers/api/v1/admin/user.go", "line_number": 108},
+      "condition": "password.IsPwned returns error",
+      "action": "Return 400 with PasswordPwned error",
+      "affected_endpoints": ["ep-098"],
+      "code_snippet": "if err := password.IsPwned(ctx, form.Password); err != nil {"
+    },
+    {
+      "rule_id": "br-013",
+      "category": "business_logic",
+      "description": "Admin-created users are active by default (overrides registration confirmation settings)",
+      "location": {"class": "admin", "method": "CreateUser", "file_path": "routers/api/v1/admin/user.go", "line_number": 115},
+      "condition": "User created via admin API",
+      "action": "Set IsActive=true via overwrite options",
+      "affected_endpoints": ["ep-098"],
+      "code_snippet": "IsActive: optional.Some(true),"
+    },
+    {
+      "rule_id": "br-014",
+      "category": "business_logic",
+      "description": "Email domain warning added to response header if domain conflicts with allowlist/blocklist",
+      "location": {"class": "admin", "method": "CreateUser", "file_path": "routers/api/v1/admin/user.go", "line_number": 135},
+      "condition": "!user_model.IsEmailDomainAllowed(u.Email)",
+      "action": "Add X-Gitea-Warning header but still create user",
+      "affected_endpoints": ["ep-098"],
+      "code_snippet": "ctx.Resp.Header().Add(\"X-Gitea-Warning\", fmt.Sprintf(...))"
+    }
+  ]
+}

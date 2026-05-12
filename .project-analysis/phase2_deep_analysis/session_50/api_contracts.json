@@ -1,0 +1,317 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-336",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "controller_class": "repo",
+      "controller_method": "AddIssueLabels",
+      "description": "Add labels to an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "IssueLabelsOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "labels", "type": "[]any", "required": false, "validation": ["each element must be integer or string", "cannot mix integers and strings"], "description": "Label IDs (integers) or label names (strings)"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.Label",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Label ID"},
+            {"name": "name", "type": "string", "description": "Label name"},
+            {"name": "color", "type": "string", "description": "Label color hex"},
+            {"name": "exclusive", "type": "bool", "description": "Whether label is exclusive"},
+            {"name": "description", "type": "string", "description": "Label description"},
+            {"name": "url", "type": "string", "description": "API URL for label"},
+            {"name": "is_archived", "type": "bool", "description": "Whether label is archived"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "APIError", "condition": "Labels array contains non-integer/non-string or mixes types"},
+          {"status_code": 403, "type": "forbidden", "condition": "User lacks write permission on issues/pulls"},
+          {"status_code": 404, "type": "notFound", "condition": "Issue not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-337",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels/{id}",
+      "controller_class": "repo",
+      "controller_method": "DeleteIssueLabel",
+      "description": "Remove a label from an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format:int64"]},
+          {"name": "id", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 204, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User lacks write permission on issues/pulls"},
+          {"status_code": 404, "type": "notFound", "condition": "Issue not found"},
+          {"status_code": 422, "type": "validationError", "condition": "Label ID does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-338",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "controller_class": "repo",
+      "controller_method": "ReplaceIssueLabels",
+      "description": "Replace all labels on an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "IssueLabelsOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "labels", "type": "[]any", "required": false, "validation": ["each element must be integer or string", "cannot mix integers and strings"], "description": "Label IDs (integers) or label names (strings)"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.Label",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Label ID"},
+            {"name": "name", "type": "string", "description": "Label name"},
+            {"name": "color", "type": "string", "description": "Label color hex"},
+            {"name": "exclusive", "type": "bool", "description": "Whether label is exclusive"},
+            {"name": "description", "type": "string", "description": "Label description"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "APIError", "condition": "Labels array contains non-integer/non-string or mixes types"},
+          {"status_code": 403, "type": "forbidden", "condition": "User lacks write permission on issues/pulls"},
+          {"status_code": 404, "type": "notFound", "condition": "Issue not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-339",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "controller_class": "repo",
+      "controller_method": "ClearIssueLabels",
+      "description": "Remove all labels from an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 204, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User lacks write permission on issues/pulls"},
+          {"status_code": 404, "type": "notFound", "condition": "Issue not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-340",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/keys",
+      "controller_class": "repo",
+      "controller_method": "ListDeployKeys",
+      "description": "List a repository's deploy keys",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "key_id", "type": "integer", "required": false, "default": null, "validation": []},
+          {"name": "fingerprint", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.DeployKey",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Deploy key ID"},
+            {"name": "key_id", "type": "int64", "description": "Associated public key ID"},
+            {"name": "key", "type": "string", "description": "SSH key content"},
+            {"name": "url", "type": "string", "description": "API URL for this key"},
+            {"name": "title", "type": "string", "description": "Key title"},
+            {"name": "fingerprint", "type": "string", "description": "Key fingerprint"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation timestamp"},
+            {"name": "read_only", "type": "bool", "description": "Whether key is read-only"},
+            {"name": "repository", "type": "*Repository", "description": "Repository info (only for admin/owner)"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-341",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/keys/{id}",
+      "controller_class": "repo",
+      "controller_method": "GetDeployKey",
+      "description": "Get a repository's deploy key by id",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "*api.DeployKey",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Deploy key ID"},
+            {"name": "key_id", "type": "int64", "description": "Associated public key ID"},
+            {"name": "key", "type": "string", "description": "SSH key content"},
+            {"name": "url", "type": "string", "description": "API URL for this key"},
+            {"name": "title", "type": "string", "description": "Key title"},
+            {"name": "fingerprint", "type": "string", "description": "Key fingerprint"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation timestamp"},
+            {"name": "read_only", "type": "bool", "description": "Whether key is read-only"},
+            {"name": "repository", "type": "*Repository", "description": "Repository info (only for admin/owner)"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Deploy key not found or belongs to different repo"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-342",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/keys",
+      "controller_class": "repo",
+      "controller_method": "CreateDeployKey",
+      "description": "Add a deploy key to a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "CreateKeyOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "title", "type": "string", "required": true, "validation": ["binding:Required"], "description": "Title of the key"},
+            {"name": "key", "type": "string", "required": true, "validation": ["binding:Required", "valid SSH public key"], "description": "Armored SSH key content"},
+            {"name": "read_only", "type": "bool", "required": false, "validation": [], "description": "Whether key has read-only access"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "*api.DeployKey",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Deploy key ID"},
+            {"name": "key_id", "type": "int64", "description": "Associated public key ID"},
+            {"name": "key", "type": "string", "description": "SSH key content"},
+            {"name": "url", "type": "string", "description": "API URL for this key"},
+            {"name": "title", "type": "string", "description": "Key title"},
+            {"name": "fingerprint", "type": "string", "description": "Key fingerprint"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation timestamp"},
+            {"name": "read_only", "type": "bool", "description": "Whether key is read-only"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid key content, SSH disabled, key already exists, or name already used"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-343",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/keys/{id}",
+      "controller_class": "repo",
+      "controller_method": "DeleteDeploykey",
+      "description": "Delete a deploy key from a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 204, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Key access denied (key belongs to different repo)"},
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

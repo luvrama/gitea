@@ -1,0 +1,141 @@
+{
+  "total_findings": 5,
+  "overall_risk": "low",
+  "dependency_resiliency": [
+    {
+      "dependency": "Git Repository (local filesystem)",
+      "client_class": "git.Repository",
+      "file_path": "modules/git/repo.go",
+      "used_by_endpoints": ["ep-243", "ep-244", "ep-245"],
+      "timeout": {
+        "status": "configured",
+        "value_ms": null,
+        "recommendation": "Git commands use context with deadline from the HTTP request context"
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Git operations are local filesystem; retries not typically needed"
+      },
+      "circuit_breaker": {
+        "status": "not_applicable",
+        "implementation": null,
+        "recommendation": "Local filesystem operations don't benefit from circuit breakers"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Git operations share the same process; consider limiting concurrent git operations"
+      },
+      "fallback": {
+        "status": "missing",
+        "behavior": null,
+        "recommendation": "No fallback possible for git tag operations; failure returns error to user"
+      },
+      "idempotency": {
+        "safe_to_retry": false,
+        "reason": "Tag creation is not idempotent - creating same tag twice would fail. Delete is also not idempotent."
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-243", "ep-244", "ep-245"],
+        "impact": "Release creation/update/delete would fail; read endpoints (ep-240, ep-241, ep-242) unaffected"
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-242",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "n_plus_1_queries",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "LoadAttributes called per release in loop; GetReleaseAttachments supports batch but isn't used that way here",
+          "recommendation": "Use batch loading pattern"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database overload with many concurrent list requests",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-243",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/releases",
+      "risk_level": "medium",
+      "dependency_count": 2,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Git tag creation and DB insert are not in a single transaction; if DB insert fails after tag creation, orphan tag remains",
+          "recommendation": "Consider cleanup of git tag on DB insert failure"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Duplicate creation is prevented by IsReleaseExist check, returning 409",
+          "recommendation": "Already handled"
+        }
+      ],
+      "non_atomic_operations": ["Git tag creation + DB insert are separate operations"],
+      "cascading_failure_risk": "Low - only affects the specific release being created",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-245",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "risk_level": "low",
+      "dependency_count": 2,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "DB attachment deletion and storage file deletion are separate; storage failures are logged but not returned as errors",
+          "recommendation": "Already handled gracefully - storage failures don't block the operation"
+        }
+      ],
+      "non_atomic_operations": ["DB record deletion + storage file deletion are separate; storage failures logged only"],
+      "cascading_failure_risk": "Low - orphan files in storage if deletion fails",
+      "graceful_degradation": "Storage deletion failures are logged but don't fail the request"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses modules/graceful for shutdown handling",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting on release APIs",
+      "recommendation": "Consider rate limiting on write endpoints (create/edit/delete)"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message processing in release endpoints"
+    },
+    "single_points_of_failure": [
+      "Database (single DB connection for all operations)",
+      "Local git repository filesystem"
+    ],
+    "cascading_failure_paths": [
+      "Database down → all release endpoints fail",
+      "Git repository filesystem unavailable → create/edit/delete fail, reads still work from DB"
+    ]
+  }
+}

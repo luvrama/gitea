@@ -1,0 +1,168 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-220",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/check",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Up to 3 DB queries: issue lookup, issue_watch check, repo watch fallback"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-221",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "4 queries: issue lookup, get watchers, get users by IDs, count watchers"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "GetIssueWatchers returns user IDs, then GetUsersByIDs fetches users separately. The watcher query already JOINs user table but doesn't return user data.",
+          "impact": "Extra query for user details that could be fetched in the JOIN",
+          "file_path": "routers/api/v1/repo/issue_subscription.go",
+          "line_number": 195,
+          "code_snippet": "users, err := user_model.GetUsersByIDs(ctx, userIDs)",
+          "recommendation": "Modify GetIssueWatchers to return user data directly from the JOIN"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Combine watcher query and user fetch into single query returning user data",
+          "estimated_impact": "Eliminate 1 DB round-trip per request",
+          "implementation": "Modify GetIssueWatchers to select user columns in the existing JOIN"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-222",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls",
+      "resource_load": {
+        "operations_per_request": 10,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Heavy endpoint: count + list PRs, load repos, issues, labels, posters, attachments, milestones, assignees, reviews, branch SHAs, open git repo"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "ToAPIPullRequests opens a git repository and iterates over PRs to get base branch SHA, checking branch existence for each head repo",
+          "impact": "For N PRs with different base branches, N branch lookups occur. Git repo open is expensive.",
+          "file_path": "services/convert/pull.go",
+          "line_number": 414,
+          "code_snippet": "baseBranch, err = git_model.GetBranch(ctx, baseRepo.ID, pr.BaseBranch)",
+          "recommendation": "Batch load all needed branches in one query before the loop (already partially cached with baseBranchCache)"
+        },
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "Multiple sequential DB queries to load related data (labels, posters, milestones, assignees, reviews) without caching",
+          "impact": "Each list request triggers 8+ DB queries regardless of data freshness",
+          "file_path": "services/convert/pull.go",
+          "line_number": 276,
+          "code_snippet": "issueList.LoadLabels(ctx); issueList.LoadPosters(ctx); ...",
+          "recommendation": "Consider response-level caching for frequently accessed repos with many PRs"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "caching",
+          "description": "Add short-lived cache for PR list responses on high-traffic repos",
+          "estimated_impact": "Reduce DB load by 80%+ for repeated list requests",
+          "implementation": "Cache API response with ETag/If-None-Match support, invalidate on PR state changes"
+        },
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch load all branch SHAs needed for the page in one query",
+          "estimated_impact": "Reduce branch lookups from N to 1",
+          "implementation": "Collect unique base branch names, query all at once, populate cache"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-223",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "PR lookup + load repos + convert (opens git repo for branch SHA)"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "writes_on_reads",
+          "description": "StartPullRequestCheckOnView triggers a background queue task on GET request when PR status is 'checking'",
+          "impact": "Side effect on read: adds task to queue, acquires global lock briefly",
+          "file_path": "services/pull/check.go",
+          "line_number": 107,
+          "code_snippet": "AddPullRequestToCheckQueue(pr.ID)",
+          "recommendation": "Acceptable pattern - triggers async check, doesn't block response"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-224",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{base}/{head}",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Resolve head repo + PR lookup by base/head + load repos + convert"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-225",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}.{diffType}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "PR lookup + load base repo + git diff/patch operation (potentially large output)"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "Diff/patch output is streamed directly to response with no size limit. Large PRs with many changes can produce very large responses.",
+          "impact": "Memory and bandwidth consumption proportional to diff size, no cap",
+          "file_path": "services/pull/patch.go",
+          "line_number": 40,
+          "code_snippet": "err = gitRepo.GetDiff(compareArg, w)",
+          "recommendation": "Consider adding a max-size limit or pagination for very large diffs"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "pagination",
+          "description": "Add optional size limit parameter for diff downloads",
+          "estimated_impact": "Prevent OOM on extremely large PRs",
+          "implementation": "Add max_size query param, truncate output with indicator when exceeded"
+        }
+      ]
+    }
+  ]
+}

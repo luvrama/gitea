@@ -1,0 +1,390 @@
+{
+  "total_flows": 7,
+  "flows": [
+    {
+      "endpoint_id": "ep-375",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/languages",
+      "description": "Fetches language statistics from DB and returns as JSON map of language->bytes",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetLanguages",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/language.go",
+          "input": "APIContext with repo loaded",
+          "output": "JSON response",
+          "operations": ["Call repo_model.GetLanguageStats", "Copy to languageResponse", "Return JSON"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.GetLanguageStats",
+          "type": "repository",
+          "file_path": "models/repo/language_stats.go",
+          "input": "context, *Repository",
+          "output": "LanguageStatList",
+          "operations": ["SELECT from language_stat WHERE repo_id ORDER BY size DESC"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "language_stat", "description": "Get all language stats for repo ordered by size desc"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "LanguageStatList",
+          "to": "languageResponse (JSON object)",
+          "component": "languageResponse.MarshalJSON",
+          "mappings": [
+            {"source_field": "Language", "target_field": "key", "transformation": "direct_copy"},
+            {"source_field": "Size", "target_field": "value", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error in GetLanguageStats", "handler": "repo.GetLanguages", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-376",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin",
+      "description": "Pins an issue to the repository, checking max pin limit, inserting pin record and creating comment",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.PinIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_pin.go",
+          "input": "APIContext",
+          "output": "204 No Content",
+          "operations": ["Get issue by index", "Load repo", "Call issues_model.PinIssue"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetIssueByIndex",
+          "type": "repository",
+          "file_path": "models/issues/issue.go",
+          "input": "ctx, repoID, index",
+          "output": "*Issue",
+          "operations": ["SELECT issue WHERE repo_id AND `index`"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue", "description": "Get issue by repo_id and index"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issues_model.PinIssue",
+          "type": "service",
+          "file_path": "models/issues/issue_pin.go",
+          "input": "ctx, *Issue, *User",
+          "output": "error",
+          "operations": ["Count existing pins", "Check max pin limit", "Get max pin_order", "INSERT issue_pin", "Create pin comment"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue_pin", "description": "Count pinned issues for repo"},
+            {"operation": "SELECT", "table": "issue_pin", "description": "Get max pin_order"},
+            {"operation": "INSERT", "table": "issue_pin", "description": "Insert new pin record"},
+            {"operation": "INSERT", "table": "comment", "description": "Create pin comment"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "repo.PinIssue", "response_code": 404, "response": "notFound"},
+        {"condition": "Max pin reached", "handler": "repo.PinIssue", "response_code": 400, "response": "error"},
+        {"condition": "DB error", "handler": "repo.PinIssue", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-377",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin",
+      "description": "Unpins an issue from the repository, deleting pin record and creating unpin comment",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.UnpinIssue",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_pin.go",
+          "input": "APIContext",
+          "output": "204 No Content",
+          "operations": ["Get issue by index", "Load repo", "Call issues_model.UnpinIssue"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.UnpinIssue",
+          "type": "service",
+          "file_path": "models/issues/issue_pin.go",
+          "input": "ctx, *Issue, *User",
+          "output": "error",
+          "operations": ["DELETE issue_pin WHERE issue_id", "Create unpin comment if deleted"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "DELETE", "table": "issue_pin", "description": "Delete pin record for issue"},
+            {"operation": "INSERT", "table": "comment", "description": "Create unpin comment"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "repo.UnpinIssue", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "repo.UnpinIssue", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-378",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin/{position}",
+      "description": "Moves a pinned issue to a new position, reordering other pins accordingly",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.MoveIssuePin",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_pin.go",
+          "input": "APIContext",
+          "output": "204 No Content",
+          "operations": ["Get issue by index", "Call issues_model.MovePin"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.MovePin",
+          "type": "service",
+          "file_path": "models/issues/issue_pin.go",
+          "input": "ctx, *Issue, newPosition int",
+          "output": "error",
+          "operations": ["Validate position >= 1", "Get issue pin", "Shift other pins up/down", "Update pin_order for target"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue_pin", "description": "Get pin record for issue"},
+            {"operation": "UPDATE", "table": "issue_pin", "description": "Shift pin_order for affected pins"},
+            {"operation": "UPDATE", "table": "issue_pin", "description": "Set new pin_order for target issue"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "repo.MoveIssuePin", "response_code": 404, "response": "notFound"},
+        {"condition": "Position < 1 or pin not found", "handler": "repo.MoveIssuePin", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-379",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/pinned",
+      "description": "Lists all pinned issues (non-PRs) for a repository, sorted by pin order",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListPinnedIssues",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_pin.go",
+          "input": "APIContext",
+          "output": "JSON array of issues",
+          "operations": ["Call GetPinnedIssues", "Convert to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetPinnedIssues",
+          "type": "repository",
+          "file_path": "models/issues/issue_pin.go",
+          "input": "ctx, repoID, isPull=false",
+          "output": "IssueList",
+          "operations": ["Get issue pins by repo", "Get issues by IDs", "Set pin_order on issues", "Sort by pin_order", "Load attributes"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue_pin", "description": "Get all pins for repo where is_pull=false"},
+            {"operation": "SELECT", "table": "issue", "description": "Get issues by IDs"},
+            {"operation": "SELECT", "table": "multiple", "description": "LoadAttributes loads labels, milestones, assignees, etc."}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToAPIIssueList",
+          "type": "utility",
+          "file_path": "services/convert/issue.go",
+          "input": "ctx, doer, IssueList",
+          "output": "[]*api.Issue",
+          "operations": ["Load pin order", "Convert each issue to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "issues_model.IssueList",
+          "to": "[]*api.Issue",
+          "component": "convert.ToAPIIssueList",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Index", "target_field": "number", "transformation": "direct_copy"},
+            {"source_field": "Title", "target_field": "title", "transformation": "direct_copy"},
+            {"source_field": "PinOrder", "target_field": "pin_order", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "repo.ListPinnedIssues", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-380",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/pinned",
+      "description": "Lists all pinned pull requests for a repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListPinnedPullRequests",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_pin.go",
+          "input": "APIContext",
+          "output": "JSON array of pull requests",
+          "operations": ["Call GetPinnedIssues(isPull=true)", "Load pull requests", "Load PR attributes", "Convert to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.GetPinnedIssues",
+          "type": "repository",
+          "file_path": "models/issues/issue_pin.go",
+          "input": "ctx, repoID, isPull=true",
+          "output": "IssueList",
+          "operations": ["Get issue pins by repo", "Get issues by IDs", "Sort by pin_order", "Load attributes"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue_pin", "description": "Get all pins for repo where is_pull=true"},
+            {"operation": "SELECT", "table": "issue", "description": "Get issues by IDs"},
+            {"operation": "SELECT", "table": "multiple", "description": "LoadAttributes"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "IssueList.LoadPullRequests",
+          "type": "repository",
+          "file_path": "models/issues/issue_list.go",
+          "input": "ctx",
+          "output": "error",
+          "operations": ["Load PullRequest for each issue"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "Load pull request records"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToAPIPullRequest",
+          "type": "utility",
+          "file_path": "services/convert/pull.go",
+          "input": "ctx, *PullRequest, doer",
+          "output": "*api.PullRequest",
+          "operations": ["Convert PR to API format with base/head repo info"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "issues_model.IssueList + PullRequest",
+          "to": "[]*api.PullRequest",
+          "component": "convert.ToAPIPullRequest",
+          "mappings": [
+            {"source_field": "PullRequest.ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Issue.Index", "target_field": "number", "transformation": "direct_copy"},
+            {"source_field": "Issue.Title", "target_field": "title", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error loading pins/issues/PRs", "handler": "repo.ListPinnedPullRequests", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-381",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/new_pin_allowed",
+      "description": "Checks if new issue/PR pins are allowed based on max pin setting",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.AreNewIssuePinsAllowed",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_pin.go",
+          "input": "APIContext",
+          "output": "JSON NewIssuePinsAllowed",
+          "operations": ["Call IsNewPinAllowed for issues", "Call IsNewPinAllowed for PRs", "Return result"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issues_model.IsNewPinAllowed",
+          "type": "repository",
+          "file_path": "models/issues/issue_pin.go",
+          "input": "ctx, repoID, isPull",
+          "output": "bool, error",
+          "operations": ["COUNT pin_order FROM issue_pin", "Compare with setting.Repository.Issue.MaxPinned"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "issue_pin", "description": "Count pins for repo by type"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "bool values",
+          "to": "api.NewIssuePinsAllowed",
+          "component": "repo.AreNewIssuePinsAllowed",
+          "mappings": [
+            {"source_field": "issuesAllowed", "target_field": "issues", "transformation": "direct_copy"},
+            {"source_field": "prsAllowed", "target_field": "pull_requests", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error counting pins", "handler": "repo.AreNewIssuePinsAllowed", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

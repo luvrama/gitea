@@ -1,0 +1,138 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-208",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 repo_unit check + 1 issue lookup + 1 paginated join query + N permission lookups (cached per repo) + N issue conversions"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "For each unique repo in the dependency list, a separate permission query is made. Mitigated by caching in repoPerms map, but still N queries for N unique repos.",
+          "impact": "If dependencies span many repos, each unique repo triggers a DB query for permissions",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "line_number": 82,
+          "code_snippet": "perm, err = access_model.GetDoerRepoPermission(ctx, &blocker.Repository, ctx.Doer)",
+          "recommendation": "Batch permission lookups for all unique repos at once"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch permission checks for all unique repos in the dependency list",
+          "estimated_impact": "Reduce N permission queries to 1 batch query",
+          "implementation": "Collect all unique repo IDs, batch-fetch permissions, then filter"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-209",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "2 issue lookups + 1 repo lookup (cross-repo) + 1 permission + 2 existence checks + 1 insert + 2 comment inserts (in transaction)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-210",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "2 issue lookups + 1 repo lookup (cross-repo) + 1 permission + 1 delete + 2 comment inserts (in transaction)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-211",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 issue lookup + 1 unbounded join query + N permission lookups + N issue conversions"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "unbounded_queries",
+          "description": "BlockingDependencies() fetches ALL issues blocked by this issue without any DB-level pagination. Manual pagination is applied after fetching all results into memory.",
+          "impact": "If an issue blocks hundreds of other issues, all are loaded into memory before pagination is applied",
+          "file_path": "models/issues/issue.go",
+          "line_number": 697,
+          "code_snippet": "err = db.GetEngine(ctx).Table(\"issue\").Join(...).Where(\"dependency_id = ?\", issue.ID).Find(&issueDeps)",
+          "recommendation": "Add DB-level pagination (LIMIT/OFFSET) to BlockingDependencies like BlockedByDependencies has"
+        },
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "For each unique repo in the blocking list, a separate permission query is made (cached per repo)",
+          "impact": "N DB queries for N unique repos in the blocking list",
+          "file_path": "routers/api/v1/repo/issue_dependency.go",
+          "line_number": 226,
+          "code_snippet": "perm, err = access_model.GetDoerRepoPermission(ctx, &depMeta.Repository, ctx.Doer)",
+          "recommendation": "Batch permission lookups"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "pagination",
+          "description": "Add DB-level pagination to BlockingDependencies method",
+          "estimated_impact": "Prevent loading unbounded results into memory",
+          "implementation": "Add ListOptions parameter to BlockingDependencies and use SetSessionPagination like BlockedByDependencies"
+        },
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch permission checks for all unique repos",
+          "estimated_impact": "Reduce N permission queries to 1 batch query",
+          "implementation": "Collect unique repo IDs, batch-fetch permissions"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-212",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Same as ep-209 but with reversed target/dependency roles"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-213",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Same as ep-210 but with reversed target/dependency roles"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

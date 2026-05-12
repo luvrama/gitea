@@ -1,0 +1,486 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-142",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/following",
+      "description": "Lists users that a given user is following, with pagination and visibility filtering",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListFollowing",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "APIContext with ContextUser",
+          "output": "delegates to listUserFollowing",
+          "operations": ["calls listUserFollowing(ctx, ctx.ContextUser)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.listUserFollowing",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "APIContext, *user_model.User",
+          "output": "JSON array of api.User",
+          "operations": ["gets list options from query params", "calls GetUserFollowing", "sets Link and X-Total-Count headers", "calls responseAPIUsers"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user JOIN follow", "description": "get users followed by given user with visibility filter"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.GetUserFollowing",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "context, user, viewer, ListOptions",
+          "output": "[]*User, int64, error",
+          "operations": ["SELECT user.* JOIN follow ON user.id=follow.follow_id WHERE follow.user_id=? AND user.type IN (individual, organization) AND visibility filter", "applies pagination", "FindAndCount"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "join with follow table, filter by user_id and visibility"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "user.responseAPIUsers",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "[]*user_model.User",
+          "output": "JSON response",
+          "operations": ["converts each user to api.User via convert.ToUser", "returns JSON 200"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*user_model.User",
+          "to": "*api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"},
+            {"source_field": "Email", "target_field": "email", "transformation": "computed"},
+            {"source_field": "NumFollowers", "target_field": "followers_count", "transformation": "direct_copy"},
+            {"source_field": "NumFollowing", "target_field": "following_count", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "username not found", "handler": "context middleware", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error in GetUserFollowing", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-143",
+      "http_method": "GET",
+      "path": "/api/v1/user/following/{username}",
+      "description": "Checks if the authenticated user is following a specific user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.CheckMyFollowing",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "APIContext with Doer and ContextUser",
+          "output": "204 or 404",
+          "operations": ["calls checkUserFollowing(ctx, ctx.Doer, ctx.ContextUser.ID)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.checkUserFollowing",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "APIContext, *User, followID int64",
+          "output": "204 NoContent or 404",
+          "operations": ["calls user_model.IsFollowing(ctx, u.ID, followID)", "returns 204 if true, 404 if false"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "follow", "description": "check if follow record exists"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.IsFollowing",
+          "type": "repository",
+          "file_path": "models/user/follow.go",
+          "input": "ctx, userID, followID int64",
+          "output": "bool",
+          "operations": ["SELECT from follow WHERE user_id=? AND follow_id=?"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "follow", "description": "check existence of follow record"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "target username not found", "handler": "context middleware", "response_code": 404, "response": "notFound"},
+        {"condition": "not following", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-144",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/following/{target}",
+      "description": "Check if one user is following another user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.CheckFollowing",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "APIContext with ContextUser",
+          "output": "204 or 404",
+          "operations": ["loads target user via GetUserByPathParam(ctx, 'target')", "calls checkUserFollowing(ctx, ctx.ContextUser, target.ID)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "load target user by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.checkUserFollowing",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "APIContext, *User, followID int64",
+          "output": "204 or 404",
+          "operations": ["calls user_model.IsFollowing"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "follow", "description": "check follow record exists"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "username not found", "handler": "context middleware", "response_code": 404, "response": "notFound"},
+        {"condition": "target not found", "handler": "GetUserByPathParam → ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "not following", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-145",
+      "http_method": "PUT",
+      "path": "/api/v1/user/following/{username}",
+      "description": "Follow a user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.Follow",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "APIContext with Doer and ContextUser",
+          "output": "204 NoContent",
+          "operations": ["calls user_model.FollowUser(ctx, ctx.Doer, ctx.ContextUser)", "handles ErrBlockedUser as 403"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_model.FollowUser",
+          "type": "repository",
+          "file_path": "models/user/follow.go",
+          "input": "ctx, user *User, follow *User",
+          "output": "error",
+          "operations": [
+            "returns nil if user.ID == follow.ID (self-follow no-op)",
+            "returns nil if already following",
+            "checks IsUserBlockedBy in both directions",
+            "within transaction: INSERT follow record, UPDATE user SET num_followers+1, UPDATE user SET num_following+1"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "follow", "description": "check if already following"},
+            {"operation": "SELECT", "table": "blocked_user", "description": "check block status both directions"},
+            {"operation": "INSERT", "table": "follow", "description": "create follow record"},
+            {"operation": "UPDATE", "table": "user", "description": "increment num_followers on target"},
+            {"operation": "UPDATE", "table": "user", "description": "increment num_following on doer"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "target user not found", "handler": "context middleware", "response_code": 404, "response": "notFound"},
+        {"condition": "user is blocked", "handler": "ctx.APIError(403)", "response_code": 403, "response": "forbidden"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-146",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/following/{username}",
+      "description": "Unfollow a user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.Unfollow",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "APIContext with Doer and ContextUser",
+          "output": "204 NoContent",
+          "operations": ["calls user_model.UnfollowUser(ctx, ctx.Doer.ID, ctx.ContextUser.ID)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_model.UnfollowUser",
+          "type": "repository",
+          "file_path": "models/user/follow.go",
+          "input": "ctx, userID int64, followID int64",
+          "output": "error",
+          "operations": [
+            "returns nil if userID == followID (self-unfollow no-op)",
+            "returns nil if not currently following",
+            "within transaction: DELETE follow record, UPDATE user SET num_followers-1, UPDATE user SET num_following-1"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "follow", "description": "check if currently following"},
+            {"operation": "DELETE", "table": "follow", "description": "remove follow record"},
+            {"operation": "UPDATE", "table": "user", "description": "decrement num_followers on target"},
+            {"operation": "UPDATE", "table": "user", "description": "decrement num_following on doer"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "target user not found", "handler": "context middleware", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-147",
+      "http_method": "GET",
+      "path": "/api/v1/user/hooks",
+      "description": "List the authenticated user's webhooks",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListHooks",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/hook.go",
+          "input": "APIContext",
+          "output": "delegates to ListOwnerHooks",
+          "operations": ["calls utils.ListOwnerHooks(ctx, ctx.Doer)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.ListOwnerHooks",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *user_model.User",
+          "output": "JSON array of api.Hook",
+          "operations": ["gets list options", "queries webhooks by owner_id with pagination", "converts each to api.Hook via ToHook", "sets Link and X-Total-Count headers"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "webhook", "description": "find webhooks by owner_id with pagination"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "webhook_service.ToHook",
+          "type": "service",
+          "file_path": "services/webhook/general.go",
+          "input": "repoLink string, *webhook.Webhook",
+          "output": "*api.Hook, error",
+          "operations": ["builds config map (url, content_type)", "adds slack-specific fields if type is slack", "decrypts HeaderAuthorization", "constructs api.Hook struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*webhook.Webhook",
+          "to": "*api.Hook",
+          "component": "webhook_service.ToHook",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Type", "target_field": "type", "transformation": "direct_copy"},
+            {"source_field": "IsActive", "target_field": "active", "transformation": "direct_copy"},
+            {"source_field": "URL+ContentType", "target_field": "config", "transformation": "computed"},
+            {"source_field": "EventsArray()", "target_field": "events", "transformation": "computed"},
+            {"source_field": "HeaderAuthorizationEncrypted", "target_field": "authorization_header", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "decryption error on HeaderAuthorization", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-148",
+      "http_method": "GET",
+      "path": "/api/v1/user/hooks/{id}",
+      "description": "Get a specific webhook of the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/hook.go",
+          "input": "APIContext",
+          "output": "JSON api.Hook or error",
+          "operations": ["calls utils.GetOwnerHook(ctx, ctx.Doer.ID, id)", "checks ownership (non-admin must own hook)", "converts to api.Hook via ToHook"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.GetOwnerHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, ownerID int64, hookID int64",
+          "output": "*webhook.Webhook, error",
+          "operations": ["calls webhook.GetWebhookByOwnerID(ctx, ownerID, hookID)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "webhook", "description": "get webhook by id and owner_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "webhook_service.ToHook",
+          "type": "service",
+          "file_path": "services/webhook/general.go",
+          "input": "repoLink, *webhook.Webhook",
+          "output": "*api.Hook, error",
+          "operations": ["converts webhook to API representation"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*webhook.Webhook",
+          "to": "*api.Hook",
+          "component": "webhook_service.ToHook",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Type", "target_field": "type", "transformation": "direct_copy"},
+            {"source_field": "IsActive", "target_field": "active", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "webhook not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "non-admin accessing other user's hook", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-149",
+      "http_method": "POST",
+      "path": "/api/v1/user/hooks",
+      "description": "Create a webhook for the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.CreateHook",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/hook.go",
+          "input": "APIContext with form body",
+          "output": "delegates to AddOwnerHook",
+          "operations": ["extracts CreateHookOption from request body", "calls utils.AddOwnerHook(ctx, ctx.Doer, form)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.AddOwnerHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *user_model.User, *CreateHookOption",
+          "output": "JSON 201 api.Hook",
+          "operations": ["calls addHook(ctx, form, owner.ID, 0)", "converts result to api.Hook"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "utils.addHook",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "input": "APIContext, *CreateHookOption, ownerID, repoID",
+          "output": "*webhook.Webhook, bool",
+          "operations": [
+            "validates hook type, url, content_type via checkCreateHookOption",
+            "parses is_system_webhook from config",
+            "builds Webhook struct with events, branch_filter, active",
+            "encrypts authorization header",
+            "handles Slack-specific meta (channel, username, icon_url, color)",
+            "calls w.UpdateEvent() to serialize events to JSON",
+            "calls webhook.CreateWebhook to INSERT"
+          ],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "webhook", "description": "create new webhook record"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*api.CreateHookOption",
+          "to": "*webhook.Webhook",
+          "component": "utils.addHook",
+          "mappings": [
+            {"source_field": "Config[url]", "target_field": "URL", "transformation": "direct_copy"},
+            {"source_field": "Config[content_type]", "target_field": "ContentType", "transformation": "computed"},
+            {"source_field": "Config[secret]", "target_field": "Secret", "transformation": "direct_copy"},
+            {"source_field": "Type", "target_field": "Type", "transformation": "direct_copy"},
+            {"source_field": "Events", "target_field": "HookEvents", "transformation": "computed"},
+            {"source_field": "Active", "target_field": "IsActive", "transformation": "direct_copy"},
+            {"source_field": "AuthorizationHeader", "target_field": "HeaderAuthorizationEncrypted", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "invalid hook type", "handler": "ctx.APIError(422)", "response_code": 422, "response": "Invalid hook type"},
+        {"condition": "missing url or content_type in config", "handler": "ctx.APIError(422)", "response_code": 422, "response": "Missing config option"},
+        {"condition": "invalid content_type", "handler": "ctx.APIError(422)", "response_code": 422, "response": "Invalid content type"},
+        {"condition": "invalid url", "handler": "ctx.APIError(422)", "response_code": 422, "response": "Invalid url"},
+        {"condition": "invalid slack channel (for slack type)", "handler": "ctx.APIError(400)", "response_code": 400, "response": "Invalid slack channel name"},
+        {"condition": "DB error on insert", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

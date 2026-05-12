@@ -1,0 +1,480 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-176",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/runners",
+      "description": "Lists all action runners belonging to the authenticated user with optional disabled filter",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListRunners",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/runners.go",
+          "input": "APIContext",
+          "output": "delegates to shared.ListRunners",
+          "operations": ["Extract ctx.Doer.ID as ownerID, pass repoID=0"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListRunners",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID int64, repoID int64",
+          "output": "ActionRunnersResponse JSON",
+          "operations": ["Build FindRunnerOptions with ownerID, pagination, disabled filter", "Call db.FindAndCount[ActionRunner]", "Convert each runner to API type"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_runner", "description": "Find runners by owner_id with optional is_disabled filter, paginated"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToActionRunner",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "ActionRunner model",
+          "output": "api.ActionRunner",
+          "operations": ["Compute status from LastOnline timestamp", "Map AgentLabels to ActionRunnerLabel array", "Set Busy based on ACTIVE status"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunner",
+          "to": "api.ActionRunner",
+          "component": "convert.ToActionRunner",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Status()", "target_field": "Status", "transformation": "computed"},
+            {"source_field": "Status()==ACTIVE", "target_field": "Busy", "transformation": "computed"},
+            {"source_field": "IsDisabled", "target_field": "Disabled", "transformation": "direct_copy"},
+            {"source_field": "Ephemeral", "target_field": "Ephemeral", "transformation": "direct_copy"},
+            {"source_field": "AgentLabels", "target_field": "Labels", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error on FindAndCount", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-177",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/runners/{runner_id}",
+      "description": "Gets a specific user-level runner by ID, checking ownership",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetRunner",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/runners.go",
+          "input": "APIContext",
+          "output": "delegates to shared.GetRunner",
+          "operations": ["Extract runner_id from path, pass ownerID=ctx.Doer.ID, repoID=0"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.GetRunner",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID, repoID, runnerID int64",
+          "output": "ActionRunner JSON",
+          "operations": ["Call getRunnerByID to fetch and validate ownership", "Convert to API type"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_runner", "description": "Get runner by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "shared.getRunnerByID",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID, repoID, runnerID int64",
+          "output": "*ActionRunner, bool",
+          "operations": ["Fetch runner by ID from DB", "Check EditableInContext(ownerID, repoID)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_runner", "description": "Get runner by id=?"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunner",
+          "to": "api.ActionRunner",
+          "component": "convert.ToActionRunner",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Status()", "target_field": "Status", "transformation": "computed"},
+            {"source_field": "IsDisabled", "target_field": "Disabled", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Runner not found (ErrNotExist)", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "Runner not found"},
+        {"condition": "Runner not editable in user context", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "No permission to access this runner"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-178",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/actions/runners/{runner_id}",
+      "description": "Deletes a user-level runner after verifying ownership",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.DeleteRunner",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/runners.go",
+          "input": "APIContext",
+          "output": "delegates to shared.DeleteRunner",
+          "operations": ["Extract runner_id from path, pass ownerID=ctx.Doer.ID, repoID=0"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.DeleteRunner",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID, repoID, runnerID int64",
+          "output": "204 No Content",
+          "operations": ["Call getRunnerByID to validate", "Call actions_model.DeleteRunner"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner", "description": "Get runner by ID for validation"},
+            {"operation": "DELETE", "table": "action_runner", "description": "Soft delete runner by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Runner not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "Runner not found"},
+        {"condition": "Runner not editable in user context", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "No permission"},
+        {"condition": "DB error on delete", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-179",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/actions/runners/{runner_id}",
+      "description": "Updates a user-level runner's disabled state",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.UpdateRunner",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/runners.go",
+          "input": "APIContext",
+          "output": "delegates to shared.UpdateRunner",
+          "operations": ["Extract runner_id from path, pass ownerID=ctx.Doer.ID, repoID=0"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.UpdateRunner",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID, repoID, runnerID int64",
+          "output": "ActionRunner JSON",
+          "operations": ["Validate runner exists and is editable", "Parse EditActionRunnerOption form", "Validate Disabled field is not nil", "Call SetRunnerDisabled", "Re-fetch and return updated runner"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner", "description": "Get runner by ID"},
+            {"operation": "UPDATE", "table": "action_runner", "description": "Update is_disabled column"},
+            {"operation": "UPDATE", "table": "action_tasks_version", "description": "Increase task version for owner scope"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions_model.SetRunnerDisabled",
+          "type": "repository",
+          "file_path": "models/actions/runner.go",
+          "input": "runner *ActionRunner, isDisabled bool",
+          "output": "error",
+          "operations": ["Skip if already in desired state", "Within transaction: update is_disabled, increase task version"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "action_runner", "description": "Set is_disabled"},
+            {"operation": "UPDATE", "table": "action_tasks_version", "description": "IncreaseTaskVersion for global + owner scopes"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.EditActionRunnerOption",
+          "to": "actions_model.ActionRunner",
+          "component": "shared.UpdateRunner",
+          "mappings": [
+            {"source_field": "Disabled", "target_field": "IsDisabled", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Runner not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "Runner not found"},
+        {"condition": "Runner not editable", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "No permission"},
+        {"condition": "Disabled field is nil", "handler": "ctx.APIError", "response_code": 422, "response": "[Disabled]: Required"},
+        {"condition": "DB error on update", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-180",
+      "http_method": "GET",
+      "path": "/api/v1/user/emails",
+      "description": "Lists all email addresses belonging to the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListEmails",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/email.go",
+          "input": "APIContext",
+          "output": "[]*api.Email JSON",
+          "operations": ["Call user_model.GetEmailAddresses with ctx.Doer.ID", "Convert each to api.Email"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "email_address", "description": "Find all emails where uid=? ordered by id ASC"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToEmail",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*user_model.EmailAddress",
+          "output": "*api.Email",
+          "operations": ["Map Email, IsActivated->Verified, IsPrimary->Primary"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.EmailAddress",
+          "to": "api.Email",
+          "component": "convert.ToEmail",
+          "mappings": [
+            {"source_field": "Email", "target_field": "Email", "transformation": "direct_copy"},
+            {"source_field": "IsActivated", "target_field": "Verified", "transformation": "direct_copy"},
+            {"source_field": "IsPrimary", "target_field": "Primary", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-181",
+      "http_method": "POST",
+      "path": "/api/v1/user/emails",
+      "description": "Adds one or more email addresses to the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.AddEmail",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/email.go",
+          "input": "APIContext with CreateEmailOption body",
+          "output": "[]*api.Email JSON (201)",
+          "operations": ["Parse CreateEmailOption form", "Validate emails list not empty", "Call user_service.AddEmailAddresses", "Re-fetch all emails and return"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_service.AddEmailAddresses",
+          "type": "service",
+          "file_path": "services/user/email.go",
+          "input": "user *User, emails []string",
+          "output": "error",
+          "operations": ["For each email: validate format, check not already used, insert with IsActivated based on setting.Service.RegisterEmailConfirm"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "email_address", "description": "Check if email already exists (lower_email=?)"},
+            {"operation": "INSERT", "table": "email_address", "description": "Insert new email address for user"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.GetEmailAddresses",
+          "type": "repository",
+          "file_path": "models/user/email_address.go",
+          "input": "uid int64",
+          "output": "[]*EmailAddress",
+          "operations": ["Fetch all emails for user ordered by id ASC"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "email_address", "description": "Get all emails for user"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.CreateEmailOption",
+          "to": "user_model.EmailAddress",
+          "component": "user_service.AddEmailAddresses",
+          "mappings": [
+            {"source_field": "Emails[i]", "target_field": "Email", "transformation": "direct_copy"},
+            {"source_field": "!setting.Service.RegisterEmailConfirm", "target_field": "IsActivated", "transformation": "computed"},
+            {"source_field": "false", "target_field": "IsPrimary", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Empty email list", "handler": "ctx.APIError", "response_code": 422, "response": "Email list empty"},
+        {"condition": "Email already used", "handler": "ctx.APIError", "response_code": 422, "response": "Email address has been used: <email>"},
+        {"condition": "Invalid email format", "handler": "ctx.APIError", "response_code": 422, "response": "Email address \"<email>\" invalid"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-182",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/emails",
+      "description": "Deletes email addresses from the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.DeleteEmail",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/email.go",
+          "input": "APIContext with DeleteEmailOption body",
+          "output": "204 No Content",
+          "operations": ["Parse DeleteEmailOption form", "If empty list, return 204 immediately", "Call user_service.DeleteEmailAddresses"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_service.DeleteEmailAddresses",
+          "type": "service",
+          "file_path": "services/user/email.go",
+          "input": "user *User, emails []string",
+          "output": "error",
+          "operations": ["For each email: find by lower_email and uid", "Check not primary", "Delete by ID"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "email_address", "description": "Get email by lower_email=? AND uid=?"},
+            {"operation": "DELETE", "table": "email_address", "description": "Delete email by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Email not found for user", "handler": "ctx.APIError", "response_code": 404, "response": "ErrEmailAddressNotExist"},
+        {"condition": "Attempting to delete primary email", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "ErrPrimaryEmailCannotDelete (not explicitly handled as 4xx)"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-183",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/gpg_keys",
+      "description": "Lists GPG keys for a given user with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListGPGKeys",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/gpg_key.go",
+          "input": "APIContext",
+          "output": "delegates to listGPGKeys",
+          "operations": ["Extract ctx.ContextUser.ID", "Get list options from query params"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.listGPGKeys",
+          "type": "service",
+          "file_path": "routers/api/v1/user/gpg_key.go",
+          "input": "uid int64, listOptions db.ListOptions",
+          "output": "[]*api.GPGKey JSON",
+          "operations": ["Call db.FindAndCount with FindGPGKeyOptions (owner_id, excludes subkeys)", "Load subkeys for all found keys", "Convert each to API type"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "gpg_key", "description": "Find GPG keys where owner_id=? AND primary_key_id='' with pagination"},
+            {"operation": "SELECT", "table": "gpg_key", "description": "Load subkeys where primary_key_id IN (key_ids)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToGPGKey",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*asymkey_model.GPGKey",
+          "output": "*api.GPGKey",
+          "operations": ["Map all fields including subkeys and emails"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "asymkey_model.GPGKey",
+          "to": "api.GPGKey",
+          "component": "convert.ToGPGKey",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "PrimaryKeyID", "target_field": "PrimaryKeyID", "transformation": "direct_copy"},
+            {"source_field": "KeyID", "target_field": "KeyID", "transformation": "direct_copy"},
+            {"source_field": "Content", "target_field": "PublicKey", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix.AsTime()", "target_field": "Created", "transformation": "computed"},
+            {"source_field": "ExpiredUnix.AsTime()", "target_field": "Expires", "transformation": "computed"},
+            {"source_field": "Emails", "target_field": "Emails", "transformation": "computed"},
+            {"source_field": "SubsKey", "target_field": "SubsKey", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error on FindAndCount", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "DB error on LoadSubKeys", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

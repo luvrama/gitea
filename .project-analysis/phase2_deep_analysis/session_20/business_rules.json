@@ -1,0 +1,85 @@
+{
+  "total_rules": 8,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Variable name must match pattern ^[A-Z_][A-Z0-9_]*$ and not start with GITEA_ or GITHUB_ prefix, and not be 'CI'",
+      "location": {"class": "secrets", "method": "ValidateName", "file_path": "services/secrets/validation.go", "line_number": 26},
+      "condition": "!namePattern.MatchString(name) || forbiddenPrefixPattern.MatchString(name) || strings.EqualFold(name, \"CI\")",
+      "action": "return util.NewInvalidArgumentErrorf",
+      "affected_endpoints": ["ep-135", "ep-136"],
+      "code_snippet": "if !vars.namePattern.MatchString(name) || vars.forbiddenPrefixPattern.MatchString(name) || strings.EqualFold(name, \"CI\") {"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Variable data must not exceed 65536 runes",
+      "location": {"class": "actions_model", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 52},
+      "condition": "utf8.RuneCountInString(data) > VariableDataMaxLength",
+      "action": "return util.NewInvalidArgumentErrorf(\"data too long\")",
+      "affected_endpoints": ["ep-135", "ep-136"],
+      "code_snippet": "if utf8.RuneCountInString(data) > VariableDataMaxLength {"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Variable description is truncated to 4096 runes",
+      "location": {"class": "actions_model", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 56},
+      "condition": "always applied on insert/update",
+      "action": "description = util.TruncateRunes(description, VariableDescriptionMaxLength)",
+      "affected_endpoints": ["ep-135", "ep-136"],
+      "code_snippet": "description = util.TruncateRunes(description, VariableDescriptionMaxLength)"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Variable name is stored uppercase",
+      "location": {"class": "actions_model", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 60},
+      "condition": "always on insert",
+      "action": "Name: strings.ToUpper(name)",
+      "affected_endpoints": ["ep-135", "ep-136"],
+      "code_snippet": "Name: strings.ToUpper(name),"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Variable lookup uses uppercase name comparison",
+      "location": {"class": "FindVariablesOpts", "method": "ToConds", "file_path": "models/actions/variable.go", "line_number": 89},
+      "condition": "opts.Name != \"\"",
+      "action": "cond = cond.And(builder.Eq{\"name\": strings.ToUpper(opts.Name)})",
+      "affected_endpoints": ["ep-135"],
+      "code_snippet": "cond = cond.And(builder.Eq{\"name\": strings.ToUpper(opts.Name)})"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "authorization",
+      "description": "Follower visibility is filtered based on viewer permissions - admin sees all, anonymous sees only public, signed-in sees non-private",
+      "location": {"class": "user_model", "method": "isUserVisibleToViewerCond", "file_path": "models/user/user.go", "line_number": 1384},
+      "condition": "viewer is nil/restricted/admin/normal",
+      "action": "apply visibility filter condition to query",
+      "affected_endpoints": ["ep-139", "ep-140", "ep-141"],
+      "code_snippet": "if viewer != nil && viewer.IsAdmin { return builder.NewCond() }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "GetUserFollowers only returns users of type Individual (not orgs)",
+      "location": {"class": "user_model", "method": "GetUserFollowers", "file_path": "models/user/user.go", "line_number": 339},
+      "condition": "always",
+      "action": "And(`user`.type=?, UserTypeIndividual)",
+      "affected_endpoints": ["ep-139", "ep-140"],
+      "code_snippet": "And(\"`user`.type=?\", UserTypeIndividual)"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "GetUserFollowing returns both Individual and Organization type users",
+      "location": {"class": "user_model", "method": "GetUserFollowing", "file_path": "models/user/user.go", "line_number": 356},
+      "condition": "always",
+      "action": "And(`user`.type IN (?, ?), UserTypeIndividual, UserTypeOrganization)",
+      "affected_endpoints": ["ep-141"],
+      "code_snippet": "And(\"`user`.type IN (?, ?)\", UserTypeIndividual, UserTypeOrganization)"
+    }
+  ]
+}

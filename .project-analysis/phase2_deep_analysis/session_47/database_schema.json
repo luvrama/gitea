@@ -1,0 +1,153 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "issue",
+      "entity_class": "Issue",
+      "file_path": "models/issues/issue.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "index", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "is_locked", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "is_pull", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_issue_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "one-to-many", "target_table": "comment", "join_column": "issue_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "comment",
+      "entity_class": "Comment",
+      "file_path": "models/issues/comment.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "type", "type": "INT", "code_type": "CommentType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "poster_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "content", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_comment_issue_id", "columns": ["issue_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "webhook",
+      "entity_class": "Webhook",
+      "file_path": "models/webhook/webhook.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "is_system_webhook", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "url", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "''", "constraints": []},
+        {"name": "http_method", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "content_type", "type": "INT", "code_type": "HookContentType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "secret", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "events", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_active", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "type", "type": "VARCHAR(16)", "code_type": "HookType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "meta", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "last_status", "type": "INT", "code_type": "HookStatus", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "header_authorization_encrypted", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_webhook_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "IDX_webhook_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "IDX_webhook_is_active", "columns": ["is_active"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "one-to-many", "target_table": "hook_task", "join_column": "hook_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "hook_task",
+      "entity_class": "HookTask",
+      "file_path": "models/webhook/hooktask.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "hook_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "payload_content", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "event_type", "type": "VARCHAR(255)", "code_type": "HookEventType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "payload_version", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_hook_task_hook_id", "columns": ["hook_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "webhook", "join_column": "hook_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [
+    {"queue_id": "mq-001", "name": "hook_task", "technology": "internal queue (level/channel/redis)", "message_type": "hook task ID", "description": "Queue for webhook delivery tasks"}
+  ],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-318",
+      "path": "/api/v1/repos/{owner}/{repo}/merge-upstream",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "repo.GetBaseRepo", "description": "Load base repository for fork"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-319",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/lock",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "Get issue by repo and index"},
+        {"store_type": "database", "store_name": "issue", "operation": "UPDATE", "method": "issues_model.UpdateIssueCols", "description": "Set is_locked=true"},
+        {"store_type": "database", "store_name": "comment", "operation": "INSERT", "method": "issues_model.CreateComment", "description": "Create lock comment"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-320",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/lock",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "Get issue by repo and index"},
+        {"store_type": "database", "store_name": "issue", "operation": "UPDATE", "method": "issues_model.UpdateIssueCols", "description": "Set is_locked=false"},
+        {"store_type": "database", "store_name": "comment", "operation": "INSERT", "method": "issues_model.CreateComment", "description": "Create unlock comment"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-321",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "db.FindAndCount", "description": "List webhooks by repo_id with pagination"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-322",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "webhook.GetWebhookByRepoID", "description": "Get webhook by id and repo_id"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-323",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}/tests",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "webhook.GetWebhookByRepoID", "description": "Get webhook by id and repo_id"},
+        {"store_type": "database", "store_name": "hook_task", "operation": "INSERT", "method": "webhook_model.CreateHookTask", "description": "Create hook task for test delivery"},
+        {"store_type": "message_queue", "store_name": "hook_task", "operation": "PUBLISH", "method": "enqueueHookTask", "description": "Enqueue task for async delivery"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,520 @@
+{
+  "total_flows": 9,
+  "flows": [
+    {
+      "endpoint_id": "ep-114",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/runners",
+      "description": "Lists all global runners with optional disabled filter and pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.ListRunners",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/runners.go",
+          "input": "APIContext",
+          "output": "delegates to shared.ListRunners",
+          "operations": ["Calls shared.ListRunners(ctx, 0, 0)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListRunners",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ctx, ownerID=0, repoID=0",
+          "output": "ActionRunnersResponse JSON",
+          "operations": ["Parse disabled query param via FormOptionalBool", "Build FindRunnerOptions", "Call db.FindAndCount", "Convert each runner to API type"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner", "description": "FindAndCount with optional is_disabled filter, paginated"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToActionRunner",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "ActionRunner model",
+          "output": "api.ActionRunner",
+          "operations": ["Compute status from LastOnline/LastActive timestamps", "Map AgentLabels to ActionRunnerLabel structs"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunner",
+          "to": "api.ActionRunner",
+          "component": "convert.ToActionRunner",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Status()", "target_field": "Status", "transformation": "computed"},
+            {"source_field": "Status()", "target_field": "Busy", "transformation": "computed"},
+            {"source_field": "IsDisabled", "target_field": "Disabled", "transformation": "direct_copy"},
+            {"source_field": "Ephemeral", "target_field": "Ephemeral", "transformation": "direct_copy"},
+            {"source_field": "AgentLabels", "target_field": "Labels", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error in FindAndCount", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-115",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "description": "Get a specific runner by ID in admin context",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.GetRunner",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/runners.go",
+          "input": "APIContext",
+          "output": "delegates to shared.GetRunner",
+          "operations": ["Extract runner_id from path", "Call shared.GetRunner(ctx, 0, 0, runnerID)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.getRunnerByID",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ctx, ownerID=0, repoID=0, runnerID",
+          "output": "ActionRunner or error",
+          "operations": ["Call actions_model.GetRunnerByID", "Check EditableInContext(0,0) which always returns true for admin"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner", "description": "Get runner by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToActionRunner",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "ActionRunner model",
+          "output": "api.ActionRunner JSON",
+          "operations": ["Convert to API response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunner",
+          "to": "api.ActionRunner",
+          "component": "convert.ToActionRunner",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Status()", "target_field": "Status", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Runner not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "Runner not found"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-116",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "description": "Delete a runner by ID in admin context",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.DeleteRunner",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/runners.go",
+          "input": "APIContext",
+          "output": "delegates to shared.DeleteRunner",
+          "operations": ["Extract runner_id", "Call shared.DeleteRunner(ctx, 0, 0, runnerID)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.DeleteRunner",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ctx, ownerID=0, repoID=0, runnerID",
+          "output": "204 No Content or error",
+          "operations": ["Call getRunnerByID to validate existence and permissions", "Call actions_model.DeleteRunner"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner", "description": "Get runner by ID for validation"},
+            {"operation": "SELECT", "table": "action_runner", "description": "GetRunnerByID again inside DeleteRunner model func"},
+            {"operation": "DELETE", "table": "action_runner", "description": "Delete runner by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Runner not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "Runner not found"},
+        {"condition": "Delete DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-117",
+      "http_method": "PATCH",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "description": "Update runner disabled state, then re-fetch and return updated runner",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.UpdateRunner",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/runners.go",
+          "input": "APIContext",
+          "output": "delegates to shared.UpdateRunner",
+          "operations": ["Extract runner_id", "Call shared.UpdateRunner(ctx, 0, 0, runnerID)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.UpdateRunner",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ctx, ownerID=0, repoID=0, runnerID",
+          "output": "Updated ActionRunner JSON",
+          "operations": ["Get runner by ID", "Validate form.Disabled is not nil", "Call SetRunnerDisabled", "Call GetRunner to return updated state"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner", "description": "Get runner by ID"},
+            {"operation": "UPDATE", "table": "action_runner", "description": "Update is_disabled column"},
+            {"operation": "UPDATE", "table": "action_tasks_version", "description": "IncreaseTaskVersion for global scope"},
+            {"operation": "SELECT", "table": "action_runner", "description": "Re-fetch runner for response"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.EditActionRunnerOption",
+          "to": "actions_model.ActionRunner",
+          "component": "shared.UpdateRunner",
+          "mappings": [
+            {"source_field": "Disabled", "target_field": "IsDisabled", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Runner not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "Runner not found"},
+        {"condition": "Disabled field is nil", "handler": "ctx.APIError", "response_code": 422, "response": "[Disabled]: Required"},
+        {"condition": "SetRunnerDisabled DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-118",
+      "http_method": "GET",
+      "path": "/api/v1/admin/emails",
+      "description": "List all emails with pagination, no keyword filter",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.GetAllEmails",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/email.go",
+          "input": "APIContext",
+          "output": "[]*api.Email JSON",
+          "operations": ["Get list options from query params", "Call user_model.SearchEmails with empty keyword (PathParam email is empty)", "Convert results", "Set link/count headers"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT COUNT", "table": "email_address JOIN user", "description": "Count matching emails"},
+            {"operation": "SELECT", "table": "email_address JOIN user", "description": "Fetch paginated email results"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToEmailSearch",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "SearchEmailResult",
+          "output": "api.Email",
+          "operations": ["Map fields directly"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.SearchEmailResult",
+          "to": "api.Email",
+          "component": "convert.ToEmailSearch",
+          "mappings": [
+            {"source_field": "Email", "target_field": "Email", "transformation": "direct_copy"},
+            {"source_field": "IsActivated", "target_field": "Verified", "transformation": "direct_copy"},
+            {"source_field": "IsPrimary", "target_field": "Primary", "transformation": "direct_copy"},
+            {"source_field": "UID", "target_field": "UserID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "UserName", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error in SearchEmails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-119",
+      "http_method": "GET",
+      "path": "/api/v1/admin/emails/search",
+      "description": "Search emails by keyword q, delegates to GetAllEmails after setting path param",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.SearchEmail",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/email.go",
+          "input": "APIContext with q query param",
+          "output": "delegates to GetAllEmails",
+          "operations": ["Set path param 'email' to FormTrim('q')", "Call GetAllEmails(ctx)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "admin.GetAllEmails",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/email.go",
+          "input": "APIContext with email path param set to keyword",
+          "output": "[]*api.Email JSON",
+          "operations": ["SearchEmails with keyword from PathParam('email')", "LIKE search on lower(full_name), lower_name, lower_email"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT COUNT", "table": "email_address JOIN user", "description": "Count matching emails with LIKE filter"},
+            {"operation": "SELECT", "table": "email_address JOIN user", "description": "Fetch paginated results with LIKE filter"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.SearchEmailResult",
+          "to": "api.Email",
+          "component": "convert.ToEmailSearch",
+          "mappings": [
+            {"source_field": "Email", "target_field": "Email", "transformation": "direct_copy"},
+            {"source_field": "IsActivated", "target_field": "Verified", "transformation": "direct_copy"},
+            {"source_field": "IsPrimary", "target_field": "Primary", "transformation": "direct_copy"},
+            {"source_field": "UID", "target_field": "UserID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "UserName", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-120",
+      "http_method": "GET",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "description": "List all badges for a user via JOIN on user_badge and badge tables",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.UserAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/user.go",
+          "input": "username path param",
+          "output": "ctx.ContextUser",
+          "operations": ["Resolve username to User, handle redirects"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetUserByName"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "admin.ListUserBadges",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/user_badge.go",
+          "input": "APIContext with ContextUser",
+          "output": "[]*Badge JSON",
+          "operations": ["Call user_model.GetUserBadges", "Set total count header", "Return badges"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "badge JOIN user_badge", "description": "Get badges for user with FindAndCount"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User not found", "handler": "UserAssignmentAPI error callback", "response_code": 404, "response": "user not found"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-121",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "description": "Add badges to a user by slug, within a transaction",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.UserAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/user.go",
+          "input": "username path param",
+          "output": "ctx.ContextUser",
+          "operations": ["Resolve username to User"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetUserByName"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "admin.AddUserBadges",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/user_badge.go",
+          "input": "APIContext with form UserBadgeOption",
+          "output": "204 No Content",
+          "operations": ["Parse form body", "Convert slugs to Badge structs", "Call user_model.AddUserBadges"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.AddUserBadges",
+          "type": "repository",
+          "file_path": "models/user/badge.go",
+          "input": "User, []*Badge",
+          "output": "error",
+          "operations": ["Within transaction: for each badge slug, SELECT badge by slug, check EXISTS user_badge, INSERT user_badge"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "badge", "description": "Get badge by slug (per badge in loop)"},
+            {"operation": "SELECT", "table": "user_badge", "description": "Check if user_badge already exists (per badge)"},
+            {"operation": "INSERT", "table": "user_badge", "description": "Insert user_badge association (per badge)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.UserBadgeOption",
+          "to": "[]*user_model.Badge",
+          "component": "admin.prepareBadgesForReplaceOrAdd",
+          "mappings": [
+            {"source_field": "BadgeSlugs[i]", "target_field": "Slug", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "User not found", "handler": "UserAssignmentAPI", "response_code": 404, "response": "user not found"},
+        {"condition": "Badge slug not found", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error (NotExist wrapped)"},
+        {"condition": "User badge already exists", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error (AlreadyExist wrapped)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-122",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "description": "Remove badges from a user by slug, within a transaction",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.UserAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/user.go",
+          "input": "username path param",
+          "output": "ctx.ContextUser",
+          "operations": ["Resolve username to User"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetUserByName"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "admin.DeleteUserBadges",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/user_badge.go",
+          "input": "APIContext with form UserBadgeOption",
+          "output": "204 No Content",
+          "operations": ["Parse form body", "Convert slugs to Badge structs", "Call user_model.RemoveUserBadges"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.RemoveUserBadges",
+          "type": "repository",
+          "file_path": "models/user/badge.go",
+          "input": "User, []*Badge",
+          "output": "error",
+          "operations": ["Within transaction: JOIN user_badge with badge to find matching IDs, then DELETE by IDs"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user_badge JOIN badge", "description": "Find user_badge entries matching slugs"},
+            {"operation": "DELETE", "table": "user_badge", "description": "Delete matching user_badge entries by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.UserBadgeOption",
+          "to": "[]*user_model.Badge",
+          "component": "admin.prepareBadgesForReplaceOrAdd",
+          "mappings": [
+            {"source_field": "BadgeSlugs[i]", "target_field": "Slug", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "User not found", "handler": "UserAssignmentAPI", "response_code": 404, "response": "user not found"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

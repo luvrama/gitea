@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Organization ownership required for all actions endpoints (secrets, variables, runners)",
+      "location": {"class": "api", "method": "reqOrgOwnership", "file_path": "routers/api/v1/api.go", "line_number": 455},
+      "condition": "User is not org owner AND not site admin",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-042", "ep-043", "ep-044", "ep-045", "ep-046", "ep-047", "ep-048", "ep-049"],
+      "code_snippet": "isOwner, err := organization.IsOrganizationOwner(ctx, orgID, ctx.Doer.ID)"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Variable names must match pattern ^[A-Z_][A-Z0-9_]*$ (case insensitive), cannot start with GITEA_/GITHUB_, cannot be 'CI'",
+      "location": {"class": "secrets", "method": "ValidateName", "file_path": "services/secrets/validation.go", "line_number": 25},
+      "condition": "Name doesn't match pattern OR has forbidden prefix OR equals CI",
+      "action": "Return util.ErrInvalidArgument → 400 Bad Request",
+      "affected_endpoints": ["ep-046", "ep-047"],
+      "code_snippet": "if !vars.namePattern.MatchString(name) || vars.forbiddenPrefixPattern.MatchString(name) || strings.EqualFold(name, \"CI\")"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Variable data cannot exceed 65536 runes",
+      "location": {"class": "actions_model", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 55},
+      "condition": "utf8.RuneCountInString(data) > VariableDataMaxLength",
+      "action": "Return util.ErrInvalidArgument → 400 Bad Request",
+      "affected_endpoints": ["ep-046", "ep-047"],
+      "code_snippet": "if utf8.RuneCountInString(data) > VariableDataMaxLength { return nil, util.NewInvalidArgumentErrorf(\"data too long\") }"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Variable description is truncated to 4096 runes (not rejected)",
+      "location": {"class": "actions_model", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 59},
+      "condition": "Description exceeds 4096 runes",
+      "action": "Silently truncate to 4096 runes",
+      "affected_endpoints": ["ep-046", "ep-047"],
+      "code_snippet": "description = util.TruncateRunes(description, VariableDescriptionMaxLength)"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Variable names are stored uppercased",
+      "location": {"class": "actions_model", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 62},
+      "condition": "Always on insert/update",
+      "action": "Name is converted to uppercase before storage",
+      "affected_endpoints": ["ep-046", "ep-047"],
+      "code_snippet": "Name: strings.ToUpper(name)"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Variable data has EOL normalized before storage",
+      "location": {"class": "actions_service", "method": "CreateVariable", "file_path": "services/actions/variables.go", "line_number": 17},
+      "condition": "Always on create/update",
+      "action": "Data is passed through util.NormalizeStringEOL",
+      "affected_endpoints": ["ep-046", "ep-047"],
+      "code_snippet": "v, err := actions_model.InsertVariable(ctx, ownerID, repoID, name, util.NormalizeStringEOL(data), description)"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Creating a variable that already exists returns 409 Conflict",
+      "location": {"class": "org.Action", "method": "CreateVariable", "file_path": "routers/api/v1/org/action.go", "line_number": 253},
+      "condition": "Variable with same name exists for this owner",
+      "action": "Return 409 Conflict with 'variable name already exists' message",
+      "affected_endpoints": ["ep-046"],
+      "code_snippet": "if v != nil && v.ID > 0 { ctx.APIError(http.StatusConflict, ...) }"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "UpdateVariable uses path param name as default if body name is empty",
+      "location": {"class": "org.Action", "method": "UpdateVariable", "file_path": "routers/api/v1/org/action.go", "line_number": 310},
+      "condition": "opt.Name == \"\"",
+      "action": "Set opt.Name to ctx.PathParam(\"variablename\")",
+      "affected_endpoints": ["ep-047"],
+      "code_snippet": "if opt.Name == \"\" { opt.Name = ctx.PathParam(\"variablename\") }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Registration token reuses existing active token if available",
+      "location": {"class": "shared", "method": "GetRegistrationToken", "file_path": "routers/api/v1/shared/runners.go", "line_number": 27},
+      "condition": "Latest token exists AND is active",
+      "action": "Return existing token without creating new one",
+      "affected_endpoints": ["ep-042"],
+      "code_snippet": "if errors.Is(err, util.ErrNotExist) || (token != nil && !token.IsActive) { token, err = actions_model.NewRunnerToken(...) }"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Creating new runner token deactivates all existing tokens for same owner/repo",
+      "location": {"class": "actions_model", "method": "NewRunnerTokenWithValue", "file_path": "models/actions/runner_token.go", "line_number": 75},
+      "condition": "New token is being created",
+      "action": "UPDATE all existing tokens for owner/repo to is_active=false, then INSERT new token",
+      "affected_endpoints": ["ep-042"],
+      "code_snippet": "db.GetEngine(ctx).Where(\"owner_id =? AND repo_id = ?\", ownerID, repoID).Cols(\"is_active\").Update(&ActionRunnerToken{IsActive: false})"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "authorization",
+      "description": "Runner access is scoped by EditableInContext - runner must belong to the org",
+      "location": {"class": "actions_model.ActionRunner", "method": "EditableInContext", "file_path": "models/actions/runner.go", "line_number": 113},
+      "condition": "ownerID > 0 && runner.OwnerID != ownerID",
+      "action": "Return 404 'No permission to access this runner'",
+      "affected_endpoints": ["ep-049"],
+      "code_snippet": "if ownerID > 0 && r.OwnerID == ownerID { return true }"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "business_logic",
+      "description": "Runner status is computed from LastOnline/LastActive timestamps, not stored",
+      "location": {"class": "actions_model.ActionRunner", "method": "Status", "file_path": "models/actions/runner.go", "line_number": 89},
+      "condition": "LastOnline > 1 minute ago = offline; LastActive > 10 seconds ago = idle; else = active",
+      "action": "Status is dynamically computed on each API response",
+      "affected_endpoints": ["ep-048", "ep-049"],
+      "code_snippet": "if time.Since(r.LastOnline.AsTime()) > RunnerOfflineTime { return RUNNER_STATUS_OFFLINE }"
+    }
+  ]
+}

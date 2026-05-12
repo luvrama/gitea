@@ -1,0 +1,367 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-190",
+      "http_method": "GET",
+      "path": "/api/v1/user/blocks",
+      "description": "Lists blocked users with pagination, loads user attributes in batch",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListBlocks",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/block.go",
+          "input": "APIContext",
+          "output": "delegates to shared.ListBlocks",
+          "operations": ["passes ctx.Doer as blocker"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListBlocks",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/block.go",
+          "input": "APIContext, blocker *User",
+          "output": "[]*api.User",
+          "operations": ["get list options", "find blockings", "load attributes", "convert to API users"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user_blocking", "description": "FindBlockings with blocker_id filter and pagination"},
+            {"operation": "SELECT", "table": "user", "description": "GetUsersByIDs batch load blocker/blockee users"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToUser",
+          "type": "utility",
+          "file_path": "services/convert/user.go",
+          "input": "User, doer",
+          "output": "*api.User",
+          "operations": ["converts user model to API user struct per blocked user"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*user_model.Blocking",
+          "to": "[]*api.User",
+          "component": "shared.ListBlocks",
+          "mappings": [
+            {"source_field": "Blockee", "target_field": "api.User", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "FindBlockings DB error", "handler": "shared.ListBlocks", "response_code": 500, "response": "APIErrorInternal"},
+        {"condition": "LoadAttributes DB error", "handler": "shared.ListBlocks", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-191",
+      "http_method": "GET",
+      "path": "/api/v1/user/blocks/{username}",
+      "description": "Checks if a specific user is blocked by the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.CheckUserBlock",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/block.go",
+          "input": "APIContext",
+          "output": "delegates to shared.CheckUserBlock",
+          "operations": ["passes ctx.Doer as blocker"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.CheckUserBlock",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/block.go",
+          "input": "APIContext, blocker *User",
+          "output": "HTTP 204 or 404",
+          "operations": ["get blockee by username", "check blocking exists"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetUserByName to resolve username"},
+            {"operation": "SELECT", "table": "user_blocking", "description": "FindBlockings with blocker_id and blockee_id"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Username not found", "handler": "shared.CheckUserBlock", "response_code": 404, "response": "APIErrorNotFound"},
+        {"condition": "Blocking not found", "handler": "shared.CheckUserBlock", "response_code": 404, "response": "Status 404"},
+        {"condition": "DB error", "handler": "shared.CheckUserBlock", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-192",
+      "http_method": "PUT",
+      "path": "/api/v1/user/blocks/{username}",
+      "description": "Blocks a user, unfollows, unstars, unwatches, unassigns, removes collaborations, cancels transfers in transaction",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.BlockUser",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/block.go",
+          "input": "APIContext",
+          "output": "delegates to shared.BlockUser",
+          "operations": ["passes ctx.Doer as blocker"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.BlockUser",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/block.go",
+          "input": "APIContext, blocker *User",
+          "output": "HTTP 204",
+          "operations": ["get blockee by username", "call user_service.BlockUser"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetUserByName to resolve username"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_service.BlockUser",
+          "type": "service",
+          "file_path": "services/user/block.go",
+          "input": "ctx, doer, blocker, blockee, note",
+          "output": "error",
+          "operations": ["validate can block", "unfollow both directions", "unstar repos both directions", "unwatch repos both directions", "unassign issues both directions", "remove collaborations both directions", "cancel transfers both directions", "insert blocking record"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user_blocking", "description": "IsUserBlockedBy check"},
+            {"operation": "DELETE", "table": "follow", "description": "UnfollowUser both directions"},
+            {"operation": "SELECT/DELETE", "table": "star,repository", "description": "unstarRepos paginated loop"},
+            {"operation": "SELECT/UPDATE/DELETE", "table": "watch,repository", "description": "unwatchRepos paginated loop"},
+            {"operation": "SELECT/DELETE", "table": "issue_assignees,issue", "description": "unassignIssues paginated loop"},
+            {"operation": "SELECT/DELETE", "table": "collaboration,repository", "description": "removeCollaborations paginated loop"},
+            {"operation": "SELECT/UPDATE", "table": "repo_transfer", "description": "cancelRepositoryTransfers"},
+            {"operation": "INSERT", "table": "user_blocking", "description": "Insert blocking record"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Username not found", "handler": "shared.BlockUser", "response_code": 404, "response": "APIErrorNotFound"},
+        {"condition": "ErrCanNotBlock or ErrBlockOrganization", "handler": "shared.BlockUser", "response_code": 400, "response": "APIError"},
+        {"condition": "DB error in transaction", "handler": "shared.BlockUser", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-193",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/blocks/{username}",
+      "description": "Unblocks a user by deleting the blocking record",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.UnblockUser",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/block.go",
+          "input": "APIContext",
+          "output": "delegates to shared.UnblockUser",
+          "operations": ["passes ctx.Doer as both doer and blocker"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.UnblockUser",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/block.go",
+          "input": "APIContext, doer, blocker *User",
+          "output": "HTTP 204",
+          "operations": ["get blockee by username", "call user_service.UnblockUser"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetUserByName to resolve username"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_service.UnblockUser",
+          "type": "service",
+          "file_path": "services/user/block.go",
+          "input": "ctx, doer, blocker, blockee",
+          "output": "error",
+          "operations": ["validate can unblock", "get blocking record", "delete blocking record"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user_blocking", "description": "IsUserBlockedBy check in CanUnblockUser"},
+            {"operation": "SELECT", "table": "user_blocking", "description": "GetBlocking to find record"},
+            {"operation": "DELETE", "table": "user_blocking", "description": "DeleteByID to remove block"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Username not found", "handler": "shared.UnblockUser", "response_code": 404, "response": "APIErrorNotFound"},
+        {"condition": "ErrCanNotUnblock or ErrBlockOrganization", "handler": "shared.UnblockUser", "response_code": 400, "response": "APIError"},
+        {"condition": "DB error in transaction", "handler": "shared.UnblockUser", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-194",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/subscriptions",
+      "description": "Lists repositories watched by a specified user, with privacy filtering",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetWatchedRepos",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/watch.go",
+          "input": "APIContext",
+          "output": "[]*api.Repository",
+          "operations": ["determine privacy (private=true if viewing own profile)", "call getWatchedRepos"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.getWatchedRepos",
+          "type": "service",
+          "file_path": "routers/api/v1/user/watch.go",
+          "input": "APIContext, user, private bool",
+          "output": "[]*api.Repository, int64, error",
+          "operations": ["query watched repos with JOIN", "loop repos to get permissions", "convert each to API repo"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository JOIN watch", "description": "GetWatchedRepos with pagination and privacy filter"},
+            {"operation": "SELECT", "table": "repo_unit", "description": "LoadUnits per repo (N+1)"},
+            {"operation": "SELECT", "table": "collaboration", "description": "IsCollaborator per repo (N+1)"},
+            {"operation": "SELECT", "table": "user", "description": "LoadOwner per repo (N+1)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToRepo",
+          "type": "utility",
+          "file_path": "services/convert/repository.go",
+          "input": "Repository, Permission",
+          "output": "*api.Repository",
+          "operations": ["converts repo model to API repository struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*repo_model.Repository",
+          "to": "[]*api.Repository",
+          "component": "user.getWatchedRepos",
+          "mappings": [
+            {"source_field": "Repository", "target_field": "api.Repository", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "GetWatchedRepos DB error", "handler": "user.GetWatchedRepos", "response_code": 500, "response": "APIErrorInternal"},
+        {"condition": "GetIndividualUserRepoPermission error", "handler": "user.getWatchedRepos", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-195",
+      "http_method": "GET",
+      "path": "/api/v1/user/subscriptions",
+      "description": "Lists repositories watched by the authenticated user (always includes private)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetMyWatchedRepos",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/watch.go",
+          "input": "APIContext",
+          "output": "[]*api.Repository",
+          "operations": ["call getWatchedRepos with ctx.Doer and private=true"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.getWatchedRepos",
+          "type": "service",
+          "file_path": "routers/api/v1/user/watch.go",
+          "input": "APIContext, user, private=true",
+          "output": "[]*api.Repository, int64, error",
+          "operations": ["query watched repos with JOIN", "loop repos to get permissions", "convert each to API repo"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository JOIN watch", "description": "GetWatchedRepos with pagination, includes private"},
+            {"operation": "SELECT", "table": "repo_unit", "description": "LoadUnits per repo (N+1)"},
+            {"operation": "SELECT", "table": "collaboration", "description": "IsCollaborator per repo (N+1)"},
+            {"operation": "SELECT", "table": "user", "description": "LoadOwner per repo (N+1)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToRepo",
+          "type": "utility",
+          "file_path": "services/convert/repository.go",
+          "input": "Repository, Permission",
+          "output": "*api.Repository",
+          "operations": ["converts repo model to API repository struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*repo_model.Repository",
+          "to": "[]*api.Repository",
+          "component": "user.getWatchedRepos",
+          "mappings": [
+            {"source_field": "Repository", "target_field": "api.Repository", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "GetWatchedRepos DB error", "handler": "user.GetMyWatchedRepos", "response_code": 500, "response": "APIErrorInternal"},
+        {"condition": "GetIndividualUserRepoPermission error", "handler": "user.getWatchedRepos", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    }
+  ]
+}

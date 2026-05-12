@@ -1,0 +1,207 @@
+{
+  "total_findings": 8,
+  "overall_risk": "medium",
+  "dependency_resiliency": [
+    {
+      "dependency": "Avatar Storage Backend",
+      "client_class": "storage.ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "used_by_endpoints": ["ep-037", "ep-038"],
+      "timeout": {
+        "status": "missing",
+        "value_ms": null,
+        "recommendation": "Add timeout for storage operations; for S3/MinIO the SDK may have defaults but they should be explicitly configured"
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Add retry with exponential backoff for transient storage failures"
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "Low priority - avatar operations are infrequent and non-critical"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Not critical for avatar operations"
+      },
+      "fallback": {
+        "status": "configured",
+        "behavior": "DeleteAvatar gracefully handles os.ErrNotExist (file already gone)",
+        "recommendation": "UploadAvatar has no fallback - transaction rolls back DB changes if storage fails"
+      },
+      "idempotency": {
+        "safe_to_retry": true,
+        "reason": "Avatar upload overwrites existing file; delete is idempotent"
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-037", "ep-038"],
+        "impact": "Avatar upload/delete fails; org continues to function with old/default avatar"
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-035",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/activities/feeds",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "cascading_failure",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Pure database read with no external dependencies",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - only reads from database",
+      "graceful_degradation": "Returns error if DB is down"
+    },
+    {
+      "endpoint_id": "ep-036",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/repos",
+      "risk_level": "high",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "high",
+          "detail": "Background deletion of repos is not atomic - partial deletion leaves org in inconsistent state with some repos deleted and others remaining",
+          "recommendation": "Already handles this by continuing on failure and logging system notices; consider adding a status tracking mechanism"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Calling DELETE /repos twice could trigger a second background deletion while first is still running",
+          "recommendation": "Add a lock or status check to prevent concurrent deletion operations on same org"
+        }
+      ],
+      "non_atomic_operations": ["Sequential repo deletion in background - partial failure leaves some repos deleted, others intact"],
+      "cascading_failure_risk": "Background goroutine uses graceful shutdown context; if server shuts down mid-deletion, remaining repos are not deleted",
+      "graceful_degradation": "Errors logged as system notices; individual repo failures don't stop other deletions"
+    },
+    {
+      "endpoint_id": "ep-037",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/avatar",
+      "risk_level": "medium",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "DB update and storage write are in same transaction; if storage fails, DB rolls back",
+          "recommendation": "Good pattern - transaction ensures consistency"
+        },
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "No explicit timeout on storage write operation",
+          "recommendation": "Configure storage client timeout"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Storage backend failure causes avatar upload to fail; org remains functional",
+      "graceful_degradation": "Falls back to default avatar if upload fails"
+    },
+    {
+      "endpoint_id": "ep-038",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/avatar",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "fallback",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Gracefully handles os.ErrNotExist when avatar file is already gone",
+          "recommendation": "Good pattern"
+        }
+      ],
+      "non_atomic_operations": ["DB update and storage delete in transaction - if storage delete fails (non-ErrNotExist), transaction rolls back"],
+      "cascading_failure_risk": "Minimal - worst case avatar file remains on storage but DB marks it as deleted",
+      "graceful_degradation": "Handles missing file gracefully"
+    },
+    {
+      "endpoint_id": "ep-039",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/secrets",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - simple paginated DB read",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-040",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/actions/secrets/{secretname}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "PUT is idempotent - calling multiple times with same data produces same result (upsert pattern)",
+          "recommendation": "Good pattern"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - simple DB read + write",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-041",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/actions/secrets/{secretname}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - simple DB read + delete",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": "Version endpoint serves as basic liveness; no dedicated readiness probe"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "graceful.GetManager() provides shutdown context; background tasks use ShutdownContext()",
+      "recommendation": "Well implemented"
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in rate limiting on API endpoints",
+      "recommendation": "Consider adding rate limiting middleware or relying on reverse proxy"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No message queues used in these endpoints; background deletion logs failures as system notices"
+    },
+    "single_points_of_failure": [
+      "Database - all endpoints depend on it with no caching layer"
+    ],
+    "cascading_failure_paths": [
+      "Database down → all 7 endpoints fail immediately",
+      "Storage backend down → ep-037/ep-038 fail, others unaffected"
+    ]
+  }
+}

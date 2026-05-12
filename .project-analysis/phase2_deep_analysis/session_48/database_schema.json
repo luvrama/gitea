@@ -1,0 +1,167 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL",
+  "total_tables_or_collections": 5,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "webhook",
+      "entity_class": "webhook.Webhook",
+      "file_path": "models/webhook/webhook.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "is_system_webhook", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "url", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "''", "constraints": []},
+        {"name": "http_method", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "content_type", "type": "INT", "code_type": "HookContentType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "secret", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "events", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_active", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "type", "type": "VARCHAR(16)", "code_type": "webhook_module.HookType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "meta", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "last_status", "type": "INT", "code_type": "webhook_module.HookStatus", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "header_authorization_encrypted", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_webhook_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_webhook_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "idx_webhook_is_active", "columns": ["is_active"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "one-to-many", "target_table": "hook_task", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "star",
+      "entity_class": "repo_model.Star",
+      "file_path": "models/repo/star.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_star_uid", "columns": ["uid"], "unique": false},
+        {"name": "idx_star_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "watch",
+      "entity_class": "repo_model.Watch",
+      "file_path": "models/repo/watch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "mode", "type": "INT", "code_type": "WatchMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_watch_user_id", "columns": ["user_id"], "unique": false},
+        {"name": "idx_watch_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "team",
+      "entity_class": "organization.Team",
+      "file_path": "models/organization/team.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_team_org_id", "columns": ["org_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"},
+        {"type": "many-to-many", "target_table": "repository", "join_column": "team_repo"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "team_repo",
+      "entity_class": "organization.TeamRepo",
+      "file_path": "models/organization/team_repo.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "team_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_team_repo_team_id", "columns": ["team_id"], "unique": false},
+        {"name": "idx_team_repo_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "team", "join_column": "team_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-324",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "INSERT", "method": "webhook.CreateWebhook", "description": "Insert new webhook"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-325",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "webhook.GetWebhookByRepoID", "description": "Fetch webhook by repo and id"},
+        {"store_type": "database", "store_name": "webhook", "operation": "UPDATE", "method": "webhook.UpdateWebhook", "description": "Update webhook all columns"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-326",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "webhook.GetWebhookByRepoID", "description": "Verify webhook belongs to repo"},
+        {"store_type": "database", "store_name": "webhook", "operation": "DELETE", "method": "webhook.DeleteWebhookByID", "description": "Delete webhook"},
+        {"store_type": "database", "store_name": "hook_task", "operation": "DELETE", "method": "webhook.DeleteWebhookByID", "description": "Delete associated hook tasks"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-327",
+      "path": "/api/v1/repos/{owner}/{repo}/stargazers",
+      "operations": [
+        {"store_type": "database", "store_name": "user JOIN star", "operation": "SELECT", "method": "repo_model.GetStargazers", "description": "Get stargazer users with pagination"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-328",
+      "path": "/api/v1/repos/{owner}/{repo}/subscribers",
+      "operations": [
+        {"store_type": "database", "store_name": "user JOIN watch", "operation": "SELECT", "method": "repo_model.GetRepoWatchers", "description": "Get watcher users with pagination"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-329",
+      "path": "/api/v1/repos/{owner}/{repo}/teams",
+      "operations": [
+        {"store_type": "database", "store_name": "team JOIN team_repo", "operation": "SELECT", "method": "organization.GetRepoTeams", "description": "Get teams with repo access"},
+        {"store_type": "database", "store_name": "team_unit", "operation": "SELECT", "method": "Team.LoadUnits", "description": "Load units for each team"}
+      ]
+    }
+  ]
+}

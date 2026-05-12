@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "SHA parameter must be non-empty for tree retrieval",
+      "location": {"class": "repo", "method": "GetTree", "file_path": "routers/api/v1/repo/tree.go", "line_number": 56},
+      "condition": "len(sha) == 0",
+      "action": "Return 400 Bad Request with 'sha not provided'",
+      "affected_endpoints": ["ep-246"],
+      "code_snippet": "if len(sha) == 0 {\n\tctx.APIError(http.StatusBadRequest, \"sha not provided\")\n\treturn"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "business_logic",
+      "description": "Per-page limit capped at DefaultGitTreesPerPage (1000)",
+      "location": {"class": "files", "method": "GetTreeBySHA", "file_path": "services/repository/files/tree.go", "line_number": 57},
+      "condition": "perPage <= 0 || perPage > setting.API.DefaultGitTreesPerPage",
+      "action": "Set perPage to DefaultGitTreesPerPage (1000)",
+      "affected_endpoints": ["ep-246"],
+      "code_snippet": "if perPage <= 0 || perPage > setting.API.DefaultGitTreesPerPage {\n\tperPage = setting.API.DefaultGitTreesPerPage\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Single exact ref match returns object instead of array",
+      "location": {"class": "repo", "method": "getGitRefsInternal", "file_path": "routers/api/v1/repo/git_ref.go", "line_number": 89},
+      "condition": "len(apiRefs) == 1 && apiRefs[0].Ref == filter",
+      "action": "Return single Reference object instead of array",
+      "affected_endpoints": ["ep-248"],
+      "code_snippet": "if len(apiRefs) == 1 && apiRefs[0].Ref == filter {\n\tctx.JSON(http.StatusOK, &apiRefs[0])\n\treturn"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Ref filter is prepended with 'refs/' prefix",
+      "location": {"class": "utils", "method": "GetGitRefs", "file_path": "routers/api/v1/utils/git.go", "line_number": 60},
+      "condition": "len(filter) > 0",
+      "action": "Prepend 'refs/' to filter string before querying",
+      "affected_endpoints": ["ep-248"],
+      "code_snippet": "if len(filter) > 0 {\n\tfilter = \"refs/\" + filter\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "authorization",
+      "description": "User must have write permission to target branch for diff patch",
+      "location": {"class": "repo", "method": "ReqChangeRepoFileOptionsAndCheck", "file_path": "routers/api/v1/repo/file.go", "line_number": 336},
+      "condition": "!ctx.Repo.CanWriteToBranch(ctx, ctx.Doer, commonOpts.NewBranchName) && !ctx.IsUserSiteAdmin()",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-249"],
+      "code_snippet": "if !ctx.Repo.CanWriteToBranch(ctx, ctx.Doer, commonOpts.NewBranchName) && !ctx.IsUserSiteAdmin() {\n\tctx.APIError(http.StatusForbidden, ...)"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "authorization",
+      "description": "Protected branch check prevents unauthorized commits",
+      "location": {"class": "files", "method": "ApplyDiffPatchOptions.Validate", "file_path": "services/repository/files/patch.go", "line_number": 82},
+      "condition": "protectedBranch != nil && !protectedBranch.CanUserPush(ctx, doer)",
+      "action": "Return ErrUserCannotCommit error",
+      "affected_endpoints": ["ep-249"],
+      "code_snippet": "if !protectedBranch.CanUserPush(ctx, doer) {\n\treturn ErrUserCannotCommit{UserName: doer.LowerName}\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "New branch must not already exist when branching",
+      "location": {"class": "files", "method": "ApplyDiffPatchOptions.Validate", "file_path": "services/repository/files/patch.go", "line_number": 74},
+      "condition": "opts.NewBranch != opts.OldBranch && branch exists",
+      "action": "Return ErrBranchAlreadyExists error",
+      "affected_endpoints": ["ep-249"],
+      "code_snippet": "} else if exist {\n\treturn git_model.ErrBranchAlreadyExists{BranchName: opts.NewBranch}\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "Collaborator must be an active user account",
+      "location": {"class": "repo", "method": "AddOrUpdateCollaborator", "file_path": "routers/api/v1/repo/collaborators.go", "line_number": 143},
+      "condition": "!collaborator.IsActive",
+      "action": "Return 500 Internal Server Error with 'collaborator's account is inactive'",
+      "affected_endpoints": ["ep-252"],
+      "code_snippet": "if !collaborator.IsActive {\n\tctx.APIErrorInternal(errors.New(\"collaborator's account is inactive\"))\n\treturn"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "authorization",
+      "description": "User block check prevents adding blocked users as collaborators",
+      "location": {"class": "repo_service", "method": "AddOrUpdateCollaborator", "file_path": "services/repository/collaboration.go", "line_number": 30},
+      "condition": "IsUserBlockedBy(u, repo.OwnerID) || IsUserBlockedBy(repo.Owner, u.ID)",
+      "action": "Return ErrBlockedUser error (403 Forbidden)",
+      "affected_endpoints": ["ep-252"],
+      "code_snippet": "if user_model.IsUserBlockedBy(ctx, u, repo.OwnerID) || user_model.IsUserBlockedBy(ctx, repo.Owner, u.ID) {\n\treturn user_model.ErrBlockedUser\n}"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "validation",
+      "description": "Access mode must be read, write, or admin",
+      "location": {"class": "repo_service", "method": "AddOrUpdateCollaborator", "file_path": "services/repository/collaboration.go", "line_number": 22},
+      "condition": "mode < perm.AccessModeRead || mode > perm.AccessModeAdmin",
+      "action": "Return ErrInvalidAccessMode error",
+      "affected_endpoints": ["ep-252"],
+      "code_snippet": "if mode < perm.AccessModeRead || mode > perm.AccessModeAdmin {\n\treturn perm.ErrInvalidAccessMode\n}"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "business_logic",
+      "description": "Default permission is write when not specified",
+      "location": {"class": "repo", "method": "AddOrUpdateCollaborator", "file_path": "routers/api/v1/repo/collaborators.go", "line_number": 147},
+      "condition": "form.Permission == nil",
+      "action": "Use perm.AccessModeWrite as default",
+      "affected_endpoints": ["ep-252"],
+      "code_snippet": "p := perm.AccessModeWrite\nif form.Permission != nil {\n\tp = perm.ParseAccessMode(string(*form.Permission), ...)"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "business_logic",
+      "description": "Deleting collaboration cascades to unwatch, unassign, remove stopwatches",
+      "location": {"class": "repo_service", "method": "DeleteCollaboration", "file_path": "services/repository/collaboration.go", "line_number": 66},
+      "condition": "Collaboration deleted successfully",
+      "action": "Recalculate accesses, unwatch repo, remove stopwatches, remove issue watches, unassign from issues",
+      "affected_endpoints": ["ep-253"],
+      "code_snippet": "if err = access_model.RecalculateAccesses(ctx, repo); err != nil {\n\treturn err\n}"
+    }
+  ]
+}

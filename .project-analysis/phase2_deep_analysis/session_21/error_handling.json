@@ -1,0 +1,43 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "any error", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"},
+        {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "not found"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-145",
+      "path": "/api/v1/user/following/{username}",
+      "error_scenarios": [
+        {"exception": "ErrBlockedUser", "trigger": "user blocked by target or vice versa", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false},
+        {"exception": "generic error", "trigger": "DB failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-148",
+      "path": "/api/v1/user/hooks/{id}",
+      "error_scenarios": [
+        {"exception": "ErrWebhookNotExist", "trigger": "webhook ID not found for owner", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+        {"exception": "ownership check", "trigger": "non-admin accessing other user's hook", "status_code": 404, "response": "not found", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-149",
+      "path": "/api/v1/user/hooks",
+      "error_scenarios": [
+        {"exception": "validation error", "trigger": "invalid type/url/content_type", "status_code": 422, "response": "unprocessable entity", "logged": false, "retryable": false},
+        {"exception": "validation error", "trigger": "invalid slack channel", "status_code": 400, "response": "bad request", "logged": false, "retryable": false}
+      ]
+    }
+  ],
+  "custom_exceptions": [
+    {"class": "ErrWebhookNotExist", "file_path": "models/webhook/webhook.go", "extends": "util.ErrNotExist", "used_in": ["webhook.GetWebhookByOwnerID", "webhook.DeleteWebhookByID"], "http_status": 404},
+    {"class": "ErrBlockedUser", "file_path": "models/user/block.go", "extends": "util.PermissionDeniedError", "used_in": ["user_model.FollowUser"], "http_status": 403}
+  ]
+}

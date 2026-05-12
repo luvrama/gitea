@@ -1,0 +1,177 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-168",
+      "http_method": "GET",
+      "path": "/api/v1/user/applications/oauth2",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single paginated query, low cost"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-169",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Multiple deletes across 3 tables in transaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-170",
+      "http_method": "GET",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single primary key lookup"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-171",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT + UPDATE + UPDATE (secret) in transaction, plus bcrypt computation"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "bcrypt.GenerateFromPassword with DefaultCost is CPU-intensive (~100ms)",
+          "impact": "Blocks request thread during bcrypt computation, but acceptable for infrequent update operation",
+          "file_path": "models/auth/oauth2.go",
+          "line_number": 152,
+          "code_snippet": "hashedSecret, err := bcrypt.GenerateFromPassword([]byte(clientSecret), bcrypt.DefaultCost)",
+          "recommendation": "Acceptable for this use case as updates are infrequent"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-172",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/repos",
+      "resource_load": {
+        "operations_per_request": "2 + N (N = number of repos in page)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 count + 1 select + N permission checks"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "GetDoerRepoPermission called in a loop for each repository in the page",
+          "impact": "For a page of 50 repos, this results in 50+ additional DB queries",
+          "file_path": "routers/api/v1/user/repo.go",
+          "line_number": 39,
+          "code_snippet": "for i := range repos {\n\tpermission, err := access_model.GetDoerRepoPermission(ctx, repos[i], ctx.Doer)",
+          "recommendation": "Batch load permissions for all repos in a single query"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch permission loading for repository list",
+          "estimated_impact": "Reduce DB queries from N+2 to 3 for a page of N repos",
+          "implementation": "Create a batch GetDoerRepoPermissions function that loads access records for multiple repos at once"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-173",
+      "http_method": "GET",
+      "path": "/api/v1/user/repos",
+      "resource_load": {
+        "operations_per_request": "2 + 2N (N = number of repos in page)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 count + 1 select + N LoadOwner + N permission checks"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "LoadOwner and GetDoerRepoPermission called in loop for each repo",
+          "impact": "For 50 repos: 100+ additional DB queries (50 owner loads + 50 permission checks)",
+          "file_path": "routers/api/v1/user/repo.go",
+          "line_number": 109,
+          "code_snippet": "for i, repo := range repos {\n\tif err = repo.LoadOwner(ctx); err != nil {",
+          "recommendation": "Batch load owners and permissions"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch load owners and permissions for repo list",
+          "estimated_impact": "Reduce from 2N+2 queries to ~4 queries",
+          "implementation": "Use repos.LoadAttributes which already exists, and batch permission loading"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-174",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/repos",
+      "resource_load": {
+        "operations_per_request": "2 + N (N = number of repos in page)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Same as ep-172, uses listUserRepos"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "GetDoerRepoPermission called in a loop for each repository",
+          "impact": "For 50 repos: 50+ additional DB queries for permission checks",
+          "file_path": "routers/api/v1/user/repo.go",
+          "line_number": 39,
+          "code_snippet": "for i := range repos {\n\tpermission, err := access_model.GetDoerRepoPermission(ctx, repos[i], ctx.Doer)",
+          "recommendation": "Batch load permissions"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch permission loading for org repo list",
+          "estimated_impact": "Reduce from N+2 to 3 queries",
+          "implementation": "Same batch approach as ep-172"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-175",
+      "http_method": "POST",
+      "path": "/api/v1/user/actions/runners/registration-token",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT + conditional UPDATE + INSERT in transaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

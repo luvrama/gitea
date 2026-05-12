@@ -1,0 +1,238 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-330",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "controller_class": "repo",
+      "controller_method": "IsTeam",
+      "description": "Check if a team is assigned to a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "team", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Team",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "team ID"},
+            {"name": "name", "type": "string", "description": "team name"},
+            {"name": "description", "type": "string", "description": "team description"},
+            {"name": "includes_all_repositories", "type": "bool", "description": "includes all repos"},
+            {"name": "can_create_org_repo", "type": "bool", "description": "can create org repo"},
+            {"name": "permission", "type": "string", "description": "access level"},
+            {"name": "units", "type": "[]string", "description": "unit names"},
+            {"name": "units_map", "type": "map[string]string", "description": "unit access map"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "team not found or team not assigned to repo"},
+          {"status_code": 405, "type": "error", "condition": "repo is not owned by an organization"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-331",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "controller_class": "repo",
+      "controller_method": "AddTeam",
+      "description": "Add a team to a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "team", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "team not found"},
+          {"status_code": 405, "type": "error", "condition": "repo is not owned by an organization"},
+          {"status_code": 403, "type": "forbidden", "condition": "user is not repo admin nor owner"},
+          {"status_code": 422, "type": "validationError", "condition": "team already added to repo"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-332",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "controller_class": "repo",
+      "controller_method": "DeleteTeam",
+      "description": "Delete a team from a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "team", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "team not found"},
+          {"status_code": 405, "type": "error", "condition": "repo is not owned by an organization"},
+          {"status_code": 403, "type": "forbidden", "condition": "user is not repo admin nor owner"},
+          {"status_code": 422, "type": "validationError", "condition": "team was not added to repo"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-333",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/forks",
+      "controller_class": "repo",
+      "controller_method": "ListForks",
+      "description": "List a repository's forks",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "repository ID"},
+            {"name": "name", "type": "string", "description": "repository name"},
+            {"name": "full_name", "type": "string", "description": "full name"},
+            {"name": "owner", "type": "api.User", "description": "repository owner"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-334",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/forks",
+      "controller_class": "repo",
+      "controller_method": "CreateFork",
+      "description": "Fork a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "api.CreateForkOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "organization", "type": "*string", "required": false, "validation": [], "description": "organization name, if forking into an organization"},
+            {"name": "name", "type": "*string", "required": false, "validation": [], "description": "name of the forked repository"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 202,
+          "type": "api.Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "repository ID"},
+            {"name": "name", "type": "string", "description": "repository name"},
+            {"name": "full_name", "type": "string", "description": "full name"},
+            {"name": "owner", "type": "api.User", "description": "repository owner"},
+            {"name": "fork", "type": "bool", "description": "is fork"},
+            {"name": "parent", "type": "*api.Repository", "description": "parent repository"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "user blocked or not allowed to create repos in org"},
+          {"status_code": 404, "type": "notFound", "condition": "repository or organization not found"},
+          {"status_code": 409, "type": "conflict", "condition": "fork already exists or repo limit reached"},
+          {"status_code": 422, "type": "validationError", "condition": "validation error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-335",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "controller_class": "repo",
+      "controller_method": "ListIssueLabels",
+      "description": "Get an issue's labels",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "int64", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Label",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "label ID"},
+            {"name": "name", "type": "string", "description": "label name"},
+            {"name": "exclusive", "type": "bool", "description": "is exclusive"},
+            {"name": "color", "type": "string", "description": "label color hex"},
+            {"name": "description", "type": "string", "description": "label description"},
+            {"name": "is_archived", "type": "bool", "description": "is archived"},
+            {"name": "url", "type": "string", "description": "label URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "issue not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

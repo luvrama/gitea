@@ -1,0 +1,172 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "label",
+      "entity_class": "issues_model.Label",
+      "file_path": "models/issues/label.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk", "autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "exclusive", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "exclusive_order", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["DEFAULT 0"]},
+        {"name": "description", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "color", "type": "VARCHAR(7)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_issues", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "num_closed_issues", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "updated"]},
+        {"name": "archived_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": "NULL", "constraints": ["DEFAULT NULL"]}
+      ],
+      "indexes": [
+        {"name": "idx_label_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_label_org_id", "columns": ["org_id"], "unique": false},
+        {"name": "idx_label_created_unix", "columns": ["created_unix"], "unique": false},
+        {"name": "idx_label_updated_unix", "columns": ["updated_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"},
+        {"type": "one-to-many", "target_table": "issue_label", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "issue_label",
+      "entity_class": "issues_model.IssueLabel",
+      "file_path": "models/issues/label.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "label_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_issue_label_issue_id", "columns": ["issue_id"], "unique": false},
+        {"name": "idx_issue_label_label_id", "columns": ["label_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "label", "join_column": "label_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "repository",
+      "entity_class": "repo_model.Repository",
+      "file_path": "models/repo/repo.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "owner_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "is_private", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_template", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "template_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "status", "type": "INT", "code_type": "RepositoryStatus", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_repository_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "idx_repository_lower_name", "columns": ["lower_name"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "one-to-many", "target_table": "label", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "user",
+      "entity_class": "user_model.User",
+      "file_path": "models/user/user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "type", "type": "INT", "code_type": "UserType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "max_repo_creation", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "-1", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_user_name", "columns": ["name"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "one-to-many", "target_table": "repository", "join_column": "id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-359",
+      "path": "/api/v1/repos/{owner}/{repo}/labels",
+      "operations": [
+        {"store_type": "database", "store_name": "label", "operation": "INSERT", "method": "issues_model.NewLabel", "description": "Insert new label"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-360",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelInRepoByID", "description": "Get label by repo and id"},
+        {"store_type": "database", "store_name": "label", "operation": "UPDATE", "method": "issues_model.UpdateLabel", "description": "Update label with issue count recalculation"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-361",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "label", "operation": "SELECT", "method": "issues_model.GetLabelByID", "description": "Get label by ID"},
+        {"store_type": "database", "store_name": "label", "operation": "DELETE", "method": "issues_model.DeleteLabel", "description": "Delete label"},
+        {"store_type": "database", "store_name": "issue_label", "operation": "DELETE", "method": "issues_model.DeleteLabel", "description": "Delete issue-label associations"},
+        {"store_type": "database", "store_name": "comment", "operation": "DELETE", "method": "issues_model.DeleteLabel", "description": "Delete label comments"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-362",
+      "path": "/api/v1/repos/search",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "repo_model.SearchRepository", "description": "Search repositories with conditions"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "repo.LoadOwner", "description": "Load owner for each result"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "access_model.GetDoerRepoPermission", "description": "Get permissions per repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-363",
+      "path": "/api/v1/user/repos",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "INSERT", "method": "repo_service.CreateRepositoryDirectly", "description": "Create repository"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "repo_model.GetRepositoryByID", "description": "Reload repository"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-364",
+      "path": "/api/v1/repos/{template_owner}/{template_repo}/generate",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Get target owner"},
+        {"store_type": "database", "store_name": "repository", "operation": "INSERT", "method": "repo_service.GenerateRepository", "description": "Create generated repository"},
+        {"store_type": "database", "store_name": "label", "operation": "INSERT", "method": "GenerateIssueLabels", "description": "Copy labels from template"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-365",
+      "path": "/api/v1/org/{org}/repos",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "organization.GetOrgByName", "description": "Get org by name"},
+        {"store_type": "database", "store_name": "repository", "operation": "INSERT", "method": "repo_service.CreateRepository", "description": "Create repository"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-366",
+      "path": "/api/v1/orgs/{org}/repos",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "organization.GetOrgByName", "description": "Get org by name"},
+        {"store_type": "database", "store_name": "repository", "operation": "INSERT", "method": "repo_service.CreateRepository", "description": "Create repository"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "api.DefaultGitTreesPerPage",
+      "type": "Integer",
+      "default_value": "1000",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "files", "method": "GetTreeBySHA", "file_path": "services/repository/files/tree.go", "usage": "Cap per_page parameter", "impact": "Limits maximum entries returned per page"}],
+      "affected_endpoints": ["ep-246"]
+    },
+    {
+      "key": "api.DefaultPagingNum",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "utils", "method": "GetListOptions", "file_path": "routers/api/v1/utils/page.go", "usage": "Default page size for list endpoints", "impact": "Controls default number of collaborators returned"}],
+      "affected_endpoints": ["ep-250"]
+    },
+    {
+      "key": "api.MaxResponseItems",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "utils", "method": "GetListOptions", "file_path": "routers/api/v1/utils/page.go", "usage": "Maximum page size for list endpoints", "impact": "Caps maximum collaborators per page"}],
+      "affected_endpoints": ["ep-250"]
+    }
+  ]
+}

@@ -1,0 +1,476 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-344",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "description": "Fetches a release by tag name, validates it's not a tag-only record, checks draft access, loads attributes, returns API release",
+      "steps": [
+        {
+          "step": 1,
+          "component": "GetReleaseByTag",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release_tags.go",
+          "input": "context with path param 'tag'",
+          "output": "api.Release JSON",
+          "operations": ["Extract tag from path param", "Call repo_model.GetRelease"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.GetRelease",
+          "type": "repository",
+          "file_path": "models/repo/release.go",
+          "input": "repoID int64, tagName string",
+          "output": "*Release or ErrReleaseNotExist",
+          "operations": ["SELECT from release WHERE repo_id=? AND lower_tag_name=?"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Get release by repo_id and lower_tag_name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "Release.LoadAttributes",
+          "type": "repository",
+          "file_path": "models/repo/release.go",
+          "input": "*Release",
+          "output": "Release with Repo, Publisher, Attachments loaded",
+          "operations": ["Load repo", "Load publisher user", "Load attachments"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load repo if nil"},
+            {"operation": "SELECT", "table": "user", "description": "Load publisher by ID"},
+            {"operation": "SELECT", "table": "attachment", "description": "Load release attachments"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToAPIRelease",
+          "type": "utility",
+          "file_path": "services/convert/release.go",
+          "input": "*repo_model.Release",
+          "output": "*api.Release",
+          "operations": ["Map Release fields to API struct", "Convert publisher to API user", "Convert attachments"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Release",
+          "to": "api.Release",
+          "component": "convert.ToAPIRelease",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "TagName", "target_field": "tag_name", "transformation": "direct_copy"},
+            {"source_field": "Target", "target_field": "target_commitish", "transformation": "direct_copy"},
+            {"source_field": "Title", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Note", "target_field": "body", "transformation": "direct_copy"},
+            {"source_field": "Publisher", "target_field": "author", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Release not found", "handler": "GetReleaseByTag", "response_code": 404, "response": "notFound"},
+        {"condition": "Release.IsTag == true", "handler": "GetReleaseByTag", "response_code": 404, "response": "notFound"},
+        {"condition": "Draft release without write access", "handler": "GetReleaseByTag", "response_code": 404, "response": "notFound"},
+        {"condition": "LoadAttributes fails", "handler": "GetReleaseByTag", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-345",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "description": "Deletes a release by tag name. Marks release as tag-only, deletes attachments from storage, sends notifications",
+      "steps": [
+        {
+          "step": 1,
+          "component": "DeleteReleaseByTag",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release_tags.go",
+          "input": "context with path param 'tag'",
+          "output": "204 No Content",
+          "operations": ["Extract tag from path", "Call repo_model.GetRelease", "Call release_service.DeleteReleaseByID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.GetRelease",
+          "type": "repository",
+          "file_path": "models/repo/release.go",
+          "input": "repoID, tagName",
+          "output": "*Release",
+          "operations": ["SELECT from release by repo_id and lower_tag_name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Get release by tag name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "release_service.DeleteReleaseByID",
+          "type": "service",
+          "file_path": "services/release/release.go",
+          "input": "repo, release, doer, delTag=false",
+          "output": "error",
+          "operations": ["Set IsTag=true on release", "Update release in DB", "Load attachments", "Delete attachments from storage", "Send notification"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "release", "description": "Set IsTag=true"},
+            {"operation": "SELECT", "table": "attachment", "description": "Load release attachments"},
+            {"operation": "DELETE", "table": "attachment", "description": "Delete attachment records"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Release not found", "handler": "DeleteReleaseByTag", "response_code": 404, "response": "notFound"},
+        {"condition": "Release.IsTag == true", "handler": "DeleteReleaseByTag", "response_code": 404, "response": "notFound"},
+        {"condition": "Protected tag name", "handler": "DeleteReleaseByTag", "response_code": 422, "response": "validationError"},
+        {"condition": "Internal error", "handler": "DeleteReleaseByTag", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-346",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/licenses",
+      "description": "Returns the list of detected license identifiers for a repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "GetLicenses",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/license.go",
+          "input": "context with repo",
+          "output": "[]string JSON",
+          "operations": ["Call repo_model.GetRepoLicenses", "Map to string slice"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.GetRepoLicenses",
+          "type": "repository",
+          "file_path": "models/repo/license.go",
+          "input": "repo *Repository",
+          "output": "RepoLicenseList",
+          "operations": ["SELECT from repo_license WHERE repo_id=? ORDER BY license ASC"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repo_license", "description": "Get all licenses for repo ordered by license name"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "RepoLicenseList",
+          "to": "[]string",
+          "component": "GetLicenses",
+          "mappings": [
+            {"source_field": "License", "target_field": "[]", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "GetLicenses", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-347",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/topics",
+      "description": "Lists topics for a repository with pagination, returns topic names sorted alphabetically",
+      "steps": [
+        {
+          "step": 1,
+          "component": "ListTopics",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/topic.go",
+          "input": "context with repo, page/limit params",
+          "output": "{topics: []string} JSON",
+          "operations": ["Build FindTopicOptions", "Call db.FindAndCount", "Map to topic names"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "db.FindAndCount[repo_model.Topic]",
+          "type": "repository",
+          "file_path": "models/db/find.go",
+          "input": "FindTopicOptions{RepoID, ListOptions}",
+          "output": "[]*Topic, int64",
+          "operations": ["SELECT topic.* FROM topic INNER JOIN repo_topic ON repo_topic.topic_id=topic.id WHERE repo_topic.repo_id=? ORDER BY topic.name LIMIT/OFFSET"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "topic JOIN repo_topic", "description": "Find topics for repo with pagination"},
+            {"operation": "SELECT", "table": "topic JOIN repo_topic", "description": "Count total topics for repo"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*repo_model.Topic",
+          "to": "[]string",
+          "component": "ListTopics",
+          "mappings": [
+            {"source_field": "Name", "target_field": "topics[]", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "ListTopics", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-348",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/topics",
+      "description": "Replaces all topics for a repository with the provided list. Validates topic names and max count",
+      "steps": [
+        {
+          "step": 1,
+          "component": "UpdateTopics",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/topic.go",
+          "input": "context with RepoTopicOptions body",
+          "output": "204 No Content",
+          "operations": ["Parse body", "Sanitize and validate topics", "Check max 25 limit", "Call repo_model.SaveTopics"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.SanitizeAndValidateTopics",
+          "type": "utility",
+          "file_path": "models/repo/topic.go",
+          "input": "[]string topic names",
+          "output": "validTopics, invalidTopics []string",
+          "operations": ["Trim/lowercase each topic", "Validate against regex ^[a-z0-9][-.a-z0-9]*$", "Deduplicate"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_model.SaveTopics",
+          "type": "repository",
+          "file_path": "models/repo/topic.go",
+          "input": "repoID, topicNames",
+          "output": "error",
+          "operations": ["Find existing topics for repo", "Determine added/removed topics", "Add new topics (insert/update)", "Remove old topics (update count, delete repo_topic)", "Sync topics field in repository"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "topic JOIN repo_topic", "description": "Get current topics for repo"},
+            {"operation": "INSERT", "table": "topic", "description": "Create new topic if not exists"},
+            {"operation": "UPDATE", "table": "topic", "description": "Increment/decrement repo_count"},
+            {"operation": "INSERT", "table": "repo_topic", "description": "Link new topics to repo"},
+            {"operation": "DELETE", "table": "repo_topic", "description": "Unlink removed topics"},
+            {"operation": "UPDATE", "table": "repository", "description": "Sync topics array field"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "More than 25 valid topics", "handler": "UpdateTopics", "response_code": 422, "response": "invalidTopicsError with message"},
+        {"condition": "Invalid topic names", "handler": "UpdateTopics", "response_code": 422, "response": "invalidTopicsError with invalidTopics list"},
+        {"condition": "DB error in SaveTopics", "handler": "UpdateTopics", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-349",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/topics/{topic}",
+      "description": "Adds a single topic to a repository. Validates name and checks max 25 limit",
+      "steps": [
+        {
+          "step": 1,
+          "component": "AddTopic",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/topic.go",
+          "input": "context with path param 'topic'",
+          "output": "204 No Content",
+          "operations": ["Extract and normalize topic name", "Validate topic name", "Count existing topics", "Call repo_model.AddTopic"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "db.Count[repo_model.Topic]",
+          "type": "repository",
+          "file_path": "models/db/find.go",
+          "input": "FindTopicOptions{RepoID}",
+          "output": "int64 count",
+          "operations": ["COUNT topics for repo"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "topic JOIN repo_topic", "description": "Count existing topics for repo"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_model.AddTopic",
+          "type": "repository",
+          "file_path": "models/repo/topic.go",
+          "input": "repoID, topicName",
+          "output": "*Topic, error",
+          "operations": ["Check if repo already has topic", "If not, add topic (create or increment count)", "Insert repo_topic link", "Sync topics in repository"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "topic JOIN repo_topic", "description": "Check if repo already has this topic"},
+            {"operation": "INSERT", "table": "topic", "description": "Create topic if not exists"},
+            {"operation": "UPDATE", "table": "topic", "description": "Increment repo_count"},
+            {"operation": "INSERT", "table": "repo_topic", "description": "Link topic to repo"},
+            {"operation": "UPDATE", "table": "repository", "description": "Sync topics array"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Invalid topic name", "handler": "AddTopic", "response_code": 422, "response": "invalidTopicsError"},
+        {"condition": "Already at 25 topics", "handler": "AddTopic", "response_code": 422, "response": "invalidTopicsError with max message"},
+        {"condition": "DB error", "handler": "AddTopic", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-350",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/topics/{topic}",
+      "description": "Removes a topic from a repository. Validates name format, returns 404 if topic not on repo",
+      "steps": [
+        {
+          "step": 1,
+          "component": "DeleteTopic",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/topic.go",
+          "input": "context with path param 'topic'",
+          "output": "204 No Content",
+          "operations": ["Extract and normalize topic name", "Validate topic name", "Call repo_model.DeleteTopic"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_model.DeleteTopic",
+          "type": "repository",
+          "file_path": "models/repo/topic.go",
+          "input": "repoID, topicName",
+          "output": "*Topic (nil if not found)",
+          "operations": ["Check if repo has topic", "If found: decrement repo_count, delete repo_topic link, sync repository topics"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "topic JOIN repo_topic", "description": "Check if repo has this topic"},
+            {"operation": "UPDATE", "table": "topic", "description": "Decrement repo_count"},
+            {"operation": "DELETE", "table": "repo_topic", "description": "Remove topic-repo link"},
+            {"operation": "UPDATE", "table": "repository", "description": "Sync topics array"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Invalid topic name", "handler": "DeleteTopic", "response_code": 422, "response": "invalidTopicsError"},
+        {"condition": "Topic not on repo (nil returned)", "handler": "DeleteTopic", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "DeleteTopic", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-351",
+      "http_method": "GET",
+      "path": "/api/v1/topics/search",
+      "description": "Searches topics by keyword with pagination, returns topic details including repo count",
+      "steps": [
+        {
+          "step": 1,
+          "component": "TopicSearch",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/topic.go",
+          "input": "context with query param 'q', page, limit",
+          "output": "{topics: []TopicResponse} JSON",
+          "operations": ["Build FindTopicOptions with keyword", "Call db.FindAndCount", "Convert to TopicResponse"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "db.FindAndCount[repo_model.Topic]",
+          "type": "repository",
+          "file_path": "models/db/find.go",
+          "input": "FindTopicOptions{Keyword, ListOptions}",
+          "output": "[]*Topic, int64",
+          "operations": ["SELECT * FROM topic WHERE name LIKE '%keyword%' ORDER BY repo_count DESC LIMIT/OFFSET"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "topic", "description": "Search topics by name LIKE with pagination"},
+            {"operation": "SELECT", "table": "topic", "description": "Count matching topics"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToTopicResponse",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*repo_model.Topic",
+          "output": "*api.TopicResponse",
+          "operations": ["Map Topic fields to API response struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Topic",
+          "to": "api.TopicResponse",
+          "component": "convert.ToTopicResponse",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "topic_name", "transformation": "direct_copy"},
+            {"source_field": "RepoCount", "target_field": "repo_count", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "created", "transformation": "computed"},
+            {"source_field": "UpdatedUnix", "target_field": "updated", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "TopicSearch", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

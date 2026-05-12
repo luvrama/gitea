@@ -1,0 +1,115 @@
+{
+  "total_endpoints_analyzed": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-077",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 count query + 1 paginated select + N ToHook conversions (in-memory)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-078",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single SELECT by id+owner_id"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-079",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single INSERT"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-080",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT + UPDATE + SELECT (re-fetch after update)"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "writes_on_reads",
+          "description": "Re-fetches webhook after update instead of returning the already-modified in-memory object",
+          "impact": "Extra DB read on every edit operation",
+          "file_path": "routers/api/v1/utils/hook.go",
+          "line_number": 218,
+          "code_snippet": "updated, err := GetOwnerHook(ctx, owner.ID, hookID)",
+          "recommendation": "Return the already-modified webhook object instead of re-fetching"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Avoid re-fetching webhook after update",
+          "estimated_impact": "Saves 1 DB query per edit operation",
+          "implementation": "Use the in-memory webhook object after UpdateWebhook succeeds"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-081",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT (verify) + DELETE webhook + DELETE hook_tasks in transaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-082",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/labels",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 paginated SELECT + 1 COUNT query"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-083",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/labels",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single INSERT"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

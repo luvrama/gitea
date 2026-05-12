@@ -1,0 +1,27 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "Git Remote (Push Mirror Target)",
+      "type": "http_api",
+      "base_url": "configured per push mirror (remote_address)",
+      "client_class": "gitrepo",
+      "file_path": "services/mirror/mirror_push.go",
+      "http_library": "git command-line (via gitrepo.PushToExternal)",
+      "endpoints_called": [
+        {"method": "POST", "path": "git push --mirror", "request": {"type": "git protocol", "key_fields": ["refs/heads/*", "refs/tags/*"]}, "response": {"type": "git protocol", "key_fields": []}, "purpose": "Push all refs to remote mirror"},
+        {"method": "POST", "path": "LFS batch API", "request": {"type": "lfs.Pointer[]", "key_fields": ["oid", "size"]}, "response": {"type": "lfs batch response", "key_fields": []}, "purpose": "Upload LFS objects to remote"}
+      ],
+      "resilience": {
+        "timeout_ms": "setting.Git.Timeout.Mirror * 1000",
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": null
+      },
+      "authentication": "bearer",
+      "used_by_endpoints": ["ep-235"],
+      "config_keys": ["git.TIMEOUT.MIRROR", "lfs.START_SERVER"]
+    }
+  ]
+}

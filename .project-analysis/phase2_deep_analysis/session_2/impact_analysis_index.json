@@ -1,0 +1,47 @@
+{
+  "endpoints_by_database_table": {},
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "setting.AppURL": ["ep-013", "ep-014"],
+    "setting.AppSubURL": ["ep-009"],
+    "setting.Repository.PreferredLicenses": ["ep-013"],
+    "setting.CustomPath": ["ep-012", "ep-014"]
+  },
+  "endpoints_by_model_class": {
+    "MarkdownOption": ["ep-009"],
+    "MarkupOption": [],
+    "GitignoreTemplateInfo": ["ep-012"],
+    "LicensesTemplateListEntry": ["ep-013"],
+    "LicenseTemplateInfo": ["ep-014"]
+  },
+  "endpoints_by_service_class": {
+    "common.RenderMarkup": ["ep-009"],
+    "markdown.RenderRaw": ["ep-010"],
+    "options.Gitignore": ["ep-012"],
+    "options.License": ["ep-014"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-009": {"reads": [], "writes": []},
+    "ep-010": {"reads": [], "writes": []},
+    "ep-011": {"reads": [], "writes": []},
+    "ep-012": {"reads": [], "writes": []},
+    "ep-013": {"reads": [], "writes": []},
+    "ep-014": {"reads": [], "writes": []}
+  },
+  "external_services_by_endpoint": {
+    "ep-009": [],
+    "ep-010": [],
+    "ep-011": [],
+    "ep-012": [],
+    "ep-013": [],
+    "ep-014": []
+  },
+  "config_properties_by_endpoint": {
+    "ep-009": ["setting.AppSubURL"],
+    "ep-010": [],
+    "ep-011": [],
+    "ep-012": ["setting.CustomPath"],
+    "ep-013": ["setting.AppURL", "setting.Repository.PreferredLicenses"],
+    "ep-014": ["setting.AppURL", "setting.CustomPath"]
+  }
+}

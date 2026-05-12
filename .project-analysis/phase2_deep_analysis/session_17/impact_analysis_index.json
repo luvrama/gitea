@@ -1,0 +1,50 @@
+{
+  "endpoints_by_database_table": {
+    "action_runner": {"read": ["ep-114", "ep-115", "ep-116", "ep-117"], "write": ["ep-116", "ep-117"]},
+    "action_tasks_version": {"read": [], "write": ["ep-117"]},
+    "email_address": {"read": ["ep-118", "ep-119"], "write": []},
+    "user": {"read": ["ep-118", "ep-119", "ep-120", "ep-121", "ep-122"], "write": []},
+    "badge": {"read": ["ep-120", "ep-121"], "write": []},
+    "user_badge": {"read": ["ep-120", "ep-122"], "write": ["ep-121", "ep-122"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "setting.PanicInDevOrTesting": ["ep-114", "ep-115", "ep-116", "ep-117"]
+  },
+  "endpoints_by_model_class": {
+    "ActionRunner": ["ep-114", "ep-115", "ep-116", "ep-117"],
+    "EmailAddress": ["ep-118", "ep-119"],
+    "Badge": ["ep-120", "ep-121", "ep-122"],
+    "UserBadge": ["ep-120", "ep-121", "ep-122"]
+  },
+  "endpoints_by_service_class": {
+    "shared.ListRunners": ["ep-114"],
+    "shared.GetRunner": ["ep-115"],
+    "shared.DeleteRunner": ["ep-116"],
+    "shared.UpdateRunner": ["ep-117"],
+    "convert.ToActionRunner": ["ep-114", "ep-115", "ep-117"],
+    "convert.ToEmailSearch": ["ep-118", "ep-119"],
+    "user_model.SearchEmails": ["ep-118", "ep-119"],
+    "user_model.GetUserBadges": ["ep-120"],
+    "user_model.AddUserBadges": ["ep-121"],
+    "user_model.RemoveUserBadges": ["ep-122"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-114": {"reads": ["action_runner"], "writes": []},
+    "ep-115": {"reads": ["action_runner"], "writes": []},
+    "ep-116": {"reads": ["action_runner"], "writes": ["action_runner"]},
+    "ep-117": {"reads": ["action_runner"], "writes": ["action_runner", "action_tasks_version"]},
+    "ep-118": {"reads": ["email_address", "user"], "writes": []},
+    "ep-119": {"reads": ["email_address", "user"], "writes": []},
+    "ep-120": {"reads": ["user", "badge", "user_badge"], "writes": []},
+    "ep-121": {"reads": ["user", "badge", "user_badge"], "writes": ["user_badge"]},
+    "ep-122": {"reads": ["user", "user_badge", "badge"], "writes": ["user_badge"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-114": ["setting.PanicInDevOrTesting"],
+    "ep-115": ["setting.PanicInDevOrTesting"],
+    "ep-116": ["setting.PanicInDevOrTesting"],
+    "ep-117": ["setting.PanicInDevOrTesting"]
+  }
+}

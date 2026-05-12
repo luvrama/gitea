@@ -1,0 +1,50 @@
+{
+  "endpoints_by_database_table": {
+    "user_blocking": {"read": ["ep-190", "ep-191", "ep-192", "ep-193"], "write": ["ep-192", "ep-193"]},
+    "user": {"read": ["ep-190", "ep-191", "ep-192", "ep-193", "ep-194", "ep-195"], "write": []},
+    "watch": {"read": ["ep-194", "ep-195"], "write": ["ep-192"]},
+    "repository": {"read": ["ep-194", "ep-195"], "write": ["ep-192"]},
+    "follow": {"read": [], "write": ["ep-192"]},
+    "star": {"read": [], "write": ["ep-192"]},
+    "issue_assignees": {"read": [], "write": ["ep-192"]},
+    "collaboration": {"read": ["ep-194", "ep-195"], "write": ["ep-192"]},
+    "repo_transfer": {"read": [], "write": ["ep-192"]},
+    "repo_unit": {"read": ["ep-194", "ep-195"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "setting.API.DefaultPagingNum": ["ep-190", "ep-194", "ep-195"],
+    "setting.API.MaxResponseItems": ["ep-190", "ep-194", "ep-195"]
+  },
+  "endpoints_by_model_class": {
+    "user_model.Blocking": ["ep-190", "ep-191", "ep-192", "ep-193"],
+    "user_model.User": ["ep-190", "ep-191", "ep-192", "ep-193", "ep-194", "ep-195"],
+    "repo_model.Repository": ["ep-194", "ep-195"],
+    "repo_model.Watch": ["ep-194", "ep-195"]
+  },
+  "endpoints_by_service_class": {
+    "user_service.BlockUser": ["ep-192"],
+    "user_service.UnblockUser": ["ep-193"],
+    "shared.ListBlocks": ["ep-190"],
+    "shared.CheckUserBlock": ["ep-191"],
+    "shared.BlockUser": ["ep-192"],
+    "shared.UnblockUser": ["ep-193"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-190": {"reads": ["user_blocking", "user"], "writes": []},
+    "ep-191": {"reads": ["user", "user_blocking"], "writes": []},
+    "ep-192": {"reads": ["user", "user_blocking"], "writes": ["user_blocking", "follow", "star", "watch", "repository", "issue_assignees", "collaboration", "repo_transfer"]},
+    "ep-193": {"reads": ["user", "user_blocking"], "writes": ["user_blocking"]},
+    "ep-194": {"reads": ["repository", "watch", "repo_unit", "collaboration", "user"], "writes": []},
+    "ep-195": {"reads": ["repository", "watch", "repo_unit", "collaboration", "user"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-190": ["setting.API.DefaultPagingNum", "setting.API.MaxResponseItems"],
+    "ep-191": [],
+    "ep-192": [],
+    "ep-193": [],
+    "ep-194": ["setting.API.DefaultPagingNum", "setting.API.MaxResponseItems"],
+    "ep-195": ["setting.API.DefaultPagingNum", "setting.API.MaxResponseItems"]
+  }
+}

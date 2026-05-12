@@ -1,0 +1,136 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 3,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "language_stat",
+      "entity_class": "repo_model.LanguageStat",
+      "file_path": "models/repo/language_stats.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "INDEX", "NOT NULL"]},
+        {"name": "commit_id", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_primary", "type": "BOOLEAN", "code_type": "bool", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "language", "type": "VARCHAR(50)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["VARCHAR(50)", "UNIQUE(s)", "INDEX", "NOT NULL"]},
+        {"name": "size", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL", "DEFAULT 0"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "CREATED"]}
+      ],
+      "indexes": [
+        {"name": "UQE_language_stat_s", "columns": ["repo_id", "language"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "issue_pin",
+      "entity_class": "issues_model.IssuePin",
+      "file_path": "models/issues/issue_pin.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)", "NOT NULL"]},
+        {"name": "is_pull", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "pin_order", "type": "INTEGER", "code_type": "int", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["DEFAULT 0"]}
+      ],
+      "indexes": [
+        {"name": "UQE_issue_pin_s", "columns": ["repo_id", "issue_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "stopwatch",
+      "entity_class": "issues_model.Stopwatch",
+      "file_path": "models/issues/stopwatch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]}
+      ],
+      "indexes": [
+        {"name": "IDX_stopwatch_issue_id", "columns": ["issue_id"], "unique": false},
+        {"name": "IDX_stopwatch_user_id", "columns": ["user_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-375",
+      "path": "/api/v1/repos/{owner}/{repo}/languages",
+      "operations": [
+        {"store_type": "database", "store_name": "language_stat", "operation": "SELECT", "method": "repo_model.GetLanguageStats", "description": "Get all language stats for repo"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-376",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "Get issue by index"},
+        {"store_type": "database", "store_name": "issue_pin", "operation": "SELECT", "method": "issues_model.getPinnedIssuesNum", "description": "Count existing pins"},
+        {"store_type": "database", "store_name": "issue_pin", "operation": "SELECT", "method": "issues_model.getPinnedIssuesMaxPinOrder", "description": "Get max pin order"},
+        {"store_type": "database", "store_name": "issue_pin", "operation": "INSERT", "method": "issues_model.PinIssue", "description": "Insert pin record"},
+        {"store_type": "database", "store_name": "comment", "operation": "INSERT", "method": "issues_model.CreateComment", "description": "Create pin comment"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-377",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "Get issue by index"},
+        {"store_type": "database", "store_name": "issue_pin", "operation": "DELETE", "method": "issues_model.UnpinIssue", "description": "Delete pin record"},
+        {"store_type": "database", "store_name": "comment", "operation": "INSERT", "method": "issues_model.CreateComment", "description": "Create unpin comment"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-378",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin/{position}",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueByIndex", "description": "Get issue by index"},
+        {"store_type": "database", "store_name": "issue_pin", "operation": "SELECT", "method": "issues_model.GetIssuePin", "description": "Get pin record"},
+        {"store_type": "database", "store_name": "issue_pin", "operation": "UPDATE", "method": "issues_model.MovePin", "description": "Shift other pins"},
+        {"store_type": "database", "store_name": "issue_pin", "operation": "UPDATE", "method": "issues_model.MovePin", "description": "Update target pin order"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-379",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/pinned",
+      "operations": [
+        {"store_type": "database", "store_name": "issue_pin", "operation": "SELECT", "method": "issues_model.GetIssuePinsByRepoID", "description": "Get pins for repo"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetPinnedIssues", "description": "Get issues by IDs"},
+        {"store_type": "database", "store_name": "multiple", "operation": "SELECT", "method": "IssueList.LoadAttributes", "description": "Load labels, milestones, assignees"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-380",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/pinned",
+      "operations": [
+        {"store_type": "database", "store_name": "issue_pin", "operation": "SELECT", "method": "issues_model.GetIssuePinsByRepoID", "description": "Get pins for repo (is_pull=true)"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "GetPinnedIssues", "description": "Get issues by IDs"},
+        {"store_type": "database", "store_name": "pull_request", "operation": "SELECT", "method": "IssueList.LoadPullRequests", "description": "Load PR records"},
+        {"store_type": "database", "store_name": "multiple", "operation": "SELECT", "method": "PullRequest.LoadAttributes", "description": "Load base/head repos"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-381",
+      "path": "/api/v1/repos/{owner}/{repo}/new_pin_allowed",
+      "operations": [
+        {"store_type": "database", "store_name": "issue_pin", "operation": "SELECT", "method": "issues_model.IsNewPinAllowed", "description": "Count issue pins"},
+        {"store_type": "database", "store_name": "issue_pin", "operation": "SELECT", "method": "issues_model.IsNewPinAllowed", "description": "Count PR pins"}
+      ]
+    }
+  ]
+}

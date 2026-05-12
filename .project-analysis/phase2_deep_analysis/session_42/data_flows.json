@@ -1,0 +1,517 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-285",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}",
+      "description": "Retrieves a workflow run by ID, loads its latest attempt, and converts to API response",
+      "steps": [
+        {
+          "step": 1,
+          "component": "GetWorkflowRun",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ctx with run path param",
+          "output": "ActionRun or error",
+          "operations": ["Calls getCurrentRepoActionRunByID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_run", "description": "Get run by id and repo_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToActionWorkflowRun",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "ActionRun, nil attempt",
+          "output": "api.ActionWorkflowRun",
+          "operations": ["LoadRepo", "LoadTriggerUser", "GetLatestAttempt", "LoadAttributes on attempt", "Build API response"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load repo"},
+            {"operation": "SELECT", "table": "user", "description": "Load trigger user"},
+            {"operation": "SELECT", "table": "action_run_attempt", "description": "Get latest attempt by repo_id and id"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRun",
+          "to": "api.ActionWorkflowRun",
+          "component": "convert.ToActionWorkflowRun",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Index", "target_field": "RunNumber", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status/Conclusion", "transformation": "computed"},
+            {"source_field": "Ref", "target_field": "HeadBranch", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Run not found", "handler": "getCurrentRepoActionRunByID", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-286",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}",
+      "description": "Retrieves a specific workflow run attempt by run ID and attempt number",
+      "steps": [
+        {
+          "step": 1,
+          "component": "getCurrentRepoActionRunByID",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ctx with run path param",
+          "output": "ActionRun",
+          "operations": ["Get run by repo_id and run_id"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_run", "description": "Get run by id and repo_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_model.GetRunAttemptByRunIDAndAttemptNum",
+          "type": "repository",
+          "file_path": "models/actions/run_attempt.go",
+          "input": "runID, attemptNum",
+          "output": "ActionRunAttempt",
+          "operations": ["Query attempt by run_id and attempt number"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_run_attempt", "description": "Get attempt by run_id and attempt number"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToActionWorkflowRun",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "ActionRun, ActionRunAttempt",
+          "output": "api.ActionWorkflowRun",
+          "operations": ["LoadRepo", "LoadTriggerUser", "LoadAttributes on attempt", "Build API response with attempt-specific timing/status"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load repo"},
+            {"operation": "SELECT", "table": "user", "description": "Load trigger user for attempt"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunAttempt",
+          "to": "api.ActionWorkflowRun",
+          "component": "convert.ToActionWorkflowRun",
+          "mappings": [
+            {"source_field": "Attempt", "target_field": "RunAttempt", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status/Conclusion", "transformation": "computed"},
+            {"source_field": "Started", "target_field": "StartedAt", "transformation": "computed"},
+            {"source_field": "Stopped", "target_field": "CompletedAt", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Run not found", "handler": "getCurrentRepoActionRunByID", "response_code": 404, "response": "notFound"},
+        {"condition": "Attempt not found", "handler": "getCurrentRepoActionRunAttemptByNumber", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-287",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun",
+      "description": "Reruns an entire workflow run by creating a new attempt with all jobs",
+      "steps": [
+        {
+          "step": 1,
+          "component": "getCurrentRepoActionRunJobsByID",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ctx with run path param",
+          "output": "ActionRun, ActionJobList",
+          "operations": ["Get run", "Get latest attempt jobs"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run", "description": "Get run by id and repo_id"},
+            {"operation": "SELECT", "table": "action_run_job", "description": "Get latest attempt jobs"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.RerunWorkflowRunJobs",
+          "type": "service",
+          "file_path": "services/actions/rerun.go",
+          "input": "repo, run, doer, jobs",
+          "output": "ActionRunAttempt",
+          "operations": ["validateRerun", "createOriginalAttemptForLegacyRun if needed", "buildRerunPlan", "execRerunPlan"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run_attempt", "description": "Get latest attempt"},
+            {"operation": "SELECT", "table": "action_run_job", "description": "Get template jobs"},
+            {"operation": "SELECT", "table": "action_variable", "description": "Get run variables"},
+            {"operation": "INSERT", "table": "action_run_attempt", "description": "Insert new attempt"},
+            {"operation": "UPDATE", "table": "action_run", "description": "Update latest_attempt_id"},
+            {"operation": "INSERT", "table": "action_run_job", "description": "Insert cloned jobs"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToActionWorkflowRun",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "ActionRun, nil",
+          "output": "api.ActionWorkflowRun",
+          "operations": ["Convert run to API response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "ActionRunJob (template)",
+          "to": "ActionRunJob (new attempt)",
+          "component": "cloneRunJobForAttempt",
+          "mappings": [
+            {"source_field": "WorkflowPayload", "target_field": "WorkflowPayload", "transformation": "direct_copy"},
+            {"source_field": "JobID", "target_field": "JobID", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Run not done", "handler": "handleWorkflowRerunError", "response_code": 400, "response": "error"},
+        {"condition": "Workflow disabled", "handler": "handleWorkflowRerunError", "response_code": 400, "response": "error"},
+        {"condition": "Max attempts reached", "handler": "handleWorkflowRerunError", "response_code": 400, "response": "error"},
+        {"condition": "Attempt already exists", "handler": "handleWorkflowRerunError", "response_code": 409, "response": "conflict"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-288",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun-failed-jobs",
+      "description": "Reruns only failed/cancelled jobs in a workflow run",
+      "steps": [
+        {
+          "step": 1,
+          "component": "getCurrentRepoActionRunJobsByID",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ctx with run path param",
+          "output": "ActionRun, ActionJobList",
+          "operations": ["Get run", "Get latest attempt jobs"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run", "description": "Get run"},
+            {"operation": "SELECT", "table": "action_run_job", "description": "Get latest attempt jobs"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.GetFailedJobsForRerun",
+          "type": "service",
+          "file_path": "services/actions/rerun.go",
+          "input": "ActionJobList",
+          "output": "filtered ActionJobList",
+          "operations": ["Filter jobs with status Failure or Cancelled"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions_service.RerunWorkflowRunJobs",
+          "type": "service",
+          "file_path": "services/actions/rerun.go",
+          "input": "repo, run, doer, failed jobs",
+          "output": "ActionRunAttempt",
+          "operations": ["Same as ep-287 step 2 but with filtered jobs + downstream expansion"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run_attempt", "description": "Get latest attempt"},
+            {"operation": "INSERT", "table": "action_run_attempt", "description": "Insert new attempt"},
+            {"operation": "INSERT", "table": "action_run_job", "description": "Insert cloned jobs"},
+            {"operation": "UPDATE", "table": "action_run", "description": "Update latest_attempt_id"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Run not done", "handler": "handleWorkflowRerunError", "response_code": 400, "response": "error"},
+        {"condition": "Attempt already exists", "handler": "handleWorkflowRerunError", "response_code": 409, "response": "conflict"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-289",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs/{job_id}/rerun",
+      "description": "Reruns a specific workflow job and its downstream dependents",
+      "steps": [
+        {
+          "step": 1,
+          "component": "getCurrentRepoActionRunJobsByID",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ctx with run path param",
+          "output": "ActionRun, ActionJobList",
+          "operations": ["Get run", "Get latest attempt jobs"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run", "description": "Get run"},
+            {"operation": "SELECT", "table": "action_run_job", "description": "Get latest attempt jobs"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "RerunWorkflowJob (find job)",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "jobs, job_id path param",
+          "output": "target job",
+          "operations": ["Find job by ID in jobs list using slices.IndexFunc"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions_service.RerunWorkflowRunJobs",
+          "type": "service",
+          "file_path": "services/actions/rerun.go",
+          "input": "repo, run, doer, [targetJob]",
+          "output": "ActionRunAttempt",
+          "operations": ["Validate, build plan with single job + dependents, execute plan"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "action_run_attempt", "description": "Insert new attempt"},
+            {"operation": "INSERT", "table": "action_run_job", "description": "Insert cloned jobs"},
+            {"operation": "UPDATE", "table": "action_run", "description": "Update latest_attempt_id"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "actions_model.GetRunJobByAttemptJobID",
+          "type": "repository",
+          "file_path": "models/actions/run_job.go",
+          "input": "runID, newAttemptID, attemptJobID",
+          "output": "rerun job",
+          "operations": ["Find the new job in the new attempt by attempt_job_id"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_run_job", "description": "Get rerun job by attempt_job_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToActionWorkflowJob",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "repo, nil task, job",
+          "output": "api.ActionWorkflowJob",
+          "operations": ["Load job attributes, load task/steps if available, convert"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run", "description": "Load run for job"},
+            {"operation": "SELECT", "table": "action_task", "description": "Load task if effectiveTaskID > 0"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Job not in jobs list", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Run not done", "handler": "handleWorkflowRerunError", "response_code": 400, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-290",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs",
+      "description": "Lists all jobs for a workflow run's latest attempt with optional status filter",
+      "steps": [
+        {
+          "step": 1,
+          "component": "ListWorkflowRunJobs",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ctx with run path param",
+          "output": "void (delegates to shared.ListJobs)",
+          "operations": ["Validate runID > 0", "Get run to obtain LatestAttemptID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_run", "description": "Get run by repo_id and run_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListJobs",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/action.go",
+          "input": "ownerID=0, repoID, runID, runAttemptID",
+          "output": "api.ActionWorkflowJobsResponse",
+          "operations": ["Parse status filters", "FindAndCount jobs", "LoadAttributes", "Convert each job"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run_job", "description": "Find jobs with filters"},
+            {"operation": "SELECT", "table": "action_run", "description": "Load runs for jobs"},
+            {"operation": "SELECT", "table": "repository", "description": "Load repos for jobs"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunJob",
+          "to": "api.ActionWorkflowJob",
+          "component": "convert.ToActionWorkflowJob",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status/Conclusion", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "runID <= 0", "handler": "ctx.APIError", "response_code": 400, "response": "error"},
+        {"condition": "Run not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Invalid status", "handler": "ctx.APIError", "response_code": 400, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-291",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}/jobs",
+      "description": "Lists all jobs for a specific workflow run attempt",
+      "steps": [
+        {
+          "step": 1,
+          "component": "getCurrentRepoActionRunAttemptByNumber",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ctx with run and attempt path params",
+          "output": "ActionRun, ActionRunAttempt",
+          "operations": ["Get run by repo+id", "Get attempt by run_id+attempt_num"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run", "description": "Get run"},
+            {"operation": "SELECT", "table": "action_run_attempt", "description": "Get attempt by run_id and attempt number"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListJobs",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/action.go",
+          "input": "ownerID=0, repoID, runID, attemptID",
+          "output": "api.ActionWorkflowJobsResponse",
+          "operations": ["Parse status filters", "FindAndCount jobs filtered by attempt", "LoadAttributes", "Convert"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run_job", "description": "Find jobs for run+attempt"},
+            {"operation": "SELECT", "table": "action_run", "description": "Load runs"},
+            {"operation": "SELECT", "table": "repository", "description": "Load repos"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunJob",
+          "to": "api.ActionWorkflowJob",
+          "component": "convert.ToActionWorkflowJob",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status/Conclusion", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Run not found", "handler": "getCurrentRepoActionRunByID", "response_code": 404, "response": "notFound"},
+        {"condition": "Attempt not found", "handler": "getCurrentRepoActionRunAttemptByNumber", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-292",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}",
+      "description": "Gets a specific workflow job by ID, verifying it belongs to the repo",
+      "steps": [
+        {
+          "step": 1,
+          "component": "GetWorkflowJob",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "ctx with job_id path param",
+          "output": "ActionRunJob",
+          "operations": ["Get job by ID", "Verify job.RepoID matches ctx.Repo.Repository.ID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_run_job", "description": "Get job by ID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToActionWorkflowJob",
+          "type": "service",
+          "file_path": "services/convert/convert.go",
+          "input": "repo, nil task, job",
+          "output": "api.ActionWorkflowJob",
+          "operations": ["LoadAttributes (run+repo)", "Load task by effectiveTaskID", "Load steps", "Load runner", "Convert"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run", "description": "Load run for job"},
+            {"operation": "SELECT", "table": "action_task", "description": "Load task"},
+            {"operation": "SELECT", "table": "action_task_step", "description": "Load task steps"},
+            {"operation": "SELECT", "table": "action_runner", "description": "Load runner name"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunJob",
+          "to": "api.ActionWorkflowJob",
+          "component": "convert.ToActionWorkflowJob",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "RunsOn", "target_field": "Labels", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status/Conclusion", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Job not found or wrong repo", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

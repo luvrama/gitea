@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "GPG key management feature can be disabled per user login type",
+      "location": {"class": "user", "method": "CreateUserGPGKey", "file_path": "routers/api/v1/user/gpg_key.go", "line_number": 119},
+      "condition": "user_model.IsFeatureDisabledWithLoginType(ctx.Doer, setting.UserFeatureManageGPGKeys)",
+      "action": "Return 404 Not Found (hides feature existence)",
+      "affected_endpoints": ["ep-188", "ep-189"],
+      "code_snippet": "if user_model.IsFeatureDisabledWithLoginType(ctx.Doer, setting.UserFeatureManageGPGKeys) {"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "GPG key ID must not be empty after trimming leading zeros",
+      "location": {"class": "user", "method": "VerifyUserGPGKey", "file_path": "routers/api/v1/user/gpg_key.go", "line_number": 161},
+      "condition": "form.KeyID == \"\" after strings.TrimLeft(form.KeyID, \"0\")",
+      "action": "Return 404 Not Found",
+      "affected_endpoints": ["ep-187"],
+      "code_snippet": "form.KeyID = strings.TrimLeft(form.KeyID, \"0\")\nif form.KeyID == \"\" {"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Verification token is time-based with 1-minute granularity, valid for current minute (minutes=1) and previous minute (minutes=0)",
+      "location": {"class": "asymkey_model", "method": "VerificationToken", "file_path": "models/asymkey/gpg_key_verify.go", "line_number": 82},
+      "condition": "Always computed from current time truncated to minute + user metadata",
+      "action": "Returns SHA256(time:createdUnix:name:email:id)",
+      "affected_endpoints": ["ep-186", "ep-187", "ep-188"],
+      "code_snippet": "return base.EncodeSha256(time.Now().Truncate(1*time.Minute).Add(time.Duration(minutes)*time.Minute).Format(time.RFC1123Z) + \":\" + ...)"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Signature verification tries multiple line ending variants (token, token+\\n, token+\\r\\n for add; token, token+\\n, token+\\n\\n for verify)",
+      "location": {"class": "asymkey_model", "method": "AddGPGKey", "file_path": "models/asymkey/gpg_key_add.go", "line_number": 75},
+      "condition": "First signature check fails",
+      "action": "Retry with alternative line endings",
+      "affected_endpoints": ["ep-187", "ep-188"],
+      "code_snippet": "signer, err = openpgp.CheckArmoredDetachedSignature(ekeys, strings.NewReader(token+\"\\n\"), strings.NewReader(signature), nil)"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "GPG key ID must be unique across all users",
+      "location": {"class": "asymkey_model", "method": "AddGPGKey", "file_path": "models/asymkey/gpg_key_add.go", "line_number": 107},
+      "condition": "Key with same key_id already exists in gpg_key table",
+      "action": "Return ErrGPGKeyIDAlreadyUsed",
+      "affected_endpoints": ["ep-188"],
+      "code_snippet": "has, err := db.GetEngine(ctx).Where(\"key_id=?\", ekey.PrimaryKey.KeyIdString()).Get(new(GPGKey))"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "Without signature, at least one GPG key email must match an activated user email",
+      "location": {"class": "asymkey_model", "method": "parseGPGKey", "file_path": "models/asymkey/gpg_key.go", "line_number": 155},
+      "condition": "!verified && len(emails) == 0",
+      "action": "Return ErrGPGNoEmailFound",
+      "affected_endpoints": ["ep-188"],
+      "code_snippet": "if !verified {\n\tif len(emails) == 0 {\n\t\treturn nil, ErrGPGNoEmailFound{failedEmails, e.PrimaryKey.KeyIdString()}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "With valid signature, key is marked as verified and email matching is skipped",
+      "location": {"class": "asymkey_model", "method": "AddGPGKey", "file_path": "models/asymkey/gpg_key_add.go", "line_number": 88},
+      "condition": "signature != \"\" and signature verification succeeds",
+      "action": "Set verified=true, bypass email requirement",
+      "affected_endpoints": ["ep-188"],
+      "code_snippet": "ekeys = []*openpgp.Entity{signer}\nverified = true"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Multiple keys in same armored block are deduplicated by primary key ID",
+      "location": {"class": "asymkey_model", "method": "AddGPGKey", "file_path": "models/asymkey/gpg_key_add.go", "line_number": 92},
+      "condition": "len(ekeys) > 1",
+      "action": "Coalesce subkeys and identities for duplicate primary key IDs",
+      "affected_endpoints": ["ep-188"],
+      "code_snippet": "if len(ekeys) > 1 {\n\tid2key := map[string]*openpgp.Entity{}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "authorization",
+      "description": "GPG key ownership verified by owner_id match on get/delete",
+      "location": {"class": "asymkey_model", "method": "GetGPGKeyForUserByID", "file_path": "models/asymkey/gpg_key.go", "line_number": 89},
+      "condition": "Key id and owner_id must both match",
+      "action": "Return ErrGPGKeyNotExist if not owned by user",
+      "affected_endpoints": ["ep-185", "ep-189"],
+      "code_snippet": "has, err := db.GetEngine(ctx).Where(\"id=? AND owner_id=?\", keyID, ownerID).Get(key)"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Delete is idempotent - returns nil if key doesn't exist",
+      "location": {"class": "asymkey_model", "method": "DeleteGPGKey", "file_path": "models/asymkey/gpg_key.go", "line_number": 170},
+      "condition": "IsErrGPGKeyNotExist(err)",
+      "action": "Return nil (no error)",
+      "affected_endpoints": ["ep-189"],
+      "code_snippet": "if IsErrGPGKeyNotExist(err) {\n\treturn nil\n}"
+    }
+  ]
+}

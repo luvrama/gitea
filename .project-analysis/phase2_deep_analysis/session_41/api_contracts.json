@@ -1,0 +1,307 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-277",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/jobs",
+      "controller_class": "Action",
+      "controller_method": "ListWorkflowJobs",
+      "description": "Lists all jobs for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "status", "type": "string", "required": false, "default": null, "validation": ["pending|queued|in_progress|failure|success|skipped"]},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionWorkflowJobsResponse",
+          "fields": [
+            {"name": "total_count", "type": "int64", "description": "total number of jobs"},
+            {"name": "workflow_jobs", "type": "[]ActionWorkflowJob", "description": "list of workflow jobs"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "invalid status filter value"},
+          {"status_code": 404, "type": "notFound", "condition": "repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-278",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs",
+      "controller_class": "Action",
+      "controller_method": "ListWorkflowRuns",
+      "description": "Lists all runs for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "event", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "branch", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "status", "type": "string", "required": false, "default": null, "validation": ["pending|queued|in_progress|failure|success|skipped"]},
+          {"name": "actor", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "head_sha", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionWorkflowRunsResponse",
+          "fields": [
+            {"name": "total_count", "type": "int64", "description": "total number of runs"},
+            {"name": "workflow_runs", "type": "[]ActionWorkflowRun", "description": "list of workflow runs"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "invalid status filter value"},
+          {"status_code": 404, "type": "notFound", "condition": "repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-279",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/tasks",
+      "controller_class": "repo",
+      "controller_method": "ListActionTasks",
+      "description": "List a repository's action tasks",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["max 50"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionTaskResponse",
+          "fields": [
+            {"name": "total_count", "type": "int64", "description": "total number of tasks"},
+            {"name": "entries", "type": "[]ActionTask", "description": "list of action tasks"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "invalid request"},
+          {"status_code": 403, "type": "forbidden", "condition": "insufficient permissions"},
+          {"status_code": 404, "type": "notFound", "condition": "repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-280",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows",
+      "controller_class": "repo",
+      "controller_method": "ActionsListRepositoryWorkflows",
+      "description": "List repository workflows from default branch",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionWorkflowResponse",
+          "fields": [
+            {"name": "total_count", "type": "int64", "description": "total number of workflows"},
+            {"name": "workflows", "type": "[]ActionWorkflow", "description": "list of workflows"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "invalid request"},
+          {"status_code": 403, "type": "forbidden", "condition": "insufficient permissions"},
+          {"status_code": 404, "type": "notFound", "condition": "repository not found"},
+          {"status_code": 500, "type": "error", "condition": "internal error reading git tree"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-281",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}",
+      "controller_class": "repo",
+      "controller_method": "ActionsGetWorkflow",
+      "description": "Get a specific workflow by ID (filename)",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "workflow_id", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "ActionWorkflow",
+          "fields": [
+            {"name": "id", "type": "string", "description": "workflow filename"},
+            {"name": "name", "type": "string", "description": "workflow name from YAML or filename"},
+            {"name": "path", "type": "string", "description": "full path in repo"},
+            {"name": "state", "type": "string", "description": "active or disabled_manually"},
+            {"name": "url", "type": "string", "description": "API URL"},
+            {"name": "html_url", "type": "string", "description": "web URL"},
+            {"name": "badge_url", "type": "string", "description": "badge SVG URL"},
+            {"name": "created_at", "type": "time.Time", "description": "commit author time"},
+            {"name": "updated_at", "type": "time.Time", "description": "commit author time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "workflow file not found in default branch"},
+          {"status_code": 500, "type": "error", "condition": "internal error reading git tree"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-282",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable",
+      "controller_class": "repo",
+      "controller_method": "ActionsDisableWorkflow",
+      "description": "Disable a workflow",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "workflow_id", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "insufficient permissions"},
+          {"status_code": 404, "type": "notFound", "condition": "workflow not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-283",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+      "controller_class": "repo",
+      "controller_method": "ActionsDispatchWorkflow",
+      "description": "Create a workflow dispatch event to trigger a workflow run",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "workflow_id", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "return_run_details", "type": "boolean", "required": false, "default": false, "validation": []}
+        ],
+        "headers": [],
+        "body": {
+          "type": "CreateActionWorkflowDispatch",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "ref", "type": "string", "required": true, "validation": ["must not be empty"], "description": "git ref (branch/tag) to run workflow on"},
+            {"name": "inputs", "type": "map[string]string", "required": false, "validation": [], "description": "workflow input values"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "workflow is disabled or permission denied"},
+          {"status_code": 404, "type": "notFound", "condition": "workflow or ref not found"},
+          {"status_code": 422, "type": "validationError", "condition": "ref is empty"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-284",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable",
+      "controller_class": "repo",
+      "controller_method": "ActionsEnableWorkflow",
+      "description": "Enable a workflow",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "workflow_id", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "insufficient permissions"},
+          {"status_code": 404, "type": "notFound", "condition": "workflow not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

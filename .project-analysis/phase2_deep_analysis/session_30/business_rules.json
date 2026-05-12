@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Package access requires at least read permission; write operations require write access or site admin",
+      "location": {"class": "api", "method": "reqPackageAccess", "file_path": "routers/api/v1/api.go", "line_number": 232},
+      "condition": "ctx.Package.AccessMode < accessMode && !ctx.IsUserSiteAdmin()",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-202", "ep-203", "ep-204", "ep-205", "ep-206", "ep-207"],
+      "code_snippet": "if ctx.Package.AccessMode < accessMode && !ctx.IsUserSiteAdmin() {\n\tctx.APIError(http.StatusForbidden, ...)\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "business_logic",
+      "description": "Package version deletion defers blob cleanup to cron task - blobs are NOT deleted immediately",
+      "location": {"class": "packages_service", "method": "RemovePackageVersion", "file_path": "services/packages/packages.go", "line_number": 290},
+      "condition": "Always on version deletion",
+      "action": "Delete version/files/properties in DB only; blobs cleaned by cleanup_packages cron",
+      "affected_endpoints": ["ep-202"],
+      "code_snippet": "// HINT: PACKAGE-DEFER-STORAGE-DELETE: Blobs are not deleted immediately"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Specialization hook called before removing package version for type-specific cleanup",
+      "location": {"class": "packages_service", "method": "RemovePackageVersion", "file_path": "services/packages/packages.go", "line_number": 287},
+      "condition": "Before any deletion",
+      "action": "Call GetSpecManager().Get(pd.Package.Type).OnBeforeRemovePackageVersion",
+      "affected_endpoints": ["ep-202"],
+      "code_snippet": "if err := GetSpecManager().Get(pd.Package.Type).OnBeforeRemovePackageVersion(ctx, doer, pd); err != nil {"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "LinkPackage requires package owner and repository owner to be the same",
+      "location": {"class": "packages_service", "method": "LinkToRepository", "file_path": "services/packages/package_update.go", "line_number": 18},
+      "condition": "pkg.OwnerID != repo.OwnerID",
+      "action": "Return ErrPermissionDenied",
+      "affected_endpoints": ["ep-206"],
+      "code_snippet": "if pkg.OwnerID != repo.OwnerID {\n\treturn util.ErrPermissionDenied\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "LinkPackage requires package to not already be linked to a repository",
+      "location": {"class": "packages_service", "method": "LinkToRepository", "file_path": "services/packages/package_update.go", "line_number": 21},
+      "condition": "pkg.RepoID > 0",
+      "action": "Return ErrInvalidArgument",
+      "affected_endpoints": ["ep-206"],
+      "code_snippet": "if pkg.RepoID > 0 {\n\treturn util.ErrInvalidArgument\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "authorization",
+      "description": "LinkPackage requires doer to have write access to TypePackages unit on the target repository",
+      "location": {"class": "packages_service", "method": "LinkToRepository", "file_path": "services/packages/package_update.go", "line_number": 27},
+      "condition": "!perms.CanWrite(unit.TypePackages)",
+      "action": "Return ErrPermissionDenied",
+      "affected_endpoints": ["ep-206"],
+      "code_snippet": "if !perms.CanWrite(unit.TypePackages) {\n\treturn util.ErrPermissionDenied\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "UnlinkPackage requires package to be currently linked (RepoID > 0)",
+      "location": {"class": "packages_service", "method": "UnlinkFromRepository", "file_path": "services/packages/package_update.go", "line_number": 37},
+      "condition": "pkg.RepoID == 0",
+      "action": "Return ErrInvalidArgument",
+      "affected_endpoints": ["ep-207"],
+      "code_snippet": "if pkg.RepoID == 0 {\n\treturn util.ErrInvalidArgument\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "authorization",
+      "description": "UnlinkPackage requires doer to be owner (for user packages) or org admin (for org packages)",
+      "location": {"class": "packages_service", "method": "UnlinkFromRepository", "file_path": "services/packages/package_update.go", "line_number": 55},
+      "condition": "Non-admin user who is not owner or org admin",
+      "action": "Return error (no permission to unlink)",
+      "affected_endpoints": ["ep-207"],
+      "code_snippet": "if doer.ID != pkg.OwnerID {\n\treturn fmt.Errorf(\"no permission to unlink...\")\n}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "SearchLatestVersions uses MAX(id) grouped by package_id to find latest version",
+      "location": {"class": "packages_model", "method": "SearchLatestVersions", "file_path": "models/packages/package_version.go", "line_number": 230},
+      "condition": "Always",
+      "action": "Select MAX(package_version.id) GROUP BY package_version.package_id",
+      "affected_endpoints": ["ep-205"],
+      "code_snippet": "Select(\"MAX(package_version.id)\")...GroupBy(\"package_version.package_id\")"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "PackageAssignmentAPI middleware resolves package descriptor including files when version is in path",
+      "location": {"class": "context", "method": "packageAssignment", "file_path": "services/context/package.go", "line_number": 68},
+      "condition": "version path param is not empty",
+      "action": "Load full PackageDescriptor with files, properties, metadata",
+      "affected_endpoints": ["ep-202", "ep-203"],
+      "code_snippet": "if version != \"\" {\n\tpv, err := packages_model.GetVersionByNameAndVersion(...)\n\tpkg.Descriptor, err = packages_model.GetPackageDescriptor(ctx, pv)\n}"
+    }
+  ]
+}

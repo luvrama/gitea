@@ -1,0 +1,47 @@
+{
+  "endpoints_by_database_table": {
+    "pull_request": {"read": ["ep-226", "ep-227", "ep-228", "ep-229", "ep-230", "ep-231", "ep-232", "ep-233"], "write": ["ep-226", "ep-227", "ep-229"]},
+    "issue": {"read": ["ep-227", "ep-229"], "write": ["ep-226", "ep-227", "ep-229"]},
+    "pull_auto_merge": {"read": ["ep-231"], "write": ["ep-229", "ep-231"]},
+    "label": {"read": ["ep-226", "ep-227"], "write": []},
+    "milestone": {"read": ["ep-226", "ep-227"], "write": []},
+    "protected_branch": {"read": ["ep-229"], "write": []},
+    "issue_dependency": {"read": ["ep-229"], "write": []},
+    "user": {"read": ["ep-226", "ep-232"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "git.MAX_GIT_DIFF_LINES": ["ep-233"],
+    "git.MAX_GIT_DIFF_LINE_CHARACTERS": ["ep-233"],
+    "repository.PULL_REQUEST_DEFAULT_MERGE_STYLE": ["ep-229"]
+  },
+  "endpoints_by_model_class": {
+    "issues_model.PullRequest": ["ep-226", "ep-227", "ep-228", "ep-229", "ep-230", "ep-231", "ep-232", "ep-233"],
+    "issues_model.Issue": ["ep-226", "ep-227", "ep-229"],
+    "pull_model.AutoMerge": ["ep-229", "ep-231"],
+    "git_service.CompareInfo": ["ep-226", "ep-232", "ep-233"]
+  },
+  "endpoints_by_service_class": {
+    "pull_service": ["ep-226", "ep-227", "ep-229", "ep-230", "ep-231"],
+    "issue_service": ["ep-227"],
+    "automerge": ["ep-229", "ep-231"],
+    "convert": ["ep-226", "ep-227", "ep-232", "ep-233"],
+    "gitdiff": ["ep-233"],
+    "git_service": ["ep-226", "ep-232", "ep-233"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-226": {"reads": ["pull_request", "label", "milestone", "user"], "writes": ["issue", "pull_request", "issue_assignees"]},
+    "ep-227": {"reads": ["pull_request", "issue", "label", "milestone"], "writes": ["issue", "pull_request", "issue_label", "issue_assignees"]},
+    "ep-228": {"reads": ["pull_request"], "writes": []},
+    "ep-229": {"reads": ["pull_request", "issue", "protected_branch", "issue_dependency"], "writes": ["pull_request", "issue", "pull_auto_merge"]},
+    "ep-230": {"reads": ["pull_request", "issue"], "writes": []},
+    "ep-231": {"reads": ["pull_request", "pull_auto_merge"], "writes": ["pull_auto_merge", "comment"]},
+    "ep-232": {"reads": ["pull_request", "user"], "writes": []},
+    "ep-233": {"reads": ["pull_request"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-229": ["repository.PULL_REQUEST_DEFAULT_MERGE_STYLE"],
+    "ep-233": ["git.MAX_GIT_DIFF_LINES", "git.MAX_GIT_DIFF_LINE_CHARACTERS"]
+  }
+}

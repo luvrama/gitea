@@ -1,0 +1,27 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "Object Storage (Attachments)",
+      "type": "cloud_service",
+      "base_url": "configured via [attachment] STORAGE_TYPE",
+      "client_class": "storage.ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "http_library": "minio-go or local filesystem",
+      "endpoints_called": [
+        {"method": "PUT", "path": "attachments/{uuid_path}", "request": {"type": "io.Reader", "key_fields": ["file_content"]}, "response": {"type": "int64", "key_fields": ["bytes_written"]}, "purpose": "Save attachment file"},
+        {"method": "DELETE", "path": "attachments/{uuid_path}", "request": {"type": "string", "key_fields": ["relative_path"]}, "response": {"type": "error", "key_fields": []}, "purpose": "Delete attachment file"}
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": null
+      },
+      "authentication": "configured per storage backend",
+      "used_by_endpoints": ["ep-259", "ep-261"],
+      "config_keys": ["attachment.STORAGE_TYPE", "attachment.MINIO_ENDPOINT", "attachment.MINIO_BUCKET"]
+    }
+  ]
+}

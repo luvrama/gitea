@@ -1,0 +1,300 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-367",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "controller_class": "repo",
+      "controller_method": "Get",
+      "description": "Get a repository by owner and name",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "repository ID"},
+            {"name": "owner", "type": "User", "description": "repository owner"},
+            {"name": "name", "type": "string", "description": "repository name"},
+            {"name": "full_name", "type": "string", "description": "owner/name"},
+            {"name": "description", "type": "string", "description": "repo description"},
+            {"name": "private", "type": "bool", "description": "is private"},
+            {"name": "fork", "type": "bool", "description": "is fork"},
+            {"name": "mirror", "type": "bool", "description": "is mirror"},
+            {"name": "size", "type": "int", "description": "size in KB"},
+            {"name": "default_branch", "type": "string", "description": "default branch name"},
+            {"name": "permissions", "type": "Permission", "description": "user permissions"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository or owner does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-368",
+      "http_method": "GET",
+      "path": "/api/v1/repositories/{id}",
+      "controller_class": "repo",
+      "controller_method": "GetByID",
+      "description": "Get a repository by its numeric ID",
+      "request": {
+        "path_params": [
+          {"name": "id", "type": "integer", "required": true, "validation": ["format: int64"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "repository ID"},
+            {"name": "name", "type": "string", "description": "repository name"},
+            {"name": "permissions", "type": "Permission", "description": "user permissions"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository does not exist or user has no access"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-369",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "controller_class": "repo",
+      "controller_method": "Edit",
+      "description": "Edit a repository's properties. Only fields that are set will be changed.",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "EditRepoOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "*string", "required": false, "validation": ["AlphaDashDot", "MaxSize(100)"], "description": "new name"},
+            {"name": "description", "type": "*string", "required": false, "validation": ["MaxSize(2048)"], "description": "description"},
+            {"name": "website", "type": "*string", "required": false, "validation": ["MaxSize(1024)"], "description": "website URL"},
+            {"name": "private", "type": "*bool", "required": false, "validation": [], "description": "visibility"},
+            {"name": "template", "type": "*bool", "required": false, "validation": [], "description": "is template"},
+            {"name": "has_issues", "type": "*bool", "required": false, "validation": [], "description": "enable issues"},
+            {"name": "has_wiki", "type": "*bool", "required": false, "validation": [], "description": "enable wiki"},
+            {"name": "has_pull_requests", "type": "*bool", "required": false, "validation": [], "description": "enable PRs"},
+            {"name": "has_projects", "type": "*bool", "required": false, "validation": [], "description": "enable projects"},
+            {"name": "archived", "type": "*bool", "required": false, "validation": [], "description": "archive state"},
+            {"name": "default_branch", "type": "*string", "required": false, "validation": [], "description": "default branch"},
+            {"name": "mirror_interval", "type": "*string", "required": false, "validation": [], "description": "mirror sync interval"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Repository",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User lacks admin permission"},
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid input (name conflict, invalid URL, etc.)"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-370",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "controller_class": "repo",
+      "controller_method": "Delete",
+      "description": "Delete a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User is not owner or org admin"},
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-371",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_templates",
+      "controller_class": "repo",
+      "controller_method": "GetIssueTemplates",
+      "description": "Get available issue templates for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.IssueTemplate",
+          "fields": [
+            {"name": "name", "type": "string", "description": "template name"},
+            {"name": "about", "type": "string", "description": "template description"},
+            {"name": "filename", "type": "string", "description": "template file name"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-372",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_config",
+      "controller_class": "repo",
+      "controller_method": "GetIssueConfig",
+      "description": "Returns the issue config for a repo",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.IssueConfig",
+          "fields": [
+            {"name": "blank_issues_enabled", "type": "bool", "description": "whether blank issues are allowed"},
+            {"name": "contact_links", "type": "[]IssueConfigContactLink", "description": "external contact links"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-373",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_config/validate",
+      "controller_class": "repo",
+      "controller_method": "ValidateIssueConfig",
+      "description": "Returns validation information for the issue config",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.IssueConfigValidation",
+          "fields": [
+            {"name": "valid", "type": "bool", "description": "whether config is valid"},
+            {"name": "message", "type": "string", "description": "error message if invalid"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-374",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/activities/feeds",
+      "controller_class": "repo",
+      "controller_method": "ListRepoActivityFeeds",
+      "description": "List a repository's activity feeds",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "date", "type": "string", "required": false, "default": null, "validation": ["format: date"]},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Activity",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "action ID"},
+            {"name": "op_type", "type": "string", "description": "operation type"},
+            {"name": "act_user", "type": "User", "description": "actor"},
+            {"name": "repo", "type": "Repository", "description": "repository"},
+            {"name": "created", "type": "time", "description": "creation time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

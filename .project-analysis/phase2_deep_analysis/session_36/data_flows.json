@@ -1,0 +1,476 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-240",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "description": "Fetch a single release by ID, verify access to drafts, load attributes, return API response",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetRelease",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release.go",
+          "input": "context with repo and path param id",
+          "output": "*repo_model.Release or error",
+          "operations": ["Extract id from path", "Call GetReleaseForRepoByID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Get release by id and repo_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.canAccessReleaseDraft",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/release.go",
+          "input": "APIContext",
+          "output": "bool",
+          "operations": ["Check if user is signed in", "Check write permission on releases unit", "Check API token scope"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "Release.LoadAttributes",
+          "type": "repository",
+          "file_path": "models/repo/release.go",
+          "input": "*Release",
+          "output": "error",
+          "operations": ["Load Repo by ID", "Load Publisher by ID (ghost user if not found)", "Load attachments by release_id"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load repo"},
+            {"operation": "SELECT", "table": "user", "description": "Load publisher"},
+            {"operation": "SELECT", "table": "attachment", "description": "Load release attachments"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToAPIRelease",
+          "type": "utility",
+          "file_path": "services/convert/release.go",
+          "input": "*repo_model.Release",
+          "output": "*api.Release",
+          "operations": ["Map release fields to API struct", "Convert publisher to API user", "Convert attachments"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Release",
+          "to": "api.Release",
+          "component": "convert.ToAPIRelease",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "TagName", "target_field": "TagName", "transformation": "direct_copy"},
+            {"source_field": "Target", "target_field": "Target", "transformation": "direct_copy"},
+            {"source_field": "Title", "target_field": "Title", "transformation": "direct_copy"},
+            {"source_field": "Note", "target_field": "Note", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "CreatedAt", "transformation": "computed"},
+            {"source_field": "Publisher", "target_field": "Publisher", "transformation": "enriched"},
+            {"source_field": "Attachments", "target_field": "Attachments", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Release not found", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Release is tag-only", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Draft and no write access", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-241",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/latest",
+      "description": "Fetch the most recent non-draft, non-prerelease release for the repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetLatestRelease",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release.go",
+          "input": "context with repo",
+          "output": "*repo_model.Release or error",
+          "operations": ["Call GetLatestReleaseByRepoID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Get latest release WHERE is_draft=false AND is_prerelease=false AND is_tag=false ORDER BY created_unix DESC, id DESC LIMIT 1"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "Release.LoadAttributes",
+          "type": "repository",
+          "file_path": "models/repo/release.go",
+          "input": "*Release",
+          "output": "error",
+          "operations": ["Load Repo", "Load Publisher", "Load attachments"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load repo"},
+            {"operation": "SELECT", "table": "user", "description": "Load publisher"},
+            {"operation": "SELECT", "table": "attachment", "description": "Load release attachments"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToAPIRelease",
+          "type": "utility",
+          "file_path": "services/convert/release.go",
+          "input": "*repo_model.Release",
+          "output": "*api.Release",
+          "operations": ["Map to API struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "repo_model.Release",
+          "to": "api.Release",
+          "component": "convert.ToAPIRelease",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "TagName", "target_field": "TagName", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "CreatedAt", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "No qualifying release exists", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Release is tag-only or wrong repo", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-242",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases",
+      "description": "List releases with pagination and optional draft/pre-release filters",
+      "steps": [
+        {
+          "step": 1,
+          "component": "utils.GetListOptions",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/page.go",
+          "input": "APIContext",
+          "output": "db.ListOptions",
+          "operations": ["Parse page and limit from query params", "Clamp to valid range"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "db.Find[repo_model.Release]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindReleasesOptions",
+          "output": "[]*repo_model.Release",
+          "operations": ["Build query with conditions (repo_id, is_tag=false, optional draft/prerelease filters)", "Apply pagination", "Order by created_unix DESC, id DESC"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Paginated release list with filters"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "Release.LoadAttributes (loop)",
+          "type": "repository",
+          "file_path": "models/repo/release.go",
+          "input": "each *Release",
+          "output": "error",
+          "operations": ["For each release: load repo, publisher, attachments"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load repo per release (N+1 potential, mitigated by same repo)"},
+            {"operation": "SELECT", "table": "user", "description": "Load publisher per release"},
+            {"operation": "SELECT", "table": "attachment", "description": "Load attachments per release"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "db.Count[repo_model.Release]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindReleasesOptions",
+          "output": "int64",
+          "operations": ["Count total matching releases for pagination headers"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT COUNT", "table": "release", "description": "Count total releases matching filters"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToAPIRelease (loop)",
+          "type": "utility",
+          "file_path": "services/convert/release.go",
+          "input": "each *repo_model.Release",
+          "output": "*api.Release",
+          "operations": ["Convert each release to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*repo_model.Release",
+          "to": "[]*api.Release",
+          "component": "convert.ToAPIRelease",
+          "mappings": [
+            {"source_field": "each Release", "target_field": "each api.Release", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error on find", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "LoadAttributes fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "Count fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-243",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/releases",
+      "description": "Create a new release or convert existing tag record to release; creates git tag if not draft",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateRelease",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release.go",
+          "input": "APIContext with CreateReleaseOption form",
+          "output": "JSON response or error",
+          "operations": ["Check repo not empty", "Try to get existing release by tag name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Check if release with tag_name exists"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "release_service.CreateRelease",
+          "type": "service",
+          "file_path": "services/release/release.go",
+          "input": "gitRepo, *Release, attachmentUUIDs, tagMessage",
+          "output": "error",
+          "operations": ["Check release doesn't already exist", "Call createTag", "Insert release into DB", "Add attachments", "Notify if not draft"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "release", "description": "IsReleaseExist check"},
+            {"operation": "INSERT", "table": "release", "description": "Insert new release record"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "createTag",
+          "type": "service",
+          "file_path": "services/release/release.go",
+          "input": "gitRepo, *Release, msg",
+          "output": "(bool, error)",
+          "operations": ["Load release attributes", "Check repo not archived", "If not draft: check tag exists, check protected tags, create git tag", "Get commit SHA and count"],
+          "calls_external": true,
+          "database_ops": [
+            {"operation": "SELECT", "table": "protected_tag", "description": "Get protected tags for repo"},
+            {"operation": "SELECT", "table": "repository", "description": "Load repo attributes"},
+            {"operation": "SELECT", "table": "user", "description": "Load publisher"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "release_service.UpdateRelease (tag-to-release path)",
+          "type": "service",
+          "file_path": "services/release/release.go",
+          "input": "doer, gitRepo, *Release, nil, nil, nil",
+          "output": "error",
+          "operations": ["Called when existing tag record is converted to release", "createTag, update DB, notify"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "release", "description": "Update release record (convert from tag)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.CreateReleaseOption",
+          "to": "repo_model.Release",
+          "component": "repo.CreateRelease controller",
+          "mappings": [
+            {"source_field": "TagName", "target_field": "TagName", "transformation": "direct_copy"},
+            {"source_field": "Target", "target_field": "Target", "transformation": "direct_copy"},
+            {"source_field": "Title", "target_field": "Title", "transformation": "direct_copy"},
+            {"source_field": "Note", "target_field": "Note", "transformation": "direct_copy"},
+            {"source_field": "IsDraft", "target_field": "IsDraft", "transformation": "direct_copy"},
+            {"source_field": "IsPrerelease", "target_field": "IsPrerelease", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Repo is empty", "handler": "ctx.APIError", "response_code": 422, "response": "repo is empty"},
+        {"condition": "Release already exists", "handler": "ctx.APIError", "response_code": 409, "response": "release tag already exist"},
+        {"condition": "Tag name is protected", "handler": "ctx.APIError", "response_code": 422, "response": "protected tag name"},
+        {"condition": "Target not found", "handler": "ctx.APIError", "response_code": 404, "response": "target not found"},
+        {"condition": "Existing tag already has release", "handler": "ctx.APIError", "response_code": 409, "response": "Release is has no Tag"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-244",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "description": "Update release metadata; may create git tag if changing from draft to published",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.EditRelease",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release.go",
+          "input": "APIContext with EditReleaseOption form and path param id",
+          "output": "JSON response or error",
+          "operations": ["Get release by ID", "Apply non-empty form fields", "Call UpdateRelease service"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "GetReleaseForRepoByID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "release_service.UpdateRelease",
+          "type": "service",
+          "file_path": "services/release/release.go",
+          "input": "ctx, doer, gitRepo, rel, nil, nil, nil",
+          "output": "error",
+          "operations": ["Call createTag (may create git tag if transitioning from draft)", "Update release in DB", "Notify (NewRelease or UpdateRelease)"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "release", "description": "Get old release for comparison"},
+            {"operation": "UPDATE", "table": "release", "description": "Update all columns"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "repo_model.GetReleaseByID (reload)",
+          "type": "repository",
+          "file_path": "models/repo/release.go",
+          "input": "release ID",
+          "output": "*Release",
+          "operations": ["Reload release from DB after update"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "Reload updated release"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "Release.LoadAttributes",
+          "type": "repository",
+          "file_path": "models/repo/release.go",
+          "input": "*Release",
+          "output": "error",
+          "operations": ["Load repo, publisher, attachments"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load repo"},
+            {"operation": "SELECT", "table": "user", "description": "Load publisher"},
+            {"operation": "SELECT", "table": "attachment", "description": "Load attachments"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.EditReleaseOption",
+          "to": "repo_model.Release (partial update)",
+          "component": "repo.EditRelease",
+          "mappings": [
+            {"source_field": "TagName", "target_field": "TagName", "transformation": "computed"},
+            {"source_field": "Target", "target_field": "Target", "transformation": "computed"},
+            {"source_field": "Title", "target_field": "Title", "transformation": "computed"},
+            {"source_field": "Note", "target_field": "Note", "transformation": "computed"},
+            {"source_field": "IsDraft", "target_field": "IsDraft", "transformation": "computed"},
+            {"source_field": "IsPrerelease", "target_field": "IsPrerelease", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Release not found or is tag-only", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "UpdateRelease service error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "Reload or LoadAttributes fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-245",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "description": "Delete a release, convert to tag-only record, delete attachments from storage",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteRelease",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/release.go",
+          "input": "APIContext with path param id",
+          "output": "204 or error",
+          "operations": ["Get release by ID", "Call DeleteReleaseByID with delTag=false"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "release", "description": "GetReleaseForRepoByID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "release_service.DeleteReleaseByID",
+          "type": "service",
+          "file_path": "services/release/release.go",
+          "input": "ctx, repo, rel, doer, delTag=false",
+          "output": "error",
+          "operations": ["Set IsTag=true and update release (keeps tag)", "Load attributes", "Delete attachments from DB", "Delete attachment files from storage", "Notify DeleteRelease"],
+          "calls_external": true,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "release", "description": "Set is_tag=true"},
+            {"operation": "SELECT", "table": "repository", "description": "Load repo for attributes"},
+            {"operation": "SELECT", "table": "user", "description": "Load publisher"},
+            {"operation": "SELECT", "table": "attachment", "description": "Load attachments"},
+            {"operation": "DELETE", "table": "attachment", "description": "Delete attachments by release_id"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Release not found or is tag-only", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "notFound"},
+        {"condition": "Protected tag name", "handler": "ctx.APIError", "response_code": 422, "response": "user not allowed to delete protected tag"},
+        {"condition": "Service error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

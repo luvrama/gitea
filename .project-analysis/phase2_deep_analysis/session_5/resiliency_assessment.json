@@ -1,0 +1,146 @@
+{
+  "total_findings": 6,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-029",
+      "http_method": "GET",
+      "path": "/api/v1/orgs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies; only database queries with connection pool timeout",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-030",
+      "http_method": "POST",
+      "path": "/api/v1/orgs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Username uniqueness check prevents duplicate creation; retrying with same name returns 422",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500; transaction ensures atomicity",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-031",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-032",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/rename",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Filesystem rename happens before transaction commit. If commit fails, code attempts rollback of filesystem rename, but if rollback also fails, state is inconsistent (filesystem renamed but DB not updated).",
+          "recommendation": "Add monitoring/alerting for the double-failure case; consider performing filesystem rename after commit"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "If new_name == current name, returns 204 immediately (no-op). Uniqueness check prevents conflicts.",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": ["Filesystem rename + DB transaction commit are not atomic; partial failure can leave inconsistent state"],
+      "cascading_failure_risk": "Filesystem failure after DB changes could leave org in broken state",
+      "graceful_degradation": "Rollback attempted on commit failure"
+    },
+    {
+      "endpoint_id": "ep-033",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "low",
+          "detail": "Email update and other field updates are two separate DB operations (not in a transaction). If second fails, email is already updated.",
+          "recommendation": "Wrap both updates in a single transaction or combine into one UPDATE"
+        }
+      ],
+      "non_atomic_operations": ["Email update and field update are separate non-transactional operations"],
+      "cascading_failure_risk": "Partial update possible if second UPDATE fails",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-034",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "low",
+          "detail": "Filesystem and storage cleanup happen after transaction commit. If they fail, DB records are already deleted but files remain orphaned.",
+          "recommendation": "Add periodic cleanup job for orphaned files; acceptable since deletion is rare"
+        }
+      ],
+      "non_atomic_operations": ["DB deletion committed before filesystem/storage cleanup; orphaned files possible on cleanup failure"],
+      "cascading_failure_risk": "Storage failure leaves orphaned files but org is functionally deleted",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": "Add dedicated readiness endpoint that checks DB connectivity"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Uses modules/graceful package with ShutdownContext for background operations",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in rate limiting on API endpoints",
+      "recommendation": "Add rate limiting middleware or use reverse proxy rate limiting"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message queues used by these endpoints"
+    },
+    "single_points_of_failure": [
+      "Database (single connection, no read replicas configured by default)"
+    ],
+    "cascading_failure_paths": []
+  }
+}

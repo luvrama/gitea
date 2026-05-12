@@ -1,0 +1,57 @@
+{
+  "namespace": "discovery",
+  "entries": [
+    {
+      "id": "l_mp272sdv_8bhr",
+      "content": "Gitea uses swagger:operation annotations in Go source files to document all API endpoints. Grepping for \"swagger:operation\" in routers/api/v1/ gives a complete, authoritative list of all REST API endpoints with their HTTP method, path, tag, and operation ID - far more reliable than trying to parse the chi router registration code.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase1",
+      "createdAt": "2026-05-12T05:33:08.275Z",
+      "usedCount": 18,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp272sdw_2kva",
+      "content": "Gitea's go-chi router uses a custom web.Router wrapper (modules/web) that adds Combo() for multi-method routes and Group() for path prefixes. The actual route registration in api.go uses middleware chaining patterns like reqToken(), reqAdmin(), bind(FormType{}), handler where bind() does request body parsing. The swagger annotations in handler files are the source of truth for the API surface.",
+      "type": "rule",
+      "confidence": 0.7,
+      "source": "int-phase1",
+      "createdAt": "2026-05-12T05:33:08.276Z",
+      "usedCount": 18,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp272sdx_ave9",
+      "content": "In large Go projects like Gitea, XORM entities can be identified by grepping for files containing xorm: struct tags. The TableName() method override is optional - XORM defaults to snake_case of the struct name. The models/ directory contains both entity definitions AND query logic (no separate repository layer), which is typical for XORM-based projects.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase1",
+      "createdAt": "2026-05-12T05:33:08.277Z",
+      "usedCount": 18,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp272sdy_9x3r",
+      "content": "Large project - Phase 2 should run per-module (see phase2_run_plan.md)",
+      "type": "rule",
+      "confidence": 0.7999999999999999,
+      "source": "int-phase1",
+      "createdAt": "2026-05-12T05:33:08.278Z",
+      "usedCount": 26,
+      "lastUsedAt": "2026-05-12T12:25:14.394Z"
+    },
+    {
+      "id": "l_mp275t2l_r3nz",
+      "content": "Gitea has 475 REST API endpoints across 9 resource groups (repository: 200, user: 75, issue: 69, organization: 67, admin: 32, miscellaneous: 12, package: 9, notification: 7, settings: 4). At 30 endpoints per session, Phase 2 requires 16 sessions. The endpoints are all under routers/api/v1/ with swagger:operation annotations as the source of truth.",
+      "type": "fact",
+      "confidence": 0.7,
+      "source": "int-phase1.5-plan",
+      "createdAt": "2026-05-12T05:35:29.133Z",
+      "usedCount": 48,
+      "lastUsedAt": "2026-05-12T14:21:42.997Z"
+    }
+  ],
+  "updatedAt": "2026-05-12T14:21:42.999Z",
+  "consolidatedAt": null
+}

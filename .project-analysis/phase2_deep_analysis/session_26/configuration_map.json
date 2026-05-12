@@ -1,0 +1,21 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "service.RegisterEmailConfirm",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/service.go",
+      "used_by": [{"class": "user_service", "method": "AddEmailAddresses", "file_path": "services/user/email.go", "usage": "Determines if new emails are auto-activated", "impact": "If true, new emails require confirmation before being marked as verified"}],
+      "affected_endpoints": ["ep-181"]
+    },
+    {
+      "key": "setting.PanicInDevOrTesting",
+      "type": "Function/Boolean",
+      "default_value": "panics only in dev/test mode",
+      "source_file": "modules/setting/global.go",
+      "used_by": [{"class": "shared", "method": "ListRunners/GetRunner/DeleteRunner/UpdateRunner", "file_path": "routers/api/v1/shared/runners.go", "usage": "Guards against invalid ownerID+repoID combination", "impact": "Panics in dev/test if both ownerID and repoID are non-zero"}],
+      "affected_endpoints": ["ep-176", "ep-177", "ep-178", "ep-179"]
+    }
+  ]
+}

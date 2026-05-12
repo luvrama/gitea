@@ -1,0 +1,128 @@
+{
+  "total_findings": 5,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-106",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/runs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only endpoint, no state mutations",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-107",
+      "http_method": "GET",
+      "path": "/api/v1/admin/unadopted",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Filesystem walk has no timeout; large repos directories could take very long",
+          "recommendation": "Add context timeout or limit walk depth/duration"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Slow filesystem could block request thread for extended time",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-108",
+      "http_method": "POST",
+      "path": "/api/v1/admin/unadopted/{owner}/{repo}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Has cleanup logic via defer that deletes failed DB records if adoption fails",
+          "recommendation": "Current implementation handles partial failure well"
+        }
+      ],
+      "non_atomic_operations": ["DB record created first, then git operations; defer cleanup handles rollback"],
+      "cascading_failure_risk": "Git operations failure triggers DB cleanup",
+      "graceful_degradation": "Deferred cleanup deletes partial DB state on failure"
+    },
+    {
+      "endpoint_id": "ep-111",
+      "http_method": "POST",
+      "path": "/api/v1/admin/cron/{task}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Global lock prevents concurrent execution of same task; safe to retry",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Task failure is isolated; creates notice but doesn't affect API response",
+      "graceful_degradation": "Task runs async; API returns 204 immediately regardless of task outcome"
+    },
+    {
+      "endpoint_id": "ep-113",
+      "http_method": "POST",
+      "path": "/api/v1/admin/actions/runners/registration-token",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Token creation uses transaction to deactivate old tokens and create new one atomically",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Graceful manager handles SIGTERM, drains in-flight requests, stops cron scheduler",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No rate limiting on admin API endpoints",
+      "recommendation": "Consider adding rate limiting for admin endpoints to prevent abuse"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message flows in these endpoints"
+    },
+    "single_points_of_failure": [
+      "Filesystem (RepoRootPath) for unadopted repo operations"
+    ],
+    "cascading_failure_paths": []
+  }
+}

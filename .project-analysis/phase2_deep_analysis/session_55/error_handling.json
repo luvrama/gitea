@@ -1,0 +1,24 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic error", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "not found"},
+      {"exception_type": "forbidden", "status_code": 403, "response_type": "JSON error", "message_template": "forbidden"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-376", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin", "error_scenarios": [
+      {"exception": "ErrIssueNotExist", "trigger": "Issue index not found in repo", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "ErrIssueMaxPinReached", "trigger": "Max pin count reached", "status_code": 400, "response": "error message", "logged": false, "retryable": false},
+      {"exception": "generic error", "trigger": "DB failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-378", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin/{position}", "error_scenarios": [
+      {"exception": "ErrIssueNotExist", "trigger": "Issue not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "position error", "trigger": "Position < 1 or pin not found", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrIssueMaxPinReached", "file_path": "models/issues/issue_pin.go", "extends": "util.InvalidArgumentError", "used_in": ["issues_model.PinIssue"], "http_status": 400}
+  ]
+}

@@ -1,0 +1,485 @@
+# Phase 2 Analysis Tasks
+
+**Total Endpoints:** 475  
+**Tasks per Session:** 30  
+**Estimated Sessions:** 16
+
+---
+
+## Task List
+
+- [x] ep-001: GET /api/v1/version - miscellaneous.getVersion
+- [x] ep-002: GET /api/v1/label/templates - miscellaneous.listLabelTemplates
+- [x] ep-003: GET /api/v1/label/templates/{name} - miscellaneous.getLabelTemplateInfo
+- [x] ep-004: GET /api/v1/signing-key.gpg - miscellaneous.getSigningKey
+- [x] ep-005: GET /api/v1/repos/{owner}/{repo}/signing-key.gpg - repository.repoSigningKey
+- [x] ep-006: GET /api/v1/signing-key.pub - miscellaneous.getSigningKeySSH
+- [x] ep-007: GET /api/v1/repos/{owner}/{repo}/signing-key.pub - repository.repoSigningKeySSH
+- [x] ep-008: POST /api/v1/markup - miscellaneous.renderMarkup
+- [x] ep-009: POST /api/v1/markdown - miscellaneous.renderMarkdown
+- [x] ep-010: POST /api/v1/markdown/raw - miscellaneous.renderMarkdownRaw
+- [x] ep-011: GET /api/v1/gitignore/templates - miscellaneous.listGitignoresTemplates
+- [x] ep-012: GET /api/v1/gitignore/templates/{name} - miscellaneous.getGitignoreTemplateInfo
+- [x] ep-013: GET /api/v1/licenses - miscellaneous.listLicenseTemplates
+- [x] ep-014: GET /api/v1/licenses/{name} - miscellaneous.getLicenseTemplateInfo
+- [x] ep-015: GET /api/v1/settings/ui - settings.getGeneralUISettings
+- [x] ep-016: GET /api/v1/settings/api - settings.getGeneralAPISettings
+- [x] ep-017: GET /api/v1/settings/repository - settings.getGeneralRepositorySettings
+- [x] ep-018: GET /api/v1/settings/attachment - settings.getGeneralAttachmentSettings
+- [x] ep-019: GET /api/v1/notifications - notification.notifyGetList
+- [x] ep-020: PUT /api/v1/notifications - notification.notifyReadList
+- [x] ep-021: GET /api/v1/notifications/new - notification.notifyNewAvailable
+- [x] ep-022: GET /api/v1/repos/{owner}/{repo}/notifications - notification.notifyGetRepoList
+- [x] ep-023: PUT /api/v1/repos/{owner}/{repo}/notifications - notification.notifyReadRepoList
+- [x] ep-024: GET /api/v1/notifications/threads/{id} - notification.notifyGetThread
+- [x] ep-025: PATCH /api/v1/notifications/threads/{id} - notification.notifyReadThread
+- [x] ep-026: GET /api/v1/user/orgs - organization.orgListCurrentUserOrgs
+- [x] ep-027: GET /api/v1/users/{username}/orgs - organization.orgListUserOrgs
+- [x] ep-028: GET /api/v1/users/{username}/orgs/{org}/permissions - organization.orgGetUserPermissions
+- [x] ep-029: GET /api/v1/orgs - organization.orgGetAll
+- [x] ep-030: POST /api/v1/orgs - organization.orgCreate
+- [x] ep-031: GET /api/v1/orgs/{org} - organization.orgGet
+- [x] ep-032: POST /api/v1/orgs/{org}/rename - organization.renameOrg
+- [x] ep-033: PATCH /api/v1/orgs/{org} - organization.orgEdit
+- [x] ep-034: DELETE /api/v1/orgs/{org} - organization.orgDelete
+- [x] ep-035: GET /api/v1/orgs/{org}/activities/feeds - organization.orgListActivityFeeds
+- [x] ep-036: DELETE /api/v1/orgs/{org}/repos - organization.orgDeleteRepos
+- [x] ep-037: POST /api/v1/orgs/{org}/avatar - organization.orgUpdateAvatar
+- [x] ep-038: DELETE /api/v1/orgs/{org}/avatar - organization.orgDeleteAvatar
+- [x] ep-039: GET /api/v1/orgs/{org}/actions/secrets - organization.orgListActionsSecrets
+- [x] ep-040: PUT /api/v1/orgs/{org}/actions/secrets/{secretname} - organization.updateOrgSecret
+- [x] ep-041: DELETE /api/v1/orgs/{org}/actions/secrets/{secretname} - organization.deleteOrgSecret
+- [x] ep-042: POST /api/v1/orgs/{org}/actions/runners/registration-token - organization.orgCreateRunnerRegistrationToken
+- [x] ep-043: GET /api/v1/orgs/{org}/actions/variables - organization.getOrgVariablesList
+- [x] ep-044: GET /api/v1/orgs/{org}/actions/variables/{variablename} - organization.getOrgVariable
+- [x] ep-045: DELETE /api/v1/orgs/{org}/actions/variables/{variablename} - organization.deleteOrgVariable
+- [x] ep-046: POST /api/v1/orgs/{org}/actions/variables/{variablename} - organization.createOrgVariable
+- [x] ep-047: PUT /api/v1/orgs/{org}/actions/variables/{variablename} - organization.updateOrgVariable
+- [x] ep-048: GET /api/v1/orgs/{org}/actions/runners - organization.getOrgRunners
+- [x] ep-049: GET /api/v1/orgs/{org}/actions/runners/{runner_id} - organization.getOrgRunner
+- [x] ep-050: DELETE /api/v1/orgs/{org}/actions/runners/{runner_id} - organization.deleteOrgRunner
+- [x] ep-051: PATCH /api/v1/orgs/{org}/actions/runners/{runner_id} - organization.updateOrgRunner
+- [x] ep-052: GET /api/v1/orgs/{org}/actions/jobs - organization.getOrgWorkflowJobs
+- [x] ep-053: GET /api/v1/orgs/{org}/actions/runs - organization.getOrgWorkflowRuns
+- [x] ep-054: GET /api/v1/orgs/{org}/teams - organization.orgListTeams
+- [x] ep-055: GET /api/v1/user/teams - user.userListTeams
+- [x] ep-056: GET /api/v1/teams/{id} - organization.orgGetTeam
+- [x] ep-057: POST /api/v1/orgs/{org}/teams - organization.orgCreateTeam
+- [x] ep-058: PATCH /api/v1/teams/{id} - organization.orgEditTeam
+- [x] ep-059: DELETE /api/v1/teams/{id} - organization.orgDeleteTeam
+- [x] ep-060: GET /api/v1/teams/{id}/members - organization.orgListTeamMembers
+- [x] ep-061: GET /api/v1/teams/{id}/members/{username} - organization.orgListTeamMember
+- [x] ep-062: PUT /api/v1/teams/{id}/members/{username} - organization.orgAddTeamMember
+- [x] ep-063: DELETE /api/v1/teams/{id}/members/{username} - organization.orgRemoveTeamMember
+- [x] ep-064: GET /api/v1/teams/{id}/repos - organization.orgListTeamRepos
+- [x] ep-065: GET /api/v1/teams/{id}/repos/{org}/{repo} - organization.orgListTeamRepo
+- [x] ep-066: PUT /api/v1/teams/{id}/repos/{org}/{repo} - organization.orgAddTeamRepository
+- [x] ep-067: DELETE /api/v1/teams/{id}/repos/{org}/{repo} - organization.orgRemoveTeamRepository
+- [x] ep-068: GET /api/v1/orgs/{org}/teams/search - organization.teamSearch
+- [x] ep-069: GET /api/v1/teams/{id}/activities/feeds - organization.orgListTeamActivityFeeds
+- [x] ep-070: GET /api/v1/orgs/{org}/members - organization.orgListMembers
+- [x] ep-071: GET /api/v1/orgs/{org}/public_members - organization.orgListPublicMembers
+- [x] ep-072: GET /api/v1/orgs/{org}/members/{username} - organization.orgIsMember
+- [x] ep-073: GET /api/v1/orgs/{org}/public_members/{username} - organization.orgIsPublicMember
+- [x] ep-074: PUT /api/v1/orgs/{org}/public_members/{username} - organization.orgPublicizeMember
+- [x] ep-075: DELETE /api/v1/orgs/{org}/public_members/{username} - organization.orgConcealMember
+- [x] ep-076: DELETE /api/v1/orgs/{org}/members/{username} - organization.orgDeleteMember
+- [x] ep-077: GET /api/v1/orgs/{org}/hooks - organization.orgListHooks
+- [x] ep-078: GET /api/v1/orgs/{org}/hooks/{id} - organization.orgGetHook
+- [x] ep-079: POST /api/v1/orgs/{org}/hooks - organization.orgCreateHook
+- [x] ep-080: PATCH /api/v1/orgs/{org}/hooks/{id} - organization.orgEditHook
+- [x] ep-081: DELETE /api/v1/orgs/{org}/hooks/{id} - organization.orgDeleteHook
+- [x] ep-082: GET /api/v1/orgs/{org}/labels - organization.orgListLabels
+- [x] ep-083: POST /api/v1/orgs/{org}/labels - organization.orgCreateLabel
+- [x] ep-084: GET /api/v1/orgs/{org}/labels/{id} - organization.orgGetLabel
+- [x] ep-085: PATCH /api/v1/orgs/{org}/labels/{id} - organization.orgEditLabel
+- [x] ep-086: DELETE /api/v1/orgs/{org}/labels/{id} - organization.orgDeleteLabel
+- [x] ep-087: GET /api/v1/orgs/{org}/blocks - organization.organizationListBlocks
+- [x] ep-088: GET /api/v1/orgs/{org}/blocks/{username} - organization.organizationCheckUserBlock
+- [x] ep-089: PUT /api/v1/orgs/{org}/blocks/{username} - organization.organizationBlockUser
+- [x] ep-090: DELETE /api/v1/orgs/{org}/blocks/{username} - organization.organizationUnblockUser
+- [x] ep-091: GET /api/v1/admin/hooks - admin.adminListHooks
+- [x] ep-092: GET /api/v1/admin/hooks/{id} - admin.adminGetHook
+- [x] ep-093: POST /api/v1/admin/hooks - admin.adminCreateHook
+- [x] ep-094: PATCH /api/v1/admin/hooks/{id} - admin.adminEditHook
+- [x] ep-095: DELETE /api/v1/admin/hooks/{id} - admin.adminDeleteHook
+- [x] ep-096: POST /api/v1/admin/users/{username}/orgs - admin.adminCreateOrg
+- [x] ep-097: GET /api/v1/admin/orgs - admin.adminGetAllOrgs
+- [x] ep-098: POST /api/v1/admin/users - admin.adminCreateUser
+- [x] ep-099: PATCH /api/v1/admin/users/{username} - admin.adminEditUser
+- [x] ep-100: DELETE /api/v1/admin/users/{username} - admin.adminDeleteUser
+- [x] ep-101: POST /api/v1/admin/users/{username}/keys - admin.adminCreatePublicKey
+- [x] ep-102: DELETE /api/v1/admin/users/{username}/keys/{id} - admin.adminDeleteUserPublicKey
+- [x] ep-103: GET /api/v1/admin/users - admin.adminSearchUsers
+- [x] ep-104: POST /api/v1/admin/users/{username}/rename - admin.adminRenameUser
+- [x] ep-105: GET /api/v1/admin/actions/jobs - admin.listAdminWorkflowJobs
+- [x] ep-106: GET /api/v1/admin/actions/runs - admin.listAdminWorkflowRuns
+- [x] ep-107: GET /api/v1/admin/unadopted - admin.adminUnadoptedList
+- [x] ep-108: POST /api/v1/admin/unadopted/{owner}/{repo} - admin.adminAdoptRepository
+- [x] ep-109: DELETE /api/v1/admin/unadopted/{owner}/{repo} - admin.adminDeleteUnadoptedRepository
+- [x] ep-110: GET /api/v1/admin/cron - admin.adminCronList
+- [x] ep-111: POST /api/v1/admin/cron/{task} - admin.adminCronRun
+- [x] ep-112: POST /api/v1/admin/users/{username}/repos - admin.adminCreateRepo
+- [x] ep-113: POST /api/v1/admin/actions/runners/registration-token - admin.adminCreateRunnerRegistrationToken
+- [x] ep-114: GET /api/v1/admin/actions/runners - admin.getAdminRunners
+- [x] ep-115: GET /api/v1/admin/actions/runners/{runner_id} - admin.getAdminRunner
+- [x] ep-116: DELETE /api/v1/admin/actions/runners/{runner_id} - admin.deleteAdminRunner
+- [x] ep-117: PATCH /api/v1/admin/actions/runners/{runner_id} - admin.updateAdminRunner
+- [x] ep-118: GET /api/v1/admin/emails - admin.adminGetAllEmails
+- [x] ep-119: GET /api/v1/admin/emails/search - admin.adminSearchEmails
+- [x] ep-120: GET /api/v1/admin/users/{username}/badges - admin.adminListUserBadges
+- [x] ep-121: POST /api/v1/admin/users/{username}/badges - admin.adminAddUserBadges
+- [x] ep-122: DELETE /api/v1/admin/users/{username}/badges - admin.adminDeleteUserBadges
+- [x] ep-123: GET /api/v1/users/search - user.userSearch
+- [x] ep-124: GET /api/v1/users/{username} - user.userGet
+- [x] ep-125: GET /api/v1/user - user.userGetCurrent
+- [x] ep-126: GET /api/v1/users/{username}/heatmap - user.userGetHeatmapData
+- [x] ep-127: GET /api/v1/users/{username}/activities/feeds - user.userListActivityFeeds
+- [x] ep-128: POST /api/v1/user/avatar - user.userUpdateAvatar
+- [x] ep-129: DELETE /api/v1/user/avatar - user.userDeleteAvatar
+- [x] ep-130: PUT /api/v1/user/actions/secrets/{secretname} - user.updateUserSecret
+- [x] ep-131: DELETE /api/v1/user/actions/secrets/{secretname} - user.deleteUserSecret
+- [x] ep-132: POST /api/v1/user/actions/variables/{variablename} - user.createUserVariable
+- [x] ep-133: PUT /api/v1/user/actions/variables/{variablename} - user.updateUserVariable
+- [x] ep-134: DELETE /api/v1/user/actions/variables/{variablename} - user.deleteUserVariable
+- [x] ep-135: GET /api/v1/user/actions/variables/{variablename} - user.getUserVariable
+- [x] ep-136: GET /api/v1/user/actions/variables - user.getUserVariablesList
+- [x] ep-137: GET /api/v1/user/actions/runs - user.getUserWorkflowRuns
+- [x] ep-138: GET /api/v1/user/actions/jobs - user.getUserWorkflowJobs
+- [x] ep-139: GET /api/v1/user/followers - user.userCurrentListFollowers
+- [x] ep-140: GET /api/v1/users/{username}/followers - user.userListFollowers
+- [x] ep-141: GET /api/v1/user/following - user.userCurrentListFollowing
+- [x] ep-142: GET /api/v1/users/{username}/following - user.userListFollowing
+- [x] ep-143: GET /api/v1/user/following/{username} - user.userCurrentCheckFollowing
+- [x] ep-144: GET /api/v1/users/{username}/following/{target} - user.userCheckFollowing
+- [x] ep-145: PUT /api/v1/user/following/{username} - user.userCurrentPutFollow
+- [x] ep-146: DELETE /api/v1/user/following/{username} - user.userCurrentDeleteFollow
+- [x] ep-147: GET /api/v1/user/hooks - user.userListHooks
+- [x] ep-148: GET /api/v1/user/hooks/{id} - user.userGetHook
+- [x] ep-149: POST /api/v1/user/hooks - user.userCreateHook
+- [x] ep-150: PATCH /api/v1/user/hooks/{id} - user.userEditHook
+- [x] ep-151: DELETE /api/v1/user/hooks/{id} - user.userDeleteHook
+- [x] ep-152: GET /api/v1/users/{username}/starred - user.userListStarred
+- [x] ep-153: GET /api/v1/user/starred - user.userCurrentListStarred
+- [x] ep-154: GET /api/v1/user/starred/{owner}/{repo} - user.userCurrentCheckStarring
+- [x] ep-155: PUT /api/v1/user/starred/{owner}/{repo} - user.userCurrentPutStar
+- [x] ep-156: DELETE /api/v1/user/starred/{owner}/{repo} - user.userCurrentDeleteStar
+- [x] ep-157: GET /api/v1/user/keys - user.userCurrentListKeys
+- [x] ep-158: GET /api/v1/users/{username}/keys - user.userListKeys
+- [x] ep-159: GET /api/v1/user/keys/{id} - user.userCurrentGetKey
+- [x] ep-160: POST /api/v1/user/keys - user.userCurrentPostKey
+- [x] ep-161: DELETE /api/v1/user/keys/{id} - user.userCurrentDeleteKey
+- [x] ep-162: GET /api/v1/user/settings - user.getUserSettings
+- [x] ep-163: PATCH /api/v1/user/settings - user.updateUserSettings
+- [x] ep-164: GET /api/v1/users/{username}/tokens - user.userGetTokens
+- [x] ep-165: POST /api/v1/users/{username}/tokens - user.userCreateToken
+- [x] ep-166: DELETE /api/v1/users/{username}/tokens/{token} - user.userDeleteAccessToken
+- [x] ep-167: POST /api/v1/user/applications/oauth2 - user.userCreateOAuth2Application
+- [x] ep-168: GET /api/v1/user/applications/oauth2 - user.userGetOauth2Application
+- [x] ep-169: DELETE /api/v1/user/applications/oauth2/{id} - user.userDeleteOAuth2Application
+- [x] ep-170: GET /api/v1/user/applications/oauth2/{id} - user.userGetOAuth2Application
+- [x] ep-171: PATCH /api/v1/user/applications/oauth2/{id} - user.userUpdateOAuth2Application
+- [x] ep-172: GET /api/v1/users/{username}/repos - user.userListRepos
+- [x] ep-173: GET /api/v1/user/repos - user.userCurrentListRepos
+- [x] ep-174: GET /api/v1/orgs/{org}/repos - organization.orgListRepos
+- [x] ep-175: POST /api/v1/user/actions/runners/registration-token - user.userCreateRunnerRegistrationToken
+- [x] ep-176: GET /api/v1/user/actions/runners - user.getUserRunners
+- [x] ep-177: GET /api/v1/user/actions/runners/{runner_id} - user.getUserRunner
+- [x] ep-178: DELETE /api/v1/user/actions/runners/{runner_id} - user.deleteUserRunner
+- [x] ep-179: PATCH /api/v1/user/actions/runners/{runner_id} - user.updateUserRunner
+- [x] ep-180: GET /api/v1/user/emails - user.userListEmails
+- [x] ep-181: POST /api/v1/user/emails - user.userAddEmail
+- [x] ep-182: DELETE /api/v1/user/emails - user.userDeleteEmail
+- [x] ep-183: GET /api/v1/users/{username}/gpg_keys - user.userListGPGKeys
+- [x] ep-184: GET /api/v1/user/gpg_keys - user.userCurrentListGPGKeys
+- [x] ep-185: GET /api/v1/user/gpg_keys/{id} - user.userCurrentGetGPGKey
+- [x] ep-186: GET /api/v1/user/gpg_key_token - user.getVerificationToken
+- [x] ep-187: POST /api/v1/user/gpg_key_verify - user.userVerifyGPGKey
+- [x] ep-188: POST /api/v1/user/gpg_keys - user.userCurrentPostGPGKey
+- [x] ep-189: DELETE /api/v1/user/gpg_keys/{id} - user.userCurrentDeleteGPGKey
+- [x] ep-190: GET /api/v1/user/blocks - user.userListBlocks
+- [x] ep-191: GET /api/v1/user/blocks/{username} - user.userCheckUserBlock
+- [x] ep-192: PUT /api/v1/user/blocks/{username} - user.userBlockUser
+- [x] ep-193: DELETE /api/v1/user/blocks/{username} - user.userUnblockUser
+- [x] ep-194: GET /api/v1/users/{username}/subscriptions - user.userListSubscriptions
+- [x] ep-195: GET /api/v1/user/subscriptions - user.userCurrentListSubscriptions
+- [x] ep-196: GET /api/v1/repos/{owner}/{repo}/subscription - repository.userCurrentCheckSubscription
+- [x] ep-197: PUT /api/v1/repos/{owner}/{repo}/subscription - repository.userCurrentPutSubscription
+- [x] ep-198: DELETE /api/v1/repos/{owner}/{repo}/subscription - repository.userCurrentDeleteSubscription
+- [x] ep-199: GET /api/v1/packages/{owner} - package.listPackages
+- [x] ep-200: GET /api/v1/packages/{owner}/{type}/{name}/{version} - package.getPackage
+- [x] ep-201: DELETE /api/v1/packages/{owner}/{type}/{name} - package.deletePackage
+- [x] ep-202: DELETE /api/v1/packages/{owner}/{type}/{name}/{version} - package.deletePackageVersion
+- [x] ep-203: GET /api/v1/packages/{owner}/{type}/{name}/{version}/files - package.listPackageFiles
+- [x] ep-204: GET /api/v1/packages/{owner}/{type}/{name} - package.listPackageVersions
+- [x] ep-205: GET /api/v1/packages/{owner}/{type}/{name}/-/latest - package.getLatestPackageVersion
+- [x] ep-206: POST /api/v1/packages/{owner}/{type}/{name}/-/link/{repo_name} - package.linkPackage
+- [x] ep-207: POST /api/v1/packages/{owner}/{type}/{name}/-/unlink - package.unlinkPackage
+- [x] ep-208: GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies - issue.issueListIssueDependencies
+- [x] ep-209: POST /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies - issue.issueCreateIssueDependencies
+- [x] ep-210: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies - issue.issueRemoveIssueDependencies
+- [x] ep-211: GET /api/v1/repos/{owner}/{repo}/issues/{index}/blocks - issue.issueListBlocks
+- [x] ep-212: POST /api/v1/repos/{owner}/{repo}/issues/{index}/blocks - issue.issueCreateIssueBlocking
+- [x] ep-213: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/blocks - issue.issueRemoveIssueBlocking
+- [x] ep-214: GET /api/v1/repos/{owner}/{repo}/git/commits/{sha} - repository.repoGetSingleCommit
+- [x] ep-215: GET /api/v1/repos/{owner}/{repo}/commits - repository.repoGetAllCommits
+- [x] ep-216: GET /api/v1/repos/{owner}/{repo}/git/commits/{sha}.{diffType} - repository.repoDownloadCommitDiffOrPatch
+- [x] ep-217: GET /api/v1/repos/{owner}/{repo}/commits/{sha}/pull - repository.repoGetCommitPullRequest
+- [x] ep-218: PUT /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user} - issue.issueAddSubscription
+- [x] ep-219: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user} - issue.issueDeleteSubscription
+- [x] ep-220: GET /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/check - issue.issueCheckSubscription
+- [x] ep-221: GET /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions - issue.issueSubscriptions
+- [x] ep-222: GET /api/v1/repos/{owner}/{repo}/pulls - repository.repoListPullRequests
+- [x] ep-223: GET /api/v1/repos/{owner}/{repo}/pulls/{index} - repository.repoGetPullRequest
+- [x] ep-224: GET /api/v1/repos/{owner}/{repo}/pulls/{base}/{head} - repository.repoGetPullRequestByBaseHead
+- [x] ep-225: GET /api/v1/repos/{owner}/{repo}/pulls/{index}.{diffType} - repository.repoDownloadPullDiffOrPatch
+- [x] ep-226: POST /api/v1/repos/{owner}/{repo}/pulls - repository.repoCreatePullRequest
+- [x] ep-227: PATCH /api/v1/repos/{owner}/{repo}/pulls/{index} - repository.repoEditPullRequest
+- [x] ep-228: GET /api/v1/repos/{owner}/{repo}/pulls/{index}/merge - repository.repoPullRequestIsMerged
+- [x] ep-229: POST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge - repository.repoMergePullRequest
+- [x] ep-230: POST /api/v1/repos/{owner}/{repo}/pulls/{index}/update - repository.repoUpdatePullRequest
+- [x] ep-231: DELETE /api/v1/repos/{owner}/{repo}/pulls/{index}/merge - repository.repoCancelScheduledAutoMerge
+- [x] ep-232: GET /api/v1/repos/{owner}/{repo}/pulls/{index}/commits - repository.repoGetPullRequestCommits
+- [x] ep-233: GET /api/v1/repos/{owner}/{repo}/pulls/{index}/files - repository.repoGetPullRequestFiles
+- [x] ep-234: POST /api/v1/repos/{owner}/{repo}/mirror-sync - repository.repoMirrorSync
+- [x] ep-235: POST /api/v1/repos/{owner}/{repo}/push_mirrors-sync - repository.repoPushMirrorSync
+- [x] ep-236: GET /api/v1/repos/{owner}/{repo}/push_mirrors - repository.repoListPushMirrors
+- [x] ep-237: GET /api/v1/repos/{owner}/{repo}/push_mirrors/{name} - repository.repoGetPushMirrorByRemoteName
+- [x] ep-238: POST /api/v1/repos/{owner}/{repo}/push_mirrors - repository.repoAddPushMirror
+- [x] ep-239: DELETE /api/v1/repos/{owner}/{repo}/push_mirrors/{name} - repository.repoDeletePushMirror
+- [x] ep-240: GET /api/v1/repos/{owner}/{repo}/releases/{id} - repository.repoGetRelease
+- [x] ep-241: GET /api/v1/repos/{owner}/{repo}/releases/latest - repository.repoGetLatestRelease
+- [x] ep-242: GET /api/v1/repos/{owner}/{repo}/releases - repository.repoListReleases
+- [x] ep-243: POST /api/v1/repos/{owner}/{repo}/releases - repository.repoCreateRelease
+- [x] ep-244: PATCH /api/v1/repos/{owner}/{repo}/releases/{id} - repository.repoEditRelease
+- [x] ep-245: DELETE /api/v1/repos/{owner}/{repo}/releases/{id} - repository.repoDeleteRelease
+- [x] ep-246: GET /api/v1/repos/{owner}/{repo}/git/trees/{sha} - repository.GetTree
+- [x] ep-247: GET /api/v1/repos/{owner}/{repo}/git/refs - repository.repoListAllGitRefs
+- [x] ep-248: GET /api/v1/repos/{owner}/{repo}/git/refs/{ref} - repository.repoListGitRefs
+- [x] ep-249: POST /api/v1/repos/{owner}/{repo}/diffpatch - repository.repoApplyDiffPatch
+- [x] ep-250: GET /api/v1/repos/{owner}/{repo}/collaborators - repository.repoListCollaborators
+- [x] ep-251: GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator} - repository.repoCheckCollaborator
+- [x] ep-252: PUT /api/v1/repos/{owner}/{repo}/collaborators/{collaborator} - repository.repoAddCollaborator
+- [x] ep-253: DELETE /api/v1/repos/{owner}/{repo}/collaborators/{collaborator} - repository.repoDeleteCollaborator
+- [x] ep-254: GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission - repository.repoGetRepoPermissions
+- [x] ep-255: GET /api/v1/repos/{owner}/{repo}/reviewers - repository.repoGetReviewers
+- [x] ep-256: GET /api/v1/repos/{owner}/{repo}/assignees - repository.repoGetAssignees
+- [x] ep-257: GET /api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id} - issue.issueGetIssueAttachment
+- [x] ep-258: GET /api/v1/repos/{owner}/{repo}/issues/{index}/assets - issue.issueListIssueAttachments
+- [x] ep-259: POST /api/v1/repos/{owner}/{repo}/issues/{index}/assets - issue.issueCreateIssueAttachment
+- [x] ep-260: PATCH /api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id} - issue.issueEditIssueAttachment
+- [x] ep-261: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id} - issue.issueDeleteIssueAttachment
+- [x] ep-262: POST /api/v1/repos/{owner}/{repo}/avatar - repository.repoUpdateAvatar
+- [x] ep-263: DELETE /api/v1/repos/{owner}/{repo}/avatar - repository.repoDeleteAvatar
+- [x] ep-264: GET /api/v1/repos/{owner}/{repo}/actions/secrets - repository.repoListActionsSecrets
+- [x] ep-265: PUT /api/v1/repos/{owner}/{repo}/actions/secrets/{secretname} - repository.updateRepoSecret
+- [x] ep-266: DELETE /api/v1/repos/{owner}/{repo}/actions/secrets/{secretname} - repository.deleteRepoSecret
+- [x] ep-267: GET /api/v1/repos/{owner}/{repo}/actions/variables/{variablename} - repository.getRepoVariable
+- [x] ep-268: DELETE /api/v1/repos/{owner}/{repo}/actions/variables/{variablename} - repository.deleteRepoVariable
+- [x] ep-269: POST /api/v1/repos/{owner}/{repo}/actions/variables/{variablename} - repository.createRepoVariable
+- [x] ep-270: PUT /api/v1/repos/{owner}/{repo}/actions/variables/{variablename} - repository.updateRepoVariable
+- [x] ep-271: GET /api/v1/repos/{owner}/{repo}/actions/variables - repository.getRepoVariablesList
+- [x] ep-272: POST /api/v1/repos/{owner}/{repo}/actions/runners/registration-token - repository.repoCreateRunnerRegistrationToken
+- [x] ep-273: GET /api/v1/repos/{owner}/{repo}/actions/runners - repository.getRepoRunners
+- [x] ep-274: GET /api/v1/repos/{owner}/{repo}/actions/runners/{runner_id} - repository.getRepoRunner
+- [x] ep-275: DELETE /api/v1/repos/{owner}/{repo}/actions/runners/{runner_id} - repository.deleteRepoRunner
+- [x] ep-276: PATCH /api/v1/repos/{owner}/{repo}/actions/runners/{runner_id} - repository.updateRepoRunner
+- [x] ep-277: GET /api/v1/repos/{owner}/{repo}/actions/jobs - repository.listWorkflowJobs
+- [x] ep-278: GET /api/v1/repos/{owner}/{repo}/actions/runs - repository.getWorkflowRuns
+- [x] ep-279: GET /api/v1/repos/{owner}/{repo}/actions/tasks - repository.ListActionTasks
+- [x] ep-280: GET /api/v1/repos/{owner}/{repo}/actions/workflows - repository.ActionsListRepositoryWorkflows
+- [x] ep-281: GET /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id} - repository.ActionsGetWorkflow
+- [x] ep-282: PUT /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable - repository.ActionsDisableWorkflow
+- [x] ep-283: POST /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches - repository.ActionsDispatchWorkflow
+- [x] ep-284: PUT /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable - repository.ActionsEnableWorkflow
+- [x] ep-285: GET /api/v1/repos/{owner}/{repo}/actions/runs/{run} - repository.GetWorkflowRun
+- [x] ep-286: GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt} - repository.getWorkflowRunAttempt
+- [x] ep-287: POST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun - repository.rerunWorkflowRun
+- [x] ep-288: POST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun-failed-jobs - repository.rerunFailedWorkflowRun
+- [x] ep-289: POST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs/{job_id}/rerun - repository.rerunWorkflowJob
+- [x] ep-290: GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs - repository.listWorkflowRunJobs
+- [x] ep-291: GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}/jobs - repository.listWorkflowRunAttemptJobs
+- [x] ep-292: GET /api/v1/repos/{owner}/{repo}/actions/jobs/{job_id} - repository.getWorkflowJob
+- [x] ep-293: GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/artifacts - repository.getArtifactsOfRun
+- [x] ep-294: DELETE /api/v1/repos/{owner}/{repo}/actions/runs/{run} - repository.deleteActionRun
+- [x] ep-295: GET /api/v1/repos/{owner}/{repo}/actions/artifacts - repository.getArtifacts
+- [x] ep-296: GET /api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id} - repository.getArtifact
+- [x] ep-297: DELETE /api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id} - repository.deleteArtifact
+- [x] ep-298: GET /api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip - repository.downloadArtifact
+- [x] ep-299: GET /api/v1/repos/{owner}/{repo}/git/notes/{sha} - repository.repoGetNote
+- [x] ep-300: GET /api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions - issue.issueGetCommentReactions
+- [x] ep-301: POST /api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions - issue.issuePostCommentReaction
+- [x] ep-302: DELETE /api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions - issue.issueDeleteCommentReaction
+- [x] ep-303: GET /api/v1/repos/{owner}/{repo}/issues/{index}/reactions - issue.issueGetIssueReactions
+- [x] ep-304: POST /api/v1/repos/{owner}/{repo}/issues/{index}/reactions - issue.issuePostIssueReaction
+- [x] ep-305: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/reactions - issue.issueDeleteIssueReaction
+- [x] ep-306: GET /api/v1/repos/{owner}/{repo}/branches/{branch} - repository.repoGetBranch
+- [x] ep-307: DELETE /api/v1/repos/{owner}/{repo}/branches/{branch} - repository.repoDeleteBranch
+- [x] ep-308: POST /api/v1/repos/{owner}/{repo}/branches - repository.repoCreateBranch
+- [x] ep-309: GET /api/v1/repos/{owner}/{repo}/branches - repository.repoListBranches
+- [x] ep-310: PUT /api/v1/repos/{owner}/{repo}/branches/{branch} - repository.repoUpdateBranch
+- [x] ep-311: PATCH /api/v1/repos/{owner}/{repo}/branches/{branch} - repository.repoRenameBranch
+- [x] ep-312: GET /api/v1/repos/{owner}/{repo}/branch_protections/{name} - repository.repoGetBranchProtection
+- [x] ep-313: GET /api/v1/repos/{owner}/{repo}/branch_protections - repository.repoListBranchProtection
+- [x] ep-314: POST /api/v1/repos/{owner}/{repo}/branch_protections - repository.repoCreateBranchProtection
+- [x] ep-315: PATCH /api/v1/repos/{owner}/{repo}/branch_protections/{name} - repository.repoEditBranchProtection
+- [x] ep-316: DELETE /api/v1/repos/{owner}/{repo}/branch_protections/{name} - repository.repoDeleteBranchProtection
+- [x] ep-317: POST /api/v1/repos/{owner}/{repo}/branch_protections/priority - repository.repoUpdateBranchProtectionPriories
+- [x] ep-318: POST /api/v1/repos/{owner}/{repo}/merge-upstream - repository.repoMergeUpstream
+- [x] ep-319: PUT /api/v1/repos/{owner}/{repo}/issues/{index}/lock - issue.issueLockIssue
+- [x] ep-320: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/lock - issue.issueUnlockIssue
+- [x] ep-321: GET /api/v1/repos/{owner}/{repo}/hooks - repository.repoListHooks
+- [x] ep-322: GET /api/v1/repos/{owner}/{repo}/hooks/{id} - repository.repoGetHook
+- [x] ep-323: POST /api/v1/repos/{owner}/{repo}/hooks/{id}/tests - repository.repoTestHook
+- [x] ep-324: POST /api/v1/repos/{owner}/{repo}/hooks - repository.repoCreateHook
+- [x] ep-325: PATCH /api/v1/repos/{owner}/{repo}/hooks/{id} - repository.repoEditHook
+- [x] ep-326: DELETE /api/v1/repos/{owner}/{repo}/hooks/{id} - repository.repoDeleteHook
+- [x] ep-327: GET /api/v1/repos/{owner}/{repo}/stargazers - repository.repoListStargazers
+- [x] ep-328: GET /api/v1/repos/{owner}/{repo}/subscribers - repository.repoListSubscribers
+- [x] ep-329: GET /api/v1/repos/{owner}/{repo}/teams - repository.repoListTeams
+- [x] ep-330: GET /api/v1/repos/{owner}/{repo}/teams/{team} - repository.repoCheckTeam
+- [x] ep-331: PUT /api/v1/repos/{owner}/{repo}/teams/{team} - repository.repoAddTeam
+- [x] ep-332: DELETE /api/v1/repos/{owner}/{repo}/teams/{team} - repository.repoDeleteTeam
+- [x] ep-333: GET /api/v1/repos/{owner}/{repo}/forks - repository.listForks
+- [x] ep-334: POST /api/v1/repos/{owner}/{repo}/forks - repository.createFork
+- [x] ep-335: GET /api/v1/repos/{owner}/{repo}/issues/{index}/labels - issue.issueGetLabels
+- [x] ep-336: POST /api/v1/repos/{owner}/{repo}/issues/{index}/labels - issue.issueAddLabel
+- [x] ep-337: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/labels/{id} - issue.issueRemoveLabel
+- [x] ep-338: PUT /api/v1/repos/{owner}/{repo}/issues/{index}/labels - issue.issueReplaceLabels
+- [x] ep-339: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/labels - issue.issueClearLabels
+- [x] ep-340: GET /api/v1/repos/{owner}/{repo}/keys - repository.repoListKeys
+- [x] ep-341: GET /api/v1/repos/{owner}/{repo}/keys/{id} - repository.repoGetKey
+- [x] ep-342: POST /api/v1/repos/{owner}/{repo}/keys - repository.repoCreateKey
+- [x] ep-343: DELETE /api/v1/repos/{owner}/{repo}/keys/{id} - repository.repoDeleteKey
+- [x] ep-344: GET /api/v1/repos/{owner}/{repo}/releases/tags/{tag} - repository.repoGetReleaseByTag
+- [x] ep-345: DELETE /api/v1/repos/{owner}/{repo}/releases/tags/{tag} - repository.repoDeleteReleaseByTag
+- [x] ep-346: GET /api/v1/repos/{owner}/{repo}/licenses - repository.repoGetLicenses
+- [x] ep-347: GET /api/v1/repos/{owner}/{repo}/topics - repository.repoListTopics
+- [x] ep-348: PUT /api/v1/repos/{owner}/{repo}/topics - repository.repoUpdateTopics
+- [x] ep-349: PUT /api/v1/repos/{owner}/{repo}/topics/{topic} - repository.repoAddTopic
+- [x] ep-350: DELETE /api/v1/repos/{owner}/{repo}/topics/{topic} - repository.repoDeleteTopic
+- [x] ep-351: GET /api/v1/topics/search - repository.topicSearch
+- [x] ep-352: GET /api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id} - repository.repoGetReleaseAttachment
+- [x] ep-353: GET /api/v1/repos/{owner}/{repo}/releases/{id}/assets - repository.repoListReleaseAttachments
+- [x] ep-354: POST /api/v1/repos/{owner}/{repo}/releases/{id}/assets - repository.repoCreateReleaseAttachment
+- [x] ep-355: PATCH /api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id} - repository.repoEditReleaseAttachment
+- [x] ep-356: DELETE /api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id} - repository.repoDeleteReleaseAttachment
+- [x] ep-357: GET /api/v1/repos/{owner}/{repo}/labels - issue.issueListLabels
+- [x] ep-358: GET /api/v1/repos/{owner}/{repo}/labels/{id} - issue.issueGetLabel
+- [x] ep-359: POST /api/v1/repos/{owner}/{repo}/labels - issue.issueCreateLabel
+- [x] ep-360: PATCH /api/v1/repos/{owner}/{repo}/labels/{id} - issue.issueEditLabel
+- [x] ep-361: DELETE /api/v1/repos/{owner}/{repo}/labels/{id} - issue.issueDeleteLabel
+- [x] ep-362: GET /api/v1/repos/search - repository.repoSearch
+- [x] ep-363: POST /api/v1/user/repos - repository.user
+- [x] ep-364: POST /api/v1/repos/{template_owner}/{template_repo}/generate - repository.generateRepo
+- [x] ep-365: POST /api/v1/org/{org}/repos - organization.createOrgRepoDeprecated
+- [x] ep-366: POST /api/v1/orgs/{org}/repos - organization.createOrgRepo
+- [x] ep-367: GET /api/v1/repos/{owner}/{repo} - repository.repoGet
+- [x] ep-368: GET /api/v1/repositories/{id} - repository.repoGetByID
+- [x] ep-369: PATCH /api/v1/repos/{owner}/{repo} - repository.repoEdit
+- [x] ep-370: DELETE /api/v1/repos/{owner}/{repo} - repository.repoDelete
+- [x] ep-371: GET /api/v1/repos/{owner}/{repo}/issue_templates - repository.repoGetIssueTemplates
+- [x] ep-372: GET /api/v1/repos/{owner}/{repo}/issue_config - repository.repoGetIssueConfig
+- [x] ep-373: GET /api/v1/repos/{owner}/{repo}/issue_config/validate - repository.repoValidateIssueConfig
+- [x] ep-374: GET /api/v1/repos/{owner}/{repo}/activities/feeds - repository.repoListActivityFeeds
+- [x] ep-375: GET /api/v1/repos/{owner}/{repo}/languages - repository.repoGetLanguages
+- [x] ep-376: POST /api/v1/repos/{owner}/{repo}/issues/{index}/pin - issue.pinIssue
+- [x] ep-377: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/pin - issue.unpinIssue
+- [x] ep-378: PATCH /api/v1/repos/{owner}/{repo}/issues/{index}/pin/{position} - issue.moveIssuePin
+- [x] ep-379: GET /api/v1/repos/{owner}/{repo}/issues/pinned - repository.repoListPinnedIssues
+- [x] ep-380: GET /api/v1/repos/{owner}/{repo}/pulls/pinned - repository.repoListPinnedPullRequests
+- [x] ep-381: GET /api/v1/repos/{owner}/{repo}/new_pin_allowed - repository.repoNewPinAllowed
+- [ ] ep-382: POST /api/v1/repos/{owner}/{repo}/issues/{index}/stopwatch/start - issue.issueStartStopWatch
+- [ ] ep-383: POST /api/v1/repos/{owner}/{repo}/issues/{index}/stopwatch/stop - issue.issueStopStopWatch
+- [ ] ep-384: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/stopwatch/delete - issue.issueDeleteStopWatch
+- [ ] ep-385: GET /api/v1/user/stopwatches - user.userGetStopWatches
+- [ ] ep-386: GET /api/v1/repos/{owner}/{repo}/hooks/git - repository.repoListGitHooks
+- [ ] ep-387: GET /api/v1/repos/{owner}/{repo}/hooks/git/{id} - repository.repoGetGitHook
+- [ ] ep-388: PATCH /api/v1/repos/{owner}/{repo}/hooks/git/{id} - repository.repoEditGitHook
+- [ ] ep-389: DELETE /api/v1/repos/{owner}/{repo}/hooks/git/{id} - repository.repoDeleteGitHook
+- [ ] ep-390: GET /api/v1/repos/{owner}/{repo}/raw/{filepath} - repository.repoGetRawFile
+- [ ] ep-391: GET /api/v1/repos/{owner}/{repo}/media/{filepath} - repository.repoGetRawFileOrLFS
+- [ ] ep-392: GET /api/v1/repos/{owner}/{repo}/archive/{archive} - repository.repoGetArchive
+- [ ] ep-393: GET /api/v1/repos/{owner}/{repo}/editorconfig/{filepath} - repository.repoGetEditorConfig
+- [ ] ep-394: POST /api/v1/repos/{owner}/{repo}/contents - repository.repoChangeFiles
+- [ ] ep-395: POST /api/v1/repos/{owner}/{repo}/contents/{filepath} - repository.repoCreateFile
+- [ ] ep-396: PUT /api/v1/repos/{owner}/{repo}/contents/{filepath} - repository.repoUpdateFile
+- [ ] ep-397: DELETE /api/v1/repos/{owner}/{repo}/contents/{filepath} - repository.repoDeleteFile
+- [ ] ep-398: GET /api/v1/repos/{owner}/{repo}/contents-ext/{filepath} - repository.repoGetContentsExt
+- [ ] ep-399: GET /api/v1/repos/{owner}/{repo}/contents/{filepath} - repository.repoGetContents
+- [ ] ep-400: GET /api/v1/repos/{owner}/{repo}/contents - repository.repoGetContentsList
+- [ ] ep-401: GET /api/v1/repos/{owner}/{repo}/file-contents - repository.repoGetFileContents
+- [ ] ep-402: POST /api/v1/repos/{owner}/{repo}/file-contents - repository.repoGetFileContentsPost
+- [ ] ep-403: GET /api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}/logs - repository.downloadActionsRunJobLogs
+- [ ] ep-404: POST /api/v1/repos/{owner}/{repo}/transfer - repository.repoTransfer
+- [ ] ep-405: POST /api/v1/repos/{owner}/{repo}/transfer/accept - repository.acceptRepoTransfer
+- [ ] ep-406: POST /api/v1/repos/{owner}/{repo}/transfer/reject - repository.rejectRepoTransfer
+- [ ] ep-407: GET /api/v1/repos/{owner}/{repo}/issues/{index}/times - issue.issueTrackedTimes
+- [ ] ep-408: POST /api/v1/repos/{owner}/{repo}/issues/{index}/times - issue.issueAddTime
+- [ ] ep-409: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/times - issue.issueResetTime
+- [ ] ep-410: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/times/{id} - issue.issueDeleteTime
+- [ ] ep-411: GET /api/v1/repos/{owner}/{repo}/times/{user} - repository.userTrackedTimes
+- [ ] ep-412: GET /api/v1/repos/{owner}/{repo}/times - repository.repoTrackedTimes
+- [ ] ep-413: GET /api/v1/user/times - user.userCurrentTrackedTimes
+- [ ] ep-414: GET /api/v1/repos/{owner}/{repo}/tags - repository.repoListTags
+- [ ] ep-415: GET /api/v1/repos/{owner}/{repo}/git/tags/{sha} - repository.GetAnnotatedTag
+- [ ] ep-416: GET /api/v1/repos/{owner}/{repo}/tags/{tag} - repository.repoGetTag
+- [ ] ep-417: POST /api/v1/repos/{owner}/{repo}/tags - repository.repoCreateTag
+- [ ] ep-418: DELETE /api/v1/repos/{owner}/{repo}/tags/{tag} - repository.repoDeleteTag
+- [ ] ep-419: GET /api/v1/repos/{owner}/{repo}/tag_protections - repository.repoListTagProtection
+- [ ] ep-420: GET /api/v1/repos/{owner}/{repo}/tag_protections/{id} - repository.repoGetTagProtection
+- [ ] ep-421: POST /api/v1/repos/{owner}/{repo}/tag_protections - repository.repoCreateTagProtection
+- [ ] ep-422: PATCH /api/v1/repos/{owner}/{repo}/tag_protections/{id} - repository.repoEditTagProtection
+- [ ] ep-423: DELETE /api/v1/repos/{owner}/{repo}/tag_protections/{id} - repository.repoDeleteTagProtection
+- [ ] ep-424: GET /api/v1/repos/{owner}/{repo}/issues/comments/{id}/assets/{attachment_id} - issue.issueGetIssueCommentAttachment
+- [ ] ep-425: GET /api/v1/repos/{owner}/{repo}/issues/comments/{id}/assets - issue.issueListIssueCommentAttachments
+- [ ] ep-426: POST /api/v1/repos/{owner}/{repo}/issues/comments/{id}/assets - issue.issueCreateIssueCommentAttachment
+- [ ] ep-427: PATCH /api/v1/repos/{owner}/{repo}/issues/comments/{id}/assets/{attachment_id} - issue.issueEditIssueCommentAttachment
+- [ ] ep-428: DELETE /api/v1/repos/{owner}/{repo}/issues/comments/{id}/assets/{attachment_id} - issue.issueDeleteIssueCommentAttachment
+- [ ] ep-429: POST /api/v1/repos/{owner}/{repo}/statuses/{sha} - repository.repoCreateStatus
+- [ ] ep-430: GET /api/v1/repos/{owner}/{repo}/statuses/{sha} - repository.repoListStatuses
+- [ ] ep-431: GET /api/v1/repos/{owner}/{repo}/commits/{ref}/statuses - repository.repoListStatusesByRef
+- [ ] ep-432: GET /api/v1/repos/{owner}/{repo}/commits/{ref}/status - repository.repoGetCombinedStatusByRef
+- [ ] ep-433: GET /api/v1/repos/{owner}/{repo}/git/blobs/{sha} - repository.GetBlob
+- [ ] ep-434: GET /api/v1/repos/{owner}/{repo}/compare/{basehead} - repository.repoCompareDiff
+- [ ] ep-435: GET /api/v1/repos/{owner}/{repo}/issues/{index}/comments - issue.issueGetComments
+- [ ] ep-436: GET /api/v1/repos/{owner}/{repo}/issues/{index}/timeline - issue.issueGetCommentsAndTimeline
+- [ ] ep-437: GET /api/v1/repos/{owner}/{repo}/issues/comments - issue.issueGetRepoComments
+- [ ] ep-438: POST /api/v1/repos/{owner}/{repo}/issues/{index}/comments - issue.issueCreateComment
+- [ ] ep-439: GET /api/v1/repos/{owner}/{repo}/issues/comments/{id} - issue.issueGetComment
+- [ ] ep-440: PATCH /api/v1/repos/{owner}/{repo}/issues/comments/{id} - issue.issueEditComment
+- [ ] ep-441: PATCH /api/v1/repos/{owner}/{repo}/issues/{index}/comments/{id} - issue.issueEditCommentDeprecated
+- [ ] ep-442: DELETE /api/v1/repos/{owner}/{repo}/issues/comments/{id} - issue.issueDeleteComment
+- [ ] ep-443: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/comments/{id} - issue.issueDeleteCommentDeprecated
+- [ ] ep-444: POST /api/v1/repos/migrate - repository.repoMigrate
+- [ ] ep-445: POST /api/v1/repos/{owner}/{repo}/wiki/new - repository.repoCreateWikiPage
+- [ ] ep-446: PATCH /api/v1/repos/{owner}/{repo}/wiki/page/{pageName} - repository.repoEditWikiPage
+- [ ] ep-447: DELETE /api/v1/repos/{owner}/{repo}/wiki/page/{pageName} - repository.repoDeleteWikiPage
+- [ ] ep-448: GET /api/v1/repos/{owner}/{repo}/wiki/pages - repository.repoGetWikiPages
+- [ ] ep-449: GET /api/v1/repos/{owner}/{repo}/wiki/page/{pageName} - repository.repoGetWikiPage
+- [ ] ep-450: GET /api/v1/repos/{owner}/{repo}/wiki/revisions/{pageName} - repository.repoGetWikiPageRevisions
+- [ ] ep-451: GET /api/v1/repos/{owner}/{repo}/pulls/{index}/reviews - repository.repoListPullReviews
+- [ ] ep-452: GET /api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id} - repository.repoGetPullReview
+- [ ] ep-453: GET /api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id}/comments - repository.repoGetPullReviewComments
+- [ ] ep-454: POST /api/v1/repos/{owner}/{repo}/pulls/{index}/comments/{id}/replies - repository.repoCreatePullReviewCommentReply
+- [ ] ep-455: POST /api/v1/repos/{owner}/{repo}/pulls/comments/{id}/resolve - repository.repoResolvePullReviewComment
+- [ ] ep-456: POST /api/v1/repos/{owner}/{repo}/pulls/comments/{id}/unresolve - repository.repoUnresolvePullReviewComment
+- [ ] ep-457: DELETE /api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id} - repository.repoDeletePullReview
+- [ ] ep-458: POST /api/v1/repos/{owner}/{repo}/pulls/{index}/reviews - repository.repoCreatePullReview
+- [ ] ep-459: POST /api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id} - repository.repoSubmitPullReview
+- [ ] ep-460: POST /api/v1/repos/{owner}/{repo}/pulls/{index}/requested_reviewers - repository.repoCreatePullReviewRequests
+- [ ] ep-461: DELETE /api/v1/repos/{owner}/{repo}/pulls/{index}/requested_reviewers - repository.repoDeletePullReviewRequests
+- [ ] ep-462: POST /api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id}/dismissals - repository.repoDismissPullReview
+- [ ] ep-463: POST /api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id}/undismissals - repository.repoUnDismissPullReview
+- [ ] ep-464: GET /api/v1/repos/{owner}/{repo}/milestones - issue.issueGetMilestonesList
+- [ ] ep-465: GET /api/v1/repos/{owner}/{repo}/milestones/{id} - issue.issueGetMilestone
+- [ ] ep-466: POST /api/v1/repos/{owner}/{repo}/milestones - issue.issueCreateMilestone
+- [ ] ep-467: PATCH /api/v1/repos/{owner}/{repo}/milestones/{id} - issue.issueEditMilestone
+- [ ] ep-468: DELETE /api/v1/repos/{owner}/{repo}/milestones/{id} - issue.issueDeleteMilestone
+- [ ] ep-469: GET /api/v1/repos/issues/search - issue.issueSearchIssues
+- [ ] ep-470: GET /api/v1/repos/{owner}/{repo}/issues - issue.issueListIssues
+- [ ] ep-471: GET /api/v1/repos/{owner}/{repo}/issues/{index} - issue.issueGetIssue
+- [ ] ep-472: POST /api/v1/repos/{owner}/{repo}/issues - issue.issueCreateIssue
+- [ ] ep-473: PATCH /api/v1/repos/{owner}/{repo}/issues/{index} - issue.issueEditIssue
+- [ ] ep-474: DELETE /api/v1/repos/{owner}/{repo}/issues/{index} - issue.issueDelete
+- [ ] ep-475: POST /api/v1/repos/{owner}/{repo}/issues/{index}/deadline - issue.issueEditIssueDeadline

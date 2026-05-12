@@ -1,0 +1,48 @@
+{
+  "endpoints_by_database_table": {
+    "user": {"read": [], "write": ["ep-129"]},
+    "secret": {"read": ["ep-130", "ep-131"], "write": ["ep-130", "ep-131"]},
+    "action_variable": {"read": ["ep-132", "ep-133", "ep-134"], "write": ["ep-132", "ep-133", "ep-134"]}
+  },
+  "endpoints_by_external_service": {
+    "Avatar Storage Backend": ["ep-129"]
+  },
+  "endpoints_by_config_property": {
+    "SECRET_KEY": ["ep-130"],
+    "avatar.STORAGE_TYPE": ["ep-129"]
+  },
+  "endpoints_by_model_class": {
+    "User": ["ep-129"],
+    "Secret": ["ep-130", "ep-131"],
+    "ActionVariable": ["ep-132", "ep-133", "ep-134"]
+  },
+  "endpoints_by_service_class": {
+    "user_service": ["ep-129"],
+    "secret_service": ["ep-130", "ep-131"],
+    "actions_service": ["ep-132", "ep-133", "ep-134"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-129": {"reads": [], "writes": ["user"]},
+    "ep-130": {"reads": ["secret"], "writes": ["secret"]},
+    "ep-131": {"reads": ["secret"], "writes": ["secret"]},
+    "ep-132": {"reads": ["action_variable"], "writes": ["action_variable"]},
+    "ep-133": {"reads": ["action_variable"], "writes": ["action_variable"]},
+    "ep-134": {"reads": ["action_variable"], "writes": ["action_variable"]}
+  },
+  "external_services_by_endpoint": {
+    "ep-129": ["Avatar Storage Backend"],
+    "ep-130": [],
+    "ep-131": [],
+    "ep-132": [],
+    "ep-133": [],
+    "ep-134": []
+  },
+  "config_properties_by_endpoint": {
+    "ep-129": ["avatar.STORAGE_TYPE"],
+    "ep-130": ["SECRET_KEY"],
+    "ep-131": [],
+    "ep-132": [],
+    "ep-133": [],
+    "ep-134": []
+  }
+}

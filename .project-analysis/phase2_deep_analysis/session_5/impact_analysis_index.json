@@ -1,0 +1,77 @@
+{
+  "endpoints_by_database_table": {
+    "user": {
+      "read": ["ep-029", "ep-031", "ep-032", "ep-033", "ep-034"],
+      "write": ["ep-030", "ep-032", "ep-033", "ep-034"]
+    },
+    "org_user": {
+      "read": ["ep-031"],
+      "write": ["ep-030", "ep-034"]
+    },
+    "team": {
+      "read": ["ep-032", "ep-033", "ep-034"],
+      "write": ["ep-030", "ep-034"]
+    },
+    "team_user": {
+      "read": ["ep-032", "ep-033", "ep-034"],
+      "write": ["ep-030", "ep-034"]
+    },
+    "team_unit": {
+      "read": [],
+      "write": ["ep-030", "ep-034"]
+    },
+    "user_redirect": {
+      "read": [],
+      "write": ["ep-030", "ep-032"]
+    },
+    "repository": {
+      "read": ["ep-034"],
+      "write": ["ep-032"]
+    },
+    "package": {
+      "read": ["ep-034"],
+      "write": []
+    }
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "setting.API.DefaultPagingNum": ["ep-029"],
+    "setting.API.MaxResponseItems": ["ep-029"],
+    "setting.Admin.DisableRegularOrgCreation": ["ep-030"],
+    "setting.Service.DefaultOrgMemberVisible": ["ep-030"]
+  },
+  "endpoints_by_model_class": {
+    "user_model.User": ["ep-029", "ep-030", "ep-031", "ep-032", "ep-033", "ep-034"],
+    "organization.Organization": ["ep-029", "ep-030", "ep-031", "ep-032", "ep-033", "ep-034"],
+    "organization.OrgUser": ["ep-030", "ep-031", "ep-034"],
+    "organization.Team": ["ep-030", "ep-034"],
+    "organization.TeamUser": ["ep-030", "ep-032", "ep-033", "ep-034"],
+    "organization.TeamUnit": ["ep-030", "ep-034"]
+  },
+  "endpoints_by_service_class": {
+    "user_model.SearchUsers": ["ep-029"],
+    "organization.CreateOrganization": ["ep-030"],
+    "organization.HasOrgOrUserVisible": ["ep-031"],
+    "user_service.RenameUser": ["ep-032"],
+    "org.UpdateOrgEmailAddress": ["ep-033"],
+    "user_service.UpdateUser": ["ep-033"],
+    "org.DeleteOrganization": ["ep-034"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-029": {"reads": ["user"], "writes": []},
+    "ep-030": {"reads": ["user"], "writes": ["user", "org_user", "team", "team_unit", "team_user", "user_redirect"]},
+    "ep-031": {"reads": ["user", "org_user"], "writes": []},
+    "ep-032": {"reads": ["user", "team_user", "team"], "writes": ["user", "repository", "user_redirect"]},
+    "ep-033": {"reads": ["user", "team_user", "team"], "writes": ["user"]},
+    "ep-034": {"reads": ["user", "team_user", "team", "repository", "package"], "writes": ["user", "org_user", "team", "team_user", "team_unit"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-029": ["setting.API.DefaultPagingNum", "setting.API.MaxResponseItems"],
+    "ep-030": ["setting.Admin.DisableRegularOrgCreation", "setting.Service.DefaultOrgMemberVisible"],
+    "ep-031": [],
+    "ep-032": [],
+    "ep-033": [],
+    "ep-034": []
+  }
+}

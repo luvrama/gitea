@@ -1,0 +1,154 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite (via XORM)",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "user_blocking",
+      "entity_class": "user_model.Blocking",
+      "file_path": "models/user/block.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "blocker_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(block)"]},
+        {"name": "blockee_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(block)"]},
+        {"name": "note", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]}
+      ],
+      "indexes": [
+        {"name": "UQE_user_blocking_block", "columns": ["blocker_id", "blockee_id"], "unique": true},
+        {"name": "IDX_user_blocking_created_unix", "columns": ["created_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "blocker_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "blockee_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "watch",
+      "entity_class": "repo_model.Watch",
+      "file_path": "models/repo/watch.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(watch)"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(watch)"]},
+        {"name": "mode", "type": "SMALLINT", "code_type": "WatchMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "1", "constraints": ["NOT NULL DEFAULT 1"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_watch_watch", "columns": ["user_id", "repo_id"], "unique": true},
+        {"name": "IDX_watch_created_unix", "columns": ["created_unix"], "unique": false},
+        {"name": "IDX_watch_updated_unix", "columns": ["updated_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "repository",
+      "entity_class": "repo_model.Repository",
+      "file_path": "models/repo/repo.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "is_private", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_watches", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_repository_owner_id", "columns": ["owner_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "one-to-many", "target_table": "watch", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "user",
+      "entity_class": "user_model.User",
+      "file_path": "models/user/user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "lower_name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "is_admin", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_user_lower_name", "columns": ["lower_name"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "one-to-many", "target_table": "user_blocking", "join_column": "id"},
+        {"type": "one-to-many", "target_table": "watch", "join_column": "id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-190",
+      "path": "/api/v1/user/blocks",
+      "operations": [
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.FindBlockings", "description": "Find blocking records by blocker_id with pagination"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUsersByIDs", "description": "Batch load blocker/blockee user objects"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-191",
+      "path": "/api/v1/user/blocks/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Resolve username to user"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.GetBlocking", "description": "Check if blocking record exists"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-192",
+      "path": "/api/v1/user/blocks/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Resolve username to user"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.IsUserBlockedBy", "description": "Check if already blocked by target"},
+        {"store_type": "database", "store_name": "follow", "operation": "DELETE", "method": "user_model.UnfollowUser", "description": "Remove follow relationships both directions"},
+        {"store_type": "database", "store_name": "star", "operation": "DELETE", "method": "repo_model.StarRepo", "description": "Remove stars on each other's repos"},
+        {"store_type": "database", "store_name": "watch", "operation": "DELETE", "method": "repo_model.WatchRepo", "description": "Remove watches on each other's repos"},
+        {"store_type": "database", "store_name": "issue_assignees", "operation": "DELETE", "method": "issues_model.ToggleIssueAssignee", "description": "Remove issue assignments"},
+        {"store_type": "database", "store_name": "collaboration", "operation": "DELETE", "method": "repo_service.DeleteCollaboration", "description": "Remove collaborations"},
+        {"store_type": "database", "store_name": "repo_transfer", "operation": "UPDATE", "method": "repo_service.CancelRepositoryTransfer", "description": "Cancel pending transfers"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "INSERT", "method": "db.Insert", "description": "Create blocking record"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-193",
+      "path": "/api/v1/user/blocks/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Resolve username to user"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.IsUserBlockedBy", "description": "Check if blocked in CanUnblockUser"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.GetBlocking", "description": "Get blocking record"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "DELETE", "method": "db.DeleteByID", "description": "Delete blocking record"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-194",
+      "path": "/api/v1/users/{username}/subscriptions",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "repo_model.GetWatchedRepos", "description": "Query repos with JOIN on watch table, filtered by user and privacy"},
+        {"store_type": "database", "store_name": "repo_unit", "operation": "SELECT", "method": "repo.LoadUnits", "description": "Load units per repo (N+1)"},
+        {"store_type": "database", "store_name": "collaboration", "operation": "SELECT", "method": "repo_model.IsCollaborator", "description": "Check collaborator per repo (N+1)"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "repo.LoadOwner", "description": "Load owner per repo (N+1)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-195",
+      "path": "/api/v1/user/subscriptions",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "repo_model.GetWatchedRepos", "description": "Query repos with JOIN on watch table, includes private"},
+        {"store_type": "database", "store_name": "repo_unit", "operation": "SELECT", "method": "repo.LoadUnits", "description": "Load units per repo (N+1)"},
+        {"store_type": "database", "store_name": "collaboration", "operation": "SELECT", "method": "repo_model.IsCollaborator", "description": "Check collaborator per repo (N+1)"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "repo.LoadOwner", "description": "Load owner per repo (N+1)"}
+      ]
+    }
+  ]
+}

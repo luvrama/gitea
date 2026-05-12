@@ -1,0 +1,45 @@
+{
+  "total_properties": 5,
+  "properties": [
+    {
+      "key": "AVATAR_MAX_WIDTH",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "app.ini [picture]",
+      "used_by": [{"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "usage": "max allowed image width", "impact": "images wider than this are rejected"}],
+      "affected_endpoints": ["ep-037"]
+    },
+    {
+      "key": "AVATAR_MAX_HEIGHT",
+      "type": "Integer",
+      "default_value": "4096",
+      "source_file": "app.ini [picture]",
+      "used_by": [{"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "usage": "max allowed image height", "impact": "images taller than this are rejected"}],
+      "affected_endpoints": ["ep-037"]
+    },
+    {
+      "key": "AVATAR_MAX_ORIGIN_SIZE",
+      "type": "Integer",
+      "default_value": "262144",
+      "source_file": "app.ini [picture]",
+      "used_by": [{"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "usage": "threshold for skipping image processing", "impact": "images smaller than 256KB are stored as-is without crop/resize"}],
+      "affected_endpoints": ["ep-037"]
+    },
+    {
+      "key": "AVATAR_RENDERED_SIZE_FACTOR",
+      "type": "Integer",
+      "default_value": "2",
+      "source_file": "app.ini [picture]",
+      "used_by": [{"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "usage": "multiplier for target avatar size (256 * factor)", "impact": "determines final avatar resolution after resize"}],
+      "affected_endpoints": ["ep-037"]
+    },
+    {
+      "key": "SECRET_KEY",
+      "type": "String",
+      "default_value": "auto-generated",
+      "source_file": "app.ini [security]",
+      "used_by": [{"class": "secret_module", "method": "EncryptSecret/DecryptSecret", "file_path": "modules/secret/secret.go", "usage": "encryption key for secret data", "impact": "all secret values are encrypted/decrypted with this key"}],
+      "affected_endpoints": ["ep-040"]
+    }
+  ]
+}

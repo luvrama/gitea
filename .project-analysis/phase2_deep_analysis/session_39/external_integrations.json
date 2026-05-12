@@ -1,0 +1,27 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "File Storage (RepoAvatars)",
+      "type": "cloud_service",
+      "base_url": "configured via storage settings",
+      "client_class": "storage.ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "http_library": "native (minio/local/azureblob)",
+      "endpoints_called": [
+        {"method": "PUT", "path": "repo-avatars/{hash}", "request": {"type": "[]byte", "key_fields": ["image data"]}, "response": {"type": "none", "key_fields": []}, "purpose": "Save avatar image"},
+        {"method": "DELETE", "path": "repo-avatars/{hash}", "request": {"type": "string", "key_fields": ["path"]}, "response": {"type": "none", "key_fields": []}, "purpose": "Delete avatar image"}
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": null
+      },
+      "authentication": "configured per storage backend",
+      "used_by_endpoints": ["ep-262", "ep-263"],
+      "config_keys": ["storage.REPO_AVATARS_STORAGE_TYPE", "storage.REPO_AVATARS_MINIO_ENDPOINT"]
+    }
+  ]
+}

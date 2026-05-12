@@ -1,0 +1,47 @@
+{
+  "endpoints_by_database_table": {
+    "package": {"read": ["ep-204", "ep-205", "ep-206", "ep-207"], "write": ["ep-206", "ep-207"]},
+    "package_version": {"read": ["ep-202", "ep-203", "ep-204", "ep-205"], "write": ["ep-202"]},
+    "package_file": {"read": ["ep-203"], "write": ["ep-202"]},
+    "package_blob": {"read": ["ep-203"], "write": []},
+    "package_property": {"read": ["ep-203"], "write": ["ep-202"]},
+    "repository": {"read": ["ep-206", "ep-207"], "write": []},
+    "user": {"read": ["ep-207"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "packages.ENABLED": ["ep-202", "ep-203", "ep-204", "ep-205", "ep-206", "ep-207"],
+    "service.REQUIRE_SIGNIN_VIEW": ["ep-202", "ep-203", "ep-204", "ep-205", "ep-206", "ep-207"]
+  },
+  "endpoints_by_model_class": {
+    "packages_model.Package": ["ep-204", "ep-205", "ep-206", "ep-207"],
+    "packages_model.PackageVersion": ["ep-202", "ep-203", "ep-204", "ep-205"],
+    "packages_model.PackageFile": ["ep-202", "ep-203"],
+    "packages_model.PackageBlob": ["ep-203"],
+    "packages_model.PackageDescriptor": ["ep-202", "ep-203", "ep-204", "ep-205"]
+  },
+  "endpoints_by_service_class": {
+    "packages_service.RemovePackageVersion": ["ep-202"],
+    "packages_service.LinkToRepository": ["ep-206"],
+    "packages_service.UnlinkFromRepository": ["ep-207"],
+    "convert.ToPackage": ["ep-204", "ep-205"],
+    "convert.ToPackageFile": ["ep-203"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-202": {"reads": ["package_version", "package", "package_file", "package_blob", "package_property"], "writes": ["package_version", "package_file", "package_property"]},
+    "ep-203": {"reads": ["package_version", "package_file", "package_blob", "package_property"], "writes": []},
+    "ep-204": {"reads": ["package", "package_version", "user", "repository"], "writes": []},
+    "ep-205": {"reads": ["package", "package_version", "user", "repository"], "writes": []},
+    "ep-206": {"reads": ["package", "repository", "access"], "writes": ["package"]},
+    "ep-207": {"reads": ["package", "repository", "user", "org_user"], "writes": ["package"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-202": ["packages.ENABLED", "service.REQUIRE_SIGNIN_VIEW"],
+    "ep-203": ["packages.ENABLED", "service.REQUIRE_SIGNIN_VIEW"],
+    "ep-204": ["packages.ENABLED", "service.REQUIRE_SIGNIN_VIEW"],
+    "ep-205": ["packages.ENABLED", "service.REQUIRE_SIGNIN_VIEW"],
+    "ep-206": ["packages.ENABLED", "service.REQUIRE_SIGNIN_VIEW"],
+    "ep-207": ["packages.ENABLED", "service.REQUIRE_SIGNIN_VIEW"]
+  }
+}

@@ -1,0 +1,5407 @@
+{
+  "global_handlers": [
+    {
+      "class": "APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {
+          "exception_type": "internal_error",
+          "status_code": 500,
+          "response_type": "APIError",
+          "message_template": "error message (only shown in dev or to admin)"
+        },
+        {
+          "exception_type": "not_found",
+          "status_code": 404,
+          "response_type": "map[message,url,errors]",
+          "message_template": "not found"
+        },
+        {
+          "exception_type": "generic_error",
+          "status_code": "variable",
+          "response_type": "APIError",
+          "message_template": "error message or formatted obj"
+        }
+      ]
+    },
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {
+          "exception_type": "generic error",
+          "status_code": 500,
+          "response_type": "APIError JSON",
+          "message_template": "internal server error"
+        },
+        {
+          "exception_type": "validation error",
+          "status_code": 422,
+          "response_type": "APIError JSON",
+          "message_template": "error message from err.Error()"
+        },
+        {
+          "exception_type": "not found",
+          "status_code": 404,
+          "response_type": "APIError JSON",
+          "message_template": "not found"
+        },
+        {
+          "exception_type": "forbidden",
+          "status_code": 403,
+          "response_type": "APIError JSON",
+          "message_template": "forbidden"
+        },
+        {
+          "exception_type": "unauthorized",
+          "status_code": 401,
+          "response_type": "APIError JSON",
+          "message_template": "token is required"
+        }
+      ]
+    },
+    {
+      "class": "handleChangeRepoFilesError",
+      "file_path": "routers/api/v1/repo/file.go",
+      "handles": [
+        {
+          "exception_type": "git.ErrPushRejected",
+          "status_code": 403,
+          "response_type": "error",
+          "message_template": "push rejected message"
+        },
+        {
+          "exception_type": "files_service.ErrUserCannotCommit",
+          "status_code": 403,
+          "response_type": "error",
+          "message_template": null
+        },
+        {
+          "exception_type": "pull_service.IsErrFilePathProtected",
+          "status_code": 403,
+          "response_type": "error",
+          "message_template": null
+        },
+        {
+          "exception_type": "git_model.ErrBranchAlreadyExists",
+          "status_code": 422,
+          "response_type": "error",
+          "message_template": null
+        },
+        {
+          "exception_type": "files_service.ErrCommitIDDoesNotMatch",
+          "status_code": 422,
+          "response_type": "error",
+          "message_template": null
+        },
+        {
+          "exception_type": "util.ErrNotExist",
+          "status_code": 404,
+          "response_type": "error",
+          "message_template": null
+        }
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-003",
+      "path": "/api/v1/label/templates/{name}",
+      "error_scenarios": [
+        {
+          "exception": "label.ErrTemplateLoad",
+          "trigger": "Template display name not in map",
+          "status_code": 404,
+          "response": "notFound JSON",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-004",
+      "path": "/api/v1/signing-key.gpg",
+      "error_scenarios": [
+        {
+          "exception": "format mismatch or empty",
+          "trigger": "No GPG key configured or key is SSH format",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "gpg exec error",
+          "trigger": "gpg binary fails or key not found",
+          "status_code": 500,
+          "response": "APIError",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-009",
+      "path": "/api/v1/markdown",
+      "error_scenarios": [
+        {
+          "exception": "binding error",
+          "trigger": "Invalid JSON body or missing required fields",
+          "status_code": 422,
+          "response": "APIError with field name and error",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "unsupported mode",
+          "trigger": "Mode not in [empty, markdown, gfm, comment, wiki, file]",
+          "status_code": 422,
+          "response": "HTTP error: unsupported render mode: X",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "Unable to find renderer for content",
+          "status_code": 422,
+          "response": "HTTP error with error message",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "render error",
+          "trigger": "Internal markdown rendering failure",
+          "status_code": 500,
+          "response": "HTTP error: failed to render markup",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-010",
+      "path": "/api/v1/markdown/raw",
+      "error_scenarios": [
+        {
+          "exception": "render error",
+          "trigger": "Internal markdown rendering failure",
+          "status_code": 500,
+          "response": "APIError via APIErrorInternal",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-012",
+      "path": "/api/v1/gitignore/templates/{name}",
+      "error_scenarios": [
+        {
+          "exception": "file not found",
+          "trigger": "Gitignore template name doesn't exist in any layer",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-014",
+      "path": "/api/v1/licenses/{name}",
+      "error_scenarios": [
+        {
+          "exception": "file not found",
+          "trigger": "License template name doesn't exist in any layer",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-019",
+      "path": "/api/v1/notifications",
+      "error_scenarios": [
+        {
+          "exception": "time.Parse error",
+          "trigger": "Invalid RFC3339 before/since parameter",
+          "status_code": 422,
+          "response": "APIError with parse error message",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "database error",
+          "trigger": "DB connection failure or query error",
+          "status_code": 500,
+          "response": "APIErrorInternal",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-020",
+      "path": "/api/v1/notifications",
+      "error_scenarios": [
+        {
+          "exception": "time.Parse error",
+          "trigger": "Invalid RFC3339 last_read_at parameter",
+          "status_code": 400,
+          "response": "APIError with parse error message",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "database error",
+          "trigger": "DB failure during find or update",
+          "status_code": 500,
+          "response": "APIErrorInternal",
+          "logged": true,
+          "retryable": true
+        },
+        {
+          "exception": "ownership error",
+          "trigger": "SetNotificationStatus called for notification not owned by user",
+          "status_code": 500,
+          "response": "APIErrorInternal (error bubbles up)",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-021",
+      "path": "/api/v1/notifications/new",
+      "error_scenarios": [
+        {
+          "exception": "database error",
+          "trigger": "DB connection failure or query error",
+          "status_code": 422,
+          "response": "APIError",
+          "logged": false,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-022",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "error_scenarios": [
+        {
+          "exception": "time.Parse error",
+          "trigger": "Invalid RFC3339 before/since parameter",
+          "status_code": 422,
+          "response": "APIError with parse error message",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "database error",
+          "trigger": "DB connection failure or query error",
+          "status_code": 500,
+          "response": "APIErrorInternal",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-023",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "error_scenarios": [
+        {
+          "exception": "time.Parse error",
+          "trigger": "Invalid RFC3339 last_read_at",
+          "status_code": 400,
+          "response": "bad request with parse error",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "db error",
+          "trigger": "db.Find or SetNotificationStatus fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-024",
+      "path": "/api/v1/notifications/threads/{id}",
+      "error_scenarios": [
+        {
+          "exception": "db.ErrNotExist",
+          "trigger": "Notification ID not found",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ownership check",
+          "trigger": "User is not owner and not admin",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "LoadAttributes error (non-comment)",
+          "trigger": "DB error loading repo/issue/user",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-025",
+      "path": "/api/v1/notifications/threads/{id}",
+      "error_scenarios": [
+        {
+          "exception": "db.ErrNotExist",
+          "trigger": "Notification ID not found",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ownership check",
+          "trigger": "User is not owner and not admin",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "SetNotificationStatus error",
+          "trigger": "DB error or ownership mismatch in model",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-026",
+      "path": "/api/v1/user/orgs",
+      "error_scenarios": [
+        {
+          "exception": "db error",
+          "trigger": "FindAndCount fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-027",
+      "path": "/api/v1/users/{username}/orgs",
+      "error_scenarios": [
+        {
+          "exception": "user not found",
+          "trigger": "Username does not exist",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "db error",
+          "trigger": "FindAndCount fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-028",
+      "path": "/api/v1/users/{username}/orgs/{org}/permissions",
+      "error_scenarios": [
+        {
+          "exception": "user not found",
+          "trigger": "Username or org does not exist",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "org not visible",
+          "trigger": "HasOrgOrUserVisible returns false",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "db error",
+          "trigger": "GetOrgUserMaxAuthorizeLevel or CanCreateOrgRepo fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-029",
+      "path": "/api/v1/orgs",
+      "error_scenarios": [
+        {
+          "exception": "database error",
+          "trigger": "SearchUsers fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-030",
+      "path": "/api/v1/orgs",
+      "error_scenarios": [
+        {
+          "exception": "ErrUserNotAllowedCreateOrg",
+          "trigger": "User cannot create orgs",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrUserAlreadyExist",
+          "trigger": "Username taken",
+          "status_code": 422,
+          "response": "validation error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrNameReserved",
+          "trigger": "Username is reserved",
+          "status_code": 422,
+          "response": "validation error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrNameCharsNotAllowed",
+          "trigger": "Invalid characters in name",
+          "status_code": 422,
+          "response": "validation error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-032",
+      "path": "/api/v1/orgs/{org}/rename",
+      "error_scenarios": [
+        {
+          "exception": "ErrUserAlreadyExist",
+          "trigger": "New name already taken",
+          "status_code": 422,
+          "response": "validation error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrNameReserved",
+          "trigger": "New name is reserved",
+          "status_code": 422,
+          "response": "validation error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "filesystem error",
+          "trigger": "Cannot rename user directory",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-033",
+      "path": "/api/v1/orgs/{org}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "Invalid email format/domain",
+          "status_code": 422,
+          "response": "validation error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "database error",
+          "trigger": "UpdateUser fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-034",
+      "path": "/api/v1/orgs/{org}",
+      "error_scenarios": [
+        {
+          "exception": "ErrUserOwnRepos",
+          "trigger": "Org still has repositories",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        },
+        {
+          "exception": "ErrUserOwnPackages",
+          "trigger": "Org still has packages",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-035",
+      "path": "/api/v1/orgs/{org}/activities/feeds",
+      "error_scenarios": [
+        {
+          "exception": "IsOrgMember error",
+          "trigger": "DB error checking membership",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        },
+        {
+          "exception": "GetFeeds error",
+          "trigger": "DB query failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-037",
+      "path": "/api/v1/orgs/{org}/avatar",
+      "error_scenarios": [
+        {
+          "exception": "base64 decode error",
+          "trigger": "invalid base64 in image field",
+          "status_code": 400,
+          "response": "bad request",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ProcessAvatarImage error",
+          "trigger": "unsupported type or too large",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-040",
+      "path": "/api/v1/orgs/{org}/actions/secrets/{secretname}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "invalid secret name or data too long",
+          "status_code": 400,
+          "response": "error with message",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "secret not found (should not happen for create)",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-042",
+      "path": "/api/v1/orgs/{org}/actions/runners/registration-token",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "No existing token found",
+          "status_code": 200,
+          "response": "Creates new token (not an error)",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "DB error",
+          "trigger": "Database failure on insert/select",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-046",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "Invalid variable name format",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "AlreadyExistError",
+          "trigger": "Variable with same name exists",
+          "status_code": 409,
+          "response": "conflict",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-047",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "Variable not found by name",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "Invalid new name or data too long",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-050",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "runner ID not found in DB",
+          "status_code": 404,
+          "response": "Runner not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "permission check",
+          "trigger": "runner not editable in org context",
+          "status_code": 404,
+          "response": "No permission to access this runner",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-051",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "runner ID not found",
+          "status_code": 404,
+          "response": "Runner not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "nil disabled field",
+          "trigger": "form.Disabled == nil",
+          "status_code": 422,
+          "response": "[Disabled]: Required",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-052",
+      "path": "/api/v1/orgs/{org}/actions/jobs",
+      "error_scenarios": [
+        {
+          "exception": "invalid status",
+          "trigger": "unrecognized status filter value",
+          "status_code": 400,
+          "response": "Invalid status {value}",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-053",
+      "path": "/api/v1/orgs/{org}/actions/runs",
+      "error_scenarios": [
+        {
+          "exception": "invalid status",
+          "trigger": "unrecognized status filter value",
+          "status_code": 400,
+          "response": "Invalid status {value}",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "user not found",
+          "trigger": "actor username does not exist",
+          "status_code": 500,
+          "response": "internal server error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-057",
+      "path": "/api/v1/orgs/{org}/teams",
+      "error_scenarios": [
+        {
+          "exception": "ErrTeamAlreadyExist",
+          "trigger": "team name already exists in org",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "empty units",
+          "trigger": "non-admin team with no units",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-062",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "error_scenarios": [
+        {
+          "exception": "ErrBlockedUser",
+          "trigger": "user is blocked by org",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-063",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "error_scenarios": [
+        {
+          "exception": "ErrLastOrgOwner",
+          "trigger": "removing last owner team member",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-064",
+      "path": "/api/v1/teams/{id}/repos",
+      "error_scenarios": [
+        {
+          "exception": "DB error",
+          "trigger": "GetTeamRepositories fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        },
+        {
+          "exception": "DB error",
+          "trigger": "GetDoerRepoPermission fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-066",
+      "path": "/api/v1/teams/{id}/repos/{org}/{repo}",
+      "error_scenarios": [
+        {
+          "exception": "ErrRepoNotExist",
+          "trigger": "repo name not found",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "access < admin",
+          "trigger": "user lacks admin access",
+          "status_code": 403,
+          "response": "Must have admin-level access to the repository",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "TeamAddRepository fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-068",
+      "path": "/api/v1/orgs/{org}/teams/search",
+      "error_scenarios": [
+        {
+          "exception": "SearchTeam failure",
+          "trigger": "DB query error",
+          "status_code": 500,
+          "response": "{ok: false, error: 'SearchTeam internal failure'}",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-070",
+      "path": "/api/v1/orgs/{org}/members",
+      "error_scenarios": [
+        {
+          "exception": "org not found",
+          "trigger": "GetOrgByName returns ErrOrgNotExist",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "IsOrgMember/CountOrgMembers/FindOrgMembers fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-072",
+      "path": "/api/v1/orgs/{org}/members/{username}",
+      "error_scenarios": [
+        {
+          "exception": "user not found",
+          "trigger": "GetUserByName returns ErrUserNotExist",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "not a member",
+          "trigger": "Target user not in org_user",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-074",
+      "path": "/api/v1/orgs/{org}/public_members/{username} (PUT)",
+      "error_scenarios": [
+        {
+          "exception": "forbidden",
+          "trigger": "Doer is not target, not admin, not org owner",
+          "status_code": 403,
+          "response": "Cannot change member visibility",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "ChangeOrgUserStatus fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-076",
+      "path": "/api/v1/orgs/{org}/members/{username} (DELETE)",
+      "error_scenarios": [
+        {
+          "exception": "ErrLastOrgOwner",
+          "trigger": "User is last owner of org",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        },
+        {
+          "exception": "not a member",
+          "trigger": "User not in org_user",
+          "status_code": 204,
+          "response": "silent success (no-op)",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-077",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "error_scenarios": [
+        {
+          "exception": "db error",
+          "trigger": "FindAndCount fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        },
+        {
+          "exception": "decrypt error",
+          "trigger": "HeaderAuthorization decrypt fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-079",
+      "path": "/api/v1/orgs/{org}/hooks",
+      "error_scenarios": [
+        {
+          "exception": "validation",
+          "trigger": "Invalid hook type",
+          "status_code": 422,
+          "response": "Invalid hook type: X",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "validation",
+          "trigger": "Missing config option",
+          "status_code": 422,
+          "response": "Missing config option: X",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "validation",
+          "trigger": "Invalid URL",
+          "status_code": 422,
+          "response": "Invalid url",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "validation",
+          "trigger": "Invalid content type",
+          "status_code": 422,
+          "response": "Invalid content type",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "validation",
+          "trigger": "Invalid slack channel",
+          "status_code": 400,
+          "response": "Invalid slack channel name",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-084",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrOrgLabelNotExist",
+          "trigger": "Label not found in org by ID or name",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-085",
+      "path": "/api/v1/orgs/{org}/labels/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrOrgLabelNotExist",
+          "trigger": "Label not found in org",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "InvalidArgumentError",
+          "trigger": "Invalid color format",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-089",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "error_scenarios": [
+        {
+          "exception": "ErrCanNotBlock",
+          "trigger": "Block not permitted (self, member, already blocked)",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrBlockOrganization",
+          "trigger": "Target is an organization",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-090",
+      "path": "/api/v1/orgs/{org}/blocks/{username}",
+      "error_scenarios": [
+        {
+          "exception": "ErrCanNotUnblock",
+          "trigger": "Unblock not permitted (not blocked or insufficient perms)",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrBlockOrganization",
+          "trigger": "Target is an organization",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-091",
+      "path": "/api/v1/admin/hooks",
+      "error_scenarios": [
+        {
+          "exception": "DB error",
+          "trigger": "GetGlobalWebhooks fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        },
+        {
+          "exception": "Decryption error",
+          "trigger": "HeaderAuthorization() fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-092",
+      "path": "/api/v1/admin/hooks/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrWebhookNotExist",
+          "trigger": "Webhook ID not found with repo_id=0, owner_id=0",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "Database query fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-095",
+      "path": "/api/v1/admin/hooks/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrWebhookNotExist",
+          "trigger": "Delete count=0 (webhook not found)",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "Transaction fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-098",
+      "path": "/api/v1/admin/users",
+      "error_scenarios": [
+        {
+          "exception": "ErrSourceNotExist",
+          "trigger": "Auth source ID not found",
+          "status_code": 422,
+          "response": "validation error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "PasswordIsRequired",
+          "trigger": "Password too short for plain auth",
+          "status_code": 400,
+          "response": "PasswordIsRequired",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "PasswordComplexity",
+          "trigger": "Password not complex enough",
+          "status_code": 400,
+          "response": "PasswordComplexity",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "PasswordPwned",
+          "trigger": "Password found in breach database",
+          "status_code": 400,
+          "response": "PasswordPwned",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrIsPwnedRequest",
+          "trigger": "HaveIBeenPwned API call fails",
+          "status_code": 400,
+          "response": "PasswordPwned",
+          "logged": true,
+          "retryable": true
+        },
+        {
+          "exception": "ErrUserAlreadyExist",
+          "trigger": "Username already taken",
+          "status_code": 422,
+          "response": "validation error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrEmailAlreadyUsed",
+          "trigger": "Email already registered",
+          "status_code": 422,
+          "response": "validation error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-099",
+      "path": "/api/v1/admin/users/{username}",
+      "error_scenarios": [
+        {
+          "exception": "password.ErrMinLength",
+          "trigger": "Password shorter than MinPasswordLength",
+          "status_code": 400,
+          "response": "error message",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "password.ErrComplexity",
+          "trigger": "Password not complex enough",
+          "status_code": 400,
+          "response": "error message",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "password.ErrIsPwned",
+          "trigger": "Password found in breach database",
+          "status_code": 400,
+          "response": "error message",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "user_model.ErrEmailAlreadyUsed",
+          "trigger": "Email already in use",
+          "status_code": 400,
+          "response": "error message",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "user_model.ErrDeleteLastAdminUser",
+          "trigger": "Removing admin from last admin",
+          "status_code": 400,
+          "response": "error message",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-100",
+      "path": "/api/v1/admin/users/{username}",
+      "error_scenarios": [
+        {
+          "exception": "repo_model.ErrUserOwnRepos",
+          "trigger": "User owns repositories",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "org_model.ErrUserHasOrgs",
+          "trigger": "User belongs to organizations",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "packages_model.ErrUserOwnPackages",
+          "trigger": "User owns packages",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-102",
+      "path": "/api/v1/admin/users/{username}/keys/{id}",
+      "error_scenarios": [
+        {
+          "exception": "asymkey_model.ErrKeyNotExist",
+          "trigger": "Key ID not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "asymkey_model.ErrKeyAccessDenied",
+          "trigger": "No permission to delete key",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-106",
+      "path": "/api/v1/admin/actions/runs",
+      "error_scenarios": [
+        {
+          "exception": "invalid status",
+          "trigger": "Unknown status string in query",
+          "status_code": 400,
+          "response": "error with message",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "user not found",
+          "trigger": "Actor username doesn't exist",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        },
+        {
+          "exception": "db error",
+          "trigger": "Database query failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-108",
+      "path": "/api/v1/admin/unadopted/{owner}/{repo}",
+      "error_scenarios": [
+        {
+          "exception": "ErrUserNotExist",
+          "trigger": "Owner username not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "already adopted or not on disk",
+          "trigger": "Repo in DB or not on filesystem",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "adoption failure",
+          "trigger": "Git operations or DB insert fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-114",
+      "path": "/api/v1/admin/actions/runners",
+      "error_scenarios": [
+        {
+          "exception": "DB error",
+          "trigger": "FindAndCount fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-115",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "Runner ID not found",
+          "status_code": 404,
+          "response": "Runner not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "GetRunnerByID fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-117",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "error_scenarios": [
+        {
+          "exception": "nil Disabled",
+          "trigger": "form.Disabled == nil",
+          "status_code": 422,
+          "response": "[Disabled]: Required",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "SetRunnerDisabled fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-123",
+      "path": "/api/v1/users/search",
+      "error_scenarios": [
+        {
+          "exception": "database error",
+          "trigger": "SearchUsers fails",
+          "status_code": 500,
+          "response": "{ok: false, error: err.Error()}",
+          "logged": false,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-124",
+      "path": "/api/v1/users/{username}",
+      "error_scenarios": [
+        {
+          "exception": "ErrUserNotExist",
+          "trigger": "Username not found or user not visible",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-126",
+      "path": "/api/v1/users/{username}/heatmap",
+      "error_scenarios": [
+        {
+          "exception": "database error",
+          "trigger": "Heatmap query fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-128",
+      "path": "/api/v1/user/avatar",
+      "error_scenarios": [
+        {
+          "exception": "base64 decode error",
+          "trigger": "Invalid base64 in image field",
+          "status_code": 400,
+          "response": "error message",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "image processing error",
+          "trigger": "Unsupported type or oversized image",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        },
+        {
+          "exception": "storage error",
+          "trigger": "Failed to save avatar to storage",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-129",
+      "path": "/api/v1/user/avatar",
+      "error_scenarios": [
+        {
+          "exception": "any error from DeleteAvatar",
+          "trigger": "DB update or storage delete failure",
+          "status_code": 500,
+          "response": "APIError",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-130",
+      "path": "/api/v1/user/actions/secrets/{secretname}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "Invalid secret name format",
+          "status_code": 400,
+          "response": "APIError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "Secret not found (unlikely in create/update)",
+          "status_code": 404,
+          "response": "APIError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "encryption/DB error",
+          "trigger": "EncryptSecret or DB operation fails",
+          "status_code": 500,
+          "response": "APIError",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-131",
+      "path": "/api/v1/user/actions/secrets/{secretname}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "Invalid argument",
+          "status_code": 400,
+          "response": "APIError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrSecretNotFound (wraps util.ErrNotExist)",
+          "trigger": "Secret does not exist",
+          "status_code": 404,
+          "response": "APIError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-135",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "variable not found for user",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "generic error",
+          "trigger": "database failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-136",
+      "path": "/api/v1/user/actions/variables",
+      "error_scenarios": [
+        {
+          "exception": "generic error",
+          "trigger": "database failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-137",
+      "path": "/api/v1/user/actions/runs",
+      "error_scenarios": [
+        {
+          "exception": "invalid status",
+          "trigger": "invalid status query param",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "user not found",
+          "trigger": "actor username does not exist",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        },
+        {
+          "exception": "generic error",
+          "trigger": "database failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-138",
+      "path": "/api/v1/user/actions/jobs",
+      "error_scenarios": [
+        {
+          "exception": "invalid status",
+          "trigger": "invalid status query param",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "missing run/repo",
+          "trigger": "job has nil run or repo after load",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        },
+        {
+          "exception": "generic error",
+          "trigger": "database failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-139",
+      "path": "/api/v1/user/followers",
+      "error_scenarios": [
+        {
+          "exception": "generic error",
+          "trigger": "database failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-140",
+      "path": "/api/v1/users/{username}/followers",
+      "error_scenarios": [
+        {
+          "exception": "user not found",
+          "trigger": "username path param does not exist",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "generic error",
+          "trigger": "database failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-141",
+      "path": "/api/v1/user/following",
+      "error_scenarios": [
+        {
+          "exception": "generic error",
+          "trigger": "database failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-145",
+      "path": "/api/v1/user/following/{username}",
+      "error_scenarios": [
+        {
+          "exception": "ErrBlockedUser",
+          "trigger": "user blocked by target or vice versa",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "generic error",
+          "trigger": "DB failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-148",
+      "path": "/api/v1/user/hooks/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrWebhookNotExist",
+          "trigger": "webhook ID not found for owner",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ownership check",
+          "trigger": "non-admin accessing other user's hook",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-149",
+      "path": "/api/v1/user/hooks",
+      "error_scenarios": [
+        {
+          "exception": "validation error",
+          "trigger": "invalid type/url/content_type",
+          "status_code": 422,
+          "response": "unprocessable entity",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "validation error",
+          "trigger": "invalid slack channel",
+          "status_code": 400,
+          "response": "bad request",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-150",
+      "path": "/api/v1/user/hooks/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrWebhookNotExist",
+          "trigger": "Webhook not found by owner_id+id",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "validation error",
+          "trigger": "Invalid URL or content_type",
+          "status_code": 422,
+          "response": "Unprocessable Entity message",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-151",
+      "path": "/api/v1/user/hooks/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrWebhookNotExist",
+          "trigger": "Webhook not found by owner_id+id",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-152",
+      "path": "/api/v1/users/{username}/starred",
+      "error_scenarios": [
+        {
+          "exception": "DB error",
+          "trigger": "Database query failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-155",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "error_scenarios": [
+        {
+          "exception": "ErrBlockedUser",
+          "trigger": "User blocked by repo owner",
+          "status_code": 403,
+          "response": "user is blocked",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-156",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "error_scenarios": [
+        {
+          "exception": "generic DB error",
+          "trigger": "StarRepo fails",
+          "status_code": 500,
+          "response": "Internal server error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-159",
+      "path": "/api/v1/user/keys/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrKeyNotExist",
+          "trigger": "Key ID not found in DB",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-160",
+      "path": "/api/v1/user/keys",
+      "error_scenarios": [
+        {
+          "exception": "SSH disabled",
+          "trigger": "IsFeatureDisabledWithLoginType returns true",
+          "status_code": 404,
+          "response": "Not Found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrKeyUnableVerify",
+          "trigger": "Key content cannot be verified",
+          "status_code": 422,
+          "response": "Unable to verify key content",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrKeyAlreadyExist",
+          "trigger": "Fingerprint already exists",
+          "status_code": 422,
+          "response": "Key content has been used as non-deploy key",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrKeyNameAlreadyUsed",
+          "trigger": "Name already used by owner",
+          "status_code": 422,
+          "response": "Key title has been used",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-161",
+      "path": "/api/v1/user/keys/{id}",
+      "error_scenarios": [
+        {
+          "exception": "SSH disabled",
+          "trigger": "IsFeatureDisabledWithLoginType returns true",
+          "status_code": 404,
+          "response": "Not Found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrKeyNotExist",
+          "trigger": "Key ID not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "externally managed",
+          "trigger": "Key is managed by external auth source",
+          "status_code": 403,
+          "response": "SSH Key is externally managed for this user",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrKeyAccessDenied",
+          "trigger": "User is not admin and not key owner",
+          "status_code": 403,
+          "response": "You do not have access to this key",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-163",
+      "path": "/api/v1/user/settings",
+      "error_scenarios": [
+        {
+          "exception": "UpdateUser error",
+          "trigger": "Database update failure or validation error",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-165",
+      "path": "/api/v1/users/{username}/tokens",
+      "error_scenarios": [
+        {
+          "exception": "name exists",
+          "trigger": "Token name already used by this user",
+          "status_code": 400,
+          "response": "access token name has been used already",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "invalid scope",
+          "trigger": "Scope string contains invalid scope names",
+          "status_code": 400,
+          "response": "invalid access token scope provided: <err>",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "empty scope",
+          "trigger": "No valid scopes after normalization",
+          "status_code": 400,
+          "response": "access token must have a scope",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-166",
+      "path": "/api/v1/users/{username}/tokens/{token}",
+      "error_scenarios": [
+        {
+          "exception": "not found",
+          "trigger": "Token ID or name doesn't exist for user",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "multiple matches",
+          "trigger": "Multiple tokens share the same name",
+          "status_code": 422,
+          "response": "multiple matches for token name",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-167",
+      "path": "/api/v1/user/applications/oauth2",
+      "error_scenarios": [
+        {
+          "exception": "invalid URI",
+          "trigger": "Redirect URI fails validation",
+          "status_code": 400,
+          "response": "invalid redirect URI: <uri>",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "create error",
+          "trigger": "DB insert fails",
+          "status_code": 400,
+          "response": "error creating oauth2 application",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "secret error",
+          "trigger": "bcrypt or DB update fails",
+          "status_code": 400,
+          "response": "error creating application secret",
+          "logged": false,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-169",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrOAuthApplicationNotFound",
+          "trigger": "App ID not found in DB",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "builtin app locked",
+          "trigger": "Attempting to delete a builtin app",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-170",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrOauthClientIDInvalid",
+          "trigger": "Invalid client ID",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrOAuthApplicationNotFound",
+          "trigger": "App not found",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "UID mismatch",
+          "trigger": "app.UID != ctx.Doer.ID",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-171",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "error_scenarios": [
+        {
+          "exception": "invalid redirect URI",
+          "trigger": "URI fails validation",
+          "status_code": 400,
+          "response": "invalid redirect URI: <uri>",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrOAuthApplicationNotFound",
+          "trigger": "App not found or UID mismatch",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "bcrypt error",
+          "trigger": "Error generating client secret",
+          "status_code": 400,
+          "response": "error updating application secret",
+          "logged": false,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-177",
+      "path": "/api/v1/user/actions/runners/{runner_id}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "Runner ID not found in DB",
+          "status_code": 404,
+          "response": "Runner not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "EditableInContext returns false",
+          "trigger": "Runner belongs to different owner",
+          "status_code": 404,
+          "response": "No permission to access this runner",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-181",
+      "path": "/api/v1/user/emails",
+      "error_scenarios": [
+        {
+          "exception": "ErrEmailAlreadyUsed",
+          "trigger": "Email already registered",
+          "status_code": 422,
+          "response": "Email address has been used: <email>",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrEmailInvalid/ErrEmailCharIsNotSupported",
+          "trigger": "Invalid email format",
+          "status_code": 422,
+          "response": "Email address \"<email>\" invalid",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-182",
+      "path": "/api/v1/user/emails",
+      "error_scenarios": [
+        {
+          "exception": "ErrEmailAddressNotExist",
+          "trigger": "Email not found for user",
+          "status_code": 404,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-184",
+      "path": "/api/v1/user/gpg_keys",
+      "error_scenarios": [
+        {
+          "exception": "DB error",
+          "trigger": "FindAndCount or LoadSubKeys fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-185",
+      "path": "/api/v1/user/gpg_keys/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrGPGKeyNotExist",
+          "trigger": "Key not found or not owned by user",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "Query failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-187",
+      "path": "/api/v1/user/gpg_key_verify",
+      "error_scenarios": [
+        {
+          "exception": "Empty KeyID",
+          "trigger": "KeyID is all zeros",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrGPGInvalidTokenSignature",
+          "trigger": "Signature doesn't match token",
+          "status_code": 422,
+          "response": "validation error with token hint",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrGPGKeyNotExist",
+          "trigger": "Key not found after verification",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-188",
+      "path": "/api/v1/user/gpg_keys",
+      "error_scenarios": [
+        {
+          "exception": "Feature disabled",
+          "trigger": "manage_gpg_keys in disabled features",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrGPGKeyIDAlreadyUsed",
+          "trigger": "Duplicate key_id",
+          "status_code": 422,
+          "response": "key already exists",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrGPGKeyParsing",
+          "trigger": "Invalid armored key format",
+          "status_code": 422,
+          "response": "parse error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrGPGNoEmailFound",
+          "trigger": "No matching activated email",
+          "status_code": 404,
+          "response": "no email found + token hint",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrGPGInvalidTokenSignature",
+          "trigger": "Signature verification failed",
+          "status_code": 422,
+          "response": "invalid signature + token hint",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-189",
+      "path": "/api/v1/user/gpg_keys/{id}",
+      "error_scenarios": [
+        {
+          "exception": "Feature disabled",
+          "trigger": "manage_gpg_keys in disabled features",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "Delete operation fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-190",
+      "path": "/api/v1/user/blocks",
+      "error_scenarios": [
+        {
+          "exception": "DB error",
+          "trigger": "FindBlockings or LoadAttributes fails",
+          "status_code": 500,
+          "response": "APIErrorInternal",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-191",
+      "path": "/api/v1/user/blocks/{username}",
+      "error_scenarios": [
+        {
+          "exception": "user not found",
+          "trigger": "GetUserByName returns error",
+          "status_code": 404,
+          "response": "APIErrorNotFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "GetBlocking fails",
+          "status_code": 500,
+          "response": "APIErrorInternal",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-192",
+      "path": "/api/v1/user/blocks/{username}",
+      "error_scenarios": [
+        {
+          "exception": "user not found",
+          "trigger": "GetUserByName returns error",
+          "status_code": 404,
+          "response": "APIErrorNotFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrCanNotBlock",
+          "trigger": "CanBlockUser returns false",
+          "status_code": 400,
+          "response": "APIError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrBlockOrganization",
+          "trigger": "blockee is organization",
+          "status_code": 400,
+          "response": "APIError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "Transaction fails",
+          "status_code": 500,
+          "response": "APIErrorInternal",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-193",
+      "path": "/api/v1/user/blocks/{username}",
+      "error_scenarios": [
+        {
+          "exception": "user not found",
+          "trigger": "GetUserByName returns error",
+          "status_code": 404,
+          "response": "APIErrorNotFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrCanNotUnblock",
+          "trigger": "CanUnblockUser returns false",
+          "status_code": 400,
+          "response": "APIError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrBlockOrganization",
+          "trigger": "blockee is organization",
+          "status_code": 400,
+          "response": "APIError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-196",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "error_scenarios": [
+        {
+          "exception": "not watching",
+          "trigger": "IsWatching returns false",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-197",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "error_scenarios": [
+        {
+          "exception": "ErrBlockedUser",
+          "trigger": "User is blocked by repo owner",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "internal error",
+          "trigger": "DB error in WatchRepo",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-198",
+      "path": "/api/v1/repos/{owner}/{repo}/subscription",
+      "error_scenarios": [
+        {
+          "exception": "internal error",
+          "trigger": "DB error in WatchRepo",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-199",
+      "path": "/api/v1/packages/{owner}",
+      "error_scenarios": [
+        {
+          "exception": "internal error",
+          "trigger": "DB error in SearchVersions or GetPackageDescriptors",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-200",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "error_scenarios": [
+        {
+          "exception": "ErrPackageNotExist",
+          "trigger": "Package or version not found (middleware)",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "internal error",
+          "trigger": "Error in convert.ToPackage",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-201",
+      "path": "/api/v1/packages/{owner}/{type}/{name}",
+      "error_scenarios": [
+        {
+          "exception": "ErrPackageNotExist",
+          "trigger": "Package not found (middleware)",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "internal error",
+          "trigger": "Error during RemovePackage transaction",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-202",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "error_scenarios": [
+        {
+          "exception": "ErrPackageNotExist",
+          "trigger": "Version not found in middleware",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "generic error",
+          "trigger": "RemovePackageVersion fails",
+          "status_code": 500,
+          "response": "APIErrorInternal",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-206",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/link/{repo_name}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "Package or repo not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "Package already linked",
+          "status_code": 400,
+          "response": "bad request",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrPermissionDenied",
+          "trigger": "Owner mismatch or no write access",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-207",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/unlink",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "Package not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrPermissionDenied",
+          "trigger": "No write access to repo",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "Package not linked (RepoID==0)",
+          "status_code": 400,
+          "response": "bad request",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-208",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "error_scenarios": [
+        {
+          "exception": "dependencies disabled",
+          "trigger": "IsDependenciesEnabled returns false",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrIssueNotExist",
+          "trigger": "Issue index not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "permission denied",
+          "trigger": "Cannot read issues/pulls",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-209",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "error_scenarios": [
+        {
+          "exception": "cross-repo disabled",
+          "trigger": "Different repo and AllowCrossRepositoryDependencies=false",
+          "status_code": 400,
+          "response": "CrossRepositoryDependencies not enabled",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrDependencyExists",
+          "trigger": "Dependency already exists",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        },
+        {
+          "exception": "ErrCircularDependency",
+          "trigger": "Would create circular dependency",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-210",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "error_scenarios": [
+        {
+          "exception": "ErrDependencyNotExists",
+          "trigger": "Dependency does not exist to remove",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-211",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "error_scenarios": [
+        {
+          "exception": "ErrIssueNotExist",
+          "trigger": "Issue index not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-212",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "error_scenarios": [
+        {
+          "exception": "ErrDependencyExists",
+          "trigger": "Blocking relationship already exists",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        },
+        {
+          "exception": "ErrCircularDependency",
+          "trigger": "Would create circular dependency",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-213",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "error_scenarios": [
+        {
+          "exception": "ErrDependencyNotExists",
+          "trigger": "Blocking relationship does not exist",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-214",
+      "path": "/api/v1/repos/{owner}/{repo}/git/commits/{sha}",
+      "error_scenarios": [
+        {
+          "exception": "invalid ref pattern",
+          "trigger": "sha fails IsValidRefPattern",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "git.ErrNotExist",
+          "trigger": "commit not found in repo",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-215",
+      "path": "/api/v1/repos/{owner}/{repo}/commits",
+      "error_scenarios": [
+        {
+          "exception": "time.Parse error",
+          "trigger": "invalid since/until format",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "empty repo",
+          "trigger": "Repository.IsEmpty is true",
+          "status_code": 409,
+          "response": "conflict",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "git.ErrNotExist",
+          "trigger": "sha/branch not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-217",
+      "path": "/api/v1/repos/{owner}/{repo}/commits/{sha}/pull",
+      "error_scenarios": [
+        {
+          "exception": "ErrPullRequestNotExist",
+          "trigger": "no merged PR for this commit",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-220",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/check",
+      "error_scenarios": [
+        {
+          "exception": "ErrIssueNotExist",
+          "trigger": "Issue index not found in repo",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "generic DB error",
+          "trigger": "Database failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-221",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions",
+      "error_scenarios": [
+        {
+          "exception": "ErrIssueNotExist",
+          "trigger": "Issue not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "generic DB error",
+          "trigger": "Failure in GetIssueWatchers/GetUsersByIDs/CountIssueWatchers",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-222",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls",
+      "error_scenarios": [
+        {
+          "exception": "ErrUserNotExist",
+          "trigger": "Poster username filter doesn't exist",
+          "status_code": 400,
+          "response": "bad request",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "generic DB error",
+          "trigger": "Database failure in PullRequests or ToAPIPullRequests",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-223",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}",
+      "error_scenarios": [
+        {
+          "exception": "ErrPullRequestNotExist",
+          "trigger": "PR index not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "generic DB error",
+          "trigger": "Failure loading repos",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-224",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{base}/{head}",
+      "error_scenarios": [
+        {
+          "exception": "ErrRepoNotExist",
+          "trigger": "Head repo not found (cross-repo format)",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrPullRequestNotExist",
+          "trigger": "No PR for given base/head combination",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-226",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls",
+      "error_scenarios": [
+        {
+          "exception": "ErrPullRequestAlreadyExists",
+          "trigger": "Unmerged PR with same targets exists",
+          "status_code": 409,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrBlockedUser",
+          "trigger": "Poster blocked by repo owner",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrMustCollaborator",
+          "trigger": "User not collaborator/member",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-229",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "error_scenarios": [
+        {
+          "exception": "ErrIsClosed",
+          "trigger": "PR issue is closed",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrNoPermissionToMerge",
+          "trigger": "User lacks merge permission",
+          "status_code": 405,
+          "response": "empty",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrIsWorkInProgress",
+          "trigger": "PR title has WIP prefix",
+          "status_code": 405,
+          "response": "empty",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrMergeConflicts",
+          "trigger": "Git merge conflict",
+          "status_code": 409,
+          "response": "ErrMergeConflicts JSON",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrInvalidMergeStyle",
+          "trigger": "Merge style not allowed for repo",
+          "status_code": 405,
+          "response": "empty",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrAlreadyScheduledToAutoMerge",
+          "trigger": "Auto-merge already scheduled",
+          "status_code": 409,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-234",
+      "path": "/api/v1/repos/{owner}/{repo}/mirror-sync",
+      "error_scenarios": [
+        {
+          "exception": "ErrMirrorNotExist",
+          "trigger": "Repo has no mirror record",
+          "status_code": 400,
+          "response": "Repository is not a mirror",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "GetMirrorByRepoID fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-235",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors-sync",
+      "error_scenarios": [
+        {
+          "exception": "DB error",
+          "trigger": "GetPushMirrorsByRepoID fails",
+          "status_code": 404,
+          "response": "error message",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "sync failure",
+          "trigger": "SyncPushMirror returns false",
+          "status_code": 500,
+          "response": "error occurred when syncing push mirror <name>",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-237",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors/{name}",
+      "error_scenarios": [
+        {
+          "exception": "not found",
+          "trigger": "Push mirror with given name doesn't exist",
+          "status_code": 404,
+          "response": "null",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "db.Get fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-240",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrReleaseNotExist",
+          "trigger": "Release ID not found for repo",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "IsTag check",
+          "trigger": "Record is tag-only",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-243",
+      "path": "/api/v1/repos/{owner}/{repo}/releases",
+      "error_scenarios": [
+        {
+          "exception": "ErrReleaseAlreadyExist",
+          "trigger": "Tag name already has a release",
+          "status_code": 409,
+          "response": "conflict",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrProtectedTagName",
+          "trigger": "Tag is protected",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "git.IsErrNotExist",
+          "trigger": "Target commit/branch not found",
+          "status_code": 404,
+          "response": "target not found",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-245",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrProtectedTagName",
+          "trigger": "Tag is protected and user not allowed",
+          "status_code": 422,
+          "response": "user not allowed to delete protected tag",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-246",
+      "path": "/api/v1/repos/{owner}/{repo}/git/trees/{sha}",
+      "error_scenarios": [
+        {
+          "exception": "ErrSHANotFound",
+          "trigger": "SHA not found in git repo",
+          "status_code": 400,
+          "response": "error message",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-247",
+      "path": "/api/v1/repos/{owner}/{repo}/git/refs",
+      "error_scenarios": [
+        {
+          "exception": "no refs found",
+          "trigger": "Empty refs list",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-249",
+      "path": "/api/v1/repos/{owner}/{repo}/diffpatch",
+      "error_scenarios": [
+        {
+          "exception": "git apply error",
+          "trigger": "Patch cannot be applied cleanly",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-251",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "error_scenarios": [
+        {
+          "exception": "ErrUserNotExist",
+          "trigger": "Username not found",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-252",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "error_scenarios": [
+        {
+          "exception": "ErrBlockedUser",
+          "trigger": "User blocked by repo owner or vice versa",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "inactive account",
+          "trigger": "Collaborator account is not active",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-254",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "error_scenarios": [
+        {
+          "exception": "forbidden",
+          "trigger": "Doer not admin/repo-admin/self",
+          "status_code": 403,
+          "response": "error message",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrUserNotExist",
+          "trigger": "Collaborator username not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-255",
+      "path": "/api/v1/repos/{owner}/{repo}/reviewers",
+      "error_scenarios": [
+        {
+          "exception": "forbidden",
+          "trigger": "Doer cannot change review requests",
+          "status_code": 403,
+          "response": "error message",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-257",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrIssueNotExist",
+          "trigger": "Issue index not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrAttachmentNotExist",
+          "trigger": "Attachment ID not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-259",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets",
+      "error_scenarios": [
+        {
+          "exception": "ErrFileTypeForbidden",
+          "trigger": "File type not in allowed list",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": true,
+          "retryable": false
+        },
+        {
+          "exception": "ErrContentTooLarge",
+          "trigger": "File exceeds MaxSize",
+          "status_code": 413,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "forbidden",
+          "trigger": "No write permission on issue",
+          "status_code": 403,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-260",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrFileTypeForbidden",
+          "trigger": "New name has forbidden extension",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-262",
+      "path": "/api/v1/repos/{owner}/{repo}/avatar",
+      "error_scenarios": [
+        {
+          "exception": "base64 decode error",
+          "trigger": "Invalid base64 in image field",
+          "status_code": 400,
+          "response": "error message",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "image processing error",
+          "trigger": "Unsupported format or oversized image",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-265",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "Invalid secret name format",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "Secret not found for update",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "encryption error",
+          "trigger": "Secret key misconfiguration",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-269",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "error_scenarios": [
+        {
+          "exception": "ErrInvalidArgument",
+          "trigger": "Invalid variable name",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "AlreadyExistError",
+          "trigger": "Variable already exists",
+          "status_code": 409,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-276",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}",
+      "error_scenarios": [
+        {
+          "exception": "nil Disabled field",
+          "trigger": "Missing required Disabled field",
+          "status_code": 422,
+          "response": "[Disabled]: Required",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-277",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/jobs",
+      "error_scenarios": [
+        {
+          "exception": "invalid status",
+          "trigger": "status query param not in valid set",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "db error",
+          "trigger": "database query failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-278",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs",
+      "error_scenarios": [
+        {
+          "exception": "invalid status",
+          "trigger": "status query param not in valid set",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "user not found",
+          "trigger": "actor username doesn't exist",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-279",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/tasks",
+      "error_scenarios": [
+        {
+          "exception": "db error",
+          "trigger": "database query failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "exception": "ep-283 validation",
+      "endpoint_id": "ep-283",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+      "error_scenarios": [
+        {
+          "exception": "empty ref",
+          "trigger": "ref field is empty in request body",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "workflow disabled",
+          "trigger": "workflow is disabled in repo config",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ref not found",
+          "trigger": "git ref doesn't exist",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "workflow not found",
+          "trigger": "workflow file not in commit tree",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-285",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "Run not found in repo",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "generic DB error",
+          "trigger": "Database failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-287",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "Run not done, workflow disabled, max attempts",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrAlreadyExist",
+          "trigger": "Concurrent rerun attempt",
+          "status_code": 409,
+          "response": "conflict",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "Run or template not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-290",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs",
+      "error_scenarios": [
+        {
+          "exception": "invalid status",
+          "trigger": "Invalid status query param",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "Run not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-292",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}",
+      "error_scenarios": [
+        {
+          "exception": "not found or wrong repo",
+          "trigger": "Job doesn't exist or belongs to different repo",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-293",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/artifacts",
+      "error_scenarios": [
+        {
+          "exception": "db error",
+          "trigger": "FindAndCount fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        },
+        {
+          "exception": "convert error",
+          "trigger": "ToActionArtifact fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-294",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}",
+      "error_scenarios": [
+        {
+          "exception": "not_exist",
+          "trigger": "Run not found by repo+id",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "validation",
+          "trigger": "Run status is not done",
+          "status_code": 400,
+          "response": "this workflow run is not done",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "db/storage error",
+          "trigger": "DeleteRun fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-296",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}",
+      "error_scenarios": [
+        {
+          "exception": "not_found",
+          "trigger": "Artifact not found, wrong repo, or invalid status",
+          "status_code": 404,
+          "response": "artifact not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "not_found",
+          "trigger": "Artifact is v3 format",
+          "status_code": 404,
+          "response": "Artifact not found",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-298",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip",
+      "error_scenarios": [
+        {
+          "exception": "not_found",
+          "trigger": "Artifact not found or wrong repo",
+          "status_code": 404,
+          "response": "artifact not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "expired",
+          "trigger": "Artifact status is Expired",
+          "status_code": 404,
+          "response": "Artifact has expired",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "not_found",
+          "trigger": "Artifact is v3",
+          "status_code": 404,
+          "response": "Artifact not found",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-299",
+      "path": "/api/v1/repos/{owner}/{repo}/git/notes/{sha}",
+      "error_scenarios": [
+        {
+          "exception": "invalid ref pattern",
+          "trigger": "sha fails IsValidRefPattern",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "git.ErrNotExist",
+          "trigger": "commit or note not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-301",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "error_scenarios": [
+        {
+          "exception": "ErrForbiddenIssueReaction",
+          "trigger": "reaction type not in allowed list",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrReactionAlreadyExist",
+          "trigger": "duplicate reaction",
+          "status_code": 200,
+          "response": "existing reaction returned",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrBlockedUser",
+          "trigger": "doer is blocked by poster/owner",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-307",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "error_scenarios": [
+        {
+          "exception": "ErrBranchNotExist",
+          "trigger": "Branch does not exist in git",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrBranchIsDefault",
+          "trigger": "Trying to delete default or PR target branch",
+          "status_code": 403,
+          "response": "can not delete default or pull request target branch",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrBranchIsProtected",
+          "trigger": "Branch has protection rule",
+          "status_code": 403,
+          "response": "branch protected",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-308",
+      "path": "/api/v1/repos/{owner}/{repo}/branches",
+      "error_scenarios": [
+        {
+          "exception": "ErrBranchAlreadyExists",
+          "trigger": "Branch with same name exists",
+          "status_code": 409,
+          "response": "The branch already exists",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrTagAlreadyExists",
+          "trigger": "Tag with same name exists",
+          "status_code": 409,
+          "response": "The branch with the same tag already exists",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrBranchNameConflict",
+          "trigger": "Branch name conflicts with path prefix",
+          "status_code": 409,
+          "response": "The branch with the same name already exists",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-310",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "error_scenarios": [
+        {
+          "exception": "ErrBranchNotExist",
+          "trigger": "Branch not found or deleted",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrInvalidArgument",
+          "trigger": "Commit mismatch or force push without flag",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrPushRejected",
+          "trigger": "Pre-receive hook rejects push",
+          "status_code": 403,
+          "response": "rejected message",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-312",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "error_scenarios": [
+        {
+          "exception": "DB error",
+          "trigger": "GetProtectedBranchRuleByName fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        },
+        {
+          "exception": "not found",
+          "trigger": "bp == nil || bp.RepoID != repo.ID",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-314",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections",
+      "error_scenarios": [
+        {
+          "exception": "empty rule name",
+          "trigger": "Both rule_name and branch_name empty",
+          "status_code": 400,
+          "response": "both rule_name and branch_name are empty",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "already exists",
+          "trigger": "Rule with same name exists",
+          "status_code": 403,
+          "response": "Branch protection already exist",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrUserNotExist",
+          "trigger": "Username in whitelist not found",
+          "status_code": 422,
+          "response": "user does not exist",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrTeamNotExist",
+          "trigger": "Team name in whitelist not found",
+          "status_code": 422,
+          "response": "team does not exist",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-315",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "error_scenarios": [
+        {
+          "exception": "not found",
+          "trigger": "protectBranch == nil || protectBranch.RepoID != repo.ID",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrUserNotExist",
+          "trigger": "Username in whitelist not found",
+          "status_code": 422,
+          "response": "user does not exist",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrTeamNotExist",
+          "trigger": "Team name in whitelist not found",
+          "status_code": 422,
+          "response": "team does not exist",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-316",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "error_scenarios": [
+        {
+          "exception": "not found",
+          "trigger": "bp == nil || bp.RepoID != repo.ID",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "DB error",
+          "trigger": "DeleteProtectedBranch fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-318",
+      "path": "/api/v1/repos/{owner}/{repo}/merge-upstream",
+      "error_scenarios": [
+        {
+          "exception": "util.ErrInvalidArgument",
+          "trigger": "Repo not a fork, archived, or ff_only failed",
+          "status_code": 400,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "util.ErrNotExist",
+          "trigger": "Branch or repo not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-319",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/lock",
+      "error_scenarios": [
+        {
+          "exception": "ErrIssueNotExist",
+          "trigger": "Issue index not found in repo",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "permission denied",
+          "trigger": "No write access to issues/pulls",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-322",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrWebhookNotExist",
+          "trigger": "Webhook ID not found for repo",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-324",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks",
+      "error_scenarios": [
+        {
+          "exception": "invalid hook type",
+          "trigger": "Type not in registered webhook types",
+          "status_code": 422,
+          "response": "Invalid hook type: <type>",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "missing config",
+          "trigger": "url or content_type missing from config",
+          "status_code": 422,
+          "response": "Missing config option: <name>",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "invalid url",
+          "trigger": "URL fails validation",
+          "status_code": 422,
+          "response": "Invalid url",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "invalid slack channel",
+          "trigger": "Slack channel name invalid",
+          "status_code": 400,
+          "response": "Invalid slack channel name",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-325",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrWebhookNotExist",
+          "trigger": "Hook ID not found for repo",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "invalid url",
+          "trigger": "Updated URL fails validation",
+          "status_code": 422,
+          "response": "Invalid url",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-326",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrWebhookNotExist",
+          "trigger": "Hook ID not found for repo",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-330",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "error_scenarios": [
+        {
+          "exception": "not org",
+          "trigger": "repo owner is not organization",
+          "status_code": 405,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrTeamNotExist",
+          "trigger": "team name not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "not assigned",
+          "trigger": "team not assigned to repo",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-331",
+      "path": "/api/v1/repos/{owner}/{repo}/teams/{team}",
+      "error_scenarios": [
+        {
+          "exception": "not org",
+          "trigger": "repo owner is not organization",
+          "status_code": 405,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "forbidden",
+          "trigger": "user not admin/owner",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "already added",
+          "trigger": "team already assigned",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-334",
+      "path": "/api/v1/repos/{owner}/{repo}/forks",
+      "error_scenarios": [
+        {
+          "exception": "ErrAlreadyExist",
+          "trigger": "fork already exists",
+          "status_code": 409,
+          "response": "conflict",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrReachLimitOfRepo",
+          "trigger": "repo limit reached",
+          "status_code": 409,
+          "response": "conflict",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrBlockedUser",
+          "trigger": "user blocked by repo owner",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-336",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "error_scenarios": [
+        {
+          "exception": "ErrIssueNotExist",
+          "trigger": "Invalid issue index",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "permission denied",
+          "trigger": "No write access",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "invalid label type",
+          "trigger": "Non-int/string in labels array",
+          "status_code": 400,
+          "response": "APIError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-337",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrIssueNotExist",
+          "trigger": "Invalid issue index",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrLabelNotExist",
+          "trigger": "Invalid label ID",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "permission denied",
+          "trigger": "No write access",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-342",
+      "path": "/api/v1/repos/{owner}/{repo}/keys",
+      "error_scenarios": [
+        {
+          "exception": "ErrSSHDisabled",
+          "trigger": "SSH is disabled in config",
+          "status_code": 422,
+          "response": "SSH is disabled",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrKeyUnableVerify",
+          "trigger": "Cannot verify key content",
+          "status_code": 422,
+          "response": "Unable to verify key content",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrDeployKeyAlreadyExist",
+          "trigger": "Same key already added to repo",
+          "status_code": 422,
+          "response": "This key has already been added",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrDeployKeyNameAlreadyUsed",
+          "trigger": "Key name already used in repo",
+          "status_code": 422,
+          "response": "A key with the same name already exists",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-343",
+      "path": "/api/v1/repos/{owner}/{repo}/keys/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrKeyAccessDenied",
+          "trigger": "Key belongs to different repo",
+          "status_code": 403,
+          "response": "You do not have access to this key",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-344",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "error_scenarios": [
+        {
+          "exception": "ErrReleaseNotExist",
+          "trigger": "Tag name not found in release table",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "IsTag=true",
+          "trigger": "Record is tag-only, not a release",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "Draft without access",
+          "trigger": "User lacks write permission for draft",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-345",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "error_scenarios": [
+        {
+          "exception": "ErrReleaseNotExist",
+          "trigger": "Tag name not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": true
+        },
+        {
+          "exception": "ErrProtectedTagName",
+          "trigger": "Tag is protected",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-352",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrReleaseNotExist",
+          "trigger": "Release ID not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrAttachmentNotExist",
+          "trigger": "Attachment ID not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-354",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets",
+      "error_scenarios": [
+        {
+          "exception": "ErrFileTypeForbidden",
+          "trigger": "File type not in allowed list",
+          "status_code": 400,
+          "response": "error",
+          "logged": true,
+          "retryable": false
+        },
+        {
+          "exception": "ErrContentTooLarge",
+          "trigger": "File exceeds max size",
+          "status_code": 413,
+          "response": "error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-355",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrFileTypeForbidden",
+          "trigger": "New filename extension not allowed",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-359",
+      "path": "/api/v1/repos/{owner}/{repo}/labels",
+      "error_scenarios": [
+        {
+          "exception": "invalid color",
+          "trigger": "Color fails regex validation",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "db error",
+          "trigger": "Insert fails",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-360",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrRepoLabelNotExist",
+          "trigger": "Label ID not found in repo",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "invalid color",
+          "trigger": "New color fails validation",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-362",
+      "path": "/api/v1/repos/search",
+      "error_scenarios": [
+        {
+          "exception": "invalid mode",
+          "trigger": "Mode not in allowed set",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "search error",
+          "trigger": "DB query fails",
+          "status_code": 500,
+          "response": "SearchError{OK:false}",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-363",
+      "path": "/api/v1/user/repos",
+      "error_scenarios": [
+        {
+          "exception": "ErrRepoAlreadyExist",
+          "trigger": "Repo with same name exists",
+          "status_code": 409,
+          "response": "conflict",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrNameReserved",
+          "trigger": "Name is reserved",
+          "status_code": 422,
+          "response": "validationError",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-367",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "error_scenarios": [
+        {
+          "exception": "LoadAttributes error",
+          "trigger": "DB error loading owner/language",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-368",
+      "path": "/api/v1/repositories/{id}",
+      "error_scenarios": [
+        {
+          "exception": "ErrRepoNotExist",
+          "trigger": "Repo ID not found",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "No unit access",
+          "trigger": "User has no permission",
+          "status_code": 404,
+          "response": "not found",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-369",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "error_scenarios": [
+        {
+          "exception": "ErrRepoAlreadyExist",
+          "trigger": "Name conflict on rename",
+          "status_code": 422,
+          "response": "validation error",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrNameReserved",
+          "trigger": "Reserved name used",
+          "status_code": 422,
+          "response": "validation error",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-370",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "error_scenarios": [
+        {
+          "exception": "Permission denied",
+          "trigger": "User cannot delete",
+          "status_code": 403,
+          "response": "forbidden",
+          "logged": false,
+          "retryable": false
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-376",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin",
+      "error_scenarios": [
+        {
+          "exception": "ErrIssueNotExist",
+          "trigger": "Issue index not found in repo",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "ErrIssueMaxPinReached",
+          "trigger": "Max pin count reached",
+          "status_code": 400,
+          "response": "error message",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "generic error",
+          "trigger": "DB failure",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": true
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-378",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin/{position}",
+      "error_scenarios": [
+        {
+          "exception": "ErrIssueNotExist",
+          "trigger": "Issue not found",
+          "status_code": 404,
+          "response": "notFound",
+          "logged": false,
+          "retryable": false
+        },
+        {
+          "exception": "position error",
+          "trigger": "Position < 1 or pin not found",
+          "status_code": 500,
+          "response": "internal error",
+          "logged": true,
+          "retryable": false
+        }
+      ]
+    }
+  ],
+  "custom_exceptions": [
+    {
+      "class": "label.ErrTemplateLoad",
+      "file_path": "modules/label/label.go",
+      "extends": "error (interface)",
+      "used_in": [
+        "repo_module.LoadTemplateLabelsByDisplayName"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrOrgNotExist",
+      "file_path": "models/organization/org.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "organization.GetOrgByName"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrUserAlreadyExist",
+      "file_path": "models/user/error.go",
+      "extends": "error",
+      "used_in": [
+        "organization.CreateOrganization",
+        "user_service.RenameUser"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrUserNotAllowedCreateOrg",
+      "file_path": "models/organization/org.go",
+      "extends": "util.ErrPermissionDenied",
+      "used_in": [
+        "organization.CreateOrganization"
+      ],
+      "http_status": 403
+    },
+    {
+      "class": "secret_model.ErrSecretNotFound",
+      "file_path": "models/secret/secret.go",
+      "extends": "util.ErrNotExist (via Unwrap)",
+      "used_in": [
+        "secret_service.DeleteSecretByName",
+        "secret_service.DeleteSecretByID"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "util.ErrNotExist",
+      "file_path": "modules/util/error.go",
+      "extends": "error",
+      "used_in": [
+        "actions_service.GetVariable",
+        "actions_model.GetRunnerByID",
+        "actions_model.GetLatestRunnerToken"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "organization.ErrTeamAlreadyExist",
+      "file_path": "models/organization/team.go",
+      "extends": "error",
+      "used_in": [
+        "org_service.NewTeam",
+        "org_service.UpdateTeam"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "repo_model.ErrRepoNotExist",
+      "file_path": "models/repo/repo.go",
+      "extends": "error",
+      "used_in": [
+        "getRepositoryByParams"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "organization.ErrLastOrgOwner",
+      "file_path": "models/organization/org.go",
+      "extends": "error (interface)",
+      "used_in": [
+        "org_service.RemoveOrgUser",
+        "removeTeamMember"
+      ],
+      "http_status": 500
+    },
+    {
+      "class": "ErrWebhookNotExist",
+      "file_path": "models/webhook/webhook.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "webhook.GetWebhookByOwnerID",
+        "webhook.DeleteWebhookByID"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrOrgLabelNotExist",
+      "file_path": "models/issues/label.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "issues_model.GetLabelInOrgByID",
+        "issues_model.GetLabelInOrgByName"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrCanNotBlock",
+      "file_path": "models/user/block.go",
+      "extends": "util.InvalidArgumentError",
+      "used_in": [
+        "user_service.BlockUser"
+      ],
+      "http_status": 400
+    },
+    {
+      "class": "ErrBlockOrganization",
+      "file_path": "models/user/block.go",
+      "extends": "util.InvalidArgumentError",
+      "used_in": [
+        "user_service.BlockUser",
+        "user_service.UnblockUser"
+      ],
+      "http_status": 400
+    },
+    {
+      "class": "ErrCanNotUnblock",
+      "file_path": "models/user/block.go",
+      "extends": "util.InvalidArgumentError",
+      "used_in": [
+        "user_service.UnblockUser"
+      ],
+      "http_status": 400
+    },
+    {
+      "class": "ErrIsPwnedRequest",
+      "file_path": "modules/auth/password/pwn.go",
+      "extends": "error",
+      "used_in": [
+        "password.IsPwned"
+      ],
+      "http_status": 400
+    },
+    {
+      "class": "user_model.ErrDeleteLastAdminUser",
+      "file_path": "models/user/error.go",
+      "extends": "error",
+      "used_in": [
+        "user_service.UpdateUser",
+        "user_service.DeleteUser"
+      ],
+      "http_status": 400
+    },
+    {
+      "class": "asymkey_model.ErrKeyNotExist",
+      "file_path": "models/asymkey/error.go",
+      "extends": "error",
+      "used_in": [
+        "asymkey_service.DeletePublicKey"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "asymkey_model.ErrKeyAccessDenied",
+      "file_path": "models/asymkey/error.go",
+      "extends": "error",
+      "used_in": [
+        "asymkey_service.DeletePublicKey"
+      ],
+      "http_status": 403
+    },
+    {
+      "class": "repo_model.ErrReachLimitOfRepo",
+      "file_path": "models/repo/repo.go",
+      "extends": "error",
+      "used_in": [
+        "repo_service.AdoptRepository"
+      ],
+      "http_status": 500
+    },
+    {
+      "class": "repo_model.ErrRepoAlreadyExist",
+      "file_path": "models/repo/repo.go",
+      "extends": "error",
+      "used_in": [
+        "repo.CreateUserRepo"
+      ],
+      "http_status": 409
+    },
+    {
+      "class": "util.ErrAlreadyExist",
+      "file_path": "modules/util/error.go",
+      "extends": "error",
+      "used_in": [
+        "user_model.AddUserBadges"
+      ],
+      "http_status": 500
+    },
+    {
+      "class": "ErrSecretNotFound",
+      "file_path": "models/secret/secret.go",
+      "extends": "util.ErrNotExist (via Unwrap)",
+      "used_in": [
+        "secret_service.DeleteSecretByName",
+        "secret_service.DeleteSecretByID"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrBlockedUser",
+      "file_path": "models/user/block.go",
+      "extends": "util.PermissionDeniedError",
+      "used_in": [
+        "user_model.FollowUser"
+      ],
+      "http_status": 403
+    },
+    {
+      "class": "ErrKeyNotExist",
+      "file_path": "models/asymkey/error.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "asymkey_model.GetPublicKeyByID",
+        "asymkey_model.PublicKeyIsExternallyManaged"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrKeyAlreadyExist",
+      "file_path": "models/asymkey/error.go",
+      "extends": "util.ErrAlreadyExist",
+      "used_in": [
+        "asymkey_model.AddPublicKey"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrKeyNameAlreadyUsed",
+      "file_path": "models/asymkey/error.go",
+      "extends": "util.ErrAlreadyExist",
+      "used_in": [
+        "asymkey_model.AddPublicKey"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrKeyAccessDenied",
+      "file_path": "models/asymkey/error.go",
+      "extends": "util.ErrPermissionDenied",
+      "used_in": [
+        "asymkey_service.DeletePublicKey"
+      ],
+      "http_status": 403
+    },
+    {
+      "class": "ErrOAuthApplicationNotFound",
+      "file_path": "models/auth/oauth2.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "GetOAuth2ApplicationByID",
+        "deleteOAuth2Application"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrEmailAlreadyUsed",
+      "file_path": "models/user/email_address.go",
+      "extends": "util.ErrAlreadyExist",
+      "used_in": [
+        "user_service.AddEmailAddresses"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrEmailAddressNotExist",
+      "file_path": "models/user/email_address.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "user_service.DeleteEmailAddresses"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrPrimaryEmailCannotDelete",
+      "file_path": "models/user/email_address.go",
+      "extends": "util.ErrInvalidArgument",
+      "used_in": [
+        "user_service.DeleteEmailAddresses"
+      ],
+      "http_status": 500
+    },
+    {
+      "class": "ErrEmailInvalid",
+      "file_path": "models/user/email_address.go",
+      "extends": "util.ErrInvalidArgument",
+      "used_in": [
+        "user_service.AddEmailAddresses"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrEmailCharIsNotSupported",
+      "file_path": "models/user/email_address.go",
+      "extends": "util.ErrInvalidArgument",
+      "used_in": [
+        "user_service.AddEmailAddresses"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrGPGKeyNotExist",
+      "file_path": "models/asymkey/error.go",
+      "extends": "error",
+      "used_in": [
+        "GetGPGKeyForUserByID",
+        "VerifyGPGKey"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrGPGKeyIDAlreadyUsed",
+      "file_path": "models/asymkey/error.go",
+      "extends": "error",
+      "used_in": [
+        "AddGPGKey"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrGPGKeyParsing",
+      "file_path": "models/asymkey/error.go",
+      "extends": "error",
+      "used_in": [
+        "parseGPGKey"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrGPGNoEmailFound",
+      "file_path": "models/asymkey/error.go",
+      "extends": "error",
+      "used_in": [
+        "parseGPGKey"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrGPGInvalidTokenSignature",
+      "file_path": "models/asymkey/error.go",
+      "extends": "error",
+      "used_in": [
+        "AddGPGKey",
+        "VerifyGPGKey"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "user_model.ErrBlockOrganization",
+      "file_path": "models/user/block.go",
+      "extends": "util.InvalidArgumentError",
+      "used_in": [
+        "user_service.BlockUser",
+        "user_service.UnblockUser"
+      ],
+      "http_status": 400
+    },
+    {
+      "class": "user_model.ErrCanNotBlock",
+      "file_path": "models/user/block.go",
+      "extends": "util.InvalidArgumentError",
+      "used_in": [
+        "user_service.BlockUser"
+      ],
+      "http_status": 400
+    },
+    {
+      "class": "user_model.ErrCanNotUnblock",
+      "file_path": "models/user/block.go",
+      "extends": "util.InvalidArgumentError",
+      "used_in": [
+        "user_service.UnblockUser"
+      ],
+      "http_status": 400
+    },
+    {
+      "class": "ErrDuplicatePackage",
+      "file_path": "models/packages/package.go",
+      "extends": "util.AlreadyExistError",
+      "used_in": [
+        "TryInsertPackage"
+      ],
+      "http_status": 409
+    },
+    {
+      "class": "ErrPackageNotExist",
+      "file_path": "models/packages/package.go",
+      "extends": "util.NotExistError",
+      "used_in": [
+        "GetPackageByName",
+        "GetPackageByID"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrDependencyExists",
+      "file_path": "models/issues/dependency.go",
+      "extends": "util.ErrAlreadyExist",
+      "used_in": [
+        "CreateIssueDependency"
+      ],
+      "http_status": 500
+    },
+    {
+      "class": "ErrDependencyNotExists",
+      "file_path": "models/issues/dependency.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "RemoveIssueDependency"
+      ],
+      "http_status": 500
+    },
+    {
+      "class": "ErrCircularDependency",
+      "file_path": "models/issues/dependency.go",
+      "extends": "error",
+      "used_in": [
+        "CreateIssueDependency"
+      ],
+      "http_status": 500
+    },
+    {
+      "class": "issues_model.ErrPullRequestNotExist",
+      "file_path": "models/issues/pull.go",
+      "extends": "error",
+      "used_in": [
+        "GetPullRequestByMergedCommit"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "issues_model.ErrIssueNotExist",
+      "file_path": "models/issues/issue.go",
+      "extends": "error",
+      "used_in": [
+        "GetIssueByIndex"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrPullRequestNotExist",
+      "file_path": "models/issues/pull.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "GetPullRequestByIndex",
+        "GetPullRequestByBaseHeadInfo"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrIssueNotExist",
+      "file_path": "models/issues/issue.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "GetIssueByIndex"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrPullRequestAlreadyExists",
+      "file_path": "models/issues/pull.go",
+      "extends": "util.ErrAlreadyExist",
+      "used_in": [
+        "repo.CreatePullRequest"
+      ],
+      "http_status": 409
+    },
+    {
+      "class": "ErrMergeConflicts",
+      "file_path": "services/pull/merge.go",
+      "extends": "error",
+      "used_in": [
+        "pull_service.Merge"
+      ],
+      "http_status": 409
+    },
+    {
+      "class": "ErrAlreadyScheduledToAutoMerge",
+      "file_path": "models/pull/automerge.go",
+      "extends": "error",
+      "used_in": [
+        "automerge.ScheduleAutoMerge"
+      ],
+      "http_status": 409
+    },
+    {
+      "class": "git.ErrInvalidCloneAddr",
+      "file_path": "modules/git/error.go",
+      "extends": "error",
+      "used_in": [
+        "repo.HandleRemoteAddressError"
+      ],
+      "http_status": 400
+    },
+    {
+      "class": "repo_model.ErrReleaseNotExist",
+      "file_path": "models/repo/release.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "GetReleaseForRepoByID",
+        "GetReleaseByID",
+        "GetLatestReleaseByRepoID"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "repo_model.ErrReleaseAlreadyExist",
+      "file_path": "models/repo/release.go",
+      "extends": "util.ErrAlreadyExist",
+      "used_in": [
+        "release_service.CreateRelease"
+      ],
+      "http_status": 409
+    },
+    {
+      "class": "release_service.ErrProtectedTagName",
+      "file_path": "services/release/release.go",
+      "extends": "util.ErrPermissionDenied",
+      "used_in": [
+        "createTag",
+        "DeleteReleaseByID"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrSHANotFound",
+      "file_path": "services/repository/files/tree.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "files.GetTreeBySHA"
+      ],
+      "http_status": 400
+    },
+    {
+      "class": "ErrUserCannotCommit",
+      "file_path": "services/repository/files/patch.go",
+      "extends": "util.ErrPermissionDenied",
+      "used_in": [
+        "files.ApplyDiffPatchOptions.Validate"
+      ],
+      "http_status": 403
+    },
+    {
+      "class": "ErrFileTypeForbidden",
+      "file_path": "services/context/upload/upload.go",
+      "extends": "error",
+      "used_in": [
+        "upload.Verify"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrAttachmentNotExist",
+      "file_path": "models/repo/attachment.go",
+      "extends": "error/util.ErrNotExist",
+      "used_in": [
+        "GetAttachmentByID"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "util.ErrPermissionDenied",
+      "file_path": "modules/util/error.go",
+      "extends": "error",
+      "used_in": [
+        "DispatchActionWorkflow"
+      ],
+      "http_status": 403
+    },
+    {
+      "class": "util.ErrInvalidArgument",
+      "file_path": "modules/util/error.go",
+      "extends": "error",
+      "used_in": [
+        "convertToInternal"
+      ],
+      "http_status": 400
+    },
+    {
+      "class": "handleWorkflowRerunError",
+      "file_path": "routers/api/v1/repo/action.go",
+      "extends": "error handler function",
+      "used_in": [
+        "RerunWorkflowRun",
+        "RerunFailedWorkflowRun",
+        "RerunWorkflowJob"
+      ],
+      "http_status": 0
+    },
+    {
+      "class": "ErrForbiddenIssueReaction",
+      "file_path": "models/issues/reaction.go",
+      "extends": "util.ErrPermissionDenied",
+      "used_in": [
+        "issues_model.CreateReaction"
+      ],
+      "http_status": 403
+    },
+    {
+      "class": "ErrReactionAlreadyExist",
+      "file_path": "models/issues/reaction.go",
+      "extends": "util.ErrAlreadyExist",
+      "used_in": [
+        "issues_model.createReaction"
+      ],
+      "http_status": 200
+    },
+    {
+      "class": "ErrBranchNotExist",
+      "file_path": "models/git/branch.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "repo_service.DeleteBranch",
+        "repo_service.UpdateBranch"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrBranchAlreadyExists",
+      "file_path": "models/git/branch.go",
+      "extends": "util.ErrAlreadyExist",
+      "used_in": [
+        "repo_service.checkBranchName"
+      ],
+      "http_status": 409
+    },
+    {
+      "class": "ErrBranchNameConflict",
+      "file_path": "models/git/branch.go",
+      "extends": "util.ErrAlreadyExist",
+      "used_in": [
+        "repo_service.checkBranchName"
+      ],
+      "http_status": 409
+    },
+    {
+      "class": "ErrBranchIsProtected",
+      "file_path": "models/git/protected_branch.go",
+      "extends": "util.ErrPermissionDenied",
+      "used_in": [
+        "repo_service.CanDeleteBranch",
+        "repo_service.RenameBranch"
+      ],
+      "http_status": 403
+    },
+    {
+      "class": "ErrBranchIsDefault",
+      "file_path": "services/repository/branch.go",
+      "extends": "util.ErrPermissionDenied",
+      "used_in": [
+        "repo_service.CanDeleteBranch"
+      ],
+      "http_status": 403
+    },
+    {
+      "class": "ErrForkAlreadyExist",
+      "file_path": "services/repository/fork.go",
+      "extends": "util.ErrAlreadyExist",
+      "used_in": [
+        "ForkRepository"
+      ],
+      "http_status": 409
+    },
+    {
+      "class": "ErrDeployKeyAlreadyExist",
+      "file_path": "models/asymkey/error.go",
+      "extends": "error",
+      "used_in": [
+        "checkDeployKey"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrDeployKeyNameAlreadyUsed",
+      "file_path": "models/asymkey/error.go",
+      "extends": "error",
+      "used_in": [
+        "checkDeployKey"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrReleaseNotExist",
+      "file_path": "models/repo/release.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "repo_model.GetRelease"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrProtectedTagName",
+      "file_path": "services/release/release.go",
+      "extends": "util.ErrPermissionDenied",
+      "used_in": [
+        "release_service.DeleteReleaseByID"
+      ],
+      "http_status": 422
+    },
+    {
+      "class": "ErrRepoLabelNotExist",
+      "file_path": "models/issues/label.go",
+      "extends": "util.ErrNotExist",
+      "used_in": [
+        "issues_model.GetLabelInRepoByID",
+        "issues_model.GetLabelInRepoByName"
+      ],
+      "http_status": 404
+    },
+    {
+      "class": "ErrRepoAlreadyExist",
+      "file_path": "models/repo/repo.go",
+      "extends": "error",
+      "used_in": [
+        "repo_service.CreateRepositoryDirectly"
+      ],
+      "http_status": 409
+    },
+    {
+      "class": "ErrReachLimitOfRepo",
+      "file_path": "models/repo/repo.go",
+      "extends": "error",
+      "used_in": [
+        "repo_service.GenerateRepository"
+      ],
+      "http_status": 403
+    },
+    {
+      "class": "ErrIssueMaxPinReached",
+      "file_path": "models/issues/issue_pin.go",
+      "extends": "util.InvalidArgumentError",
+      "used_in": [
+        "issues_model.PinIssue"
+      ],
+      "http_status": 400
+    }
+  ]
+}

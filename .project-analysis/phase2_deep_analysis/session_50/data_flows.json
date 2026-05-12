@@ -1,0 +1,527 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-336",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "description": "Adds labels to an issue by ID or name, validates ownership, handles exclusive labels",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.AddIssueLabels",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_label.go",
+          "input": "APIContext with IssueLabelsOption form",
+          "output": "[]*api.Label",
+          "operations": ["Extract form via web.GetForm", "Call prepareForReplaceOrAdd"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.prepareForReplaceOrAdd",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/issue_label.go",
+          "input": "APIContext, IssueLabelsOption",
+          "output": "(*Issue, []*Label, error)",
+          "operations": ["GetIssueByIndex", "Check write permission", "Parse labels via reflect (int64 or string)", "Resolve names to IDs via repo+org lookup", "GetLabelsByIDs"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue", "description": "Get issue by repo_id and index"},
+            {"operation": "SELECT", "table": "label", "description": "Get label IDs by name in repo"},
+            {"operation": "SELECT", "table": "label", "description": "Get label IDs by name in org"},
+            {"operation": "SELECT", "table": "label", "description": "Get labels by IDs"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issue_service.AddLabels",
+          "type": "service",
+          "file_path": "services/issue/label.go",
+          "input": "ctx, issue, doer, labels",
+          "output": "error",
+          "operations": ["Call issues_model.NewIssueLabels", "Send notification IssueChangeLabels"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "issues_model.NewIssueLabels",
+          "type": "repository",
+          "file_path": "models/issues/issue_label.go",
+          "input": "ctx, issue, labels, doer",
+          "output": "error",
+          "operations": ["WithTx: LoadRepo, LoadLabels, for each label: check HasIssueLabel, validate repo/org ownership, RemoveDuplicateExclusiveIssueLabels, insert IssueLabel, create comment, update label counts"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load issue repo"},
+            {"operation": "SELECT", "table": "label", "description": "Load existing issue labels"},
+            {"operation": "SELECT", "table": "issue_label", "description": "Check if label already exists per label"},
+            {"operation": "INSERT", "table": "issue_label", "description": "Create issue-label relation"},
+            {"operation": "INSERT", "table": "comment", "description": "Create label comment"},
+            {"operation": "UPDATE", "table": "label", "description": "Update num_issues/num_closed_issue"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "issues_model.GetLabelsByIssueID",
+          "type": "repository",
+          "file_path": "models/issues/issue_label.go",
+          "input": "ctx, issueID",
+          "output": "[]*Label",
+          "operations": ["JOIN query to get all labels for issue"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "label JOIN issue_label", "description": "Get all labels for issue"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]any (JSON)",
+          "to": "[]int64 or []string",
+          "component": "repo.prepareForReplaceOrAdd",
+          "mappings": [{"source_field": "labels[]", "target_field": "labelIDs/labelNames", "transformation": "computed"}]
+        },
+        {
+          "from": "[]*issues_model.Label",
+          "to": "[]*api.Label",
+          "component": "convert.ToLabelList",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Color", "target_field": "color", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "repo.AddIssueLabels", "response_code": 404, "response": "notFound"},
+        {"condition": "No write permission", "handler": "repo.prepareForReplaceOrAdd", "response_code": 403, "response": "forbidden"},
+        {"condition": "Invalid label type in array", "handler": "repo.prepareForReplaceOrAdd", "response_code": 400, "response": "APIError"},
+        {"condition": "Mixed int/string labels", "handler": "repo.prepareForReplaceOrAdd", "response_code": 400, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-337",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels/{id}",
+      "description": "Removes a specific label from an issue with permission check in service layer",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteIssueLabel",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_label.go",
+          "input": "APIContext",
+          "output": "204 No Content",
+          "operations": ["GetIssueByIndex", "Check CanWriteIssuesOrPulls", "GetLabelByID", "Call issue_service.RemoveLabel"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue", "description": "Get issue by index"},
+            {"operation": "SELECT", "table": "label", "description": "Get label by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issue_service.RemoveLabel",
+          "type": "service",
+          "file_path": "services/issue/label.go",
+          "input": "ctx, issue, doer, label",
+          "output": "error",
+          "operations": ["WithTx: LoadRepo, GetDoerRepoPermission, check CanWriteIssuesOrPulls, DeleteIssueLabel", "Send notification IssueChangeLabels"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load repo"},
+            {"operation": "SELECT", "table": "access/team", "description": "Get doer repo permission"},
+            {"operation": "DELETE", "table": "issue_label", "description": "Delete issue-label relation"},
+            {"operation": "INSERT", "table": "comment", "description": "Create label removal comment"},
+            {"operation": "UPDATE", "table": "label", "description": "Update num_issues/num_closed_issue"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "repo.DeleteIssueLabel", "response_code": 404, "response": "notFound"},
+        {"condition": "No write permission (handler)", "handler": "repo.DeleteIssueLabel", "response_code": 403, "response": "forbidden"},
+        {"condition": "Label not found", "handler": "repo.DeleteIssueLabel", "response_code": 422, "response": "validationError"},
+        {"condition": "No write permission (service)", "handler": "issue_service.RemoveLabel", "response_code": 500, "response": "internal error (ErrRepoLabelNotExist/ErrOrgLabelNotExist)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-338",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "description": "Replaces all labels on an issue with a new set, handling exclusive label deduplication",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ReplaceIssueLabels",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_label.go",
+          "input": "APIContext with IssueLabelsOption form",
+          "output": "[]*api.Label",
+          "operations": ["Call prepareForReplaceOrAdd", "Call issue_service.ReplaceLabels", "GetLabelsByIssueID", "Convert to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issue_service.ReplaceLabels",
+          "type": "service",
+          "file_path": "services/issue/label.go",
+          "input": "ctx, issue, doer, labels",
+          "output": "error",
+          "operations": ["GetLabelsByIssueID (old labels)", "Call issues_model.ReplaceIssueLabels", "Send notification IssueChangeLabels"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "label JOIN issue_label", "description": "Get current labels"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issues_model.ReplaceIssueLabels",
+          "type": "repository",
+          "file_path": "models/issues/issue_label.go",
+          "input": "ctx, issue, labels, doer",
+          "output": "error",
+          "operations": ["WithTx: LoadRepo, LoadLabels, RemoveDuplicateExclusiveLabels, sort both lists, diff to find toAdd/toRemove, add new labels, remove old labels"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load repo"},
+            {"operation": "SELECT", "table": "label JOIN issue_label", "description": "Load current labels"},
+            {"operation": "INSERT", "table": "issue_label", "description": "Add new labels"},
+            {"operation": "DELETE", "table": "issue_label", "description": "Remove old labels"},
+            {"operation": "INSERT", "table": "comment", "description": "Create comments for changes"},
+            {"operation": "UPDATE", "table": "label", "description": "Update label counts"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]any (JSON)",
+          "to": "[]int64",
+          "component": "repo.prepareForReplaceOrAdd",
+          "mappings": [{"source_field": "labels[]", "target_field": "labelIDs", "transformation": "computed"}]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "repo.ReplaceIssueLabels", "response_code": 404, "response": "notFound"},
+        {"condition": "No write permission", "handler": "repo.prepareForReplaceOrAdd", "response_code": 403, "response": "forbidden"},
+        {"condition": "Invalid label type", "handler": "repo.prepareForReplaceOrAdd", "response_code": 400, "response": "APIError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-339",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "description": "Removes all labels from an issue with permission check in model layer",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ClearIssueLabels",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_label.go",
+          "input": "APIContext",
+          "output": "204 No Content",
+          "operations": ["GetIssueByIndex", "Check CanWriteIssuesOrPulls", "Call issue_service.ClearLabels"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue", "description": "Get issue by index"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "issue_service.ClearLabels",
+          "type": "service",
+          "file_path": "services/issue/label.go",
+          "input": "ctx, issue, doer",
+          "output": "error",
+          "operations": ["Call issues_model.ClearIssueLabels", "Send notification IssueClearLabels"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issues_model.ClearIssueLabels",
+          "type": "repository",
+          "file_path": "models/issues/issue_label.go",
+          "input": "ctx, issue, doer",
+          "output": "error",
+          "operations": ["WithTx: LoadRepo, LoadPullRequest, GetDoerRepoPermission, check CanWriteIssuesOrPulls, LoadLabels, loop deleteIssueLabel per label"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Load repo"},
+            {"operation": "SELECT", "table": "pull_request", "description": "Load pull request if applicable"},
+            {"operation": "SELECT", "table": "access/team", "description": "Get doer repo permission"},
+            {"operation": "SELECT", "table": "label JOIN issue_label", "description": "Load all labels"},
+            {"operation": "DELETE", "table": "issue_label", "description": "Delete each label (N times)"},
+            {"operation": "INSERT", "table": "comment", "description": "Create comment per label (N times)"},
+            {"operation": "UPDATE", "table": "label", "description": "Update counts per label (N times)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Issue not found", "handler": "repo.ClearIssueLabels", "response_code": 404, "response": "notFound"},
+        {"condition": "No write permission (handler)", "handler": "repo.ClearIssueLabels", "response_code": 403, "response": "forbidden"},
+        {"condition": "No write permission (model)", "handler": "issues_model.ClearIssueLabels", "response_code": 500, "response": "internal (ErrRepoLabelNotExist)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-340",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/keys",
+      "description": "Lists deploy keys for a repository with optional filtering by key_id or fingerprint",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListDeployKeys",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/key.go",
+          "input": "APIContext",
+          "output": "[]*api.DeployKey",
+          "operations": ["Build ListDeployKeysOptions", "FindAndCount", "Loop: GetContent per key, convert, appendPrivateInformation if admin/owner"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "deploy_key", "description": "Find deploy keys with count"},
+            {"operation": "SELECT", "table": "public_key", "description": "GetContent per key (N+1)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.appendPrivateInformation",
+          "type": "utility",
+          "file_path": "routers/api/v1/repo/key.go",
+          "input": "apiKey, key, repository",
+          "output": "*api.DeployKey",
+          "operations": ["Set ReadOnly from key.Mode", "If key.RepoID matches, use current repo; else fetch repo by ID", "Convert repo to API format"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "Get repo by ID if different (conditional)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*asymkey_model.DeployKey",
+          "to": "*api.DeployKey",
+          "component": "convert.ToDeployKey",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "KeyID", "target_field": "key_id", "transformation": "direct_copy"},
+            {"source_field": "Content", "target_field": "key", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "title", "transformation": "direct_copy"},
+            {"source_field": "Fingerprint", "target_field": "fingerprint", "transformation": "direct_copy"},
+            {"source_field": "Mode", "target_field": "read_only", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error on find", "handler": "repo.ListDeployKeys", "response_code": 500, "response": "internal"},
+        {"condition": "GetContent fails", "handler": "repo.ListDeployKeys", "response_code": 500, "response": "internal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-341",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/keys/{id}",
+      "description": "Gets a single deploy key by ID with repo ownership validation",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetDeployKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/key.go",
+          "input": "APIContext",
+          "output": "*api.DeployKey",
+          "operations": ["GetDeployKeyByID", "Validate key.RepoID matches ctx.Repo", "GetContent", "Convert", "appendPrivateInformation if admin/owner"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "deploy_key", "description": "Get deploy key by ID"},
+            {"operation": "SELECT", "table": "public_key", "description": "Get key content"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*asymkey_model.DeployKey",
+          "to": "*api.DeployKey",
+          "component": "convert.ToDeployKey",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Content", "target_field": "key", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Key not found", "handler": "repo.GetDeployKey", "response_code": 404, "response": "notFound"},
+        {"condition": "Key belongs to different repo", "handler": "repo.GetDeployKey", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-342",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/keys",
+      "description": "Creates a new deploy key for a repository after validating SSH key content",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.CreateDeployKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/key.go",
+          "input": "APIContext with CreateKeyOption form",
+          "output": "*api.DeployKey (201)",
+          "operations": ["CheckPublicKeyString", "AddDeployKey", "Set content on key", "Convert to API format"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "asymkey_model.CheckPublicKeyString",
+          "type": "utility",
+          "file_path": "models/asymkey/ssh_key_parse.go",
+          "input": "key content string",
+          "output": "cleaned content string",
+          "operations": ["Parse key string", "Trim whitespace", "Validate single line", "If MinimumKeySizeCheck: SSHNativeParsePublicKey to check type and length"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "asymkey_model.AddDeployKey",
+          "type": "repository",
+          "file_path": "models/asymkey/ssh_key_deploy.go",
+          "input": "ctx, repoID, name, content, readOnly",
+          "output": "*DeployKey",
+          "operations": ["CalcFingerprint", "WithTx2: check if public_key exists by fingerprint, if not create it, then addDeployKey (checks duplicates)"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "public_key", "description": "Check if key exists by fingerprint"},
+            {"operation": "INSERT", "table": "public_key", "description": "Create public key if new"},
+            {"operation": "SELECT", "table": "deploy_key", "description": "Check for duplicate key_id+repo_id"},
+            {"operation": "SELECT", "table": "deploy_key", "description": "Check for duplicate name in repo"},
+            {"operation": "INSERT", "table": "deploy_key", "description": "Create deploy key record"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "CreateKeyOption",
+          "to": "*asymkey_model.DeployKey",
+          "component": "asymkey_model.AddDeployKey",
+          "mappings": [
+            {"source_field": "Title", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Key", "target_field": "Content (via PublicKey)", "transformation": "computed"},
+            {"source_field": "ReadOnly", "target_field": "Mode", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "SSH disabled", "handler": "HandleCheckKeyStringError", "response_code": 422, "response": "SSH is disabled"},
+        {"condition": "Unable to verify key", "handler": "HandleCheckKeyStringError", "response_code": 422, "response": "Unable to verify key content"},
+        {"condition": "Invalid key content", "handler": "HandleCheckKeyStringError", "response_code": 422, "response": "Invalid key content"},
+        {"condition": "Key already exists for repo", "handler": "HandleAddKeyError", "response_code": 422, "response": "This key has already been added"},
+        {"condition": "Key used as non-deploy key", "handler": "HandleAddKeyError", "response_code": 422, "response": "Key content has been used as non-deploy key"},
+        {"condition": "Key name already used", "handler": "HandleAddKeyError", "response_code": 422, "response": "A key with the same name already exists"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-343",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/keys/{id}",
+      "description": "Deletes a deploy key and rewrites the authorized_keys file",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteDeploykey",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/key.go",
+          "input": "APIContext",
+          "output": "204 No Content",
+          "operations": ["Call asymkey_service.DeleteDeployKey"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "asymkey_service.DeleteDeployKey",
+          "type": "service",
+          "file_path": "services/asymkey/deploy_key.go",
+          "input": "ctx, repo, id",
+          "output": "error",
+          "operations": ["WithTx: GetDeployKeyByID, validate key.RepoID == repo.ID, deleteDeployKeyFromDB", "RewriteAllPublicKeys"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "deploy_key", "description": "Get deploy key by ID"},
+            {"operation": "DELETE", "table": "deploy_key", "description": "Delete deploy key record"},
+            {"operation": "SELECT", "table": "deploy_key", "description": "Check if other deploy keys use same public key"},
+            {"operation": "DELETE", "table": "public_key", "description": "Delete public key if no other references"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "asymkey_service.RewriteAllPublicKeys",
+          "type": "service",
+          "file_path": "services/asymkey/ssh_key_authorized_keys.go",
+          "input": "ctx",
+          "output": "error",
+          "operations": ["If SSH builtin or no authorized_keys file: skip", "WithSSHOpLocker: rewrite entire authorized_keys file from DB"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "public_key", "description": "Read all public keys to rewrite file"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Key access denied (wrong repo)", "handler": "repo.DeleteDeploykey", "response_code": 403, "response": "You do not have access to this key"},
+        {"condition": "Key not found (silently succeeds)", "handler": "asymkey_service.DeleteDeployKey", "response_code": 204, "response": "success (no-op)"}
+      ]
+    }
+  ]
+}

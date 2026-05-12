@@ -1,0 +1,43 @@
+{
+  "endpoints_by_database_table": {
+    "webhook": {"read": ["ep-150", "ep-151"], "write": ["ep-150", "ep-151"]},
+    "hook_task": {"read": [], "write": ["ep-151"]},
+    "star": {"read": ["ep-152", "ep-153", "ep-154", "ep-155"], "write": ["ep-155"]},
+    "repository": {"read": ["ep-152", "ep-153"], "write": ["ep-155"]},
+    "user": {"read": [], "write": ["ep-155"]},
+    "user_blocking": {"read": ["ep-155"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "setting.DisableWebhooks": ["ep-150", "ep-151"],
+    "setting.Repository.DisableStars": ["ep-152", "ep-153", "ep-154", "ep-155"]
+  },
+  "endpoints_by_model_class": {
+    "webhook.Webhook": ["ep-150", "ep-151"],
+    "repo.Star": ["ep-152", "ep-153", "ep-154", "ep-155"],
+    "user.Blocking": ["ep-155"]
+  },
+  "endpoints_by_service_class": {
+    "webhook_service.ToHook": ["ep-150"],
+    "convert.ToRepo": ["ep-152", "ep-153"],
+    "repo_model.StarRepo": ["ep-155"],
+    "repo_model.IsStaring": ["ep-154"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-150": {"reads": ["webhook"], "writes": ["webhook"]},
+    "ep-151": {"reads": ["webhook"], "writes": ["webhook", "hook_task"]},
+    "ep-152": {"reads": ["star", "repository", "repo_unit", "collaboration"], "writes": []},
+    "ep-153": {"reads": ["star", "repository", "repo_unit", "collaboration"], "writes": []},
+    "ep-154": {"reads": ["star"], "writes": []},
+    "ep-155": {"reads": ["user_blocking", "star"], "writes": ["star", "repository", "user"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-150": ["setting.DisableWebhooks"],
+    "ep-151": ["setting.DisableWebhooks"],
+    "ep-152": ["setting.Repository.DisableStars"],
+    "ep-153": ["setting.Repository.DisableStars"],
+    "ep-154": ["setting.Repository.DisableStars"],
+    "ep-155": ["setting.Repository.DisableStars"]
+  }
+}

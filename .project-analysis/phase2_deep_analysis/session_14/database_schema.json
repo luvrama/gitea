@@ -1,0 +1,203 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 5,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "webhook",
+      "entity_class": "webhook.Webhook",
+      "file_path": "models/webhook/webhook.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "is_system_webhook", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "url", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "''", "constraints": ["NOT NULL DEFAULT ''"]},
+        {"name": "http_method", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "content_type", "type": "INT", "code_type": "HookContentType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "secret", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "events", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_active", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "type", "type": "VARCHAR(16)", "code_type": "webhook_module.HookType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "meta", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "last_status", "type": "INT", "code_type": "webhook_module.HookStatus", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "header_authorization_encrypted", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX updated"]}
+      ],
+      "indexes": [
+        {"name": "idx_webhook_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_webhook_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "idx_webhook_is_active", "columns": ["is_active"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "one-to-many", "target_table": "hook_task", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "hook_task",
+      "entity_class": "webhook.HookTask",
+      "file_path": "models/webhook/hooktask.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "hook_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]}
+      ],
+      "indexes": [
+        {"name": "idx_hook_task_hook_id", "columns": ["hook_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "webhook", "join_column": "hook_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "user",
+      "entity_class": "user_model.User",
+      "file_path": "models/user/user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "lower_name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": true, "default": null, "constraints": ["UNIQUE NOT NULL"]},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": true, "default": null, "constraints": ["UNIQUE NOT NULL"]},
+        {"name": "full_name", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "email", "type": "VARCHAR(254)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "passwd", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "type", "type": "INT", "code_type": "UserType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_active", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "is_admin", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_restricted", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "visibility", "type": "INT", "code_type": "structs.VisibleType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL DEFAULT 0"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX updated"]}
+      ],
+      "indexes": [
+        {"name": "idx_user_is_active", "columns": ["is_active"], "unique": false},
+        {"name": "idx_user_created_unix", "columns": ["created_unix"], "unique": false},
+        {"name": "idx_user_updated_unix", "columns": ["updated_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "one-to-many", "target_table": "org_user", "join_column": "id"},
+        {"type": "one-to-many", "target_table": "email_address", "join_column": "id"},
+        {"type": "one-to-many", "target_table": "team_user", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "team",
+      "entity_class": "organization.Team",
+      "file_path": "models/organization/team.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "lower_name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "access_mode", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_members", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "includes_all_repositories", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "can_create_org_repo", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_team_org_id", "columns": ["org_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"},
+        {"type": "one-to-many", "target_table": "team_unit", "join_column": "id"},
+        {"type": "one-to-many", "target_table": "team_user", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "email_address",
+      "entity_class": "user_model.EmailAddress",
+      "file_path": "models/user/email_address.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "email", "type": "VARCHAR(254)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "lower_email", "type": "VARCHAR(254)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_activated", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_primary", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_email_address_uid", "columns": ["uid"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-091",
+      "path": "/api/v1/admin/hooks",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "webhook.GetGlobalWebhooks", "description": "List global webhooks with pagination and count"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-092",
+      "path": "/api/v1/admin/hooks/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "webhook.GetSystemOrDefaultWebhook", "description": "Get single webhook by ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-093",
+      "path": "/api/v1/admin/hooks",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "INSERT", "method": "webhook.CreateWebhook", "description": "Insert new webhook"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-094",
+      "path": "/api/v1/admin/hooks/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "webhook.GetSystemOrDefaultWebhook", "description": "Fetch webhook for update"},
+        {"store_type": "database", "store_name": "webhook", "operation": "UPDATE", "method": "webhook.UpdateWebhook", "description": "Update webhook all columns"},
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "webhook.GetSystemOrDefaultWebhook", "description": "Re-fetch updated webhook"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-095",
+      "path": "/api/v1/admin/hooks/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "DELETE", "method": "webhook.DeleteDefaultSystemWebhook", "description": "Delete webhook record"},
+        {"store_type": "database", "store_name": "hook_task", "operation": "DELETE", "method": "webhook.DeleteDefaultSystemWebhook", "description": "Delete associated hook tasks"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-096",
+      "path": "/api/v1/admin/users/{username}/orgs",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.IsUserExist", "description": "Check org name not taken"},
+        {"store_type": "database", "store_name": "user", "operation": "INSERT", "method": "organization.CreateOrganization", "description": "Insert organization"},
+        {"store_type": "database", "store_name": "org_user", "operation": "INSERT", "method": "organization.CreateOrganization", "description": "Add owner as member"},
+        {"store_type": "database", "store_name": "team", "operation": "INSERT", "method": "organization.CreateOrganization", "description": "Create Owners team"},
+        {"store_type": "database", "store_name": "team_unit", "operation": "INSERT", "method": "organization.CreateOrganization", "description": "Create team unit permissions"},
+        {"store_type": "database", "store_name": "team_user", "operation": "INSERT", "method": "organization.CreateOrganization", "description": "Add owner to team"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-097",
+      "path": "/api/v1/admin/orgs",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.SearchUsers", "description": "Count and fetch organizations"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-098",
+      "path": "/api/v1/admin/users",
+      "operations": [
+        {"store_type": "database", "store_name": "login_source", "operation": "SELECT", "method": "auth.GetSourceByID", "description": "Fetch auth source (if sourceID != 0)"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.IsUserExist", "description": "Check username not taken"},
+        {"store_type": "database", "store_name": "email_address", "operation": "SELECT", "method": "user_model.IsEmailUsed", "description": "Check email not used"},
+        {"store_type": "database", "store_name": "user", "operation": "INSERT", "method": "user_model.AdminCreateUser", "description": "Insert user record"},
+        {"store_type": "database", "store_name": "email_address", "operation": "INSERT", "method": "user_model.AdminCreateUser", "description": "Insert primary email"}
+      ]
+    }
+  ]
+}

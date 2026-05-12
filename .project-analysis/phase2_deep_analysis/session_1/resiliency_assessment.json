@@ -1,0 +1,239 @@
+{
+  "total_findings": 7,
+  "overall_risk": "medium",
+  "dependency_resiliency": [
+    {
+      "dependency": "GPG binary (gpg --export)",
+      "client_class": "process.GetManager().ExecDir",
+      "file_path": "services/asymkey/sign.go",
+      "used_by_endpoints": ["ep-004", "ep-005"],
+      "timeout": {
+        "status": "missing",
+        "value_ms": null,
+        "recommendation": "Add 10000ms timeout to ExecDir call (currently -1 = no timeout)"
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Not critical for this use case - GPG failures are likely persistent, not transient"
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "Low priority - endpoint is infrequently called"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Process manager has global limits but no per-dependency isolation"
+      },
+      "fallback": {
+        "status": "missing",
+        "behavior": null,
+        "recommendation": "Return cached key or 503 if GPG is unavailable"
+      },
+      "idempotency": {
+        "safe_to_retry": true,
+        "reason": "Read-only operation (gpg --export)"
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-004", "ep-005"],
+        "impact": "GPG signing key endpoints return 500; no impact on other functionality"
+      }
+    },
+    {
+      "dependency": "Git config (git config --global --get)",
+      "client_class": "gitcmd.NewCommand.RunStdString",
+      "file_path": "modules/git/key.go",
+      "used_by_endpoints": ["ep-004", "ep-005", "ep-006", "ep-007"],
+      "timeout": {
+        "status": "configured",
+        "value_ms": null,
+        "recommendation": "Git commands use context-based cancellation from request context"
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Not needed - git config reads are local and fast"
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "Not applicable for local git config reads"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Not critical for local operations"
+      },
+      "fallback": {
+        "status": "configured",
+        "behavior": "Returns nil SigningKey if config read fails (errors ignored)",
+        "recommendation": "Current behavior is acceptable"
+      },
+      "idempotency": {
+        "safe_to_retry": true,
+        "reason": "Read-only git config query"
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-004", "ep-005", "ep-006", "ep-007"],
+        "impact": "All signing key endpoints return 404 (no key found)"
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-001",
+      "http_method": "GET",
+      "path": "/api/v1/version",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "not applicable - no dependencies"
+    },
+    {
+      "endpoint_id": "ep-002",
+      "http_method": "GET",
+      "path": "/api/v1/label/templates",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "not applicable - reads from pre-loaded memory"
+    },
+    {
+      "endpoint_id": "ep-003",
+      "http_method": "GET",
+      "path": "/api/v1/label/templates/{name}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "fallback",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Returns 404 if template file cannot be loaded",
+          "recommendation": "Acceptable behavior"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "Returns 404 on file read failure"
+    },
+    {
+      "endpoint_id": "ep-004",
+      "http_method": "GET",
+      "path": "/api/v1/signing-key.gpg",
+      "risk_level": "medium",
+      "dependency_count": 2,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "high",
+          "detail": "gpg --export called with -1 timeout (infinite)",
+          "recommendation": "Add 10s timeout to process.ExecDir call"
+        },
+        {
+          "pattern": "fallback",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "No cached fallback if GPG binary is slow/unavailable",
+          "recommendation": "Cache exported key with reasonable TTL"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Low - isolated endpoint, GPG hang only affects this request",
+      "graceful_degradation": "Returns 500 on GPG failure"
+    },
+    {
+      "endpoint_id": "ep-005",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/signing-key.gpg",
+      "risk_level": "medium",
+      "dependency_count": 2,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "high",
+          "detail": "Same as ep-004: no timeout on gpg execution",
+          "recommendation": "Add 10s timeout"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Low - isolated endpoint",
+      "graceful_degradation": "Returns 500 on GPG failure"
+    },
+    {
+      "endpoint_id": "ep-006",
+      "http_method": "GET",
+      "path": "/api/v1/signing-key.pub",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - file read is local",
+      "graceful_degradation": "Returns 500 on file read error"
+    },
+    {
+      "endpoint_id": "ep-007",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/signing-key.pub",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - file read is local",
+      "graceful_degradation": "Returns 500 on file read error"
+    },
+    {
+      "endpoint_id": "ep-008",
+      "http_method": "POST",
+      "path": "/api/v1/markup",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "No render timeout - large documents could consume CPU indefinitely",
+          "recommendation": "Add context timeout for rendering (e.g., 30s)"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Medium - CPU exhaustion from large inputs could affect other requests",
+      "graceful_degradation": "none - renders until complete or OOM"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz (routers/web/healthcheck/check.go)",
+      "readiness": "/api/healthz",
+      "recommendation": "Already implemented"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "modules/graceful/ package handles SIGTERM with connection draining",
+      "recommendation": "Already implemented"
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in rate limiting on API endpoints",
+      "recommendation": "Consider adding rate limiting middleware, especially for POST /markup which is CPU-intensive"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "These endpoints are synchronous, no async flows"
+    },
+    "single_points_of_failure": [
+      "GPG binary availability for signing key endpoints"
+    ],
+    "cascading_failure_paths": []
+  }
+}

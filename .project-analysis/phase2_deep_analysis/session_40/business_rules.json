@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Variable name must match pattern ^[A-Z_][A-Z0-9_]*$ (case insensitive)",
+      "location": {"class": "secrets", "method": "ValidateName", "file_path": "services/secrets/validation.go", "line_number": 24},
+      "condition": "!namePattern.MatchString(name)",
+      "action": "Return ErrInvalidArgument",
+      "affected_endpoints": ["ep-269", "ep-270"],
+      "code_snippet": "if !vars.namePattern.MatchString(name) || vars.forbiddenPrefixPattern.MatchString(name)"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Variable name must not start with GITEA_ or GITHUB_ prefix",
+      "location": {"class": "secrets", "method": "ValidateName", "file_path": "services/secrets/validation.go", "line_number": 24},
+      "condition": "forbiddenPrefixPattern.MatchString(name)",
+      "action": "Return ErrInvalidArgument",
+      "affected_endpoints": ["ep-269", "ep-270"],
+      "code_snippet": "ret.forbiddenPrefixPattern = regexp.MustCompile(\"(?i)^GIT(EA|HUB)_\")"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Variable name must not be 'CI' (reserved)",
+      "location": {"class": "secrets", "method": "ValidateName", "file_path": "services/secrets/validation.go", "line_number": 26},
+      "condition": "strings.EqualFold(name, \"CI\")",
+      "action": "Return ErrInvalidArgument",
+      "affected_endpoints": ["ep-269", "ep-270"],
+      "code_snippet": "strings.EqualFold(name, \"CI\")"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Variable data must not exceed 65536 runes",
+      "location": {"class": "actions", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 52},
+      "condition": "utf8.RuneCountInString(data) > VariableDataMaxLength",
+      "action": "Return ErrInvalidArgument 'data too long'",
+      "affected_endpoints": ["ep-269", "ep-270"],
+      "code_snippet": "if utf8.RuneCountInString(data) > VariableDataMaxLength {"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Variable description is truncated to 4096 runes on insert/update",
+      "location": {"class": "actions", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 54},
+      "condition": "Always applied",
+      "action": "Truncate description to 4096 runes",
+      "affected_endpoints": ["ep-269", "ep-270"],
+      "code_snippet": "description = util.TruncateRunes(description, VariableDescriptionMaxLength)"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Variable name is stored uppercase",
+      "location": {"class": "actions", "method": "InsertVariable", "file_path": "models/actions/variable.go", "line_number": 58},
+      "condition": "Always applied on insert and update",
+      "action": "Convert name to uppercase",
+      "affected_endpoints": ["ep-269", "ep-270"],
+      "code_snippet": "Name: strings.ToUpper(name)"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Creating a variable that already exists returns 409 Conflict",
+      "location": {"class": "Action", "method": "CreateVariable", "file_path": "routers/api/v1/repo/action.go", "line_number": 278},
+      "condition": "v != nil && v.ID > 0",
+      "action": "Return 409 with AlreadyExistError",
+      "affected_endpoints": ["ep-269"],
+      "code_snippet": "if v != nil && v.ID > 0 { ctx.APIError(http.StatusConflict, ...)"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "authorization",
+      "description": "Runner must be editable in repo context (runner.RepoID must match)",
+      "location": {"class": "ActionRunner", "method": "EditableInContext", "file_path": "models/actions/runner.go", "line_number": 113},
+      "condition": "repoID > 0 && r.RepoID == repoID",
+      "action": "Return true if runner belongs to repo, false otherwise",
+      "affected_endpoints": ["ep-274", "ep-275", "ep-276"],
+      "code_snippet": "return repoID > 0 && r.RepoID == repoID"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "validation",
+      "description": "UpdateRunner requires Disabled field to be non-nil",
+      "location": {"class": "shared", "method": "UpdateRunner", "file_path": "routers/api/v1/shared/runners.go", "line_number": 120},
+      "condition": "form.Disabled == nil",
+      "action": "Return 422 Unprocessable Entity",
+      "affected_endpoints": ["ep-276"],
+      "code_snippet": "if form.Disabled == nil { ctx.APIError(http.StatusUnprocessableEntity, \"[Disabled]: Required\")"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Registration token: reuse latest active token or create new one",
+      "location": {"class": "shared", "method": "GetRegistrationToken", "file_path": "routers/api/v1/shared/runners.go", "line_number": 27},
+      "condition": "errors.Is(err, util.ErrNotExist) || (token != nil && !token.IsActive)",
+      "action": "Create new token (deactivates all old tokens for same owner/repo)",
+      "affected_endpoints": ["ep-272"],
+      "code_snippet": "if errors.Is(err, util.ErrNotExist) || (token != nil && !token.IsActive) { token, err = actions_model.NewRunnerToken(...) }"
+    }
+  ]
+}

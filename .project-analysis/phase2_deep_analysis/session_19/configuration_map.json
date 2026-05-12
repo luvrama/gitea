@@ -1,0 +1,21 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "SECRET_KEY",
+      "type": "String",
+      "default_value": "auto-generated",
+      "source_file": "modules/setting/security.go",
+      "used_by": [{"class": "secret_model", "method": "InsertEncryptedSecret", "file_path": "models/secret/secret.go", "usage": "Encryption key for secret data", "impact": "Secrets cannot be decrypted if key changes"}],
+      "affected_endpoints": ["ep-130"]
+    },
+    {
+      "key": "avatar.STORAGE_TYPE",
+      "type": "String",
+      "default_value": "local",
+      "source_file": "modules/setting/picture.go",
+      "used_by": [{"class": "storage", "method": "initAvatars", "file_path": "modules/storage/storage.go", "usage": "Determines avatar storage backend type", "impact": "Controls where avatar files are stored/deleted"}],
+      "affected_endpoints": ["ep-129"]
+    }
+  ]
+}

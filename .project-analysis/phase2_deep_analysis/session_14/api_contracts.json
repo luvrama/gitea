@@ -1,0 +1,351 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-091",
+      "http_method": "GET",
+      "path": "/api/v1/admin/hooks",
+      "controller_class": "admin",
+      "controller_method": "ListHooks",
+      "description": "List system and/or default webhooks with pagination",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min:1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected to valid page size"]},
+          {"name": "type", "type": "string", "required": false, "default": "system", "validation": ["enum:system,default,all"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token/bearer auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Webhook ID"},
+            {"name": "name", "type": "string", "description": "Webhook name"},
+            {"name": "type", "type": "string", "description": "Hook type (gitea, slack, etc)"},
+            {"name": "config", "type": "map[string]string", "description": "url, content_type, channel etc"},
+            {"name": "events", "type": "[]string", "description": "Subscribed events"},
+            {"name": "active", "type": "bool", "description": "Whether hook is active"},
+            {"name": "authorization_header", "type": "string", "description": "Decrypted auth header"},
+            {"name": "updated_at", "type": "time.Time", "description": "Last update time"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation time"},
+            {"name": "branch_filter", "type": "string", "description": "Branch filter pattern"}
+          ]
+        },
+        "errors": [
+          {"status_code": 500, "type": "APIErrorInternal", "condition": "Database error or decryption failure"}
+        ]
+      },
+      "authentication": "bearer (admin required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-092",
+      "http_method": "GET",
+      "path": "/api/v1/admin/hooks/{id}",
+      "controller_class": "admin",
+      "controller_method": "GetHook",
+      "description": "Get a single system or default webhook by ID",
+      "request": {
+        "path_params": [{"name": "id", "type": "int64", "required": true, "validation": ["format:int64"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token/bearer auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Webhook ID"},
+            {"name": "name", "type": "string", "description": "Webhook name"},
+            {"name": "type", "type": "string", "description": "Hook type"},
+            {"name": "config", "type": "map[string]string", "description": "Hook config"},
+            {"name": "events", "type": "[]string", "description": "Subscribed events"},
+            {"name": "active", "type": "bool", "description": "Whether hook is active"},
+            {"name": "authorization_header", "type": "string", "description": "Decrypted auth header"},
+            {"name": "updated_at", "type": "time.Time", "description": "Last update time"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation time"},
+            {"name": "branch_filter", "type": "string", "description": "Branch filter pattern"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIErrorNotFound", "condition": "Webhook with given ID not found (repo_id=0, owner_id=0)"},
+          {"status_code": 500, "type": "APIErrorInternal", "condition": "Database error or decryption failure"}
+        ]
+      },
+      "authentication": "bearer (admin required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-093",
+      "http_method": "POST",
+      "path": "/api/v1/admin/hooks",
+      "controller_class": "admin",
+      "controller_method": "CreateHook",
+      "description": "Create a new system or default webhook",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token/bearer auth"}],
+        "body": {
+          "type": "api.CreateHookOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "type", "type": "string", "required": true, "validation": ["enum:dingtalk,discord,gitea,gogs,msteams,slack,telegram,feishu,wechatwork,packagist"], "description": "Hook type"},
+            {"name": "config", "type": "map[string]string", "required": true, "validation": ["must contain 'url' and 'content_type'"], "description": "Hook config with url, content_type, secret, is_system_webhook"},
+            {"name": "events", "type": "[]string", "required": false, "validation": [], "description": "Events to subscribe to"},
+            {"name": "branch_filter", "type": "string", "required": false, "validation": ["GlobPattern"], "description": "Branch filter"},
+            {"name": "authorization_header", "type": "string", "required": false, "validation": [], "description": "Auth header for requests"},
+            {"name": "active", "type": "bool", "required": false, "validation": [], "description": "Whether hook is active"},
+            {"name": "name", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Human-readable name"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "New webhook ID"},
+            {"name": "name", "type": "string", "description": "Webhook name"},
+            {"name": "type", "type": "string", "description": "Hook type"},
+            {"name": "config", "type": "map[string]string", "description": "Hook config"},
+            {"name": "events", "type": "[]string", "description": "Subscribed events"},
+            {"name": "active", "type": "bool", "description": "Whether hook is active"}
+          ]
+        },
+        "errors": [
+          {"status_code": 422, "type": "APIError", "condition": "Invalid hook type, missing config url/content_type, invalid URL, invalid content_type, invalid is_system_webhook value"},
+          {"status_code": 400, "type": "APIError", "condition": "Invalid slack channel name"},
+          {"status_code": 500, "type": "APIErrorInternal", "condition": "Database insert error or encryption failure"}
+        ]
+      },
+      "authentication": "bearer (admin required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-094",
+      "http_method": "PATCH",
+      "path": "/api/v1/admin/hooks/{id}",
+      "controller_class": "admin",
+      "controller_method": "EditHook",
+      "description": "Update an existing system or default webhook",
+      "request": {
+        "path_params": [{"name": "id", "type": "int64", "required": true, "validation": ["format:int64"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token/bearer auth"}],
+        "body": {
+          "type": "api.EditHookOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "config", "type": "map[string]string", "required": false, "validation": ["url must be valid URL, content_type must be valid"], "description": "Hook config updates"},
+            {"name": "events", "type": "[]string", "required": false, "validation": [], "description": "Events to subscribe to"},
+            {"name": "branch_filter", "type": "string", "required": false, "validation": ["GlobPattern"], "description": "Branch filter"},
+            {"name": "authorization_header", "type": "string", "required": false, "validation": [], "description": "Auth header"},
+            {"name": "active", "type": "*bool", "required": false, "validation": [], "description": "Whether hook is active"},
+            {"name": "name", "type": "*string", "required": false, "validation": ["MaxSize(255)"], "description": "Human-readable name"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Webhook ID"},
+            {"name": "type", "type": "string", "description": "Hook type"},
+            {"name": "config", "type": "map[string]string", "description": "Updated config"},
+            {"name": "events", "type": "[]string", "description": "Updated events"},
+            {"name": "active", "type": "bool", "description": "Active status"}
+          ]
+        },
+        "errors": [
+          {"status_code": 422, "type": "APIError", "condition": "Invalid URL or content type"},
+          {"status_code": 500, "type": "APIErrorInternal", "condition": "Database error, encryption failure, or hook not found"}
+        ]
+      },
+      "authentication": "bearer (admin required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-095",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/hooks/{id}",
+      "controller_class": "admin",
+      "controller_method": "DeleteHook",
+      "description": "Delete a system or default webhook and its associated hook tasks",
+      "request": {
+        "path_params": [{"name": "id", "type": "int64", "required": true, "validation": ["format:int64"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token/bearer auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIErrorNotFound", "condition": "Webhook not found (count=0 after delete)"},
+          {"status_code": 500, "type": "APIErrorInternal", "condition": "Database error during transactional delete"}
+        ]
+      },
+      "authentication": "bearer (admin required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-096",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/orgs",
+      "controller_class": "admin",
+      "controller_method": "CreateOrg",
+      "description": "Create an organization owned by the specified user",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": ["must exist as user"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token/bearer auth"}],
+        "body": {
+          "type": "api.CreateOrgOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "username", "type": "string", "required": true, "validation": ["Required", "Username", "MaxSize(40)"], "description": "Organization username"},
+            {"name": "full_name", "type": "string", "required": false, "validation": ["MaxSize(100)"], "description": "Full display name"},
+            {"name": "email", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Organization email"},
+            {"name": "description", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Description"},
+            {"name": "website", "type": "string", "required": false, "validation": ["ValidUrl", "MaxSize(255)"], "description": "Website URL"},
+            {"name": "location", "type": "string", "required": false, "validation": ["MaxSize(50)"], "description": "Location"},
+            {"name": "visibility", "type": "string", "required": false, "validation": ["In(,public,limited,private)"], "description": "Visibility level"},
+            {"name": "repo_admin_change_team_access", "type": "bool", "required": false, "validation": [], "description": "Allow repo admins to change team access"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.Organization",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Organization ID"},
+            {"name": "name", "type": "string", "description": "Organization name"},
+            {"name": "full_name", "type": "string", "description": "Full name"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"},
+            {"name": "description", "type": "string", "description": "Description"},
+            {"name": "website", "type": "string", "description": "Website"},
+            {"name": "location", "type": "string", "description": "Location"},
+            {"name": "visibility", "type": "string", "description": "Visibility level"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Non-admin access"},
+          {"status_code": 422, "type": "APIError", "condition": "User already exists, name reserved/chars not allowed/pattern not allowed"}
+        ]
+      },
+      "authentication": "bearer (admin required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-097",
+      "http_method": "GET",
+      "path": "/api/v1/admin/orgs",
+      "controller_class": "admin",
+      "controller_method": "GetAllOrgs",
+      "description": "List all organizations with pagination",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min:1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["corrected to valid page size"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token/bearer auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Organization",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Organization ID"},
+            {"name": "name", "type": "string", "description": "Organization name"},
+            {"name": "username", "type": "string", "description": "Organization username"},
+            {"name": "full_name", "type": "string", "description": "Full name"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"},
+            {"name": "description", "type": "string", "description": "Description"},
+            {"name": "website", "type": "string", "description": "Website"},
+            {"name": "location", "type": "string", "description": "Location"},
+            {"name": "visibility", "type": "string", "description": "Visibility level"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Non-admin access"},
+          {"status_code": 500, "type": "APIErrorInternal", "condition": "Database error"}
+        ]
+      },
+      "authentication": "bearer (admin required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-098",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users",
+      "controller_class": "admin",
+      "controller_method": "CreateUser",
+      "description": "Create a new user account (admin only)",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Admin token/bearer auth"}],
+        "body": {
+          "type": "api.CreateUserOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "username", "type": "string", "required": true, "validation": ["Required", "Username", "MaxSize(40)"], "description": "Username"},
+            {"name": "email", "type": "string", "required": true, "validation": ["Required", "Email", "MaxSize(254)"], "description": "Email address"},
+            {"name": "password", "type": "string", "required": false, "validation": ["MaxSize(255)", "min length from setting", "complexity check", "pwned check"], "description": "Password (required for plain auth)"},
+            {"name": "full_name", "type": "string", "required": false, "validation": ["MaxSize(100)"], "description": "Full name"},
+            {"name": "login_name", "type": "string", "required": false, "validation": [], "description": "External auth login name"},
+            {"name": "source_id", "type": "int64", "required": false, "validation": ["must exist if non-zero"], "description": "Auth source ID"},
+            {"name": "must_change_password", "type": "*bool", "required": false, "validation": [], "description": "Force password change on first login"},
+            {"name": "send_notify", "type": "bool", "required": false, "validation": [], "description": "Send registration notification email"},
+            {"name": "restricted", "type": "*bool", "required": false, "validation": [], "description": "Whether user is restricted"},
+            {"name": "visibility", "type": "string", "required": false, "validation": ["In(,public,limited,private)"], "description": "User visibility"},
+            {"name": "created_at", "type": "*time.Time", "required": false, "validation": [], "description": "Custom creation timestamp"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "User ID"},
+            {"name": "login", "type": "string", "description": "Username"},
+            {"name": "full_name", "type": "string", "description": "Full name"},
+            {"name": "email", "type": "string", "description": "Email"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"},
+            {"name": "is_admin", "type": "bool", "description": "Admin status"},
+            {"name": "created", "type": "time.Time", "description": "Creation time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "APIError", "condition": "Password too short, not complex enough, or pwned"},
+          {"status_code": 403, "type": "forbidden", "condition": "Non-admin access"},
+          {"status_code": 422, "type": "APIError", "condition": "User already exists, email already used, name reserved/invalid, email invalid, auth source not found"}
+        ]
+      },
+      "authentication": "bearer (admin required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

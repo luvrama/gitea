@@ -1,0 +1,41 @@
+{
+  "total_patterns": 8,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic error", "status_code": 500, "response_type": "APIError", "message_template": "internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "APIError", "message_template": "not found"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-184", "path": "/api/v1/user/gpg_keys", "error_scenarios": [
+      {"exception": "DB error", "trigger": "FindAndCount or LoadSubKeys fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-185", "path": "/api/v1/user/gpg_keys/{id}", "error_scenarios": [
+      {"exception": "ErrGPGKeyNotExist", "trigger": "Key not found or not owned by user", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+      {"exception": "DB error", "trigger": "Query failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-187", "path": "/api/v1/user/gpg_key_verify", "error_scenarios": [
+      {"exception": "Empty KeyID", "trigger": "KeyID is all zeros", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+      {"exception": "ErrGPGInvalidTokenSignature", "trigger": "Signature doesn't match token", "status_code": 422, "response": "validation error with token hint", "logged": false, "retryable": false},
+      {"exception": "ErrGPGKeyNotExist", "trigger": "Key not found after verification", "status_code": 404, "response": "not found", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-188", "path": "/api/v1/user/gpg_keys", "error_scenarios": [
+      {"exception": "Feature disabled", "trigger": "manage_gpg_keys in disabled features", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+      {"exception": "ErrGPGKeyIDAlreadyUsed", "trigger": "Duplicate key_id", "status_code": 422, "response": "key already exists", "logged": false, "retryable": false},
+      {"exception": "ErrGPGKeyParsing", "trigger": "Invalid armored key format", "status_code": 422, "response": "parse error", "logged": false, "retryable": false},
+      {"exception": "ErrGPGNoEmailFound", "trigger": "No matching activated email", "status_code": 404, "response": "no email found + token hint", "logged": false, "retryable": false},
+      {"exception": "ErrGPGInvalidTokenSignature", "trigger": "Signature verification failed", "status_code": 422, "response": "invalid signature + token hint", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-189", "path": "/api/v1/user/gpg_keys/{id}", "error_scenarios": [
+      {"exception": "Feature disabled", "trigger": "manage_gpg_keys in disabled features", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+      {"exception": "DB error", "trigger": "Delete operation fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrGPGKeyNotExist", "file_path": "models/asymkey/error.go", "extends": "error", "used_in": ["GetGPGKeyForUserByID", "VerifyGPGKey"], "http_status": 404},
+    {"class": "ErrGPGKeyIDAlreadyUsed", "file_path": "models/asymkey/error.go", "extends": "error", "used_in": ["AddGPGKey"], "http_status": 422},
+    {"class": "ErrGPGKeyParsing", "file_path": "models/asymkey/error.go", "extends": "error", "used_in": ["parseGPGKey"], "http_status": 422},
+    {"class": "ErrGPGNoEmailFound", "file_path": "models/asymkey/error.go", "extends": "error", "used_in": ["parseGPGKey"], "http_status": 404},
+    {"class": "ErrGPGInvalidTokenSignature", "file_path": "models/asymkey/error.go", "extends": "error", "used_in": ["AddGPGKey", "VerifyGPGKey"], "http_status": 422}
+  ]
+}

@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "business_logic",
+      "description": "Label ID path param can be either numeric ID or label name string",
+      "location": {"class": "org", "method": "GetLabel", "file_path": "routers/api/v1/org/label.go", "line_number": 123},
+      "condition": "strconv.ParseInt(strID, 10, 64) fails",
+      "action": "Look up label by name instead of ID",
+      "affected_endpoints": ["ep-084"],
+      "code_snippet": "if intID, err2 := strconv.ParseInt(strID, 10, 64); err2 != nil {\n\tlabel, err = issues_model.GetLabelInOrgByName(ctx, ctx.Org.Organization.ID, strID)"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Color must be valid hex format (3 or 6 chars, with or without #)",
+      "location": {"class": "label", "method": "NormalizeColor", "file_path": "modules/label/label.go", "line_number": 29},
+      "condition": "Color does not match hex pattern",
+      "action": "Return error causing 422 response",
+      "affected_endpoints": ["ep-085"],
+      "code_snippet": "if !colorPattern().MatchString(color) {\n\treturn \"\", util.NewInvalidArgumentErrorf(\"invalid color: %s\", color)\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Label update recalculates num_issues and num_closed_issues via subqueries",
+      "location": {"class": "issues_model", "method": "updateLabelCols", "file_path": "models/issues/label.go", "line_number": 497},
+      "condition": "Always on update",
+      "action": "SetExpr with SELECT count(*) subqueries on issue_label table",
+      "affected_endpoints": ["ep-085"],
+      "code_snippet": "SetExpr(\"num_issues\", builder.Select(\"count(*)\").From(\"issue_label\").\n\tWhere(builder.Eq{\"label_id\": l.ID}))"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Deleting a label also removes all issue_label associations and related comments",
+      "location": {"class": "issues_model", "method": "DeleteLabel", "file_path": "models/issues/label.go", "line_number": 240},
+      "condition": "Label exists and belongs to the org",
+      "action": "Delete label, issue_label records, and comment records in transaction",
+      "affected_endpoints": ["ep-086"],
+      "code_snippet": "if _, err = db.DeleteByID[Label](ctx, labelID); err != nil {\n\treturn err\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "authorization",
+      "description": "Delete label silently returns nil if label belongs to different org",
+      "location": {"class": "issues_model", "method": "DeleteLabel", "file_path": "models/issues/label.go", "line_number": 250},
+      "condition": "l.BelongsToOrg() && l.OrgID != id",
+      "action": "Return nil without deleting",
+      "affected_endpoints": ["ep-086"],
+      "code_snippet": "if l.BelongsToOrg() && l.OrgID != id {\n\treturn nil\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Cannot block an organization (only individual users)",
+      "location": {"class": "user_service", "method": "BlockUser", "file_path": "services/user/block.go", "line_number": 68},
+      "condition": "blockee.IsOrganization()",
+      "action": "Return ErrBlockOrganization",
+      "affected_endpoints": ["ep-089"],
+      "code_snippet": "if blockee.IsOrganization() {\n\treturn user_model.ErrBlockOrganization\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Cannot block self or the doer themselves",
+      "location": {"class": "user_service", "method": "CanBlockUser", "file_path": "services/user/block.go", "line_number": 16},
+      "condition": "blocker.ID == blockee.ID || doer.ID == blockee.ID",
+      "action": "Return false (cannot block)",
+      "affected_endpoints": ["ep-089"],
+      "code_snippet": "if blocker.ID == blockee.ID {\n\treturn false\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "authorization",
+      "description": "Cannot block a user who is already blocked",
+      "location": {"class": "user_service", "method": "CanBlockUser", "file_path": "services/user/block.go", "line_number": 27},
+      "condition": "user_model.IsUserBlockedBy(ctx, blockee, blocker.ID)",
+      "action": "Return false (cannot block)",
+      "affected_endpoints": ["ep-089"],
+      "code_snippet": "if user_model.IsUserBlockedBy(ctx, blockee, blocker.ID) {\n\treturn false\n}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "authorization",
+      "description": "Cannot block an org member; doer must be org admin",
+      "location": {"class": "user_service", "method": "CanBlockUser", "file_path": "services/user/block.go", "line_number": 30},
+      "condition": "blocker.IsOrganization() && blockee is org member",
+      "action": "Return false (cannot block org member)",
+      "affected_endpoints": ["ep-089"],
+      "code_snippet": "if isMember, _ := org.IsOrgMember(ctx, blockee.ID); isMember {\n\treturn false\n}"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Blocking removes all mutual relationships in a single transaction",
+      "location": {"class": "user_service", "method": "BlockUser", "file_path": "services/user/block.go", "line_number": 73},
+      "condition": "Block is permitted",
+      "action": "Unfollow, unstar, unwatch, unassign, remove collaborations, cancel transfers bidirectionally",
+      "affected_endpoints": ["ep-089"],
+      "code_snippet": "return db.WithTx(ctx, func(ctx context.Context) error {\n\tif err := user_model.UnfollowUser(ctx, blocker.ID, blockee.ID); err != nil {"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "authorization",
+      "description": "Only org admins or site admins can unblock users from an org",
+      "location": {"class": "user_service", "method": "CanUnblockUser", "file_path": "services/user/block.go", "line_number": 47},
+      "condition": "blocker.IsOrganization() && doer is not org owner && doer is not site admin",
+      "action": "Return false (cannot unblock)",
+      "affected_endpoints": ["ep-090"],
+      "code_snippet": "if isAdmin, _ := org.IsOwnedBy(ctx, doer.ID); !isAdmin && !doer.IsAdmin {\n\treturn false\n}"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "business_logic",
+      "description": "Archived label timestamp only set when newly archived",
+      "location": {"class": "Label", "method": "SetArchived", "file_path": "models/issues/label.go", "line_number": 122},
+      "condition": "isArchived && !l.IsArchived()",
+      "action": "Set ArchivedUnix to current timestamp",
+      "affected_endpoints": ["ep-085"],
+      "code_snippet": "} else if isArchived && !l.IsArchived() {\n\tl.ArchivedUnix = timeutil.TimeStampNow()\n}"
+    }
+  ]
+}

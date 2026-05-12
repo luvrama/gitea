@@ -1,0 +1,126 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 2,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "user",
+      "entity_class": "user_model.User",
+      "file_path": "models/user/user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE NOT NULL"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE NOT NULL"]},
+        {"name": "full_name", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "email", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "keep_email_private", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "type", "type": "INT", "code_type": "UserType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "visibility", "type": "INT", "code_type": "structs.VisibleType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL DEFAULT 0"]},
+        {"name": "avatar", "type": "VARCHAR(2048)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "", "constraints": ["NOT NULL"]},
+        {"name": "use_custom_avatar", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "num_followers", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "num_following", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL DEFAULT 0"]},
+        {"name": "num_stars", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "is_active", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "false", "constraints": ["INDEX"]},
+        {"name": "is_admin", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "is_restricted", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "keep_activity_private", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "login_source", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": ["NOT NULL DEFAULT 0"]},
+        {"name": "login_name", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]},
+        {"name": "last_login_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]}
+      ],
+      "indexes": [
+        {"name": "UQE_user_lower_name", "columns": ["lower_name"], "unique": true},
+        {"name": "UQE_user_name", "columns": ["name"], "unique": true},
+        {"name": "IDX_user_is_active", "columns": ["is_active"], "unique": false},
+        {"name": "IDX_user_created_unix", "columns": ["created_unix"], "unique": false},
+        {"name": "IDX_user_last_login_unix", "columns": ["last_login_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "one-to-many", "target_table": "action", "join_column": "id (user_id)"},
+        {"type": "one-to-many", "target_table": "follow", "join_column": "id (user_id/follow_id)"},
+        {"type": "one-to-many", "target_table": "org_user", "join_column": "id (uid)"},
+        {"type": "one-to-many", "target_table": "team_user", "join_column": "id (uid)"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "action",
+      "entity_class": "activities_model.Action",
+      "file_path": "models/activities/action.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "op_type", "type": "INT", "code_type": "ActionType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "act_user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "comment_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]},
+        {"name": "is_deleted", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "ref_name", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_private", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "content", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]}
+      ],
+      "indexes": [
+        {"name": "IDX_action_user_id", "columns": ["user_id"], "unique": false},
+        {"name": "IDX_action_comment_id", "columns": ["comment_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "act_user_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-123",
+      "path": "/api/v1/users/search",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.SearchUsers", "description": "Search users by keyword with visibility and pagination"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-124",
+      "path": "/api/v1/users/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Get user by username"},
+        {"store_type": "database", "store_name": "team_user", "operation": "SELECT", "method": "user_model.IsUserVisibleToViewer", "description": "Check org membership for visibility"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-125",
+      "path": "/api/v1/user",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-126",
+      "path": "/api/v1/users/{username}/heatmap",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Get user by username"},
+        {"store_type": "database", "store_name": "action", "operation": "SELECT", "method": "getUserHeatmapData", "description": "Aggregate contributions from action table for past year"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-127",
+      "path": "/api/v1/users/{username}/activities/feeds",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Get user by username"},
+        {"store_type": "database", "store_name": "action", "operation": "SELECT", "method": "activities_model.GetFeeds", "description": "Query actions with visibility/permission filtering"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "ActionList.LoadAttributes", "description": "Load ActUser for each action"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "ActionList.LoadAttributes", "description": "Load Repo for each action"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-128",
+      "path": "/api/v1/user/avatar",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "user_model.UpdateUserCols", "description": "Update avatar and use_custom_avatar columns"}
+      ]
+    }
+  ]
+}

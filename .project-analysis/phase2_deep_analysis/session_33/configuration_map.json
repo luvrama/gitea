@@ -1,0 +1,21 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "setting.IsInTesting",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/testenv.go",
+      "used_by": [{"class": "pull_service", "method": "StartPullRequestCheckOnView", "file_path": "services/pull/check.go", "usage": "Determines whether to use global lock or immediate queue for PR check", "impact": "In testing mode, skips global lock to avoid deadlock with immediate queue"}],
+      "affected_endpoints": ["ep-223", "ep-224"]
+    },
+    {
+      "key": "API.DefaultPagingNum",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "modules/setting/api.go",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Default page size when limit param not provided", "impact": "Controls how many items are returned per page"}],
+      "affected_endpoints": ["ep-221", "ep-222"]
+    }
+  ]
+}

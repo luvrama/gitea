@@ -1,0 +1,13 @@
+{
+  "total_properties": 1,
+  "properties": [
+    {
+      "key": "service.AutoWatchNewRepos",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/service.go",
+      "used_by": [{"class": "org_service", "method": "AddTeamMember", "file_path": "services/org/team.go", "usage": "conditional auto-watch", "impact": "If true, new team members auto-watch all team repos in a goroutine"}],
+      "affected_endpoints": ["ep-062"]
+    }
+  ]
+}

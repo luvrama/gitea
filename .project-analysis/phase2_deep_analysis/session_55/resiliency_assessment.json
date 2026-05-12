@@ -1,0 +1,88 @@
+{
+  "total_findings": 3,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-376",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Pin creation and comment creation are wrapped in a single DB transaction via db.WithTx",
+          "recommendation": "No action needed - transaction ensures atomicity"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - only DB dependency",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-378",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin/{position}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Pin reordering (shift + update) is wrapped in db.WithTx transaction",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - only DB dependency",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-380",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/pinned",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "cascading_failure",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Multiple sequential DB queries - if any fails, entire request fails with 500",
+          "recommendation": "Acceptable for read-only endpoint with small result set"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - only DB dependency",
+      "graceful_degradation": "Returns 500 on any DB failure"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled by modules/graceful package",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting for these endpoints",
+      "recommendation": "Consider rate limiting write endpoints (pin/unpin/move)"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": ["Database"],
+    "cascading_failure_paths": []
+  }
+}

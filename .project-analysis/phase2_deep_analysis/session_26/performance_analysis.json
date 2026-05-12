@@ -1,0 +1,177 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-176",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/runners",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT with count + N convert operations (in-memory)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-177",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single SELECT by ID"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-178",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT for validation + SELECT in DeleteRunner + DELETE"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "DeleteRunner internally calls GetRunnerByID again even though the runner was already fetched by getRunnerByID",
+          "impact": "Extra SELECT query per delete request",
+          "file_path": "models/actions/runner.go",
+          "line_number": 252,
+          "code_snippet": "func DeleteRunner(ctx context.Context, id int64) error {\n\tif _, err := GetRunnerByID(ctx, id); err != nil {",
+          "recommendation": "Pass runner object directly or use DeleteByID without re-fetching"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Avoid redundant GetRunnerByID call in DeleteRunner since caller already validated existence",
+          "estimated_impact": "Saves 1 DB query per delete",
+          "implementation": "Add a DeleteRunnerByID that skips the existence check, or pass the already-fetched runner"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-179",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT + UPDATE + IncreaseTaskVersion (up to 3 UPDATEs) + re-fetch SELECT"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-180",
+      "http_method": "GET",
+      "path": "/api/v1/user/emails",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single SELECT for all user emails"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "unbounded_queries",
+          "description": "No pagination on email listing - returns all emails for user without limit",
+          "impact": "Minimal in practice since users rarely have many emails, but technically unbounded",
+          "file_path": "routers/api/v1/user/email.go",
+          "line_number": 30,
+          "code_snippet": "emails, err := user_model.GetEmailAddresses(ctx, ctx.Doer.ID)",
+          "recommendation": "Low priority - users typically have <10 emails"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-181",
+      "http_method": "POST",
+      "path": "/api/v1/user/emails",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "N*(SELECT check + INSERT) + final SELECT all emails"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Each email in the list triggers a separate SELECT to check existence and a separate INSERT",
+          "impact": "For N emails: 2N+1 queries instead of batch operations",
+          "file_path": "services/user/email.go",
+          "line_number": 71,
+          "code_snippet": "for _, emailStr := range emails {\n\tif err := user_model.ValidateEmail(emailStr); err != nil {",
+          "recommendation": "Batch check existence with IN clause, batch insert emails"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch email existence check and insertion",
+          "estimated_impact": "Reduce from 2N+1 to 3 queries for N emails",
+          "implementation": "Use WHERE lower_email IN (...) for existence check, batch INSERT for new emails"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-182",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/emails",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "N*(SELECT + DELETE) for N emails"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Each email deletion triggers a separate SELECT and DELETE",
+          "impact": "For N emails: 2N queries instead of batch operations",
+          "file_path": "services/user/email.go",
+          "line_number": 97,
+          "code_snippet": "for _, emailStr := range emails {\n\temail, err := user_model.GetEmailAddressOfUser(ctx, emailStr, u.ID)",
+          "recommendation": "Batch lookup and delete with IN clause"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch email lookup and deletion",
+          "estimated_impact": "Reduce from 2N to 2 queries for N emails",
+          "implementation": "Use WHERE lower_email IN (...) AND uid=? for lookup, batch DELETE WHERE id IN (...)"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-183",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/gpg_keys",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT for keys + 1 SELECT for subkeys (batch IN query)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "total_findings": 8,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-056",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - database only",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-057",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/teams",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx for transactional team creation including units and repo additions",
+          "recommendation": "Already handled correctly with transaction"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - all within single DB transaction",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-058",
+      "http_method": "PATCH",
+      "path": "/api/v1/teams/{id}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx for team update + unit replacement + access recalculation",
+          "recommendation": "Transaction covers all operations"
+        },
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external calls, but large teams with many repos could have long-running transactions",
+          "recommendation": "Consider adding a repo count check before recalculating all access"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Long transaction could hold locks if team has many repos",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-059",
+      "http_method": "DELETE",
+      "path": "/api/v1/teams/{id}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Large transaction: loads members, updates branch protections, removes repos, deletes records, removes invalid org users - all in one tx",
+          "recommendation": "Transaction is correct but could be very long-running for large teams"
+        },
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "medium",
+          "detail": "No timeout on the transaction. A team with many repos and members could take significant time",
+          "recommendation": "Consider breaking into smaller transactions or adding progress tracking"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Long-running transaction could cause lock contention",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-060",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/members",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-061",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-062",
+      "http_method": "PUT",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "AddOrgUser and team_user insert are in separate transactions. Auto-watch is async.",
+          "recommendation": "The two-phase approach (AddOrgUser then AddTeamMember) has a small window where user is in org but not in team if second tx fails"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Adding an already-existing member is a no-op (checks IsTeamMember first)",
+          "recommendation": "Safe to retry"
+        }
+      ],
+      "non_atomic_operations": ["AddOrgUser and team_user insert are separate transactions"],
+      "cascading_failure_risk": "Auto-watch goroutine failure only logged, doesn't affect response",
+      "graceful_degradation": "Auto-watch failures are logged but don't fail the request"
+    },
+    {
+      "endpoint_id": "ep-063",
+      "http_method": "DELETE",
+      "path": "/api/v1/teams/{id}/members/{username}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Single transaction covers: membership removal, access recalculation per repo, watch removal, issue reassignment, org user cleanup",
+          "recommendation": "Transaction is correct but could be long for teams with many repos"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Removing a non-member returns nil (no error), making it idempotent",
+          "recommendation": "Safe to retry"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Long transaction for teams with many repos",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": "Add dedicated readiness check"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Uses modules/graceful package with ShutdownContext",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No rate limiting on team endpoints",
+      "recommendation": "Add rate limiting especially for write operations"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message queues used"
+    },
+    "single_points_of_failure": ["Database (single XORM connection)"],
+    "cascading_failure_paths": []
+  }
+}

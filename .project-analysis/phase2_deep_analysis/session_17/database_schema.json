@@ -1,0 +1,179 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite (via XORM)",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "action_runner",
+      "entity_class": "ActionRunner",
+      "file_path": "models/actions/runner.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "uuid", "type": "CHAR(36)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "version", "type": "VARCHAR(64)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": []},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "base", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "repo_range", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "token_hash", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "token_salt", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "last_online", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": []},
+        {"name": "last_active", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": []},
+        {"name": "agent_labels", "type": "TEXT", "code_type": "[]string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "ephemeral", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL"]},
+        {"name": "is_disabled", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL"]},
+        {"name": "created", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["auto-set on create"]},
+        {"name": "updated", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["auto-set on update"]},
+        {"name": "deleted", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["soft delete"]}
+      ],
+      "indexes": [
+        {"name": "idx_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "idx_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_last_online", "columns": ["last_online"], "unique": false},
+        {"name": "idx_last_active", "columns": ["last_active"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "email_address",
+      "entity_class": "EmailAddress",
+      "file_path": "models/user/email_address.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "email", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "lower_email", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "is_primary", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "is_activated", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_uid", "columns": ["uid"], "unique": false},
+        {"name": "idx_lower_email", "columns": ["lower_email"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "badge",
+      "entity_class": "Badge",
+      "file_path": "models/user/badge.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "slug", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "description", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "image_url", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_badge_slug", "columns": ["slug"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-many", "target_table": "user", "join_column": "user_badge"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "user_badge",
+      "entity_class": "UserBadge",
+      "file_path": "models/user/badge.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "badge_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "unique_user_badge", "columns": ["user_id", "badge_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "badge", "join_column": "badge_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-114",
+      "path": "/api/v1/admin/actions/runners",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "db.FindAndCount", "description": "List runners with optional disabled filter"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-115",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "actions_model.GetRunnerByID", "description": "Get runner by ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-116",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "actions_model.GetRunnerByID", "description": "Get runner for validation"},
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "actions_model.GetRunnerByID", "description": "Re-fetch in DeleteRunner model"},
+        {"store_type": "database", "store_name": "action_runner", "operation": "DELETE", "method": "db.DeleteByID", "description": "Soft delete runner"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-117",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "actions_model.GetRunnerByID", "description": "Get runner for validation"},
+        {"store_type": "database", "store_name": "action_runner", "operation": "UPDATE", "method": "actions_model.UpdateRunner", "description": "Update is_disabled"},
+        {"store_type": "database", "store_name": "action_tasks_version", "operation": "UPDATE", "method": "IncreaseTaskVersion", "description": "Bump task version"},
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "actions_model.GetRunnerByID", "description": "Re-fetch for response"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-118",
+      "path": "/api/v1/admin/emails",
+      "operations": [
+        {"store_type": "database", "store_name": "email_address", "operation": "SELECT", "method": "user_model.SearchEmails", "description": "Count and fetch emails with JOIN on user"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-119",
+      "path": "/api/v1/admin/emails/search",
+      "operations": [
+        {"store_type": "database", "store_name": "email_address", "operation": "SELECT", "method": "user_model.SearchEmails", "description": "Count and fetch emails with LIKE filter"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-120",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Resolve username"},
+        {"store_type": "database", "store_name": "badge", "operation": "SELECT", "method": "user_model.GetUserBadges", "description": "Get badges via JOIN user_badge"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-121",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Resolve username"},
+        {"store_type": "database", "store_name": "badge", "operation": "SELECT", "method": "GetEngine.Where.Get", "description": "Get badge by slug (per badge)"},
+        {"store_type": "database", "store_name": "user_badge", "operation": "SELECT", "method": "GetEngine.Where.Exist", "description": "Check existence (per badge)"},
+        {"store_type": "database", "store_name": "user_badge", "operation": "INSERT", "method": "db.Insert", "description": "Insert user_badge (per badge)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-122",
+      "path": "/api/v1/admin/users/{username}/badges",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "user_model.GetUserByName", "description": "Resolve username"},
+        {"store_type": "database", "store_name": "user_badge", "operation": "SELECT", "method": "GetEngine.Join.Find", "description": "Find user_badge entries by slugs"},
+        {"store_type": "database", "store_name": "user_badge", "operation": "DELETE", "method": "GetEngine.In.Delete", "description": "Delete matching user_badge entries"}
+      ]
+    }
+  ]
+}

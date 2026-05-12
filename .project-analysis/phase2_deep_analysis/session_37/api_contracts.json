@@ -1,0 +1,312 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-246",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/trees/{sha}",
+      "controller_class": "repo",
+      "controller_method": "GetTree",
+      "description": "Gets the tree of a repository by SHA hash with pagination support",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "sha", "type": "string", "required": true, "validation": ["non-empty"]}
+        ],
+        "query_params": [
+          {"name": "recursive", "type": "boolean", "required": false, "default": false, "validation": []},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "per_page", "type": "integer", "required": false, "default": 1000, "validation": ["max 1000 (DefaultGitTreesPerPage)"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "GitTreeResponse",
+          "fields": [
+            {"name": "sha", "type": "string", "description": "Tree object SHA"},
+            {"name": "url", "type": "string", "description": "API URL for this tree"},
+            {"name": "tree", "type": "[]GitEntry", "description": "Array of tree entries"},
+            {"name": "truncated", "type": "boolean", "description": "Whether more items exist after this page"},
+            {"name": "page", "type": "integer", "description": "Current page number"},
+            {"name": "total_count", "type": "integer", "description": "Total number of entries"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "SHA not provided or SHA not found in repository"},
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-247",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/refs",
+      "controller_class": "repo",
+      "controller_method": "GetGitAllRefs",
+      "description": "List all git references (branches, tags) of a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]Reference",
+          "fields": [
+            {"name": "ref", "type": "string", "description": "Reference name (e.g. refs/heads/main)"},
+            {"name": "url", "type": "string", "description": "API URL for this reference"},
+            {"name": "object", "type": "GitObject", "description": "Git object this reference points to"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "No refs found or repository not found"},
+          {"status_code": 500, "type": "error", "condition": "Internal error reading git refs"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-248",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/refs/{ref}",
+      "controller_class": "repo",
+      "controller_method": "GetGitRefs",
+      "description": "Get specified ref or filtered list of refs by prefix",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "ref", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "Reference or []Reference",
+          "fields": [
+            {"name": "ref", "type": "string", "description": "Reference name"},
+            {"name": "url", "type": "string", "description": "API URL for this reference"},
+            {"name": "object", "type": "GitObject", "description": "Git object this reference points to"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "No matching refs found"},
+          {"status_code": 500, "type": "error", "condition": "Internal error reading git refs"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-249",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/diffpatch",
+      "controller_class": "repo",
+      "controller_method": "ApplyDiffPatch",
+      "description": "Apply a diff patch to the repository, creating a new commit",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "ApplyDiffPatchFileOptions",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "content", "type": "string", "required": true, "validation": [], "description": "Diff patch content to apply"},
+            {"name": "message", "type": "string", "required": false, "validation": [], "description": "Commit message (defaults to 'apply-patch')"},
+            {"name": "branch", "type": "string", "required": false, "validation": ["GitRefName", "MaxSize(100)"], "description": "Base branch"},
+            {"name": "new_branch", "type": "string", "required": false, "validation": ["GitRefName", "MaxSize(100)"], "description": "New branch to create"},
+            {"name": "author", "type": "Identity", "required": false, "validation": [], "description": "Author identity"},
+            {"name": "committer", "type": "Identity", "required": false, "validation": [], "description": "Committer identity"},
+            {"name": "dates", "type": "CommitDateOptions", "required": false, "validation": [], "description": "Custom dates for author/committer"},
+            {"name": "signoff", "type": "boolean", "required": false, "validation": [], "description": "Add Signed-off-by trailer"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "FileResponse",
+          "fields": [
+            {"name": "commit", "type": "FileCommitResponse", "description": "Commit information"},
+            {"name": "verification", "type": "PayloadCommitVerification", "description": "Commit signature verification"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "error", "condition": "Push rejected or user cannot commit to protected branch"},
+          {"status_code": 404, "type": "notFound", "condition": "Repository or branch not found"},
+          {"status_code": 422, "type": "error", "condition": "Branch already exists, commit ID mismatch"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Repository is archived"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-250",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators",
+      "controller_class": "repo",
+      "controller_method": "ListCollaborators",
+      "description": "List all collaborators of a repository with pagination",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": 30, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "User ID"},
+            {"name": "login", "type": "string", "description": "Username"},
+            {"name": "full_name", "type": "string", "description": "Full name"},
+            {"name": "email", "type": "string", "description": "Email address"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 500, "type": "error", "condition": "Internal server error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-251",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "controller_class": "repo",
+      "controller_method": "IsCollaborator",
+      "description": "Check if a user is a collaborator of a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "collaborator", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "User is not a collaborator or repo not found"},
+          {"status_code": 422, "type": "validationError", "condition": "User does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-252",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "controller_class": "repo",
+      "controller_method": "AddOrUpdateCollaborator",
+      "description": "Add or update a collaborator to a repository with specified permission level",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "collaborator", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "AddCollaboratorOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "permission", "type": "RepoWritePermission", "required": false, "validation": ["enum: read, write, admin"], "description": "Permission level (defaults to write)"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User is blocked by repo owner or vice versa"},
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 422, "type": "validationError", "condition": "Collaborator user does not exist"},
+          {"status_code": 500, "type": "error", "condition": "Collaborator account is inactive"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-253",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "controller_class": "repo",
+      "controller_method": "DeleteCollaborator",
+      "description": "Remove a collaborator from a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "collaborator", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 422, "type": "validationError", "condition": "Collaborator user does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": null,
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

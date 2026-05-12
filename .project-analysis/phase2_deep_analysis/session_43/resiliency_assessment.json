@@ -1,0 +1,180 @@
+{
+  "total_findings": 6,
+  "overall_risk": "medium",
+  "dependency_resiliency": [
+    {
+      "dependency": "Object Storage (Minio/Azure/Local)",
+      "client_class": "storage.ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "used_by_endpoints": ["ep-294", "ep-298"],
+      "timeout": {
+        "status": "missing",
+        "value_ms": null,
+        "recommendation": "Add context timeout (30s) for storage operations in artifact download/delete paths"
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Add retry with exponential backoff for transient storage errors (network timeouts, 503s)"
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "Consider circuit breaker for storage operations to prevent cascading failures during storage outages"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Not critical for artifact downloads as they are not high-frequency"
+      },
+      "fallback": {
+        "status": "configured",
+        "behavior": "DownloadArtifactV4ServeDirect falls back to DownloadArtifactV4ReadStorage if direct URL generation fails",
+        "recommendation": "Current fallback is adequate"
+      },
+      "idempotency": {
+        "safe_to_retry": true,
+        "reason": "Storage Delete is idempotent (deleting non-existent file is a no-op), reads are naturally idempotent"
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-294", "ep-298"],
+        "impact": "Artifact downloads fail (ep-298), run deletion partially fails (logs/artifacts not cleaned from storage but DB records deleted)"
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-293",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/artifacts",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Only DB queries, covered by DB connection pool timeouts",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure DB read",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-294",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}",
+      "risk_level": "medium",
+      "dependency_count": 2,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "DB deletion is transactional but storage file deletion happens after transaction commit. If storage deletion fails, DB records are already gone but files remain orphaned.",
+          "recommendation": "Log orphaned files for manual cleanup or implement a reconciliation job"
+        },
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Storage.Delete calls in loop have no timeout",
+          "recommendation": "Add per-file timeout or overall operation timeout"
+        }
+      ],
+      "non_atomic_operations": ["DB transaction deletes records, then storage files are deleted outside transaction - partial failure leaves orphaned storage files"],
+      "cascading_failure_risk": "Storage outage causes slow/hanging delete requests but DB state is consistent",
+      "graceful_degradation": "Storage deletion failures are logged but don't fail the request (error is only logged)"
+    },
+    {
+      "endpoint_id": "ep-295",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure DB read",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-296",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - single PK lookup",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-297",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "SetArtifactNeedDeleteByID only updates WHERE status=UploadConfirmed, so repeated calls are safe (no-op after first)",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - soft delete only",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-298",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip",
+      "risk_level": "medium",
+      "dependency_count": 2,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Storage ServeDirectURL and Open operations have no explicit timeout",
+          "recommendation": "Add context.WithTimeout for storage operations"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Storage outage causes download failures",
+      "graceful_degradation": "Falls back from ServeDirect to ReadStorage if presigned URL generation fails"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": "Add dedicated readiness check that verifies storage connectivity"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses graceful.GetManager() for shutdown coordination",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No rate limiting on artifact download endpoints",
+      "recommendation": "Consider rate limiting artifact downloads to prevent abuse"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message processing in these endpoints"
+    },
+    "single_points_of_failure": [
+      "Object storage backend - no redundancy or fallback if storage is unavailable"
+    ],
+    "cascading_failure_paths": [
+      "Storage outage → ep-298 download fails → CI/CD pipelines that depend on artifact downloads break"
+    ]
+  }
+}

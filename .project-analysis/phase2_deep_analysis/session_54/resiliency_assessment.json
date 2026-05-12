@@ -1,0 +1,107 @@
+{
+  "total_findings": 4,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-367",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "fallback",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies; all data from local DB",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - purely database reads",
+      "graceful_degradation": "Returns 500 on DB failure"
+    },
+    {
+      "endpoint_id": "ep-369",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Edit performs multiple sequential updates (basic props, units, archive, mirror) - partial failure leaves repo in inconsistent state",
+          "recommendation": "Wrap all updates in a single transaction or implement compensating logic"
+        }
+      ],
+      "non_atomic_operations": ["updateBasicProperties + updateRepoUnits + updateRepoArchivedState + updateMirror are separate operations"],
+      "cascading_failure_risk": "Partial update could leave repo with inconsistent unit configuration",
+      "graceful_degradation": "Each sub-function returns error immediately, stopping further updates"
+    },
+    {
+      "endpoint_id": "ep-370",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Delete is idempotent - calling again returns 404",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "DeleteRepository handles cleanup in transaction",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-374",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/activities/feeds",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external calls; DB query only",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "Returns 500 on DB failure"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Graceful shutdown via modules/graceful package",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in API rate limiting",
+      "recommendation": "Add rate limiting middleware or use reverse proxy"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": [],
+    "cascading_failure_paths": []
+  }
+}

@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Only admin, owner, or org admin can delete a repository",
+      "location": {"class": "repo_module", "method": "CanUserDelete", "file_path": "modules/repository/delete.go", "line_number": 14},
+      "condition": "user.IsAdmin || user.ID == repo.OwnerID || org.IsOrgAdmin(user.ID)",
+      "action": "Allow deletion",
+      "affected_endpoints": ["ep-370"],
+      "code_snippet": "if user.IsAdmin || user.ID == repo.OwnerID { return true, nil }"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Cannot change private repo to public when ForcePrivate is enabled (non-admin)",
+      "location": {"class": "repo", "method": "updateBasicProperties", "file_path": "routers/api/v1/repo/repo.go", "line_number": 430},
+      "condition": "visibilityChanged && setting.Repository.ForcePrivate && !*opts.Private && !ctx.Doer.IsAdmin",
+      "action": "Return 422 error",
+      "affected_endpoints": ["ep-369"],
+      "code_snippet": "err := errors.New(\"cannot change private repository to public\")"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Fork visibility is forced to match base repository",
+      "location": {"class": "repo", "method": "updateBasicProperties", "file_path": "routers/api/v1/repo/repo.go", "line_number": 420},
+      "condition": "repo.IsFork && opts.Private != nil",
+      "action": "Override private setting to match base repo",
+      "affected_endpoints": ["ep-369"],
+      "code_snippet": "*opts.Private = repo.BaseRepo.IsPrivate"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Mirror interval must be >= setting.Mirror.MinInterval",
+      "location": {"class": "repo", "method": "updateMirror", "file_path": "routers/api/v1/repo/repo.go", "line_number": 530},
+      "condition": "interval != 0 && interval < setting.Mirror.MinInterval",
+      "action": "Return 422 error",
+      "affected_endpoints": ["ep-369"],
+      "code_snippet": "err := fmt.Errorf(\"invalid mirror interval: %s is below minimum interval: %s\", ...)"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Cannot archive/unarchive a mirror repository",
+      "location": {"class": "repo", "method": "updateRepoArchivedState", "file_path": "routers/api/v1/repo/repo.go", "line_number": 487},
+      "condition": "repo.IsMirror && opts.Archived != nil",
+      "action": "Return 422 error",
+      "affected_endpoints": ["ep-369"],
+      "code_snippet": "err := errors.New(\"repo is a mirror, cannot archive/un-archive\")"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "authorization",
+      "description": "GetByID returns 404 if user has no unit access to the repo",
+      "location": {"class": "repo", "method": "GetByID", "file_path": "routers/api/v1/repo/repo.go", "line_number": 340},
+      "condition": "!permission.HasAnyUnitAccess()",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-368"],
+      "code_snippet": "} else if !permission.HasAnyUnitAccess() { ctx.APIErrorNotFound() }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Default branch change only applied if branch exists or repo is empty",
+      "location": {"class": "repo", "method": "updateBasicProperties", "file_path": "routers/api/v1/repo/repo.go", "line_number": 450},
+      "condition": "opts.DefaultBranch != nil && repo.DefaultBranch != *opts.DefaultBranch && (repo.IsEmpty || gitrepo.IsBranchExist(...))",
+      "action": "Update default branch and queue license update",
+      "affected_endpoints": ["ep-369"],
+      "code_snippet": "if opts.DefaultBranch != nil && repo.DefaultBranch != *opts.DefaultBranch && (repo.IsEmpty || gitrepo.IsBranchExist(...))"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Archiving a repo cleans scheduled action tasks",
+      "location": {"class": "repo", "method": "updateRepoArchivedState", "file_path": "routers/api/v1/repo/repo.go", "line_number": 495},
+      "condition": "*opts.Archived == true",
+      "action": "Call CleanRepoScheduleTasks",
+      "affected_endpoints": ["ep-369"],
+      "code_snippet": "if err := actions_service.CleanRepoScheduleTasks(ctx, repo); err != nil {"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Unarchiving a repo re-detects action schedules",
+      "location": {"class": "repo", "method": "updateRepoArchivedState", "file_path": "routers/api/v1/repo/repo.go", "line_number": 502},
+      "condition": "*opts.Archived == false && repo has Actions unit enabled",
+      "action": "Call DetectAndHandleSchedules",
+      "affected_endpoints": ["ep-369"],
+      "code_snippet": "if err := actions_service.DetectAndHandleSchedules(ctx, repo); err != nil {"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Issue templates are parsed from multiple candidate directories in priority order",
+      "location": {"class": "issue", "method": "ParseTemplatesFromDefaultBranch", "file_path": "services/issue/template.go", "line_number": 115},
+      "condition": "Template dirs: ISSUE_TEMPLATE, .gitea/ISSUE_TEMPLATE, .github/ISSUE_TEMPLATE, .gitlab/ISSUE_TEMPLATE",
+      "action": "Parse all valid templates from all candidate dirs",
+      "affected_endpoints": ["ep-371"],
+      "code_snippet": "for _, dirName := range templateDirCandidates {"
+    }
+  ]
+}

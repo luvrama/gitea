@@ -1,0 +1,18 @@
+{
+  "database_type": "none",
+  "database_technology": "N/A (these endpoints do not use database)",
+  "total_tables_or_collections": 0,
+  "tables": [],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {"endpoint_id": "ep-001", "path": "/api/v1/version", "operations": []},
+    {"endpoint_id": "ep-002", "path": "/api/v1/label/templates", "operations": []},
+    {"endpoint_id": "ep-003", "path": "/api/v1/label/templates/{name}", "operations": []},
+    {"endpoint_id": "ep-004", "path": "/api/v1/signing-key.gpg", "operations": []},
+    {"endpoint_id": "ep-005", "path": "/api/v1/repos/{owner}/{repo}/signing-key.gpg", "operations": []},
+    {"endpoint_id": "ep-006", "path": "/api/v1/signing-key.pub", "operations": []},
+    {"endpoint_id": "ep-007", "path": "/api/v1/repos/{owner}/{repo}/signing-key.pub", "operations": []},
+    {"endpoint_id": "ep-008", "path": "/api/v1/markup", "operations": []}
+  ]
+}

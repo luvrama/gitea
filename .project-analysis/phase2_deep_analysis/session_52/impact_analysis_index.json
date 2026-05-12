@@ -1,0 +1,47 @@
+{
+  "endpoints_by_database_table": {
+    "release": {"read": ["ep-352", "ep-353", "ep-354", "ep-355", "ep-356"], "write": []},
+    "attachment": {"read": ["ep-352", "ep-353", "ep-355", "ep-356"], "write": ["ep-354", "ep-355", "ep-356"]},
+    "label": {"read": ["ep-357", "ep-358"], "write": []}
+  },
+  "endpoints_by_external_service": {
+    "Object Storage (Attachments)": ["ep-354", "ep-356"]
+  },
+  "endpoints_by_config_property": {
+    "attachment.ENABLED": ["ep-354"],
+    "repository.release.ALLOWED_TYPES": ["ep-354", "ep-355"],
+    "repository.release.FILE_MAX_SIZE": ["ep-354"],
+    "server.APP_URL": ["ep-352", "ep-353", "ep-354", "ep-355"]
+  },
+  "endpoints_by_model_class": {
+    "repo_model.Attachment": ["ep-352", "ep-353", "ep-354", "ep-355", "ep-356"],
+    "repo_model.Release": ["ep-352", "ep-353", "ep-354", "ep-355", "ep-356"],
+    "issues_model.Label": ["ep-357", "ep-358"]
+  },
+  "endpoints_by_service_class": {
+    "attachment_service": ["ep-354", "ep-355"],
+    "convert": ["ep-352", "ep-353", "ep-354", "ep-355", "ep-357", "ep-358"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-352": {"reads": ["release", "attachment"], "writes": []},
+    "ep-353": {"reads": ["release", "attachment"], "writes": []},
+    "ep-354": {"reads": ["release"], "writes": ["attachment"]},
+    "ep-355": {"reads": ["release", "attachment"], "writes": ["attachment"]},
+    "ep-356": {"reads": ["release", "attachment"], "writes": ["attachment"]},
+    "ep-357": {"reads": ["label"], "writes": []},
+    "ep-358": {"reads": ["label"], "writes": []}
+  },
+  "external_services_by_endpoint": {
+    "ep-354": ["Object Storage (Attachments)"],
+    "ep-356": ["Object Storage (Attachments)"]
+  },
+  "config_properties_by_endpoint": {
+    "ep-352": ["server.APP_URL"],
+    "ep-353": ["server.APP_URL"],
+    "ep-354": ["attachment.ENABLED", "repository.release.ALLOWED_TYPES", "repository.release.FILE_MAX_SIZE", "server.APP_URL"],
+    "ep-355": ["repository.release.ALLOWED_TYPES", "server.APP_URL"],
+    "ep-356": [],
+    "ep-357": [],
+    "ep-358": []
+  }
+}

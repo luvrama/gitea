@@ -1,0 +1,159 @@
+{
+  "total_findings": 8,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-050",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Deleting a non-existent runner returns 404, not an error. Soft delete via XORM deleted timestamp means re-delete is safe.",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - database only",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-051",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "SetRunnerDisabled uses db.WithTx to wrap the runner update and task version increase in a single transaction",
+          "recommendation": "None needed - already transactional"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Setting disabled to the same value is a no-op (early return), making retries safe",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - database only",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-052",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/jobs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external calls - database only with XORM default connection pool timeouts",
+          "recommendation": "None needed"
+        },
+        {
+          "pattern": "cascading_failure",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only endpoint with no side effects",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - read-only database queries",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-053",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runs",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external calls - database only",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - read-only database queries",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-054",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/teams",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external calls - database only",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - read-only database queries",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-055",
+      "http_method": "GET",
+      "path": "/api/v1/user/teams",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external calls - database only",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - read-only database queries",
+      "graceful_degradation": "none needed"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": "/api/v1/version",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea handles SIGTERM via graceful module",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in API rate limiting",
+      "recommendation": "Consider adding rate limiting middleware or using a reverse proxy"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message flows in these endpoints"
+    },
+    "single_points_of_failure": ["database"],
+    "cascading_failure_paths": []
+  }
+}

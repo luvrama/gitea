@@ -1,0 +1,177 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-246",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/trees/{sha}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git_filesystem"],
+        "note": "Git tree listing can be expensive for large repos with recursive=true"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "ListEntriesRecursiveWithSize can return very large result sets for repos with many files",
+          "impact": "Memory spike when listing all entries recursively before pagination is applied",
+          "file_path": "services/repository/files/tree.go",
+          "line_number": 50,
+          "code_snippet": "entries, err = gitTree.ListEntriesRecursiveWithSize()",
+          "recommendation": "All entries are loaded into memory before pagination slice is applied. Consider streaming or limiting recursion depth."
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "pagination",
+          "description": "Apply pagination at git level rather than loading all entries first",
+          "estimated_impact": "Reduce memory usage for large trees from O(n) to O(page_size)",
+          "implementation": "Use git ls-tree with pagination support or limit recursion"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-247",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/refs",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git_filesystem"],
+        "note": "Lists all refs which could be large for repos with many branches/tags"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "Returns all refs without pagination",
+          "impact": "Large response for repos with thousands of branches/tags",
+          "file_path": "routers/api/v1/repo/git_ref.go",
+          "line_number": 76,
+          "code_snippet": "refs, lastMethodName, err := utils.GetGitRefs(ctx, filter)",
+          "recommendation": "Add pagination support for refs listing"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "pagination",
+          "description": "Add page/limit query params to refs listing",
+          "estimated_impact": "Prevent large responses for repos with many refs",
+          "implementation": "Add ListOptions support and slice results"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-248",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/refs/{ref}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git_filesystem"],
+        "note": "Filtered ref lookup, typically returns small result set"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-249",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/diffpatch",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git_filesystem", "disk_io"],
+        "note": "Heavy operation: clones repo to temp dir, applies patch, commits, pushes"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "Creates temporary repository clone, applies patch, and pushes - all synchronous on request thread",
+          "impact": "Long request duration for large repos; holds resources during git operations",
+          "file_path": "services/repository/files/patch.go",
+          "line_number": 120,
+          "code_snippet": "if err := t.Clone(ctx, opts.OldBranch, true); err != nil {",
+          "recommendation": "Consider async processing for large patches or add request timeout"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "timeout",
+          "description": "Add timeout for git apply operations",
+          "estimated_impact": "Prevent hung requests from consuming resources indefinitely",
+          "implementation": "Use context with timeout for git operations"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-250",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Two DB queries: one for collaborations, one for user details"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-251",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Simple existence check with two queries"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-252",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Multiple DB operations within a transaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-253",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Heavy cascade: deletes collaboration, recalculates access, removes watches/stopwatches/assignments"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "Multiple cascading deletes in a single transaction could be slow for users with many issue assignments",
+          "impact": "Longer transaction hold time for users assigned to many issues in the repo",
+          "file_path": "services/repository/collaboration.go",
+          "line_number": 97,
+          "code_snippet": "return ReconsiderRepoIssuesAssignee(ctx, repo, collaborator)",
+          "recommendation": "Consider batching issue unassignment for users with many assignments"
+        }
+      ],
+      "optimization_recommendations": []
+    }
+  ]
+}

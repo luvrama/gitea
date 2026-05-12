@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Team membership or org ownership required to access team endpoints",
+      "location": {"class": "api", "method": "reqTeamMembership", "file_path": "routers/api/v1/api.go", "line_number": 488},
+      "condition": "User is not site admin AND not org owner AND not team member",
+      "action": "Return 404 (if not org member) or 403 (if org member but not team member)",
+      "affected_endpoints": ["ep-064", "ep-065", "ep-066", "ep-067", "ep-069"],
+      "code_snippet": "if isOrgMember { ctx.APIError(http.StatusForbidden, \"Must be a team member\") } else { ctx.APIErrorNotFound() }"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "authorization",
+      "description": "Admin-level access to repository required to add/remove it from a team",
+      "location": {"class": "org", "method": "AddTeamRepository", "file_path": "routers/api/v1/org/team.go", "line_number": 432},
+      "condition": "User's access level to the repository is less than AccessModeAdmin",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-066", "ep-067"],
+      "code_snippet": "if access < perm.AccessModeAdmin { ctx.APIError(http.StatusForbidden, \"Must have admin-level access to the repository\") }"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Repository must belong to the team's organization",
+      "location": {"class": "repository", "method": "TeamAddRepository", "file_path": "services/repository/repo_team.go", "line_number": 21},
+      "condition": "repo.OwnerID != t.OrgID",
+      "action": "Return error 'repository does not belong to organization'",
+      "affected_endpoints": ["ep-066"],
+      "code_snippet": "if repo.OwnerID != t.OrgID { return errors.New(\"repository does not belong to organization\") }"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Adding a repo to a team is idempotent - no error if already present",
+      "location": {"class": "repository", "method": "TeamAddRepository", "file_path": "services/repository/repo_team.go", "line_number": 22},
+      "condition": "HasTeamRepo returns true (repo already in team)",
+      "action": "Return nil (no-op, success)",
+      "affected_endpoints": ["ep-066"],
+      "code_snippet": "} else if organization.HasTeamRepo(ctx, t.OrgID, t.ID, repo.ID) { return nil }"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Removing a repo from a team that includes all repos is silently ignored",
+      "location": {"class": "repository", "method": "RemoveRepositoryFromTeam", "file_path": "services/repository/repo_team.go", "line_number": 153},
+      "condition": "t.IncludesAllRepositories is true",
+      "action": "Return nil (no-op)",
+      "affected_endpoints": ["ep-067"],
+      "code_snippet": "if t.IncludesAllRepositories { return nil }"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Auto-watch repos for team members when adding repo to team (if setting enabled)",
+      "location": {"class": "repository", "method": "addRepositoryToTeam", "file_path": "services/repository/repo_team.go", "line_number": 52},
+      "condition": "setting.Service.AutoWatchNewRepos is true",
+      "action": "WatchRepo for all team members",
+      "affected_endpoints": ["ep-066"],
+      "code_snippet": "if setting.Service.AutoWatchNewRepos { ... for _, u := range t.Members { repo_model.WatchRepo(ctx, u, repo, true) } }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Unwatch and remove issue watches for members who lose access when repo removed from team",
+      "location": {"class": "repository", "method": "removeRepositoryFromTeam", "file_path": "services/repository/repo_team.go", "line_number": 185},
+      "condition": "Member has no other access to the repo after team removal",
+      "action": "Unwatch repo and remove issue watches for that member",
+      "affected_endpoints": ["ep-067"],
+      "code_snippet": "has, err := access_model.HasAnyUnitAccess(ctx, member.ID, repo) ... if !has { repo_model.WatchRepo(ctx, member, repo, false) }"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "authorization",
+      "description": "Non-admin users can only search teams they belong to",
+      "location": {"class": "org", "method": "SearchTeam", "file_path": "routers/api/v1/org/team.go", "line_number": 509},
+      "condition": "ctx.Doer.IsAdmin is false",
+      "action": "Add UserID filter to search options, limiting results to user's teams",
+      "affected_endpoints": ["ep-068"],
+      "code_snippet": "if !ctx.Doer.IsAdmin { opts.UserID = ctx.Doer.ID }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Team search defaults to including description in search",
+      "location": {"class": "org", "method": "SearchTeam", "file_path": "routers/api/v1/org/team.go", "line_number": 505},
+      "condition": "include_desc param is empty string (not provided)",
+      "action": "IncludeDesc defaults to true",
+      "affected_endpoints": ["ep-068"],
+      "code_snippet": "IncludeDesc: ctx.FormString(\"include_desc\") == \"\" || ctx.FormBool(\"include_desc\")"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "N+1 permission check pattern in GetTeamRepos - each repo requires individual permission lookup",
+      "location": {"class": "org", "method": "GetTeamRepos", "file_path": "routers/api/v1/org/team.go", "line_number": 355},
+      "condition": "For each repo in the team",
+      "action": "Call GetDoerRepoPermission individually",
+      "affected_endpoints": ["ep-064"],
+      "code_snippet": "for i, repo := range teamRepos { permission, err := access_model.GetDoerRepoPermission(ctx, repo, ctx.Doer) }"
+    }
+  ]
+}

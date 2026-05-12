@@ -1,0 +1,137 @@
+{
+  "total_findings": 6,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-306",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - only reads from local DB and git",
+      "graceful_degradation": "none needed"
+    },
+    {
+      "endpoint_id": "ep-307",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Branch deletion uses db.WithTx2 for DB mark + git delete, but post-process notifications are fire-and-forget",
+          "recommendation": "Acceptable - notifications are best-effort"
+        }
+      ],
+      "non_atomic_operations": ["DB mark as deleted + git branch delete are in a transaction wrapper, but PushUpdate notification is async"],
+      "cascading_failure_risk": "If git delete fails after DB mark, branch is marked deleted but still exists in git",
+      "graceful_degradation": "Transaction rollback on git failure"
+    },
+    {
+      "endpoint_id": "ep-308",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/branches",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "checkBranchName walks refs then push creates branch - race condition possible between check and create",
+          "recommendation": "Git push will fail with appropriate error if branch was created between check and push, so this is handled by git's own atomicity"
+        }
+      ],
+      "non_atomic_operations": ["Name conflict check and branch creation are not atomic - relies on git push failure for race condition handling"],
+      "cascading_failure_risk": "None significant",
+      "graceful_degradation": "Git push failure returns appropriate conflict error"
+    },
+    {
+      "endpoint_id": "ep-309",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branches",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "fallback",
+          "status": "configured",
+          "severity": "low",
+          "detail": "If a branch commit cannot be found in git (deleted between DB query and git read), it's skipped gracefully",
+          "recommendation": "Good pattern - already handles stale data"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only",
+      "graceful_degradation": "Skips branches that no longer exist in git"
+    },
+    {
+      "endpoint_id": "ep-310",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "If new commit equals current commit, operation is a no-op (returns nil early)",
+          "recommendation": "Good idempotency handling"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - git push is atomic",
+      "graceful_degradation": "Optimistic locking via old_commit_id parameter"
+    },
+    {
+      "endpoint_id": "ep-311",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/branches/{branch}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "RenameBranch uses git_model.RenameBranch with a callback that renames in git within the DB transaction",
+          "recommendation": "Good pattern - git rename is inside the DB transaction callback"
+        }
+      ],
+      "non_atomic_operations": ["If default branch rename, schedule deletion and cron cancellation happen inside transaction but are logged-and-continued on error"],
+      "cascading_failure_risk": "If git rename succeeds but DB commit fails, branch state could be inconsistent",
+      "graceful_degradation": "Transaction rollback should handle most cases"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Uses modules/graceful for shutdown management",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "not_applicable",
+      "detail": "No specific rate limiting on branch endpoints",
+      "recommendation": null
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "Branch sync queue uses simple retry via queue framework"
+    },
+    "single_points_of_failure": [],
+    "cascading_failure_paths": []
+  }
+}

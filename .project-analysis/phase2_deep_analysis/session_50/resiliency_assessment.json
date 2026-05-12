@@ -1,0 +1,186 @@
+{
+  "total_findings": 8,
+  "overall_risk": "medium",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-336",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx for transactional label addition, ensuring atomicity",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - pure DB operation",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-337",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "deleteIssueLabel checks count==0 and returns nil if label wasn't attached, making it safe to retry",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-338",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx for atomic replace operation",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-339",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Uses db.WithTx but long-running transaction with N deletes + N inserts + N updates could cause lock contention",
+          "recommendation": "Consider batch operations to reduce transaction duration"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Long transaction could block other label operations on same issue",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-340",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/keys",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Pure DB read with pagination, no external calls",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-341",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/keys/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-342",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/keys",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Duplicate key detection prevents double-creation (returns 422 on retry)",
+          "recommendation": "None needed - safe to retry, will get clear error"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-343",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/keys/{id}",
+      "risk_level": "high",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "high",
+          "detail": "DB deletion and authorized_keys rewrite are separate operations. If rewrite fails after DB delete, the key is removed from DB but still in authorized_keys (or vice versa on partial failure)",
+          "recommendation": "Consider making the rewrite failure non-fatal or adding a recovery mechanism"
+        },
+        {
+          "pattern": "bulkhead",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "SSHOpLocker mutex serializes all SSH key operations globally. A slow rewrite blocks all other key operations",
+          "recommendation": "Consider async rewrite with eventual consistency"
+        }
+      ],
+      "non_atomic_operations": ["DB delete + filesystem rewrite are not atomic - partial failure leaves inconsistent state"],
+      "cascading_failure_risk": "SSHOpLocker contention can block all SSH key operations if rewrite is slow",
+      "graceful_degradation": "If key not found, silently succeeds (no-op)"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Uses graceful.GetManager() for shutdown coordination",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No rate limiting on these endpoints",
+      "recommendation": "Consider rate limiting deploy key creation to prevent abuse"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": [
+      "authorized_keys file - single file rewritten on every key change"
+    ],
+    "cascading_failure_paths": [
+      "SSHOpLocker contention → all key operations blocked during rewrite"
+    ]
+  }
+}

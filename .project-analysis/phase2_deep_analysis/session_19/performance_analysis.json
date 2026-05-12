@@ -1,0 +1,83 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-129",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/avatar",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "storage"],
+        "note": "1 DB update + 1 storage delete"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-130",
+      "http_method": "PUT",
+      "path": "/api/v1/user/actions/secrets/{secretname}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT + 1 INSERT or UPDATE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-131",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/actions/secrets/{secretname}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT + 1 DELETE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-132",
+      "http_method": "POST",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT (existence check) + 1 INSERT"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-133",
+      "http_method": "PUT",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT + 1 UPDATE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-134",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT + 1 DELETE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

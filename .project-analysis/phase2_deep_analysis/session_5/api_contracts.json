@@ -1,0 +1,255 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-029",
+      "http_method": "GET",
+      "path": "/api/v1/orgs",
+      "controller_class": "org",
+      "controller_method": "GetAll",
+      "description": "Get list of all organizations visible to the current user",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min:1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": ["max:setting.API.MaxResponseItems"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.Organization",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Organization ID"},
+            {"name": "name", "type": "string", "description": "Organization name"},
+            {"name": "full_name", "type": "string", "description": "Full display name"},
+            {"name": "email", "type": "string", "description": "Email address"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"},
+            {"name": "description", "type": "string", "description": "Description"},
+            {"name": "website", "type": "string", "description": "Website URL"},
+            {"name": "location", "type": "string", "description": "Location"},
+            {"name": "visibility", "type": "string", "description": "Visibility level"},
+            {"name": "repo_admin_change_team_access", "type": "bool", "description": "Whether repo admins can change team access"},
+            {"name": "username", "type": "string", "description": "Username (deprecated)"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "optional (token enhances visibility)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-030",
+      "http_method": "POST",
+      "path": "/api/v1/orgs",
+      "controller_class": "org",
+      "controller_method": "Create",
+      "description": "Create a new organization",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "CreateOrgOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "username", "type": "string", "required": true, "validation": ["Required", "Username", "MaxSize(40)"], "description": "Organization username"},
+            {"name": "full_name", "type": "string", "required": false, "validation": ["MaxSize(100)"], "description": "Full display name"},
+            {"name": "email", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Email address"},
+            {"name": "description", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Description"},
+            {"name": "website", "type": "string", "required": false, "validation": ["ValidUrl", "MaxSize(255)"], "description": "Website URL"},
+            {"name": "location", "type": "string", "required": false, "validation": ["MaxSize(50)"], "description": "Location"},
+            {"name": "visibility", "type": "string", "required": false, "validation": ["In(,public,limited,private)"], "description": "Visibility (public/limited/private)"},
+            {"name": "repo_admin_change_team_access", "type": "bool", "required": false, "validation": [], "description": "Whether repo admins can change team access"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "*api.Organization",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Organization ID"},
+            {"name": "name", "type": "string", "description": "Organization name"},
+            {"name": "full_name", "type": "string", "description": "Full display name"},
+            {"name": "email", "type": "string", "description": "Email address"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"},
+            {"name": "description", "type": "string", "description": "Description"},
+            {"name": "website", "type": "string", "description": "Website URL"},
+            {"name": "location", "type": "string", "description": "Location"},
+            {"name": "visibility", "type": "string", "description": "Visibility level"},
+            {"name": "repo_admin_change_team_access", "type": "bool", "description": "Whether repo admins can change team access"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "APIError", "condition": "User not allowed to create organizations"},
+          {"status_code": 422, "type": "APIError", "condition": "Username already exists, reserved, or contains invalid chars/pattern"}
+        ]
+      },
+      "authentication": "bearer (reqToken)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-031",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}",
+      "controller_class": "org",
+      "controller_method": "Get",
+      "description": "Get details of a specific organization",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "*api.Organization",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Organization ID"},
+            {"name": "name", "type": "string", "description": "Organization name"},
+            {"name": "full_name", "type": "string", "description": "Full display name"},
+            {"name": "email", "type": "string", "description": "Email (empty if not signed in)"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"},
+            {"name": "description", "type": "string", "description": "Description"},
+            {"name": "website", "type": "string", "description": "Website URL"},
+            {"name": "location", "type": "string", "description": "Location"},
+            {"name": "visibility", "type": "string", "description": "Visibility level"},
+            {"name": "repo_admin_change_team_access", "type": "bool", "description": "Whether repo admins can change team access"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIError", "condition": "Organization not found or not visible to user"}
+        ]
+      },
+      "authentication": "optional (affects email visibility)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-032",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/rename",
+      "controller_class": "org",
+      "controller_method": "Rename",
+      "description": "Rename an organization",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "RenameOrgOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "new_name", "type": "string", "required": true, "validation": ["Required"], "description": "New username for the organization"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "APIError", "condition": "Not org owner or site admin"},
+          {"status_code": 422, "type": "APIError", "condition": "Name already exists, reserved, or contains invalid chars/pattern"}
+        ]
+      },
+      "authentication": "bearer (reqToken + reqOrgOwnership)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-033",
+      "http_method": "PATCH",
+      "path": "/api/v1/orgs/{org}",
+      "controller_class": "org",
+      "controller_method": "Edit",
+      "description": "Edit an organization's information",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "EditOrgOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "full_name", "type": "*string", "required": false, "validation": ["MaxSize(100)"], "description": "Full display name"},
+            {"name": "email", "type": "*string", "required": false, "validation": ["MaxSize(255)"], "description": "Email address (empty string to clear)"},
+            {"name": "description", "type": "*string", "required": false, "validation": ["MaxSize(255)"], "description": "Description"},
+            {"name": "website", "type": "*string", "required": false, "validation": ["ValidUrl", "MaxSize(255)"], "description": "Website URL"},
+            {"name": "location", "type": "*string", "required": false, "validation": ["MaxSize(50)"], "description": "Location"},
+            {"name": "visibility", "type": "*string", "required": false, "validation": ["In(,public,limited,private)"], "description": "Visibility level"},
+            {"name": "repo_admin_change_team_access", "type": "*bool", "required": false, "validation": [], "description": "Whether repo admins can change team access"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "*api.Organization",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Organization ID"},
+            {"name": "name", "type": "string", "description": "Organization name"},
+            {"name": "full_name", "type": "string", "description": "Full display name"},
+            {"name": "email", "type": "string", "description": "Email address"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"},
+            {"name": "description", "type": "string", "description": "Description"},
+            {"name": "website", "type": "string", "description": "Website URL"},
+            {"name": "location", "type": "string", "description": "Location"},
+            {"name": "visibility", "type": "string", "description": "Visibility level"},
+            {"name": "repo_admin_change_team_access", "type": "bool", "description": "Whether repo admins can change team access"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIError", "condition": "Organization not found"},
+          {"status_code": 422, "type": "APIError", "condition": "Invalid email address"}
+        ]
+      },
+      "authentication": "bearer (reqToken + reqOrgOwnership)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-034",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}",
+      "controller_class": "org",
+      "controller_method": "Delete",
+      "description": "Delete an organization",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": ["resolved by orgAssignment middleware"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIError", "condition": "Organization not found"}
+        ]
+      },
+      "authentication": "bearer (reqToken + reqOrgOwnership)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

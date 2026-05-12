@@ -1,0 +1,35 @@
+{
+  "total_patterns": 7,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic error", "status_code": 500, "response_type": "JSON error", "message_template": "{\"message\": \"...\", \"url\": \"...\"}"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "{\"message\": \"...\", \"url\": \"...\"}"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-220", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/check", "error_scenarios": [
+      {"exception": "ErrIssueNotExist", "trigger": "Issue index not found in repo", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "generic DB error", "trigger": "Database failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-221", "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions", "error_scenarios": [
+      {"exception": "ErrIssueNotExist", "trigger": "Issue not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "generic DB error", "trigger": "Failure in GetIssueWatchers/GetUsersByIDs/CountIssueWatchers", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-222", "path": "/api/v1/repos/{owner}/{repo}/pulls", "error_scenarios": [
+      {"exception": "ErrUserNotExist", "trigger": "Poster username filter doesn't exist", "status_code": 400, "response": "bad request", "logged": false, "retryable": false},
+      {"exception": "generic DB error", "trigger": "Database failure in PullRequests or ToAPIPullRequests", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-223", "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}", "error_scenarios": [
+      {"exception": "ErrPullRequestNotExist", "trigger": "PR index not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "generic DB error", "trigger": "Failure loading repos", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-224", "path": "/api/v1/repos/{owner}/{repo}/pulls/{base}/{head}", "error_scenarios": [
+      {"exception": "ErrRepoNotExist", "trigger": "Head repo not found (cross-repo format)", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "ErrPullRequestNotExist", "trigger": "No PR for given base/head combination", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrPullRequestNotExist", "file_path": "models/issues/pull.go", "extends": "util.ErrNotExist", "used_in": ["GetPullRequestByIndex", "GetPullRequestByBaseHeadInfo"], "http_status": 404},
+    {"class": "ErrIssueNotExist", "file_path": "models/issues/issue.go", "extends": "util.ErrNotExist", "used_in": ["GetIssueByIndex"], "http_status": 404}
+  ]
+}

@@ -1,0 +1,264 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-240",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "controller_class": "repo",
+      "controller_method": "GetRelease",
+      "description": "Get a single release by ID for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": false, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Release",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Release ID"},
+            {"name": "tag_name", "type": "string", "description": "Git tag name"},
+            {"name": "target_commitish", "type": "string", "description": "Target branch/commit"},
+            {"name": "name", "type": "string", "description": "Release title"},
+            {"name": "body", "type": "string", "description": "Release notes"},
+            {"name": "url", "type": "string", "description": "API URL"},
+            {"name": "html_url", "type": "string", "description": "HTML URL"},
+            {"name": "tarball_url", "type": "string", "description": "Tar download URL"},
+            {"name": "zipball_url", "type": "string", "description": "Zip download URL"},
+            {"name": "upload_url", "type": "string", "description": "Asset upload URL"},
+            {"name": "draft", "type": "bool", "description": "Is draft"},
+            {"name": "prerelease", "type": "bool", "description": "Is prerelease"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation timestamp"},
+            {"name": "published_at", "type": "time.Time", "description": "Publish timestamp"},
+            {"name": "author", "type": "*api.User", "description": "Publisher user"},
+            {"name": "assets", "type": "[]*api.Attachment", "description": "Release attachments"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Release not found, is a tag-only record, or is draft and user lacks write access"},
+          {"status_code": 500, "type": "internal", "condition": "Database error"}
+        ]
+      },
+      "authentication": "optional (required for draft access)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-241",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/latest",
+      "controller_class": "repo",
+      "controller_method": "GetLatestRelease",
+      "description": "Get the most recent non-prerelease, non-draft release sorted by created_at",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": false, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Release",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Release ID"},
+            {"name": "tag_name", "type": "string", "description": "Git tag name"},
+            {"name": "target_commitish", "type": "string", "description": "Target branch/commit"},
+            {"name": "name", "type": "string", "description": "Release title"},
+            {"name": "body", "type": "string", "description": "Release notes"},
+            {"name": "url", "type": "string", "description": "API URL"},
+            {"name": "html_url", "type": "string", "description": "HTML URL"},
+            {"name": "tarball_url", "type": "string", "description": "Tar download URL"},
+            {"name": "zipball_url", "type": "string", "description": "Zip download URL"},
+            {"name": "upload_url", "type": "string", "description": "Asset upload URL"},
+            {"name": "draft", "type": "bool", "description": "Is draft (always false)"},
+            {"name": "prerelease", "type": "bool", "description": "Is prerelease (always false)"},
+            {"name": "created_at", "type": "time.Time", "description": "Creation timestamp"},
+            {"name": "published_at", "type": "time.Time", "description": "Publish timestamp"},
+            {"name": "author", "type": "*api.User", "description": "Publisher user"},
+            {"name": "assets", "type": "[]*api.Attachment", "description": "Release attachments"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "No non-draft, non-prerelease release exists or release is tag-only"},
+          {"status_code": 500, "type": "internal", "condition": "Database error"}
+        ]
+      },
+      "authentication": "optional",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-242",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases",
+      "controller_class": "repo",
+      "controller_method": "ListReleases",
+      "description": "List a repository's releases with pagination and optional draft/pre-release filters",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "draft", "type": "boolean", "required": false, "default": null, "validation": ["filter drafts; requires write access to see drafts"]},
+          {"name": "pre-release", "type": "boolean", "required": false, "default": null, "validation": ["filter pre-releases"]},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["minimum 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": "setting.API.DefaultPagingNum", "validation": ["max setting.API.MaxResponseItems"]}
+        ],
+        "headers": [{"name": "Authorization", "required": false, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.Release",
+          "fields": [
+            {"name": "[]", "type": "api.Release", "description": "Array of release objects"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 500, "type": "internal", "condition": "Database error"}
+        ]
+      },
+      "authentication": "optional (required for draft access)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-243",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/releases",
+      "controller_class": "repo",
+      "controller_method": "CreateRelease",
+      "description": "Create a new release or convert an existing tag to a release",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "api.CreateReleaseOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "tag_name", "type": "string", "required": true, "validation": ["binding:Required"], "description": "Git tag name"},
+            {"name": "tag_message", "type": "string", "required": false, "validation": [], "description": "Message for annotated tag"},
+            {"name": "target_commitish", "type": "string", "required": false, "validation": [], "description": "Target branch/commit; defaults to default branch"},
+            {"name": "name", "type": "string", "required": false, "validation": ["truncated to 255 chars"], "description": "Release title"},
+            {"name": "body", "type": "string", "required": false, "validation": [], "description": "Release notes"},
+            {"name": "draft", "type": "bool", "required": false, "validation": [], "description": "Mark as draft"},
+            {"name": "prerelease", "type": "bool", "required": false, "validation": [], "description": "Mark as prerelease"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.Release",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Release ID"},
+            {"name": "tag_name", "type": "string", "description": "Git tag name"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Target commit/branch not found"},
+          {"status_code": 409, "type": "error", "condition": "Release already exists for tag or tag already has a release"},
+          {"status_code": 422, "type": "validationError", "condition": "Repo is empty or tag name is protected"}
+        ]
+      },
+      "authentication": "bearer (write:repository scope)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-244",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "controller_class": "repo",
+      "controller_method": "EditRelease",
+      "description": "Update a release's metadata (tag name, target, title, note, draft/prerelease status)",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "api.EditReleaseOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "tag_name", "type": "string", "required": false, "validation": ["applied only if non-empty"], "description": "New tag name"},
+            {"name": "target_commitish", "type": "string", "required": false, "validation": ["applied only if non-empty"], "description": "New target"},
+            {"name": "name", "type": "string", "required": false, "validation": ["applied only if non-empty; truncated to 255"], "description": "New title"},
+            {"name": "body", "type": "string", "required": false, "validation": ["applied only if non-empty"], "description": "New release notes"},
+            {"name": "draft", "type": "*bool", "required": false, "validation": [], "description": "Change draft status"},
+            {"name": "prerelease", "type": "*bool", "required": false, "validation": [], "description": "Change prerelease status"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Release",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Release ID"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Release not found or is tag-only"},
+          {"status_code": 500, "type": "internal", "condition": "Database or git error"}
+        ]
+      },
+      "authentication": "bearer (write:repository scope)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-245",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}",
+      "controller_class": "repo",
+      "controller_method": "DeleteRelease",
+      "description": "Delete a release (keeps the git tag, deletes attachments from storage)",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer (int64)", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Release not found or is tag-only"},
+          {"status_code": 422, "type": "validationError", "condition": "Tag is protected and user not allowed to delete"}
+        ]
+      },
+      "authentication": "bearer (write:repository scope)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

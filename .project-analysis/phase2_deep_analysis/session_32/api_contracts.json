@@ -1,0 +1,238 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-214",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/commits/{sha}",
+      "controller_class": "repo",
+      "controller_method": "GetSingleCommit",
+      "description": "Get a single commit from a repository by SHA or ref",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "sha", "type": "string", "required": true, "validation": ["must pass IsValidRefPattern"]}
+        ],
+        "query_params": [
+          {"name": "stat", "type": "boolean", "required": false, "default": true, "validation": []},
+          {"name": "verification", "type": "boolean", "required": false, "default": true, "validation": []},
+          {"name": "files", "type": "boolean", "required": false, "default": true, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.Commit",
+          "fields": [
+            {"name": "sha", "type": "string", "description": "commit SHA"},
+            {"name": "url", "type": "string", "description": "API URL"},
+            {"name": "html_url", "type": "string", "description": "HTML URL"},
+            {"name": "commit", "type": "RepoCommit", "description": "commit details (author, committer, message, tree, verification)"},
+            {"name": "author", "type": "User", "description": "API user for author"},
+            {"name": "committer", "type": "User", "description": "API user for committer"},
+            {"name": "parents", "type": "[]CommitMeta", "description": "parent commits"},
+            {"name": "files", "type": "[]CommitAffectedFiles", "description": "affected files (if files=true)"},
+            {"name": "stats", "type": "CommitStats", "description": "diff stats (if stat=true)"}
+          ]
+        },
+        "errors": [
+          {"status_code": 422, "type": "validationError", "condition": "sha is not a valid ref pattern"},
+          {"status_code": 404, "type": "notFound", "condition": "commit does not exist"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-215",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/commits",
+      "controller_class": "repo",
+      "controller_method": "GetAllCommits",
+      "description": "Get a list of all commits from a repository with pagination",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "sha", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "path", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "since", "type": "string", "required": false, "default": null, "validation": ["RFC3339 format"]},
+          {"name": "until", "type": "string", "required": false, "default": null, "validation": ["RFC3339 format"]},
+          {"name": "stat", "type": "boolean", "required": false, "default": true, "validation": []},
+          {"name": "verification", "type": "boolean", "required": false, "default": true, "validation": []},
+          {"name": "files", "type": "boolean", "required": false, "default": true, "validation": []},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["max: setting.Git.CommitsRangeSize (50)"]},
+          {"name": "not", "type": "string", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Commit",
+          "fields": [
+            {"name": "X-Page", "type": "header", "description": "current page"},
+            {"name": "X-PerPage", "type": "header", "description": "page size"},
+            {"name": "X-Total", "type": "header", "description": "total commit count"},
+            {"name": "X-PageCount", "type": "header", "description": "total pages"},
+            {"name": "X-HasMore", "type": "header", "description": "whether more pages exist"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "repository or commit not found"},
+          {"status_code": 409, "type": "EmptyRepository", "condition": "repository is empty"},
+          {"status_code": 422, "type": "validationError", "condition": "invalid since/until format"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-216",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/commits/{sha}.{diffType}",
+      "controller_class": "repo",
+      "controller_method": "DownloadCommitDiffOrPatch",
+      "description": "Get a commit's diff or patch output as plain text",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "sha", "type": "string", "required": true, "validation": []},
+          {"name": "diffType", "type": "string", "required": true, "validation": ["enum: diff, patch"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "text/plain",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "commit does not exist"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-217",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/commits/{sha}/pull",
+      "controller_class": "repo",
+      "controller_method": "GetCommitPullRequest",
+      "description": "Get the merged pull request associated with a commit SHA",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "sha", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.PullRequest",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "PR ID"},
+            {"name": "number", "type": "int64", "description": "PR number"},
+            {"name": "state", "type": "string", "description": "PR state"},
+            {"name": "merged", "type": "bool", "description": "whether merged"},
+            {"name": "base", "type": "PRBranchInfo", "description": "base branch info"},
+            {"name": "head", "type": "PRBranchInfo", "description": "head branch info"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "no merged PR found for this commit"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-218",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
+      "controller_class": "repo",
+      "controller_method": "AddIssueSubscription",
+      "description": "Subscribe a user to an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format: int64"]},
+          {"name": "user", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 200, "type": "empty", "condition": "already subscribed"},
+          {"status_code": 403, "type": "forbidden", "condition": "non-admin trying to subscribe another user"},
+          {"status_code": 404, "type": "notFound", "condition": "issue or user not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-219",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
+      "controller_class": "repo",
+      "controller_method": "DelIssueSubscription",
+      "description": "Unsubscribe a user from an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format: int64"]},
+          {"name": "user", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 200, "type": "empty", "condition": "already unsubscribed"},
+          {"status_code": 403, "type": "forbidden", "condition": "non-admin trying to unsubscribe another user"},
+          {"status_code": 404, "type": "notFound", "condition": "issue or user not found"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

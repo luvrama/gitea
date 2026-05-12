@@ -1,0 +1,53 @@
+{
+  "endpoints_by_database_table": {
+    "action_runner": {"read": ["ep-050", "ep-051", "ep-052"], "write": ["ep-050", "ep-051"]},
+    "action_run": {"read": ["ep-052", "ep-053"], "write": []},
+    "action_run_job": {"read": ["ep-052"], "write": []},
+    "action_task": {"read": ["ep-052"], "write": []},
+    "action_task_step": {"read": ["ep-052"], "write": []},
+    "action_run_attempt": {"read": ["ep-053"], "write": []},
+    "action_tasks_version": {"read": [], "write": ["ep-051"]},
+    "repository": {"read": ["ep-052", "ep-053"], "write": []},
+    "user": {"read": ["ep-053", "ep-055"], "write": []},
+    "team": {"read": ["ep-054", "ep-055"], "write": []},
+    "team_unit": {"read": ["ep-054", "ep-055"], "write": []},
+    "team_user": {"read": ["ep-055"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "setting.PanicInDevOrTesting": ["ep-050", "ep-051", "ep-052", "ep-053"]
+  },
+  "endpoints_by_model_class": {
+    "ActionRunner": ["ep-050", "ep-051", "ep-052"],
+    "ActionRun": ["ep-052", "ep-053"],
+    "ActionRunJob": ["ep-052"],
+    "Team": ["ep-054", "ep-055"],
+    "TeamUnit": ["ep-054", "ep-055"]
+  },
+  "endpoints_by_service_class": {
+    "shared.DeleteRunner": ["ep-050"],
+    "shared.UpdateRunner": ["ep-051"],
+    "shared.GetRunner": ["ep-051"],
+    "shared.ListJobs": ["ep-052"],
+    "shared.ListRuns": ["ep-053"],
+    "convert.ToTeams": ["ep-054", "ep-055"],
+    "organization.SearchTeam": ["ep-054", "ep-055"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-050": {"reads": ["action_runner"], "writes": ["action_runner"]},
+    "ep-051": {"reads": ["action_runner"], "writes": ["action_runner", "action_tasks_version"]},
+    "ep-052": {"reads": ["action_run_job", "repository", "action_run", "action_task", "action_task_step", "action_runner"], "writes": []},
+    "ep-053": {"reads": ["action_run", "repository", "user", "action_run_attempt"], "writes": []},
+    "ep-054": {"reads": ["team", "team_unit"], "writes": []},
+    "ep-055": {"reads": ["team", "team_user", "team_unit", "user"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-050": ["setting.PanicInDevOrTesting"],
+    "ep-051": ["setting.PanicInDevOrTesting"],
+    "ep-052": ["setting.PanicInDevOrTesting"],
+    "ep-053": ["setting.PanicInDevOrTesting"],
+    "ep-054": [],
+    "ep-055": []
+  }
+}

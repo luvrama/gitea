@@ -1,0 +1,105 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 2,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "secret",
+      "entity_class": "Secret",
+      "file_path": "models/secret/secret.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(owner_repo_name)", "NOT NULL"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": ["UNIQUE(owner_repo_name)", "NOT NULL", "DEFAULT 0"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(owner_repo_name)", "NOT NULL"]},
+        {"name": "data", "type": "LONGTEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["encrypted data"]},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL", "auto-set on create"]}
+      ],
+      "indexes": [
+        {"name": "UQE_secret_owner_repo_name", "columns": ["owner_id", "repo_id", "name"], "unique": true},
+        {"name": "IDX_secret_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "IDX_secret_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "action_variable",
+      "entity_class": "ActionVariable",
+      "file_path": "models/actions/variable.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(owner_repo_name)"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "UNIQUE(owner_repo_name)"]},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(owner_repo_name)", "NOT NULL"]},
+        {"name": "data", "type": "LONGTEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL", "auto-set on create"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["auto-set on update"]}
+      ],
+      "indexes": [
+        {"name": "UQE_action_variable_owner_repo_name", "columns": ["owner_id", "repo_id", "name"], "unique": true},
+        {"name": "IDX_action_variable_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-129",
+      "path": "/api/v1/user/avatar",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "user_service.DeleteAvatar", "description": "Set avatar='' and use_custom_avatar=false"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-130",
+      "path": "/api/v1/user/actions/secrets/{secretname}",
+      "operations": [
+        {"store_type": "database", "store_name": "secret", "operation": "SELECT", "method": "secret_service.CreateOrUpdateSecret", "description": "Find existing secret by owner/repo/name"},
+        {"store_type": "database", "store_name": "secret", "operation": "INSERT", "method": "secret_model.InsertEncryptedSecret", "description": "Insert new encrypted secret (create path)"},
+        {"store_type": "database", "store_name": "secret", "operation": "UPDATE", "method": "secret_model.UpdateSecret", "description": "Update existing secret data (update path)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-131",
+      "path": "/api/v1/user/actions/secrets/{secretname}",
+      "operations": [
+        {"store_type": "database", "store_name": "secret", "operation": "SELECT", "method": "secret_service.DeleteSecretByName", "description": "Find secret by owner/repo/name"},
+        {"store_type": "database", "store_name": "secret", "operation": "DELETE", "method": "secret_service.deleteSecret", "description": "Delete secret by ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-132",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "actions_service.GetVariable", "description": "Check if variable already exists"},
+        {"store_type": "database", "store_name": "action_variable", "operation": "INSERT", "method": "actions_model.InsertVariable", "description": "Insert new variable"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-133",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "actions_service.GetVariable", "description": "Find existing variable by owner and name"},
+        {"store_type": "database", "store_name": "action_variable", "operation": "UPDATE", "method": "actions_model.UpdateVariableCols", "description": "Update variable name, data, description"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-134",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "actions_service.GetVariable", "description": "Find variable by owner and name"},
+        {"store_type": "database", "store_name": "action_variable", "operation": "DELETE", "method": "actions_model.DeleteVariable", "description": "Delete variable by ID"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,296 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-226",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls",
+      "controller_class": "repo",
+      "controller_method": "CreatePullRequest",
+      "description": "Create a new pull request",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "CreatePullRequestOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "head", "type": "string", "required": true, "validation": ["Required"], "description": "Head branch or username:branch"},
+            {"name": "base", "type": "string", "required": true, "validation": ["Required"], "description": "Base branch"},
+            {"name": "title", "type": "string", "required": true, "validation": ["Required"], "description": "PR title"},
+            {"name": "body", "type": "string", "required": false, "validation": [], "description": "PR description"},
+            {"name": "assignee", "type": "string", "required": false, "validation": [], "description": "Primary assignee username"},
+            {"name": "assignees", "type": "[]string", "required": false, "validation": [], "description": "List of assignee usernames"},
+            {"name": "milestone", "type": "int64", "required": false, "validation": [], "description": "Milestone ID"},
+            {"name": "labels", "type": "[]int64", "required": false, "validation": [], "description": "Label IDs"},
+            {"name": "due_date", "type": "time.Time", "required": false, "validation": [], "description": "Deadline"},
+            {"name": "reviewers", "type": "[]string", "required": false, "validation": [], "description": "Reviewer usernames"},
+            {"name": "team_reviewers", "type": "[]string", "required": false, "validation": [], "description": "Team reviewer names"},
+            {"name": "allow_maintainer_edit", "type": "*bool", "required": false, "validation": [], "description": "Allow maintainer edits"}
+          ]
+        }
+      },
+      "response": {
+        "success": {"status_code": 201, "type": "PullRequest", "fields": []},
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User blocked or must be collaborator"},
+          {"status_code": 404, "type": "notFound", "condition": "Repo or branch not found"},
+          {"status_code": 409, "type": "error", "condition": "PR already exists for same head/base"},
+          {"status_code": 422, "type": "validationError", "condition": "Head equals base, invalid assignee, or refs not branches"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Repository is archived"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-227",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}",
+      "controller_class": "repo",
+      "controller_method": "EditPullRequest",
+      "description": "Update a pull request (title, body, assignees, labels, milestone, state, base branch, deadline, allow_maintainer_edit)",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "int64", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "EditPullRequestOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "title", "type": "string", "required": false, "validation": [], "description": "New title"},
+            {"name": "body", "type": "*string", "required": false, "validation": [], "description": "New body"},
+            {"name": "base", "type": "string", "required": false, "validation": [], "description": "New base branch"},
+            {"name": "assignee", "type": "string", "required": false, "validation": [], "description": "Primary assignee"},
+            {"name": "assignees", "type": "[]string", "required": false, "validation": [], "description": "Assignee list"},
+            {"name": "milestone", "type": "int64", "required": false, "validation": [], "description": "Milestone ID"},
+            {"name": "labels", "type": "[]int64", "required": false, "validation": [], "description": "Label IDs"},
+            {"name": "state", "type": "*string", "required": false, "validation": [], "description": "open or closed"},
+            {"name": "due_date", "type": "*time.Time", "required": false, "validation": [], "description": "Deadline"},
+            {"name": "unset_due_date", "type": "*bool", "required": false, "validation": [], "description": "Remove deadline"},
+            {"name": "allow_maintainer_edit", "type": "*bool", "required": false, "validation": [], "description": "Allow maintainer edits"},
+            {"name": "content_version", "type": "*int", "required": false, "validation": [], "description": "Optimistic concurrency version"}
+          ]
+        }
+      },
+      "response": {
+        "success": {"status_code": 201, "type": "PullRequest", "fields": []},
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Not poster and no write permission, or blocked user"},
+          {"status_code": 404, "type": "notFound", "condition": "PR or new base branch not found"},
+          {"status_code": 409, "type": "error", "condition": "Content version conflict or PR already exists for new base"},
+          {"status_code": 412, "type": "error", "condition": "PR already merged, cannot change state"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid assignee or issue is closed"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-228",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "controller_class": "repo",
+      "controller_method": "IsPullRequestMerged",
+      "description": "Check if a pull request has been merged",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "int64", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 204, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "PR not found or not merged"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-229",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "controller_class": "repo",
+      "controller_method": "MergePullRequest",
+      "description": "Merge a pull request or schedule auto-merge",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "int64", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "MergePullRequestOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "do", "type": "string", "required": true, "validation": ["Required", "In(merge,rebase,rebase-merge,squash,fast-forward-only,manually-merged)"], "description": "Merge style"},
+            {"name": "merge_title_field", "type": "string", "required": false, "validation": [], "description": "Custom merge commit title"},
+            {"name": "merge_message_field", "type": "string", "required": false, "validation": [], "description": "Custom merge commit message body"},
+            {"name": "merge_commit_id", "type": "string", "required": false, "validation": [], "description": "Commit ID for manually-merged"},
+            {"name": "head_commit_id", "type": "string", "required": false, "validation": [], "description": "Expected head commit ID"},
+            {"name": "force_merge", "type": "bool", "required": false, "validation": [], "description": "Force merge even if checks fail (admin)"},
+            {"name": "merge_when_checks_succeed", "type": "bool", "required": false, "validation": [], "description": "Schedule auto-merge"},
+            {"name": "delete_branch_after_merge", "type": "*bool", "required": false, "validation": [], "description": "Delete head branch after merge"}
+          ]
+        }
+      },
+      "response": {
+        "success": {"status_code": 200, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "No permission to merge"},
+          {"status_code": 404, "type": "notFound", "condition": "PR not found or closed"},
+          {"status_code": 405, "type": "empty", "condition": "Not allowed (WIP, not mergeable, wrong style, signing required)"},
+          {"status_code": 409, "type": "error", "condition": "Merge conflict, push out of date, head out of date, already scheduled"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Repository is archived"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-230",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/update",
+      "controller_class": "repo",
+      "controller_method": "UpdatePullRequest",
+      "description": "Merge PR's base branch into head branch (update PR)",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "int64", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "style", "type": "string", "required": false, "default": "merge", "validation": ["enum: merge, rebase"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 200, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User not allowed to update"},
+          {"status_code": 404, "type": "notFound", "condition": "PR not found"},
+          {"status_code": 409, "type": "error", "condition": "Merge or rebase conflict"},
+          {"status_code": 422, "type": "validationError", "condition": "PR already merged or closed"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-231",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "controller_class": "repo",
+      "controller_method": "CancelScheduledAutoMerge",
+      "description": "Cancel a scheduled auto-merge for a pull request",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "int64", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 204, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Not the scheduler and no merge permission"},
+          {"status_code": 404, "type": "notFound", "condition": "PR not found or no auto-merge scheduled"},
+          {"status_code": 423, "type": "repoArchivedError", "condition": "Repository is archived"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-232",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/commits",
+      "controller_class": "repo",
+      "controller_method": "GetPullRequestCommits",
+      "description": "Get commits for a pull request",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "int64", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []},
+          {"name": "verification", "type": "boolean", "required": false, "default": true, "validation": []},
+          {"name": "files", "type": "boolean", "required": false, "default": true, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 200, "type": "CommitList", "fields": []},
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "PR not found or bad revision"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-233",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/files",
+      "controller_class": "repo",
+      "controller_method": "GetPullRequestFiles",
+      "description": "Get changed files for a pull request",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "int64", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "skip-to", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "whitespace", "type": "string", "required": false, "default": null, "validation": ["enum: ignore-all, ignore-change, ignore-eol, show-all"]},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 200, "type": "ChangedFileList", "fields": []},
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "PR not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

@@ -1,0 +1,440 @@
+{
+  "total_flows": 7,
+  "flows": [
+    {
+      "endpoint_id": "ep-299",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/notes/{sha}",
+      "description": "Retrieves a git note for a given commit SHA by looking up the notes ref tree",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetNote",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/notes.go",
+          "input": "APIContext with sha path param",
+          "output": "calls getNote()",
+          "operations": ["validate sha with git.IsValidRefPattern", "call getNote helper"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.getNote",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/notes.go",
+          "input": "APIContext, identifier string",
+          "output": "api.Note JSON response",
+          "operations": ["convert identifier to git ID", "call git.GetNote", "parse verification/files query params", "call convert.ToCommit", "build api.Note response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "git.Repository.ConvertToGitID",
+          "type": "utility",
+          "file_path": "modules/git/repo.go",
+          "input": "identifier string",
+          "output": "ObjectID or error",
+          "operations": ["resolve ref/sha to full commit ID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "git.GetNote",
+          "type": "utility",
+          "file_path": "modules/git/notes_nogogit.go",
+          "input": "ctx, repo, commitID, *Note",
+          "output": "populated Note struct",
+          "operations": ["get commit from NotesRef", "traverse tree by splitting commitID into 2-char segments", "read blob data as note message", "get last commit for note path"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToCommit",
+          "type": "service",
+          "file_path": "services/convert/git_commit.go",
+          "input": "ctx, repo, gitRepo, commit, userCache, opts",
+          "output": "*api.Commit",
+          "operations": ["resolve author/committer to users", "build commit stats if requested", "build file list if requested", "build verification info if requested"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "lookup commit author/committer by email"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "git.Note (Message []byte, Commit *git.Commit)",
+          "to": "api.Note (Message string, Commit *api.Commit)",
+          "component": "repo.getNote",
+          "mappings": [
+            {"source_field": "note.Message", "target_field": "Message", "transformation": "computed ([]byte to string)"},
+            {"source_field": "note.Commit", "target_field": "Commit", "transformation": "computed (via convert.ToCommit)"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "sha fails IsValidRefPattern", "handler": "repo.GetNote", "response_code": 422, "response": "validationError"},
+        {"condition": "commit not found", "handler": "repo.getNote", "response_code": 404, "response": "notFound"},
+        {"condition": "note not found for commit", "handler": "repo.getNote", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-300",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "description": "Lists all reactions on a specific issue comment",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetIssueCommentReactions",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_reaction.go",
+          "input": "APIContext with comment id path param",
+          "output": "[]api.Reaction JSON response",
+          "operations": ["get comment by ID", "load comment's issue", "verify repo ownership", "check read permission", "find reactions", "load reaction users", "build response"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "comment", "description": "get comment by ID"},
+            {"operation": "SELECT", "table": "issue", "description": "load issue for comment"},
+            {"operation": "SELECT", "table": "reaction", "description": "find reactions for comment"},
+            {"operation": "SELECT", "table": "user", "description": "load users for reactions"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "issues_model.ReactionList",
+          "to": "[]api.Reaction",
+          "component": "repo.GetIssueCommentReactions",
+          "mappings": [
+            {"source_field": "r.User", "target_field": "User", "transformation": "computed (via convert.ToUser)"},
+            {"source_field": "r.Type", "target_field": "Reaction", "transformation": "direct_copy"},
+            {"source_field": "r.CreatedUnix", "target_field": "Created", "transformation": "computed (AsTime())"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "comment not found", "handler": "GetIssueCommentReactions", "response_code": 404, "response": "notFound"},
+        {"condition": "comment belongs to different repo", "handler": "GetIssueCommentReactions", "response_code": 404, "response": "notFound"},
+        {"condition": "no read permission for issues/pulls", "handler": "GetIssueCommentReactions", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-301",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "description": "Adds a reaction to a comment on an issue",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.PostIssueCommentReaction",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_reaction.go",
+          "input": "APIContext with EditReactionOption form",
+          "output": "delegates to changeIssueCommentReaction",
+          "operations": ["extract form", "call changeIssueCommentReaction(ctx, form, true)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.changeIssueCommentReaction",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_reaction.go",
+          "input": "APIContext, form, isCreateType=true",
+          "output": "api.Reaction JSON (201 or 200)",
+          "operations": ["get comment by ID", "load issue", "verify repo", "check read permission", "check locked issue", "call issue_service.CreateCommentReaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "comment", "description": "get comment by ID"},
+            {"operation": "SELECT", "table": "issue", "description": "load issue for comment"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issue_service.CreateCommentReaction",
+          "type": "service",
+          "file_path": "services/issue/reaction.go",
+          "input": "ctx, doer, comment, content",
+          "output": "*Reaction or error",
+          "operations": ["load issue for comment", "load repo for issue", "check user blocking", "call issues_model.CreateReaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user_blocking", "description": "check if doer is blocked by poster/owner"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "issues_model.CreateReaction",
+          "type": "repository",
+          "file_path": "models/issues/reaction.go",
+          "input": "ctx, *ReactionOptions",
+          "output": "*Reaction or error",
+          "operations": ["validate reaction type against ReactionsLookup", "check for existing reaction (within transaction)", "insert new reaction if not exists"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "reaction", "description": "check if reaction already exists"},
+            {"operation": "INSERT", "table": "reaction", "description": "create new reaction"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*issues_model.Reaction",
+          "to": "api.Reaction",
+          "component": "repo.changeIssueCommentReaction",
+          "mappings": [
+            {"source_field": "ctx.Doer", "target_field": "User", "transformation": "computed (via convert.ToUser)"},
+            {"source_field": "reaction.Type", "target_field": "Reaction", "transformation": "direct_copy"},
+            {"source_field": "reaction.CreatedUnix", "target_field": "Created", "transformation": "computed (AsTime())"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "comment not found", "handler": "changeIssueCommentReaction", "response_code": 404, "response": "notFound"},
+        {"condition": "comment belongs to different repo", "handler": "changeIssueCommentReaction", "response_code": 404, "response": "notFound"},
+        {"condition": "no read permission", "handler": "changeIssueCommentReaction", "response_code": 404, "response": "notFound"},
+        {"condition": "issue locked and no write permission", "handler": "changeIssueCommentReaction", "response_code": 403, "response": "forbidden"},
+        {"condition": "forbidden reaction type", "handler": "changeIssueCommentReaction", "response_code": 403, "response": "forbidden"},
+        {"condition": "user blocked", "handler": "changeIssueCommentReaction", "response_code": 403, "response": "forbidden"},
+        {"condition": "reaction already exists", "handler": "changeIssueCommentReaction", "response_code": 200, "response": "api.Reaction (existing)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-302",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "description": "Removes a reaction from a comment on an issue",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteIssueCommentReaction",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_reaction.go",
+          "input": "APIContext with EditReactionOption form",
+          "output": "delegates to changeIssueCommentReaction",
+          "operations": ["extract form", "call changeIssueCommentReaction(ctx, form, false)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.changeIssueCommentReaction",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_reaction.go",
+          "input": "APIContext, form, isCreateType=false",
+          "output": "204 No Content",
+          "operations": ["get comment by ID", "load issue", "verify repo", "check read permission", "check locked issue", "call issues_model.DeleteCommentReaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "comment", "description": "get comment by ID"},
+            {"operation": "SELECT", "table": "issue", "description": "load issue for comment"},
+            {"operation": "DELETE", "table": "reaction", "description": "delete the reaction"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "comment not found", "handler": "changeIssueCommentReaction", "response_code": 404, "response": "notFound"},
+        {"condition": "comment belongs to different repo", "handler": "changeIssueCommentReaction", "response_code": 404, "response": "notFound"},
+        {"condition": "issue locked and no write permission", "handler": "changeIssueCommentReaction", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-303",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "description": "Lists all reactions on an issue with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetIssueReactions",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_reaction.go",
+          "input": "APIContext with index path param, page/limit query params",
+          "output": "[]api.Reaction JSON response",
+          "operations": ["get issue with attrs by index", "check read permission", "find issue reactions with pagination", "load reaction users", "set total count header", "build response"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue", "description": "get issue with attributes by repo+index"},
+            {"operation": "SELECT", "table": "reaction", "description": "find reactions for issue (CommentID=-1 means issue-level only)"},
+            {"operation": "SELECT", "table": "user", "description": "load users for reactions"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "issues_model.ReactionList",
+          "to": "[]api.Reaction",
+          "component": "repo.GetIssueReactions",
+          "mappings": [
+            {"source_field": "r.User", "target_field": "User", "transformation": "computed (via convert.ToUser)"},
+            {"source_field": "r.Type", "target_field": "Reaction", "transformation": "direct_copy"},
+            {"source_field": "r.CreatedUnix", "target_field": "Created", "transformation": "computed (AsTime())"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "issue not found", "handler": "GetIssueReactions", "response_code": 404, "response": "notFound"},
+        {"condition": "no read permission for issues/pulls", "handler": "GetIssueReactions", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-304",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "description": "Adds a reaction to an issue",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.PostIssueReaction",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_reaction.go",
+          "input": "APIContext with EditReactionOption form",
+          "output": "delegates to changeIssueReaction",
+          "operations": ["extract form", "call changeIssueReaction(ctx, form, true)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.changeIssueReaction",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_reaction.go",
+          "input": "APIContext, form, isCreateType=true",
+          "output": "api.Reaction JSON (201 or 200)",
+          "operations": ["get issue with attrs by index", "check locked issue permission", "call issue_service.CreateIssueReaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue", "description": "get issue with attributes by repo+index"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "issue_service.CreateIssueReaction",
+          "type": "service",
+          "file_path": "services/issue/reaction.go",
+          "input": "ctx, doer, issue, content",
+          "output": "*Reaction or error",
+          "operations": ["load repo for issue", "check user blocking (poster, owner)", "call issues_model.CreateReaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "load repo for issue"},
+            {"operation": "SELECT", "table": "user_blocking", "description": "check if doer is blocked"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "issues_model.CreateReaction",
+          "type": "repository",
+          "file_path": "models/issues/reaction.go",
+          "input": "ctx, *ReactionOptions",
+          "output": "*Reaction or error",
+          "operations": ["validate reaction type", "check existing (in transaction)", "insert new reaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "reaction", "description": "check if reaction already exists"},
+            {"operation": "INSERT", "table": "reaction", "description": "create new reaction"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "*issues_model.Reaction",
+          "to": "api.Reaction",
+          "component": "repo.changeIssueReaction",
+          "mappings": [
+            {"source_field": "ctx.Doer", "target_field": "User", "transformation": "computed (via convert.ToUser)"},
+            {"source_field": "reaction.Type", "target_field": "Reaction", "transformation": "direct_copy"},
+            {"source_field": "reaction.CreatedUnix", "target_field": "Created", "transformation": "computed (AsTime())"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "issue not found", "handler": "changeIssueReaction", "response_code": 404, "response": "notFound"},
+        {"condition": "issue locked and no write permission", "handler": "changeIssueReaction", "response_code": 403, "response": "forbidden"},
+        {"condition": "forbidden reaction type", "handler": "changeIssueReaction", "response_code": 403, "response": "forbidden"},
+        {"condition": "user blocked", "handler": "changeIssueReaction", "response_code": 403, "response": "forbidden"},
+        {"condition": "reaction already exists", "handler": "changeIssueReaction", "response_code": 200, "response": "api.Reaction (existing)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-305",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "description": "Removes a reaction from an issue",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteIssueReaction",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_reaction.go",
+          "input": "APIContext with EditReactionOption form",
+          "output": "delegates to changeIssueReaction",
+          "operations": ["extract form", "call changeIssueReaction(ctx, form, false)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.changeIssueReaction",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/issue_reaction.go",
+          "input": "APIContext, form, isCreateType=false",
+          "output": "204 No Content",
+          "operations": ["get issue with attrs by index", "check locked issue permission", "call issues_model.DeleteIssueReaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "issue", "description": "get issue with attributes by repo+index"},
+            {"operation": "DELETE", "table": "reaction", "description": "delete the reaction"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "issue not found", "handler": "changeIssueReaction", "response_code": 404, "response": "notFound"},
+        {"condition": "issue locked and no write permission", "handler": "changeIssueReaction", "response_code": 403, "response": "forbidden"}
+      ]
+    }
+  ]
+}

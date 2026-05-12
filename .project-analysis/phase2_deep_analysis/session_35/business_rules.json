@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Mirror feature must be enabled globally for all mirror endpoints",
+      "location": {"class": "repo", "method": "MirrorSync/PushMirrorSync/ListPushMirrors/etc", "file_path": "routers/api/v1/repo/mirror.go", "line_number": 56},
+      "condition": "!setting.Mirror.Enabled",
+      "action": "Return 400 'Mirror feature is disabled'",
+      "affected_endpoints": ["ep-234", "ep-235", "ep-236", "ep-237", "ep-238", "ep-239"],
+      "code_snippet": "if !setting.Mirror.Enabled {\n\tctx.APIError(http.StatusBadRequest, \"Mirror feature is disabled\")\n\treturn\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "authorization",
+      "description": "Mirror sync requires write access to code unit",
+      "location": {"class": "repo", "method": "MirrorSync", "file_path": "routers/api/v1/repo/mirror.go", "line_number": 50},
+      "condition": "!ctx.Repo.Permission.CanWrite(unit.TypeCode)",
+      "action": "Return 403 'Must have write access'",
+      "affected_endpoints": ["ep-234"],
+      "code_snippet": "if !ctx.Repo.Permission.CanWrite(unit.TypeCode) {\n\tctx.APIError(http.StatusForbidden, \"Must have write access\")\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Repository must be a pull mirror to trigger mirror-sync",
+      "location": {"class": "repo", "method": "MirrorSync", "file_path": "routers/api/v1/repo/mirror.go", "line_number": 61},
+      "condition": "errors.Is(err, repo_model.ErrMirrorNotExist)",
+      "action": "Return 400 'Repository is not a mirror'",
+      "affected_endpoints": ["ep-234"],
+      "code_snippet": "if errors.Is(err, repo_model.ErrMirrorNotExist) {\n\tctx.APIError(http.StatusBadRequest, \"Repository is not a mirror\")\n\treturn\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "authorization",
+      "description": "Push mirror operations require repo admin access",
+      "location": {"class": "api", "method": "route registration", "file_path": "routers/api/v1/api.go", "line_number": 1335},
+      "condition": "reqAdmin() middleware applied to push_mirrors group",
+      "action": "Return 403 if user is not repo admin",
+      "affected_endpoints": ["ep-235", "ep-236", "ep-237", "ep-238", "ep-239"],
+      "code_snippet": "}, reqAdmin(), reqToken())"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Push mirror interval must be valid duration and >= MinInterval (or 0)",
+      "location": {"class": "repo", "method": "CreatePushMirror", "file_path": "routers/api/v1/repo/mirror.go", "line_number": 244},
+      "condition": "err != nil || (interval != 0 && interval < setting.Mirror.MinInterval)",
+      "action": "Return 400 with error",
+      "affected_endpoints": ["ep-238"],
+      "code_snippet": "interval, err := time.ParseDuration(mirrorOption.Interval)\nif err != nil || (interval != 0 && interval < setting.Mirror.MinInterval) {\n\tctx.APIError(http.StatusBadRequest, err)"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "Remote address must pass URL validation and migration allow/block list",
+      "location": {"class": "repo", "method": "CreatePushMirror", "file_path": "routers/api/v1/repo/mirror.go", "line_number": 249},
+      "condition": "git.ParseRemoteAddr fails or IsMigrateURLAllowed fails",
+      "action": "Return 400/401 via HandleRemoteAddressError",
+      "affected_endpoints": ["ep-238"],
+      "code_snippet": "address, err := git.ParseRemoteAddr(mirrorOption.RemoteAddress, mirrorOption.RemoteUsername, mirrorOption.RemotePassword)\nif err == nil {\n\terr = migrations.IsMigrateURLAllowed(address, ctx.ContextUser)\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Push mirror remote name is auto-generated with random suffix",
+      "location": {"class": "repo", "method": "CreatePushMirror", "file_path": "routers/api/v1/repo/mirror.go", "line_number": 256},
+      "condition": "Always on creation",
+      "action": "Generate remote name as 'remote_mirror_' + 10-char random string",
+      "affected_endpoints": ["ep-238"],
+      "code_snippet": "remoteSuffix := util.CryptoRandomString(10)"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Remote address is sanitized before storage (credentials stripped)",
+      "location": {"class": "repo", "method": "CreatePushMirror", "file_path": "routers/api/v1/repo/mirror.go", "line_number": 258},
+      "condition": "Always on creation",
+      "action": "Store sanitized URL (without credentials) in push_mirror.remote_address",
+      "affected_endpoints": ["ep-238"],
+      "code_snippet": "remoteAddress, err := util.SanitizeURL(mirrorOption.RemoteAddress)"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "If git remote registration fails, the DB record is cleaned up",
+      "location": {"class": "repo", "method": "CreatePushMirror", "file_path": "routers/api/v1/repo/mirror.go", "line_number": 274},
+      "condition": "AddPushMirrorRemote returns error",
+      "action": "Delete the push mirror record from DB, return 500",
+      "affected_endpoints": ["ep-238"],
+      "code_snippet": "if err = mirror_service.AddPushMirrorRemote(ctx, pushMirror, address); err != nil {\n\tif err := repo_model.DeletePushMirrors(ctx, ...); err != nil {"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Push mirror sync is synchronous - each mirror is synced sequentially in the request",
+      "location": {"class": "repo", "method": "PushMirrorSync", "file_path": "routers/api/v1/repo/mirror.go", "line_number": 97},
+      "condition": "Always when push_mirrors-sync is called",
+      "action": "Loop through all push mirrors and call SyncPushMirror for each; fail on first error",
+      "affected_endpoints": ["ep-235"],
+      "code_snippet": "for _, mirror := range pushMirrors {\n\tok := mirror_service.SyncPushMirror(ctx, mirror.ID)\n\tif !ok {"
+    }
+  ]
+}

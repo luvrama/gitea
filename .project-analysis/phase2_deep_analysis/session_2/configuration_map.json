@@ -1,0 +1,37 @@
+{
+  "total_properties": 4,
+  "properties": [
+    {
+      "key": "setting.AppURL",
+      "type": "String",
+      "default_value": "protocol://domain:port/",
+      "source_file": "modules/setting/server.go",
+      "used_by": [{"class": "misc", "method": "ListLicenseTemplates", "file_path": "routers/api/v1/misc/licenses.go", "usage": "Build license API URL", "impact": "Changes the URL field in license list response"}, {"class": "misc", "method": "GetLicenseTemplateInfo", "file_path": "routers/api/v1/misc/licenses.go", "usage": "Build license API URL", "impact": "Changes the URL field in license detail response"}],
+      "affected_endpoints": ["ep-013", "ep-014"]
+    },
+    {
+      "key": "setting.AppSubURL",
+      "type": "String",
+      "default_value": "",
+      "source_file": "modules/setting/server.go",
+      "used_by": [{"class": "common", "method": "RenderMarkup", "file_path": "routers/common/markup.go", "usage": "Strip subpath prefix from urlPathContext to parse owner/repo", "impact": "Affects link resolution in rendered markdown"}],
+      "affected_endpoints": ["ep-009"]
+    },
+    {
+      "key": "setting.Repository.PreferredLicenses",
+      "type": "[]string",
+      "default_value": "[\"Apache License 2.0\", \"MIT License\"]",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [{"class": "repository", "method": "LoadRepoConfig", "file_path": "modules/repository/init.go", "usage": "Sort preferred licenses to top of list", "impact": "Changes ordering of license list response"}],
+      "affected_endpoints": ["ep-013"]
+    },
+    {
+      "key": "setting.CustomPath",
+      "type": "String",
+      "default_value": "custom",
+      "source_file": "modules/setting/setting.go",
+      "used_by": [{"class": "options", "method": "CustomAssets", "file_path": "modules/options/base.go", "usage": "Base path for custom template overrides", "impact": "Determines where custom gitignore/license files are loaded from"}],
+      "affected_endpoints": ["ep-012", "ep-014"]
+    }
+  ]
+}

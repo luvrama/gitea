@@ -1,0 +1,30 @@
+{
+  "endpoints_by_database_table": {
+    "action_variable": {"read": ["ep-269", "ep-270", "ep-271"], "write": ["ep-269", "ep-270"]},
+    "action_runner": {"read": ["ep-273", "ep-274", "ep-275", "ep-276"], "write": ["ep-275", "ep-276"]},
+    "action_runner_token": {"read": ["ep-272"], "write": ["ep-272"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {},
+  "endpoints_by_model_class": {
+    "ActionVariable": ["ep-269", "ep-270", "ep-271"],
+    "ActionRunner": ["ep-273", "ep-274", "ep-275", "ep-276"],
+    "ActionRunnerToken": ["ep-272"]
+  },
+  "endpoints_by_service_class": {
+    "actions_service": ["ep-269", "ep-270", "ep-271"],
+    "shared.runners": ["ep-272", "ep-273", "ep-274", "ep-275", "ep-276"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-269": {"reads": ["action_variable"], "writes": ["action_variable"]},
+    "ep-270": {"reads": ["action_variable"], "writes": ["action_variable"]},
+    "ep-271": {"reads": ["action_variable"], "writes": []},
+    "ep-272": {"reads": ["action_runner_token"], "writes": ["action_runner_token"]},
+    "ep-273": {"reads": ["action_runner"], "writes": []},
+    "ep-274": {"reads": ["action_runner"], "writes": []},
+    "ep-275": {"reads": ["action_runner"], "writes": ["action_runner"]},
+    "ep-276": {"reads": ["action_runner"], "writes": ["action_runner", "action_tasks_version"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {}
+}

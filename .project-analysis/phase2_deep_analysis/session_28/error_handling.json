@@ -1,0 +1,35 @@
+{
+  "total_patterns": 7,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "internal error", "status_code": 500, "response_type": "APIError", "message_template": "internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "APIError", "message_template": "not found"},
+      {"exception_type": "bad request", "status_code": 400, "response_type": "APIError", "message_template": "error message from err"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-190", "path": "/api/v1/user/blocks", "error_scenarios": [
+      {"exception": "DB error", "trigger": "FindBlockings or LoadAttributes fails", "status_code": 500, "response": "APIErrorInternal", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-191", "path": "/api/v1/user/blocks/{username}", "error_scenarios": [
+      {"exception": "user not found", "trigger": "GetUserByName returns error", "status_code": 404, "response": "APIErrorNotFound", "logged": false, "retryable": false},
+      {"exception": "DB error", "trigger": "GetBlocking fails", "status_code": 500, "response": "APIErrorInternal", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-192", "path": "/api/v1/user/blocks/{username}", "error_scenarios": [
+      {"exception": "user not found", "trigger": "GetUserByName returns error", "status_code": 404, "response": "APIErrorNotFound", "logged": false, "retryable": false},
+      {"exception": "ErrCanNotBlock", "trigger": "CanBlockUser returns false", "status_code": 400, "response": "APIError", "logged": false, "retryable": false},
+      {"exception": "ErrBlockOrganization", "trigger": "blockee is organization", "status_code": 400, "response": "APIError", "logged": false, "retryable": false},
+      {"exception": "DB error", "trigger": "Transaction fails", "status_code": 500, "response": "APIErrorInternal", "logged": true, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-193", "path": "/api/v1/user/blocks/{username}", "error_scenarios": [
+      {"exception": "user not found", "trigger": "GetUserByName returns error", "status_code": 404, "response": "APIErrorNotFound", "logged": false, "retryable": false},
+      {"exception": "ErrCanNotUnblock", "trigger": "CanUnblockUser returns false", "status_code": 400, "response": "APIError", "logged": false, "retryable": false},
+      {"exception": "ErrBlockOrganization", "trigger": "blockee is organization", "status_code": 400, "response": "APIError", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "user_model.ErrBlockOrganization", "file_path": "models/user/block.go", "extends": "util.InvalidArgumentError", "used_in": ["user_service.BlockUser", "user_service.UnblockUser"], "http_status": 400},
+    {"class": "user_model.ErrCanNotBlock", "file_path": "models/user/block.go", "extends": "util.InvalidArgumentError", "used_in": ["user_service.BlockUser"], "http_status": 400},
+    {"class": "user_model.ErrCanNotUnblock", "file_path": "models/user/block.go", "extends": "util.InvalidArgumentError", "used_in": ["user_service.UnblockUser"], "http_status": 400}
+  ]
+}

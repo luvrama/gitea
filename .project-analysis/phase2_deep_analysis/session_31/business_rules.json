@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Dependencies must be enabled on the repository for listing dependencies",
+      "location": {"class": "repo", "method": "GetIssueDependencies", "file_path": "routers/api/v1/repo/issue_dependency.go", "line_number": 53},
+      "condition": "!ctx.Repo.Repository.IsDependenciesEnabled(ctx)",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-208"],
+      "code_snippet": "if !ctx.Repo.Repository.IsDependenciesEnabled(ctx) {\n\tctx.APIErrorNotFound()\n\treturn\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "authorization",
+      "description": "User must have read permission on the issue type (issues or pulls) to view dependencies",
+      "location": {"class": "repo", "method": "GetIssueDependencies", "file_path": "routers/api/v1/repo/issue_dependency.go", "line_number": 65},
+      "condition": "!ctx.Repo.Permission.CanReadIssuesOrPulls(issue.IsPull)",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-208", "ep-211"],
+      "code_snippet": "if !ctx.Repo.Permission.CanReadIssuesOrPulls(issue.IsPull) {\n\tctx.APIErrorNotFound()\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "authorization",
+      "description": "Blockers from repos user cannot read are hidden (HIDDEN title) or shown with limited info (if user can write to the issue)",
+      "location": {"class": "repo", "method": "GetIssueDependencies", "file_path": "routers/api/v1/repo/issue_dependency.go", "line_number": 88},
+      "condition": "!perm.CanReadIssuesOrPulls(blocker.Issue.IsPull)",
+      "action": "Replace blocker with hidden/confidential version based on canWrite",
+      "affected_endpoints": ["ep-208"],
+      "code_snippet": "if !canWrite {\n\thiddenBlocker := &issues_model.DependencyInfo{Issue: issues_model.Issue{Title: \"HIDDEN\"}}\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Cross-repository dependencies must be enabled in settings for cross-repo dependency creation",
+      "location": {"class": "repo", "method": "getFormIssue", "file_path": "routers/api/v1/repo/issue_dependency.go", "line_number": 289},
+      "condition": "form.Owner != ctx.Repo.Repository.OwnerName || form.Name != ctx.Repo.Repository.Name",
+      "action": "Return 400 if AllowCrossRepositoryDependencies is false",
+      "affected_endpoints": ["ep-209", "ep-210", "ep-212", "ep-213"],
+      "code_snippet": "if !setting.Service.AllowCrossRepositoryDependencies {\n\tctx.JSON(http.StatusBadRequest, \"CrossRepositoryDependencies not enabled\")\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Target repository must not be archived and must have dependencies enabled",
+      "location": {"class": "repo", "method": "createIssueDependency", "file_path": "routers/api/v1/repo/issue_dependency.go", "line_number": 316},
+      "condition": "target.Repo.IsArchived || !target.Repo.IsDependenciesEnabled(ctx)",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-209", "ep-210", "ep-212", "ep-213"],
+      "code_snippet": "if target.Repo.IsArchived || !target.Repo.IsDependenciesEnabled(ctx) {\n\tctx.APIErrorNotFound()\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "authorization",
+      "description": "User must have write permission on the target issue to create/remove dependencies",
+      "location": {"class": "repo", "method": "createIssueDependency", "file_path": "routers/api/v1/repo/issue_dependency.go", "line_number": 322},
+      "condition": "!targetPerm.CanWriteIssuesOrPulls(target.IsPull)",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-209", "ep-210", "ep-212", "ep-213"],
+      "code_snippet": "if !targetPerm.CanWriteIssuesOrPulls(target.IsPull) {\n\tctx.APIErrorNotFound()\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "User must have read permission on the dependency issue",
+      "location": {"class": "repo", "method": "createIssueDependency", "file_path": "routers/api/v1/repo/issue_dependency.go", "line_number": 328},
+      "condition": "!dependencyPerm.CanReadIssuesOrPulls(dependency.IsPull)",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-209", "ep-210", "ep-212", "ep-213"],
+      "code_snippet": "if !dependencyPerm.CanReadIssuesOrPulls(dependency.IsPull) {\n\tctx.APIErrorNotFound()\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Circular dependencies are not allowed (A depends on B and B depends on A)",
+      "location": {"class": "issues_model", "method": "CreateIssueDependency", "file_path": "models/issues/dependency.go", "line_number": 133},
+      "condition": "issueDepExists(ctx, dep.ID, issue.ID) == true",
+      "action": "Return ErrCircularDependency error",
+      "affected_endpoints": ["ep-209", "ep-212"],
+      "code_snippet": "circular, err := issueDepExists(ctx, dep.ID, issue.ID)\nif circular {\n\treturn ErrCircularDependency{issue.ID, dep.ID}\n}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Duplicate dependencies are not allowed",
+      "location": {"class": "issues_model", "method": "CreateIssueDependency", "file_path": "models/issues/dependency.go", "line_number": 127},
+      "condition": "issueDepExists(ctx, issue.ID, dep.ID) == true",
+      "action": "Return ErrDependencyExists error",
+      "affected_endpoints": ["ep-209", "ep-212"],
+      "code_snippet": "exists, err := issueDepExists(ctx, issue.ID, dep.ID)\nif exists {\n\treturn ErrDependencyExists{issue.ID, dep.ID}\n}"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Creating/removing a dependency adds comments to both issues in the relationship",
+      "location": {"class": "issues_model", "method": "createIssueDependencyComment", "file_path": "models/issues/comment.go", "line_number": 964},
+      "condition": "Always after successful create/remove",
+      "action": "Create CommentTypeAddDependency or CommentTypeRemoveDependency on both issues",
+      "affected_endpoints": ["ep-209", "ep-210", "ep-212", "ep-213"],
+      "code_snippet": "cType := CommentTypeAddDependency\nif !add {\n\tcType = CommentTypeRemoveDependency\n}"
+    }
+  ]
+}

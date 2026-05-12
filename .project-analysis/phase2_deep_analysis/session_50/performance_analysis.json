@@ -1,0 +1,196 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-336",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Per-label HasIssueLabel check creates N+1 pattern"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "HasIssueLabel is called per label in newIssueLabels loop, plus newIssueLabel inserts per label",
+          "impact": "For N labels: N SELECT + N INSERT + N comment INSERT + N label UPDATE = 4N queries",
+          "file_path": "models/issues/issue_label.go",
+          "line_number": 128,
+          "code_snippet": "if HasIssueLabel(ctx, issue.ID, l.ID) ||\n\t(l.RepoID != issue.RepoID && l.OrgID != issue.Repo.OwnerID) {\n\tcontinue",
+          "recommendation": "Batch check existing labels with IN clause before loop"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch-check existing issue_label relations before per-label loop",
+          "estimated_impact": "Reduce N SELECT queries to 1 for existence check",
+          "implementation": "SELECT label_id FROM issue_label WHERE issue_id=? AND label_id IN (?,...) before loop"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-337",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels/{id}",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Double permission check: handler + service layer"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "Redundant permission check: handler checks CanWriteIssuesOrPulls, then service re-checks via GetDoerRepoPermission",
+          "impact": "Extra SELECT on access/team tables for permission that was already verified",
+          "file_path": "services/issue/label.go",
+          "line_number": 53,
+          "code_snippet": "perm, err := access_model.GetDoerRepoPermission(ctx, issue.Repo, doer)\nif !perm.CanWriteIssuesOrPulls(issue.IsPull) {",
+          "recommendation": "Consider passing pre-verified permission to service layer"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-338",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "resource_load": {
+        "operations_per_request": 10,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Efficient diff algorithm minimizes actual DB writes"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-339",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "O(N) per-label deletion with N comments created"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "clearIssueLabels loops through all labels calling deleteIssueLabel individually, each creating a comment and updating label counts",
+          "impact": "For N labels: N DELETE + N INSERT (comment) + N UPDATE (label) = 3N queries in a single transaction",
+          "file_path": "models/issues/issue_label.go",
+          "line_number": 335,
+          "code_snippet": "for i := range issue.Labels {\n\tif err = deleteIssueLabel(ctx, issue, issue.Labels[i], doer); err != nil {",
+          "recommendation": "Batch DELETE issue_label WHERE issue_id=?, batch UPDATE label counts, create single comment for clear action"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Replace per-label deletion loop with batch DELETE and single comment",
+          "estimated_impact": "Reduce 3N queries to ~3 queries regardless of label count",
+          "implementation": "DELETE FROM issue_label WHERE issue_id=?; UPDATE label SET num_issues=num_issues-1 WHERE id IN (...); INSERT single clear comment"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-340",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/keys",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "N+1 for GetContent per key"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "GetContent calls GetPublicKeyByID per deploy key in a loop to fetch SSH key content",
+          "impact": "For N keys: 1 FindAndCount + N GetPublicKeyByID = N+1 queries",
+          "file_path": "routers/api/v1/repo/key.go",
+          "line_number": 96,
+          "code_snippet": "for i := range keys {\n\tif err := keys[i].GetContent(ctx); err != nil {",
+          "recommendation": "JOIN public_key in the initial query or batch-load content by key_ids"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Join public_key table in FindAndCount query to load content in one query",
+          "estimated_impact": "Reduce N+1 to 1 query",
+          "implementation": "Add JOIN to ListDeployKeysOptions or batch-load public keys by IDs after initial query"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-341",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/keys/{id}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Simple 2-query lookup"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-342",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/keys",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Transactional with duplicate checks"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-343",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/keys/{id}",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem"],
+        "note": "RewriteAllPublicKeys rewrites entire authorized_keys file"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "synchronous_blocking",
+          "description": "RewriteAllPublicKeys reads ALL public keys from DB and rewrites the entire authorized_keys file on every single key deletion",
+          "impact": "For instances with many SSH keys, this is O(total_keys) filesystem I/O on every delete. Also holds SSHOpLocker mutex blocking all other SSH key operations",
+          "file_path": "services/asymkey/ssh_key_authorized_keys.go",
+          "line_number": 22,
+          "code_snippet": "return asymkey_model.WithSSHOpLocker(func() error {\n\treturn rewriteAllPublicKeys(ctx)\n})",
+          "recommendation": "Use incremental authorized_keys updates (remove single line) instead of full rewrite"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "async",
+          "description": "Defer authorized_keys rewrite or use incremental update",
+          "estimated_impact": "Reduce O(total_keys) to O(1) for single key deletion",
+          "implementation": "Remove specific line from authorized_keys instead of full rewrite, or batch rewrites with debouncing"
+        }
+      ]
+    }
+  ]
+}

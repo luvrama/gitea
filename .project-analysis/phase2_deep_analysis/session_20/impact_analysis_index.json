@@ -1,0 +1,47 @@
+{
+  "endpoints_by_database_table": {
+    "action_variable": {"read": ["ep-135", "ep-136"], "write": []},
+    "action_run": {"read": ["ep-137", "ep-138"], "write": []},
+    "action_run_job": {"read": ["ep-138"], "write": []},
+    "follow": {"read": ["ep-139", "ep-140", "ep-141"], "write": []},
+    "user": {"read": ["ep-137", "ep-139", "ep-140", "ep-141"], "write": []},
+    "repository": {"read": ["ep-137", "ep-138"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "API.DefaultPagingNum": ["ep-135", "ep-136", "ep-137", "ep-138", "ep-139", "ep-140", "ep-141"],
+    "API.MaxResponseItems": ["ep-135", "ep-136", "ep-137", "ep-138", "ep-139", "ep-140", "ep-141"]
+  },
+  "endpoints_by_model_class": {
+    "ActionVariable": ["ep-135", "ep-136"],
+    "ActionRun": ["ep-137"],
+    "ActionRunJob": ["ep-138"],
+    "Follow": ["ep-139", "ep-140", "ep-141"],
+    "User": ["ep-139", "ep-140", "ep-141"]
+  },
+  "endpoints_by_service_class": {
+    "actions_service": ["ep-135"],
+    "shared.ListRuns": ["ep-137"],
+    "shared.ListJobs": ["ep-138"],
+    "convert.ToUser": ["ep-139", "ep-140", "ep-141"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-135": {"reads": ["action_variable"], "writes": []},
+    "ep-136": {"reads": ["action_variable"], "writes": []},
+    "ep-137": {"reads": ["action_run", "repository", "user"], "writes": []},
+    "ep-138": {"reads": ["action_run_job", "action_run", "repository"], "writes": []},
+    "ep-139": {"reads": ["user", "follow"], "writes": []},
+    "ep-140": {"reads": ["user", "follow"], "writes": []},
+    "ep-141": {"reads": ["user", "follow"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-135": ["API.DefaultPagingNum", "API.MaxResponseItems"],
+    "ep-136": ["API.DefaultPagingNum", "API.MaxResponseItems"],
+    "ep-137": ["API.DefaultPagingNum", "API.MaxResponseItems"],
+    "ep-138": ["API.DefaultPagingNum", "API.MaxResponseItems"],
+    "ep-139": ["API.DefaultPagingNum", "API.MaxResponseItems"],
+    "ep-140": ["API.DefaultPagingNum", "API.MaxResponseItems"],
+    "ep-141": ["API.DefaultPagingNum", "API.MaxResponseItems"]
+  }
+}

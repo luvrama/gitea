@@ -1,0 +1,153 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite (via XORM)",
+  "total_tables_or_collections": 5,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "action_artifact",
+      "entity_class": "ActionArtifact",
+      "file_path": "models/actions/artifact.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "run_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["unique(runid_attempt_name_path)"]},
+        {"name": "run_attempt_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": ["unique(runid_attempt_name_path)"]},
+        {"name": "runner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "commit_sha", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "storage_path", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "file_size", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "file_compressed_size", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "content_encoding", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "artifact_path", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["unique(runid_attempt_name_path)"]},
+        {"name": "artifact_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["unique(runid_attempt_name_path)"]},
+        {"name": "status", "type": "BIGINT", "code_type": "ArtifactStatus (int64)", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["updated"]},
+        {"name": "expired_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_runid_attempt_name_path", "columns": ["run_id", "run_attempt_id", "artifact_name", "artifact_path"], "unique": true},
+        {"name": "IDX_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "IDX_run_id", "columns": ["run_id"], "unique": false},
+        {"name": "IDX_status", "columns": ["status"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "action_run", "join_column": "run_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "action_run",
+      "entity_class": "ActionRun",
+      "file_path": "models/actions/run.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "status", "type": "INT", "code_type": "Status", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "one-to-many", "target_table": "action_run_job", "join_column": "run_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "action_run_job",
+      "entity_class": "ActionRunJob",
+      "file_path": "models/actions/run_job.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "run_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "action_run", "join_column": "run_id"},
+        {"type": "one-to-many", "target_table": "action_task", "join_column": "job_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "action_task",
+      "entity_class": "ActionTask",
+      "file_path": "models/actions/task.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "job_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "action_run_job", "join_column": "job_id"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "action_runner",
+      "entity_class": "ActionRunner",
+      "file_path": "models/actions/runner.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "ephemeral", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": []
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-293",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/artifacts",
+      "operations": [
+        {"store_type": "database", "store_name": "action_artifact", "operation": "SELECT", "method": "db.FindAndCount", "description": "Find artifacts by repo_id, run_id with pagination and v4 filter"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-294",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_run", "operation": "SELECT", "method": "GetRunByRepoAndID", "description": "Get run by id and repo_id"},
+        {"store_type": "database", "store_name": "action_run_job", "operation": "SELECT", "method": "GetAllRunJobsByRepoAndRunID", "description": "Get all jobs for run"},
+        {"store_type": "database", "store_name": "action_task", "operation": "SELECT", "method": "db.Find", "description": "Get tasks by repo_id and job_ids"},
+        {"store_type": "database", "store_name": "action_artifact", "operation": "SELECT", "method": "db.Find", "description": "Get artifacts by repo_id and run_id"},
+        {"store_type": "database", "store_name": "action_runner", "operation": "DELETE", "method": "CleanupEphemeralRunners", "description": "Delete ephemeral runners with finished tasks"},
+        {"store_type": "database", "store_name": "action_run", "operation": "DELETE", "method": "db.DeleteBeans", "description": "Delete run and related records in transaction"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-295",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts",
+      "operations": [
+        {"store_type": "database", "store_name": "action_artifact", "operation": "SELECT", "method": "db.FindAndCount", "description": "Find artifacts by repo_id with pagination and v4 filter"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-296",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_artifact", "operation": "SELECT", "method": "db.GetByID", "description": "Get artifact by primary key"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-297",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_artifact", "operation": "SELECT", "method": "db.GetByID", "description": "Get artifact by primary key"},
+        {"store_type": "database", "store_name": "action_artifact", "operation": "UPDATE", "method": "SetArtifactNeedDeleteByID", "description": "Set status=PendingDeletion where id=? AND status=UploadConfirmed"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-298",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip",
+      "operations": [
+        {"store_type": "database", "store_name": "action_artifact", "operation": "SELECT", "method": "db.GetByID", "description": "Get artifact by primary key"}
+      ]
+    }
+  ]
+}

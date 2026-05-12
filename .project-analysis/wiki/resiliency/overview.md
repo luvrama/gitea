@@ -1,0 +1,428 @@
+# Resiliency Assessment
+
+**Overall Risk:** critical · **351 findings**
+
+## Dependency Resiliency Matrix
+
+| Dependency | Timeout | Retry | Circuit Breaker | Bulkhead | Fallback | Blast Radius |
+|------------|---------|-------|-----------------|----------|----------|-------------|
+| GPG binary (gpg --export) | ❌ | ❌ | ❌ | ❌ | ❌ | [ep-004](../endpoints/ep-004.md), [ep-005](../endpoints/ep-005.md) |
+| Git config (git config --global --get) | ✅ | ❌ | ❌ | ❌ | ✅ | [ep-004](../endpoints/ep-004.md), [ep-005](../endpoints/ep-005.md), [ep-006](../endpoints/ep-006.md), [ep-007](../endpoints/ep-007.md) |
+| SQL Database (notification table) | ✅ | ❌ | ❌ | ✅ | ❌ | [ep-019](../endpoints/ep-019.md), [ep-020](../endpoints/ep-020.md), [ep-021](../endpoints/ep-021.md), [ep-022](../endpoints/ep-022.md) |
+| Avatar Storage Backend | ❌ | ❌ | ❌ | ❌ | ✅ | [ep-037](../endpoints/ep-037.md), [ep-038](../endpoints/ep-038.md), [ep-128](../endpoints/ep-128.md), [ep-259](../endpoints/ep-259.md), [ep-261](../endpoints/ep-261.md), [ep-262](../endpoints/ep-262.md), [ep-263](../endpoints/ep-263.md), [ep-294](../endpoints/ep-294.md), [ep-298](../endpoints/ep-298.md), [ep-354](../endpoints/ep-354.md), [ep-356](../endpoints/ep-356.md) |
+| HaveIBeenPwned API | ❌ | ❌ | ❌ | ❌ | ✅ | [ep-098](../endpoints/ep-098.md) |
+| HaveIBeenPwned API | ❌ | ❌ | ❌ | ❌ | ✅ | [ep-099](../endpoints/ep-099.md) |
+| Avatar Storage Backend | ❌ | ❌ | ❌ | ❌ | ✅ | [ep-129](../endpoints/ep-129.md) |
+| Git Remote (Push Mirror Target) | ✅ | ❌ | ❌ | ❌ | ❌ | [ep-235](../endpoints/ep-235.md) |
+| Git Repository (local filesystem) | ✅ | ❌ | — | ❌ | ❌ | [ep-243](../endpoints/ep-243.md), [ep-244](../endpoints/ep-244.md), [ep-245](../endpoints/ep-245.md) |
+| Git CLI (fork clone) | ✅ | ❌ | ❌ | ❌ | ✅ | [ep-334](../endpoints/ep-334.md) |
+
+## Endpoint Risk Levels
+
+| Endpoint | Path | Risk | Dependencies | Findings |
+|----------|------|------|-------------|----------|
+| [ep-023](../endpoints/ep-023.md) | PUT /api/v1/repos/{owner}/{repo}/notifications | high | 0 | 2 |
+| [ep-036](../endpoints/ep-036.md) | DELETE /api/v1/orgs/{org}/repos | high | 0 | 2 |
+| [ep-089](../endpoints/ep-089.md) | PUT /api/v1/orgs/{org}/blocks/{username} | high | 0 | 3 |
+| [ep-192](../endpoints/ep-192.md) | PUT /api/v1/user/blocks/{username} | high | 0 | 3 |
+| [ep-235](../endpoints/ep-235.md) | POST /api/v1/repos/{owner}/{repo}/push_mirrors-sync | high | 1 | 4 |
+| [ep-334](../endpoints/ep-334.md) | POST /api/v1/repos/{owner}/{repo}/forks | high | 1 | 3 |
+| [ep-343](../endpoints/ep-343.md) | DELETE /api/v1/repos/{owner}/{repo}/keys/{id} | high | 0 | 2 |
+| [ep-004](../endpoints/ep-004.md) | GET /api/v1/signing-key.gpg | medium | 2 | 2 |
+| [ep-005](../endpoints/ep-005.md) | GET /api/v1/repos/{owner}/{repo}/signing-key.gpg | medium | 2 | 1 |
+| [ep-008](../endpoints/ep-008.md) | POST /api/v1/markup | medium | 0 | 1 |
+| [ep-010](../endpoints/ep-010.md) | POST /api/v1/markdown/raw | medium | 0 | 1 |
+| [ep-020](../endpoints/ep-020.md) | PUT /api/v1/notifications | medium | 1 | 2 |
+| [ep-032](../endpoints/ep-032.md) | POST /api/v1/orgs/{org}/rename | medium | 0 | 2 |
+| [ep-037](../endpoints/ep-037.md) | POST /api/v1/orgs/{org}/avatar | medium | 1 | 2 |
+| [ep-058](../endpoints/ep-058.md) | PATCH /api/v1/teams/{id} | medium | 0 | 2 |
+| [ep-059](../endpoints/ep-059.md) | DELETE /api/v1/teams/{id} | medium | 0 | 2 |
+| [ep-062](../endpoints/ep-062.md) | PUT /api/v1/teams/{id}/members/{username} | medium | 0 | 2 |
+| [ep-063](../endpoints/ep-063.md) | DELETE /api/v1/teams/{id}/members/{username} | medium | 0 | 2 |
+| [ep-066](../endpoints/ep-066.md) | PUT /api/v1/teams/{id}/repos/{org}/{repo} | medium | 0 | 2 |
+| [ep-067](../endpoints/ep-067.md) | DELETE /api/v1/teams/{id}/repos/{org}/{repo} | medium | 0 | 2 |
+| [ep-076](../endpoints/ep-076.md) | DELETE /api/v1/orgs/{org}/members/{username} | medium | 0 | 3 |
+| [ep-098](../endpoints/ep-098.md) | POST /api/v1/admin/users | medium | 1 | 4 |
+| [ep-099](../endpoints/ep-099.md) | PATCH /api/v1/admin/users/{username} | medium | 1 | 1 |
+| [ep-100](../endpoints/ep-100.md) | DELETE /api/v1/admin/users/{username} | medium | 0 | 1 |
+| [ep-104](../endpoints/ep-104.md) | POST /api/v1/admin/users/{username}/rename | medium | 0 | 1 |
+| [ep-107](../endpoints/ep-107.md) | GET /api/v1/admin/unadopted | medium | 0 | 1 |
+| [ep-108](../endpoints/ep-108.md) | POST /api/v1/admin/unadopted/{owner}/{repo} | medium | 0 | 1 |
+| [ep-121](../endpoints/ep-121.md) | POST /api/v1/admin/users/{username}/badges | medium | 0 | 2 |
+| [ep-127](../endpoints/ep-127.md) | GET /api/v1/users/{username}/activities/feeds | medium | 1 | 1 |
+| [ep-128](../endpoints/ep-128.md) | POST /api/v1/user/avatar | medium | 2 | 2 |
+| [ep-160](../endpoints/ep-160.md) | POST /api/v1/user/keys | medium | 0 | 2 |
+| [ep-161](../endpoints/ep-161.md) | DELETE /api/v1/user/keys/{id} | medium | 0 | 2 |
+| [ep-167](../endpoints/ep-167.md) | POST /api/v1/user/applications/oauth2 | medium | 0 | 2 |
+| [ep-171](../endpoints/ep-171.md) | PATCH /api/v1/user/applications/oauth2/{id} | medium | 0 | 1 |
+| [ep-181](../endpoints/ep-181.md) | POST /api/v1/user/emails | medium | 0 | 1 |
+| [ep-182](../endpoints/ep-182.md) | DELETE /api/v1/user/emails | medium | 0 | 1 |
+| [ep-194](../endpoints/ep-194.md) | GET /api/v1/users/{username}/subscriptions | medium | 0 | 1 |
+| [ep-195](../endpoints/ep-195.md) | GET /api/v1/user/subscriptions | medium | 0 | 1 |
+| [ep-201](../endpoints/ep-201.md) | DELETE /api/v1/packages/{owner}/{type}/{name} | medium | 0 | 3 |
+| [ep-202](../endpoints/ep-202.md) | DELETE /api/v1/packages/{owner}/{type}/{name}/{version} | medium | 0 | 1 |
+| [ep-215](../endpoints/ep-215.md) | GET /api/v1/repos/{owner}/{repo}/commits | medium | 0 | 1 |
+| [ep-216](../endpoints/ep-216.md) | GET /api/v1/repos/{owner}/{repo}/git/commits/{sha}.{diffType} | medium | 0 | 1 |
+| [ep-222](../endpoints/ep-222.md) | GET /api/v1/repos/{owner}/{repo}/pulls | medium | 0 | 1 |
+| [ep-225](../endpoints/ep-225.md) | GET /api/v1/repos/{owner}/{repo}/pulls/{index}.{diffType} | medium | 0 | 2 |
+| [ep-226](../endpoints/ep-226.md) | POST /api/v1/repos/{owner}/{repo}/pulls | medium | 0 | 1 |
+| [ep-227](../endpoints/ep-227.md) | PATCH /api/v1/repos/{owner}/{repo}/pulls/{index} | medium | 0 | 1 |
+| [ep-238](../endpoints/ep-238.md) | POST /api/v1/repos/{owner}/{repo}/push_mirrors | medium | 0 | 2 |
+| [ep-239](../endpoints/ep-239.md) | DELETE /api/v1/repos/{owner}/{repo}/push_mirrors/{name} | medium | 0 | 1 |
+| [ep-243](../endpoints/ep-243.md) | POST /api/v1/repos/{owner}/{repo}/releases | medium | 2 | 2 |
+| [ep-249](../endpoints/ep-249.md) | POST /api/v1/repos/{owner}/{repo}/diffpatch | medium | 0 | 2 |
+| [ep-258](../endpoints/ep-258.md) | GET /api/v1/repos/{owner}/{repo}/issues/{index}/assets | medium | 1 | 1 |
+| [ep-259](../endpoints/ep-259.md) | POST /api/v1/repos/{owner}/{repo}/issues/{index}/assets | medium | 2 | 2 |
+| [ep-261](../endpoints/ep-261.md) | DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id} | medium | 2 | 1 |
+| [ep-283](../endpoints/ep-283.md) | POST /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches | medium | 0 | 2 |
+| [ep-287](../endpoints/ep-287.md) | POST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun | medium | 0 | 2 |
+| [ep-288](../endpoints/ep-288.md) | POST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun-failed-jobs | medium | 0 | 1 |
+| [ep-289](../endpoints/ep-289.md) | POST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs/{job_id}/rerun | medium | 0 | 1 |
+| [ep-294](../endpoints/ep-294.md) | DELETE /api/v1/repos/{owner}/{repo}/actions/runs/{run} | medium | 2 | 2 |
+| [ep-298](../endpoints/ep-298.md) | GET /api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip | medium | 2 | 1 |
+| [ep-307](../endpoints/ep-307.md) | DELETE /api/v1/repos/{owner}/{repo}/branches/{branch} | medium | 0 | 1 |
+| [ep-308](../endpoints/ep-308.md) | POST /api/v1/repos/{owner}/{repo}/branches | medium | 0 | 1 |
+| [ep-311](../endpoints/ep-311.md) | PATCH /api/v1/repos/{owner}/{repo}/branches/{branch} | medium | 0 | 1 |
+| [ep-315](../endpoints/ep-315.md) | PATCH /api/v1/repos/{owner}/{repo}/branch_protections/{name} | medium | 0 | 1 |
+| [ep-318](../endpoints/ep-318.md) | POST /api/v1/repos/{owner}/{repo}/merge-upstream | medium | 0 | 2 |
+| [ep-339](../endpoints/ep-339.md) | DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/labels | medium | 0 | 1 |
+| [ep-345](../endpoints/ep-345.md) | DELETE /api/v1/repos/{owner}/{repo}/releases/tags/{tag} | medium | 0 | 1 |
+| [ep-354](../endpoints/ep-354.md) | POST /api/v1/repos/{owner}/{repo}/releases/{id}/assets | medium | 1 | 2 |
+| [ep-363](../endpoints/ep-363.md) | POST /api/v1/user/repos | medium | 0 | 1 |
+| [ep-364](../endpoints/ep-364.md) | POST /api/v1/repos/{template_owner}/{template_repo}/generate | medium | 0 | 1 |
+| [ep-365](../endpoints/ep-365.md) | POST /api/v1/org/{org}/repos | medium | 0 | 1 |
+| [ep-366](../endpoints/ep-366.md) | POST /api/v1/orgs/{org}/repos | medium | 0 | 1 |
+| [ep-369](../endpoints/ep-369.md) | PATCH /api/v1/repos/{owner}/{repo} | medium | 0 | 1 |
+| [ep-001](../endpoints/ep-001.md) | GET /api/v1/version | low | 0 | 0 |
+| [ep-002](../endpoints/ep-002.md) | GET /api/v1/label/templates | low | 0 | 0 |
+| [ep-003](../endpoints/ep-003.md) | GET /api/v1/label/templates/{name} | low | 0 | 1 |
+| [ep-006](../endpoints/ep-006.md) | GET /api/v1/signing-key.pub | low | 1 | 0 |
+| [ep-007](../endpoints/ep-007.md) | GET /api/v1/repos/{owner}/{repo}/signing-key.pub | low | 1 | 0 |
+| [ep-009](../endpoints/ep-009.md) | POST /api/v1/markdown | low | 0 | 1 |
+| [ep-011](../endpoints/ep-011.md) | GET /api/v1/gitignore/templates | low | 0 | 0 |
+| [ep-012](../endpoints/ep-012.md) | GET /api/v1/gitignore/templates/{name} | low | 0 | 1 |
+| [ep-013](../endpoints/ep-013.md) | GET /api/v1/licenses | low | 0 | 0 |
+| [ep-014](../endpoints/ep-014.md) | GET /api/v1/licenses/{name} | low | 0 | 1 |
+| [ep-015](../endpoints/ep-015.md) | GET /api/v1/settings/ui | low | 0 | 0 |
+| [ep-016](../endpoints/ep-016.md) | GET /api/v1/settings/api | low | 0 | 0 |
+| [ep-017](../endpoints/ep-017.md) | GET /api/v1/settings/repository | low | 0 | 0 |
+| [ep-018](../endpoints/ep-018.md) | GET /api/v1/settings/attachment | low | 0 | 0 |
+| [ep-019](../endpoints/ep-019.md) | GET /api/v1/notifications | low | 1 | 1 |
+| [ep-021](../endpoints/ep-021.md) | GET /api/v1/notifications/new | low | 1 | 1 |
+| [ep-022](../endpoints/ep-022.md) | GET /api/v1/repos/{owner}/{repo}/notifications | low | 1 | 1 |
+| [ep-024](../endpoints/ep-024.md) | GET /api/v1/notifications/threads/{id} | low | 0 | 1 |
+| [ep-025](../endpoints/ep-025.md) | PATCH /api/v1/notifications/threads/{id} | low | 0 | 1 |
+| [ep-026](../endpoints/ep-026.md) | GET /api/v1/user/orgs | low | 0 | 1 |
+| [ep-027](../endpoints/ep-027.md) | GET /api/v1/users/{username}/orgs | low | 0 | 0 |
+| [ep-028](../endpoints/ep-028.md) | GET /api/v1/users/{username}/orgs/{org}/permissions | low | 0 | 0 |
+| [ep-029](../endpoints/ep-029.md) | GET /api/v1/orgs | low | 0 | 1 |
+| [ep-030](../endpoints/ep-030.md) | POST /api/v1/orgs | low | 0 | 1 |
+| [ep-031](../endpoints/ep-031.md) | GET /api/v1/orgs/{org} | low | 0 | 0 |
+| [ep-033](../endpoints/ep-033.md) | PATCH /api/v1/orgs/{org} | low | 0 | 1 |
+| [ep-034](../endpoints/ep-034.md) | DELETE /api/v1/orgs/{org} | low | 0 | 1 |
+| [ep-035](../endpoints/ep-035.md) | GET /api/v1/orgs/{org}/activities/feeds | low | 0 | 1 |
+| [ep-038](../endpoints/ep-038.md) | DELETE /api/v1/orgs/{org}/avatar | low | 1 | 1 |
+| [ep-039](../endpoints/ep-039.md) | GET /api/v1/orgs/{org}/actions/secrets | low | 0 | 0 |
+| [ep-040](../endpoints/ep-040.md) | PUT /api/v1/orgs/{org}/actions/secrets/{secretname} | low | 0 | 1 |
+| [ep-041](../endpoints/ep-041.md) | DELETE /api/v1/orgs/{org}/actions/secrets/{secretname} | low | 0 | 0 |
+| [ep-042](../endpoints/ep-042.md) | POST /api/v1/orgs/{org}/actions/runners/registration-token | low | 0 | 1 |
+| [ep-043](../endpoints/ep-043.md) | GET /api/v1/orgs/{org}/actions/variables | low | 0 | 0 |
+| [ep-044](../endpoints/ep-044.md) | GET /api/v1/orgs/{org}/actions/variables/{variablename} | low | 0 | 0 |
+| [ep-045](../endpoints/ep-045.md) | DELETE /api/v1/orgs/{org}/actions/variables/{variablename} | low | 0 | 1 |
+| [ep-046](../endpoints/ep-046.md) | POST /api/v1/orgs/{org}/actions/variables/{variablename} | low | 0 | 1 |
+| [ep-047](../endpoints/ep-047.md) | PUT /api/v1/orgs/{org}/actions/variables/{variablename} | low | 0 | 1 |
+| [ep-048](../endpoints/ep-048.md) | GET /api/v1/orgs/{org}/actions/runners | low | 0 | 0 |
+| [ep-049](../endpoints/ep-049.md) | GET /api/v1/orgs/{org}/actions/runners/{runner_id} | low | 0 | 0 |
+| [ep-050](../endpoints/ep-050.md) | DELETE /api/v1/orgs/{org}/actions/runners/{runner_id} | low | 0 | 1 |
+| [ep-051](../endpoints/ep-051.md) | PATCH /api/v1/orgs/{org}/actions/runners/{runner_id} | low | 0 | 2 |
+| [ep-052](../endpoints/ep-052.md) | GET /api/v1/orgs/{org}/actions/jobs | low | 0 | 2 |
+| [ep-053](../endpoints/ep-053.md) | GET /api/v1/orgs/{org}/actions/runs | low | 0 | 1 |
+| [ep-054](../endpoints/ep-054.md) | GET /api/v1/orgs/{org}/teams | low | 0 | 1 |
+| [ep-055](../endpoints/ep-055.md) | GET /api/v1/user/teams | low | 0 | 1 |
+| [ep-056](../endpoints/ep-056.md) | GET /api/v1/teams/{id} | low | 0 | 0 |
+| [ep-057](../endpoints/ep-057.md) | POST /api/v1/orgs/{org}/teams | low | 0 | 1 |
+| [ep-060](../endpoints/ep-060.md) | GET /api/v1/teams/{id}/members | low | 0 | 0 |
+| [ep-061](../endpoints/ep-061.md) | GET /api/v1/teams/{id}/members/{username} | low | 0 | 0 |
+| [ep-064](../endpoints/ep-064.md) | GET /api/v1/teams/{id}/repos | low | 0 | 1 |
+| [ep-065](../endpoints/ep-065.md) | GET /api/v1/teams/{id}/repos/{org}/{repo} | low | 0 | 1 |
+| [ep-068](../endpoints/ep-068.md) | GET /api/v1/orgs/{org}/teams/search | low | 0 | 1 |
+| [ep-069](../endpoints/ep-069.md) | GET /api/v1/teams/{id}/activities/feeds | low | 0 | 1 |
+| [ep-070](../endpoints/ep-070.md) | GET /api/v1/orgs/{org}/members | low | 0 | 0 |
+| [ep-071](../endpoints/ep-071.md) | GET /api/v1/orgs/{org}/public_members | low | 0 | 0 |
+| [ep-072](../endpoints/ep-072.md) | GET /api/v1/orgs/{org}/members/{username} | low | 0 | 0 |
+| [ep-073](../endpoints/ep-073.md) | GET /api/v1/orgs/{org}/public_members/{username} | low | 0 | 0 |
+| [ep-074](../endpoints/ep-074.md) | PUT /api/v1/orgs/{org}/public_members/{username} | low | 0 | 1 |
+| [ep-075](../endpoints/ep-075.md) | DELETE /api/v1/orgs/{org}/public_members/{username} | low | 0 | 1 |
+| [ep-077](../endpoints/ep-077.md) | GET /api/v1/orgs/{org}/hooks | low | 0 | 1 |
+| [ep-078](../endpoints/ep-078.md) | GET /api/v1/orgs/{org}/hooks/{id} | low | 0 | 1 |
+| [ep-079](../endpoints/ep-079.md) | POST /api/v1/orgs/{org}/hooks | low | 0 | 1 |
+| [ep-080](../endpoints/ep-080.md) | PATCH /api/v1/orgs/{org}/hooks/{id} | low | 0 | 1 |
+| [ep-081](../endpoints/ep-081.md) | DELETE /api/v1/orgs/{org}/hooks/{id} | low | 0 | 1 |
+| [ep-082](../endpoints/ep-082.md) | GET /api/v1/orgs/{org}/labels | low | 0 | 1 |
+| [ep-083](../endpoints/ep-083.md) | POST /api/v1/orgs/{org}/labels | low | 0 | 1 |
+| [ep-084](../endpoints/ep-084.md) | GET /api/v1/orgs/{org}/labels/{id} | low | 0 | 0 |
+| [ep-085](../endpoints/ep-085.md) | PATCH /api/v1/orgs/{org}/labels/{id} | low | 0 | 0 |
+| [ep-086](../endpoints/ep-086.md) | DELETE /api/v1/orgs/{org}/labels/{id} | low | 0 | 1 |
+| [ep-087](../endpoints/ep-087.md) | GET /api/v1/orgs/{org}/blocks | low | 0 | 0 |
+| [ep-088](../endpoints/ep-088.md) | GET /api/v1/orgs/{org}/blocks/{username} | low | 0 | 0 |
+| [ep-090](../endpoints/ep-090.md) | DELETE /api/v1/orgs/{org}/blocks/{username} | low | 0 | 1 |
+| [ep-091](../endpoints/ep-091.md) | GET /api/v1/admin/hooks | low | 0 | 0 |
+| [ep-092](../endpoints/ep-092.md) | GET /api/v1/admin/hooks/{id} | low | 0 | 0 |
+| [ep-093](../endpoints/ep-093.md) | POST /api/v1/admin/hooks | low | 0 | 0 |
+| [ep-094](../endpoints/ep-094.md) | PATCH /api/v1/admin/hooks/{id} | low | 0 | 1 |
+| [ep-095](../endpoints/ep-095.md) | DELETE /api/v1/admin/hooks/{id} | low | 0 | 0 |
+| [ep-096](../endpoints/ep-096.md) | POST /api/v1/admin/users/{username}/orgs | low | 0 | 0 |
+| [ep-097](../endpoints/ep-097.md) | GET /api/v1/admin/orgs | low | 0 | 0 |
+| [ep-101](../endpoints/ep-101.md) | POST /api/v1/admin/users/{username}/keys | low | 0 | 0 |
+| [ep-102](../endpoints/ep-102.md) | DELETE /api/v1/admin/users/{username}/keys/{id} | low | 0 | 1 |
+| [ep-103](../endpoints/ep-103.md) | GET /api/v1/admin/users | low | 0 | 0 |
+| [ep-105](../endpoints/ep-105.md) | GET /api/v1/admin/actions/jobs | low | 0 | 0 |
+| [ep-106](../endpoints/ep-106.md) | GET /api/v1/admin/actions/runs | low | 0 | 1 |
+| [ep-111](../endpoints/ep-111.md) | POST /api/v1/admin/cron/{task} | low | 0 | 1 |
+| [ep-113](../endpoints/ep-113.md) | POST /api/v1/admin/actions/runners/registration-token | low | 0 | 1 |
+| [ep-114](../endpoints/ep-114.md) | GET /api/v1/admin/actions/runners | low | 0 | 1 |
+| [ep-115](../endpoints/ep-115.md) | GET /api/v1/admin/actions/runners/{runner_id} | low | 0 | 1 |
+| [ep-116](../endpoints/ep-116.md) | DELETE /api/v1/admin/actions/runners/{runner_id} | low | 0 | 1 |
+| [ep-117](../endpoints/ep-117.md) | PATCH /api/v1/admin/actions/runners/{runner_id} | low | 0 | 2 |
+| [ep-118](../endpoints/ep-118.md) | GET /api/v1/admin/emails | low | 0 | 1 |
+| [ep-119](../endpoints/ep-119.md) | GET /api/v1/admin/emails/search | low | 0 | 1 |
+| [ep-120](../endpoints/ep-120.md) | GET /api/v1/admin/users/{username}/badges | low | 0 | 1 |
+| [ep-122](../endpoints/ep-122.md) | DELETE /api/v1/admin/users/{username}/badges | low | 0 | 1 |
+| [ep-123](../endpoints/ep-123.md) | GET /api/v1/users/search | low | 1 | 1 |
+| [ep-124](../endpoints/ep-124.md) | GET /api/v1/users/{username} | low | 1 | 0 |
+| [ep-125](../endpoints/ep-125.md) | GET /api/v1/user | low | 0 | 0 |
+| [ep-126](../endpoints/ep-126.md) | GET /api/v1/users/{username}/heatmap | low | 1 | 1 |
+| [ep-129](../endpoints/ep-129.md) | DELETE /api/v1/user/avatar | low | 1 | 1 |
+| [ep-130](../endpoints/ep-130.md) | PUT /api/v1/user/actions/secrets/{secretname} | low | 0 | 1 |
+| [ep-131](../endpoints/ep-131.md) | DELETE /api/v1/user/actions/secrets/{secretname} | low | 0 | 0 |
+| [ep-132](../endpoints/ep-132.md) | POST /api/v1/user/actions/variables/{variablename} | low | 0 | 1 |
+| [ep-133](../endpoints/ep-133.md) | PUT /api/v1/user/actions/variables/{variablename} | low | 0 | 0 |
+| [ep-134](../endpoints/ep-134.md) | DELETE /api/v1/user/actions/variables/{variablename} | low | 0 | 0 |
+| [ep-135](../endpoints/ep-135.md) | GET /api/v1/user/actions/variables/{variablename} | low | 0 | 1 |
+| [ep-136](../endpoints/ep-136.md) | GET /api/v1/user/actions/variables | low | 0 | 1 |
+| [ep-137](../endpoints/ep-137.md) | GET /api/v1/user/actions/runs | low | 0 | 1 |
+| [ep-138](../endpoints/ep-138.md) | GET /api/v1/user/actions/jobs | low | 0 | 1 |
+| [ep-139](../endpoints/ep-139.md) | GET /api/v1/user/followers | low | 0 | 1 |
+| [ep-140](../endpoints/ep-140.md) | GET /api/v1/users/{username}/followers | low | 0 | 1 |
+| [ep-141](../endpoints/ep-141.md) | GET /api/v1/user/following | low | 0 | 1 |
+| [ep-142](../endpoints/ep-142.md) | GET /api/v1/users/{username}/following | low | 0 | 1 |
+| [ep-143](../endpoints/ep-143.md) | GET /api/v1/user/following/{username} | low | 0 | 1 |
+| [ep-144](../endpoints/ep-144.md) | GET /api/v1/users/{username}/following/{target} | low | 0 | 1 |
+| [ep-145](../endpoints/ep-145.md) | PUT /api/v1/user/following/{username} | low | 0 | 2 |
+| [ep-146](../endpoints/ep-146.md) | DELETE /api/v1/user/following/{username} | low | 0 | 2 |
+| [ep-147](../endpoints/ep-147.md) | GET /api/v1/user/hooks | low | 0 | 1 |
+| [ep-148](../endpoints/ep-148.md) | GET /api/v1/user/hooks/{id} | low | 0 | 1 |
+| [ep-149](../endpoints/ep-149.md) | POST /api/v1/user/hooks | low | 0 | 1 |
+| [ep-150](../endpoints/ep-150.md) | PATCH /api/v1/user/hooks/{id} | low | 0 | 1 |
+| [ep-151](../endpoints/ep-151.md) | DELETE /api/v1/user/hooks/{id} | low | 0 | 1 |
+| [ep-154](../endpoints/ep-154.md) | GET /api/v1/user/starred/{owner}/{repo} | low | 0 | 0 |
+| [ep-155](../endpoints/ep-155.md) | PUT /api/v1/user/starred/{owner}/{repo} | low | 0 | 1 |
+| [ep-156](../endpoints/ep-156.md) | DELETE /api/v1/user/starred/{owner}/{repo} | low | 0 | 1 |
+| [ep-157](../endpoints/ep-157.md) | GET /api/v1/user/keys | low | 0 | 0 |
+| [ep-158](../endpoints/ep-158.md) | GET /api/v1/users/{username}/keys | low | 0 | 0 |
+| [ep-159](../endpoints/ep-159.md) | GET /api/v1/user/keys/{id} | low | 0 | 0 |
+| [ep-162](../endpoints/ep-162.md) | GET /api/v1/user/settings | low | 0 | 0 |
+| [ep-163](../endpoints/ep-163.md) | PATCH /api/v1/user/settings | low | 0 | 1 |
+| [ep-165](../endpoints/ep-165.md) | POST /api/v1/users/{username}/tokens | low | 0 | 1 |
+| [ep-168](../endpoints/ep-168.md) | GET /api/v1/user/applications/oauth2 | low | 0 | 0 |
+| [ep-169](../endpoints/ep-169.md) | DELETE /api/v1/user/applications/oauth2/{id} | low | 0 | 1 |
+| [ep-172](../endpoints/ep-172.md) | GET /api/v1/users/{username}/repos | low | 0 | 1 |
+| [ep-175](../endpoints/ep-175.md) | POST /api/v1/user/actions/runners/registration-token | low | 0 | 1 |
+| [ep-176](../endpoints/ep-176.md) | GET /api/v1/user/actions/runners | low | 0 | 1 |
+| [ep-177](../endpoints/ep-177.md) | GET /api/v1/user/actions/runners/{runner_id} | low | 0 | 0 |
+| [ep-178](../endpoints/ep-178.md) | DELETE /api/v1/user/actions/runners/{runner_id} | low | 0 | 1 |
+| [ep-179](../endpoints/ep-179.md) | PATCH /api/v1/user/actions/runners/{runner_id} | low | 0 | 1 |
+| [ep-180](../endpoints/ep-180.md) | GET /api/v1/user/emails | low | 0 | 0 |
+| [ep-183](../endpoints/ep-183.md) | GET /api/v1/users/{username}/gpg_keys | low | 0 | 0 |
+| [ep-184](../endpoints/ep-184.md) | GET /api/v1/user/gpg_keys | low | 1 | 1 |
+| [ep-185](../endpoints/ep-185.md) | GET /api/v1/user/gpg_keys/{id} | low | 1 | 1 |
+| [ep-186](../endpoints/ep-186.md) | GET /api/v1/user/gpg_key_token | low | 0 | 1 |
+| [ep-187](../endpoints/ep-187.md) | POST /api/v1/user/gpg_key_verify | low | 1 | 1 |
+| [ep-188](../endpoints/ep-188.md) | POST /api/v1/user/gpg_keys | low | 1 | 2 |
+| [ep-189](../endpoints/ep-189.md) | DELETE /api/v1/user/gpg_keys/{id} | low | 1 | 2 |
+| [ep-190](../endpoints/ep-190.md) | GET /api/v1/user/blocks | low | 0 | 1 |
+| [ep-191](../endpoints/ep-191.md) | GET /api/v1/user/blocks/{username} | low | 0 | 1 |
+| [ep-193](../endpoints/ep-193.md) | DELETE /api/v1/user/blocks/{username} | low | 0 | 1 |
+| [ep-196](../endpoints/ep-196.md) | GET /api/v1/repos/{owner}/{repo}/subscription | low | 0 | 1 |
+| [ep-197](../endpoints/ep-197.md) | PUT /api/v1/repos/{owner}/{repo}/subscription | low | 0 | 2 |
+| [ep-198](../endpoints/ep-198.md) | DELETE /api/v1/repos/{owner}/{repo}/subscription | low | 0 | 1 |
+| [ep-199](../endpoints/ep-199.md) | GET /api/v1/packages/{owner} | low | 0 | 1 |
+| [ep-200](../endpoints/ep-200.md) | GET /api/v1/packages/{owner}/{type}/{name}/{version} | low | 0 | 1 |
+| [ep-203](../endpoints/ep-203.md) | GET /api/v1/packages/{owner}/{type}/{name}/{version}/files | low | 0 | 1 |
+| [ep-204](../endpoints/ep-204.md) | GET /api/v1/packages/{owner}/{type}/{name} | low | 0 | 1 |
+| [ep-205](../endpoints/ep-205.md) | GET /api/v1/packages/{owner}/{type}/{name}/-/latest | low | 0 | 1 |
+| [ep-206](../endpoints/ep-206.md) | POST /api/v1/packages/{owner}/{type}/{name}/-/link/{repo_name} | low | 0 | 1 |
+| [ep-207](../endpoints/ep-207.md) | POST /api/v1/packages/{owner}/{type}/{name}/-/unlink | low | 0 | 1 |
+| [ep-208](../endpoints/ep-208.md) | GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies | low | 0 | 1 |
+| [ep-209](../endpoints/ep-209.md) | POST /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies | low | 0 | 2 |
+| [ep-210](../endpoints/ep-210.md) | DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies | low | 0 | 1 |
+| [ep-211](../endpoints/ep-211.md) | GET /api/v1/repos/{owner}/{repo}/issues/{index}/blocks | low | 0 | 1 |
+| [ep-212](../endpoints/ep-212.md) | POST /api/v1/repos/{owner}/{repo}/issues/{index}/blocks | low | 0 | 1 |
+| [ep-213](../endpoints/ep-213.md) | DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/blocks | low | 0 | 1 |
+| [ep-214](../endpoints/ep-214.md) | GET /api/v1/repos/{owner}/{repo}/git/commits/{sha} | low | 0 | 1 |
+| [ep-217](../endpoints/ep-217.md) | GET /api/v1/repos/{owner}/{repo}/commits/{sha}/pull | low | 0 | 1 |
+| [ep-218](../endpoints/ep-218.md) | PUT /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user} | low | 0 | 1 |
+| [ep-219](../endpoints/ep-219.md) | DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user} | low | 0 | 1 |
+| [ep-220](../endpoints/ep-220.md) | GET /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/check | low | 0 | 0 |
+| [ep-221](../endpoints/ep-221.md) | GET /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions | low | 0 | 0 |
+| [ep-223](../endpoints/ep-223.md) | GET /api/v1/repos/{owner}/{repo}/pulls/{index} | low | 0 | 1 |
+| [ep-229](../endpoints/ep-229.md) | POST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge | low | 0 | 1 |
+| [ep-230](../endpoints/ep-230.md) | POST /api/v1/repos/{owner}/{repo}/pulls/{index}/update | low | 0 | 1 |
+| [ep-231](../endpoints/ep-231.md) | DELETE /api/v1/repos/{owner}/{repo}/pulls/{index}/merge | low | 0 | 1 |
+| [ep-232](../endpoints/ep-232.md) | GET /api/v1/repos/{owner}/{repo}/pulls/{index}/commits | low | 0 | 0 |
+| [ep-234](../endpoints/ep-234.md) | POST /api/v1/repos/{owner}/{repo}/mirror-sync | low | 0 | 1 |
+| [ep-236](../endpoints/ep-236.md) | GET /api/v1/repos/{owner}/{repo}/push_mirrors | low | 0 | 0 |
+| [ep-237](../endpoints/ep-237.md) | GET /api/v1/repos/{owner}/{repo}/push_mirrors/{name} | low | 0 | 0 |
+| [ep-242](../endpoints/ep-242.md) | GET /api/v1/repos/{owner}/{repo}/releases | low | 1 | 1 |
+| [ep-245](../endpoints/ep-245.md) | DELETE /api/v1/repos/{owner}/{repo}/releases/{id} | low | 2 | 1 |
+| [ep-246](../endpoints/ep-246.md) | GET /api/v1/repos/{owner}/{repo}/git/trees/{sha} | low | 0 | 1 |
+| [ep-247](../endpoints/ep-247.md) | GET /api/v1/repos/{owner}/{repo}/git/refs | low | 0 | 0 |
+| [ep-248](../endpoints/ep-248.md) | GET /api/v1/repos/{owner}/{repo}/git/refs/{ref} | low | 0 | 0 |
+| [ep-250](../endpoints/ep-250.md) | GET /api/v1/repos/{owner}/{repo}/collaborators | low | 0 | 0 |
+| [ep-251](../endpoints/ep-251.md) | GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator} | low | 0 | 0 |
+| [ep-252](../endpoints/ep-252.md) | PUT /api/v1/repos/{owner}/{repo}/collaborators/{collaborator} | low | 0 | 1 |
+| [ep-253](../endpoints/ep-253.md) | DELETE /api/v1/repos/{owner}/{repo}/collaborators/{collaborator} | low | 0 | 2 |
+| [ep-254](../endpoints/ep-254.md) | GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission | low | 1 | 1 |
+| [ep-262](../endpoints/ep-262.md) | POST /api/v1/repos/{owner}/{repo}/avatar | low | 1 | 1 |
+| [ep-265](../endpoints/ep-265.md) | PUT /api/v1/repos/{owner}/{repo}/actions/secrets/{secretname} | low | 0 | 1 |
+| [ep-269](../endpoints/ep-269.md) | POST /api/v1/repos/{owner}/{repo}/actions/variables/{variablename} | low | 0 | 1 |
+| [ep-270](../endpoints/ep-270.md) | PUT /api/v1/repos/{owner}/{repo}/actions/variables/{variablename} | low | 0 | 1 |
+| [ep-271](../endpoints/ep-271.md) | GET /api/v1/repos/{owner}/{repo}/actions/variables | low | 0 | 1 |
+| [ep-272](../endpoints/ep-272.md) | POST /api/v1/repos/{owner}/{repo}/actions/runners/registration-token | low | 0 | 1 |
+| [ep-273](../endpoints/ep-273.md) | GET /api/v1/repos/{owner}/{repo}/actions/runners | low | 0 | 1 |
+| [ep-274](../endpoints/ep-274.md) | GET /api/v1/repos/{owner}/{repo}/actions/runners/{runner_id} | low | 0 | 1 |
+| [ep-275](../endpoints/ep-275.md) | DELETE /api/v1/repos/{owner}/{repo}/actions/runners/{runner_id} | low | 0 | 1 |
+| [ep-276](../endpoints/ep-276.md) | PATCH /api/v1/repos/{owner}/{repo}/actions/runners/{runner_id} | low | 0 | 1 |
+| [ep-277](../endpoints/ep-277.md) | GET /api/v1/repos/{owner}/{repo}/actions/jobs | low | 0 | 1 |
+| [ep-278](../endpoints/ep-278.md) | GET /api/v1/repos/{owner}/{repo}/actions/runs | low | 0 | 1 |
+| [ep-279](../endpoints/ep-279.md) | GET /api/v1/repos/{owner}/{repo}/actions/tasks | low | 0 | 1 |
+| [ep-280](../endpoints/ep-280.md) | GET /api/v1/repos/{owner}/{repo}/actions/workflows | low | 0 | 1 |
+| [ep-281](../endpoints/ep-281.md) | GET /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id} | low | 0 | 0 |
+| [ep-282](../endpoints/ep-282.md) | PUT /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable | low | 0 | 1 |
+| [ep-284](../endpoints/ep-284.md) | PUT /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable | low | 0 | 1 |
+| [ep-285](../endpoints/ep-285.md) | GET /api/v1/repos/{owner}/{repo}/actions/runs/{run} | low | 0 | 0 |
+| [ep-286](../endpoints/ep-286.md) | GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt} | low | 0 | 0 |
+| [ep-290](../endpoints/ep-290.md) | GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs | low | 0 | 0 |
+| [ep-291](../endpoints/ep-291.md) | GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}/jobs | low | 0 | 0 |
+| [ep-292](../endpoints/ep-292.md) | GET /api/v1/repos/{owner}/{repo}/actions/jobs/{job_id} | low | 0 | 0 |
+| [ep-293](../endpoints/ep-293.md) | GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/artifacts | low | 1 | 1 |
+| [ep-295](../endpoints/ep-295.md) | GET /api/v1/repos/{owner}/{repo}/actions/artifacts | low | 1 | 0 |
+| [ep-296](../endpoints/ep-296.md) | GET /api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id} | low | 1 | 0 |
+| [ep-297](../endpoints/ep-297.md) | DELETE /api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id} | low | 1 | 1 |
+| [ep-299](../endpoints/ep-299.md) | GET /api/v1/repos/{owner}/{repo}/git/notes/{sha} | low | 0 | 1 |
+| [ep-300](../endpoints/ep-300.md) | GET /api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions | low | 0 | 1 |
+| [ep-301](../endpoints/ep-301.md) | POST /api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions | low | 0 | 1 |
+| [ep-302](../endpoints/ep-302.md) | DELETE /api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions | low | 0 | 1 |
+| [ep-303](../endpoints/ep-303.md) | GET /api/v1/repos/{owner}/{repo}/issues/{index}/reactions | low | 0 | 1 |
+| [ep-304](../endpoints/ep-304.md) | POST /api/v1/repos/{owner}/{repo}/issues/{index}/reactions | low | 0 | 1 |
+| [ep-305](../endpoints/ep-305.md) | DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/reactions | low | 0 | 1 |
+| [ep-306](../endpoints/ep-306.md) | GET /api/v1/repos/{owner}/{repo}/branches/{branch} | low | 0 | 0 |
+| [ep-309](../endpoints/ep-309.md) | GET /api/v1/repos/{owner}/{repo}/branches | low | 0 | 1 |
+| [ep-310](../endpoints/ep-310.md) | PUT /api/v1/repos/{owner}/{repo}/branches/{branch} | low | 0 | 1 |
+| [ep-312](../endpoints/ep-312.md) | GET /api/v1/repos/{owner}/{repo}/branch_protections/{name} | low | 0 | 1 |
+| [ep-313](../endpoints/ep-313.md) | GET /api/v1/repos/{owner}/{repo}/branch_protections | low | 0 | 1 |
+| [ep-314](../endpoints/ep-314.md) | POST /api/v1/repos/{owner}/{repo}/branch_protections | low | 0 | 1 |
+| [ep-316](../endpoints/ep-316.md) | DELETE /api/v1/repos/{owner}/{repo}/branch_protections/{name} | low | 0 | 1 |
+| [ep-317](../endpoints/ep-317.md) | POST /api/v1/repos/{owner}/{repo}/branch_protections/priority | low | 0 | 1 |
+| [ep-319](../endpoints/ep-319.md) | PUT /api/v1/repos/{owner}/{repo}/issues/{index}/lock | low | 0 | 0 |
+| [ep-320](../endpoints/ep-320.md) | DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/lock | low | 0 | 0 |
+| [ep-323](../endpoints/ep-323.md) | POST /api/v1/repos/{owner}/{repo}/hooks/{id}/tests | low | 0 | 2 |
+| [ep-324](../endpoints/ep-324.md) | POST /api/v1/repos/{owner}/{repo}/hooks | low | 0 | 1 |
+| [ep-325](../endpoints/ep-325.md) | PATCH /api/v1/repos/{owner}/{repo}/hooks/{id} | low | 0 | 1 |
+| [ep-326](../endpoints/ep-326.md) | DELETE /api/v1/repos/{owner}/{repo}/hooks/{id} | low | 0 | 1 |
+| [ep-327](../endpoints/ep-327.md) | GET /api/v1/repos/{owner}/{repo}/stargazers | low | 0 | 1 |
+| [ep-328](../endpoints/ep-328.md) | GET /api/v1/repos/{owner}/{repo}/subscribers | low | 0 | 1 |
+| [ep-329](../endpoints/ep-329.md) | GET /api/v1/repos/{owner}/{repo}/teams | low | 0 | 1 |
+| [ep-330](../endpoints/ep-330.md) | GET /api/v1/repos/{owner}/{repo}/teams/{team} | low | 0 | 0 |
+| [ep-331](../endpoints/ep-331.md) | PUT /api/v1/repos/{owner}/{repo}/teams/{team} | low | 0 | 1 |
+| [ep-332](../endpoints/ep-332.md) | DELETE /api/v1/repos/{owner}/{repo}/teams/{team} | low | 0 | 1 |
+| [ep-333](../endpoints/ep-333.md) | GET /api/v1/repos/{owner}/{repo}/forks | low | 0 | 0 |
+| [ep-335](../endpoints/ep-335.md) | GET /api/v1/repos/{owner}/{repo}/issues/{index}/labels | low | 0 | 0 |
+| [ep-336](../endpoints/ep-336.md) | POST /api/v1/repos/{owner}/{repo}/issues/{index}/labels | low | 0 | 1 |
+| [ep-337](../endpoints/ep-337.md) | DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/labels/{id} | low | 0 | 1 |
+| [ep-338](../endpoints/ep-338.md) | PUT /api/v1/repos/{owner}/{repo}/issues/{index}/labels | low | 0 | 1 |
+| [ep-340](../endpoints/ep-340.md) | GET /api/v1/repos/{owner}/{repo}/keys | low | 0 | 1 |
+| [ep-341](../endpoints/ep-341.md) | GET /api/v1/repos/{owner}/{repo}/keys/{id} | low | 0 | 0 |
+| [ep-342](../endpoints/ep-342.md) | POST /api/v1/repos/{owner}/{repo}/keys | low | 0 | 1 |
+| [ep-344](../endpoints/ep-344.md) | GET /api/v1/repos/{owner}/{repo}/releases/tags/{tag} | low | 0 | 1 |
+| [ep-346](../endpoints/ep-346.md) | GET /api/v1/repos/{owner}/{repo}/licenses | low | 0 | 1 |
+| [ep-347](../endpoints/ep-347.md) | GET /api/v1/repos/{owner}/{repo}/topics | low | 0 | 1 |
+| [ep-348](../endpoints/ep-348.md) | PUT /api/v1/repos/{owner}/{repo}/topics | low | 0 | 1 |
+| [ep-349](../endpoints/ep-349.md) | PUT /api/v1/repos/{owner}/{repo}/topics/{topic} | low | 0 | 1 |
+| [ep-350](../endpoints/ep-350.md) | DELETE /api/v1/repos/{owner}/{repo}/topics/{topic} | low | 0 | 1 |
+| [ep-351](../endpoints/ep-351.md) | GET /api/v1/topics/search | low | 0 | 1 |
+| [ep-356](../endpoints/ep-356.md) | DELETE /api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id} | low | 1 | 1 |
+| [ep-359](../endpoints/ep-359.md) | POST /api/v1/repos/{owner}/{repo}/labels | low | 0 | 0 |
+| [ep-360](../endpoints/ep-360.md) | PATCH /api/v1/repos/{owner}/{repo}/labels/{id} | low | 0 | 0 |
+| [ep-361](../endpoints/ep-361.md) | DELETE /api/v1/repos/{owner}/{repo}/labels/{id} | low | 0 | 1 |
+| [ep-362](../endpoints/ep-362.md) | GET /api/v1/repos/search | low | 0 | 1 |
+| [ep-367](../endpoints/ep-367.md) | GET /api/v1/repos/{owner}/{repo} | low | 0 | 1 |
+| [ep-370](../endpoints/ep-370.md) | DELETE /api/v1/repos/{owner}/{repo} | low | 0 | 1 |
+| [ep-374](../endpoints/ep-374.md) | GET /api/v1/repos/{owner}/{repo}/activities/feeds | low | 0 | 1 |
+| [ep-376](../endpoints/ep-376.md) | POST /api/v1/repos/{owner}/{repo}/issues/{index}/pin | low | 0 | 1 |
+| [ep-378](../endpoints/ep-378.md) | PATCH /api/v1/repos/{owner}/{repo}/issues/{index}/pin/{position} | low | 0 | 1 |
+| [ep-380](../endpoints/ep-380.md) | GET /api/v1/repos/{owner}/{repo}/pulls/pinned | low | 0 | 1 |
+
+## System-Level Assessment
+
+- **Health Checks:** ✅ configured — Version endpoint serves as basic liveness. No dedicated readiness probe that checks DB connectivity.
+- **Graceful Shutdown:** ✅ configured — Gitea uses graceful module (modules/graceful) for signal handling and request draining
+- **Rate Limiting:** ❌ missing — No built-in API rate limiting. Relies on external reverse proxy.
+- **Dead Letter Queues:** ❌ missing — Mirror queue has no DLQ - failed syncs are logged but not retried from queue
+
+### Single Points of Failure
+
+- ⚠️ GPG binary availability for signing key endpoints
+- ⚠️ SQL database - all notification endpoints depend on it with no fallback
+- ⚠️ Database (all endpoints depend on it)
+- ⚠️ Database (single connection, no read replicas configured by default)
+- ⚠️ Database - all endpoints depend on it with no caching layer
+- ⚠️ database
+- ⚠️ Database (single XORM connection)
+- ⚠️ Database (single point for all operations)
+- ⚠️ Database (single connection pool)
+- ⚠️ Database - all endpoints depend solely on the database
+- ⚠️ HaveIBeenPwned API (for user creation with PasswordCheckPwn=true)
+- ⚠️ HaveIBeenPwned API for password validation (when enabled)
+- ⚠️ Filesystem (RepoRootPath) for unadopted repo operations
+- ⚠️ Database - all endpoints depend on DB availability
+- ⚠️ Database (all endpoints depend on it with no fallback)
+- ⚠️ Database (single instance unless externally replicated)
+- ⚠️ Filesystem for authorized_keys file (mitigated by builtin SSH server option)
+- ⚠️ Database (all write operations depend on it)
+- ⚠️ Database (single instance unless configured with replication)
+- ⚠️ Database
+- ⚠️ Database - all endpoints depend on single DB connection
+- ⚠️ Git storage (filesystem) - required for diff/patch and branch SHA resolution
+- ⚠️ Git repository storage (local filesystem or NFS)
+- ⚠️ Mirror queue (single instance, no redundancy unless backed by Redis)
+- ⚠️ Database (single DB connection for all operations)
+- ⚠️ Local git repository filesystem
+- ⚠️ Object storage backend for attachments
+- ⚠️ Object storage backend - no redundancy or fallback if storage is unavailable
+- ⚠️ Database (single instance typical in small deployments)
+- ⚠️ authorized_keys file - single file rewritten on every key change
+- ⚠️ Object storage backend - no redundancy or fallback configured
+
+### Cascading Failure Paths
+
+- 🔗 Database down → all notification endpoints (ep-019 to ep-022) return errors → UI notification badge broken
+- 🔗 ep-023 unbounded query can overload database, affecting all other endpoints sharing the connection pool
+- 🔗 Database down → all 7 endpoints fail immediately
+- 🔗 Storage backend down → ep-037/ep-038 fail, others unaffected
+- 🔗 Database down → all 6 endpoints return 500
+- 🔗 HaveIBeenPwned API down → ep-098 user creation fails with 400
+- 🔗 HIBP API down → ep-099 password updates fail (when PASSWORD_CHECK_PWN enabled)
+- 🔗 Database overload from ep-127 N+1 queries → connection pool exhaustion → all API endpoints fail
+- 🔗 Database slow → ep-192 BlockUser transaction holds locks for extended time → other write operations blocked
+- 🔗 Git storage slow → ep-222 list timeout → client retries → increased load
+- 🔗 Git storage down → all PR create/merge/update/commits/files endpoints fail
+- 🔗 Remote git server down → ep-235 blocks for full timeout × N mirrors → HTTP timeout for caller
+- 🔗 Database down → all release endpoints fail
+- 🔗 Git repository filesystem unavailable → create/edit/delete fail, reads still work from DB
+- 🔗 Storage down → ep-259 upload fails → users cannot attach files to issues
+- 🔗 Storage down → ep-261 delete partially fails → orphaned files accumulate
+- 🔗 Storage outage → ep-298 download fails → CI/CD pipelines that depend on artifact downloads break
+- 🔗 Many concurrent fork requests → disk I/O saturation → all git operations slow down
+- 🔗 SSHOpLocker contention → all key operations blocked during rewrite
+- 🔗 Storage down → ep-354 upload fails → users cannot attach files to releases

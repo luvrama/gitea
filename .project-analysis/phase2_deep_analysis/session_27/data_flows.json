@@ -1,0 +1,319 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-184",
+      "http_method": "GET",
+      "path": "/api/v1/user/gpg_keys",
+      "description": "Lists authenticated user's GPG keys with pagination and batch-loaded subkeys",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListMyGPGKeys",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/gpg_key.go",
+          "input": "APIContext",
+          "output": "calls listGPGKeys",
+          "operations": ["Extract doer ID", "Get list options from query params"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.listGPGKeys",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/gpg_key.go",
+          "input": "uid int64, ListOptions",
+          "output": "[]*api.GPGKey JSON response",
+          "operations": ["FindAndCount GPG keys with pagination", "Batch load subkeys", "Convert to API structs"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "gpg_key", "description": "FindAndCount with owner_id filter and primary_key_id='' (excludes subkeys)"},
+            {"operation": "SELECT", "table": "gpg_key", "description": "Batch load subkeys via IN(primary_key_id)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "asymkey_model.GPGKey",
+          "to": "api.GPGKey",
+          "component": "convert.ToGPGKey",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "KeyID", "target_field": "key_id", "transformation": "direct_copy"},
+            {"source_field": "Content", "target_field": "public_key", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "created_at", "transformation": "computed"},
+            {"source_field": "ExpiredUnix", "target_field": "expires_at", "transformation": "computed"},
+            {"source_field": "SubsKey", "target_field": "subkeys", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error on FindAndCount", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"},
+        {"condition": "DB error on LoadSubKeys", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-185",
+      "http_method": "GET",
+      "path": "/api/v1/user/gpg_keys/{id}",
+      "description": "Gets a single GPG key by database ID for the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetGPGKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/gpg_key.go",
+          "input": "APIContext with path param id",
+          "output": "*api.GPGKey JSON response",
+          "operations": ["Get key by ID and owner_id", "Load subkeys", "Convert to API struct"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "gpg_key", "description": "GetGPGKeyForUserByID: WHERE id=? AND owner_id=?"},
+            {"operation": "SELECT", "table": "gpg_key", "description": "LoadSubKeys: WHERE primary_key_id=?"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "asymkey_model.GPGKey",
+          "to": "api.GPGKey",
+          "component": "convert.ToGPGKey",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "SubsKey", "target_field": "subkeys", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Key not found (ErrGPGKeyNotExist)", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-186",
+      "http_method": "GET",
+      "path": "/api/v1/user/gpg_key_token",
+      "description": "Returns a time-based verification token for GPG key ownership proof",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetVerificationToken",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/gpg_key.go",
+          "input": "APIContext",
+          "output": "plain text token",
+          "operations": ["Compute SHA256 token from user data and current time"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "asymkey_model.VerificationToken",
+          "type": "utility",
+          "file_path": "models/asymkey/gpg_key_verify.go",
+          "input": "*user_model.User, minutes int",
+          "output": "string (SHA256 hash)",
+          "operations": ["Truncate time to minute", "Add minutes offset", "Concatenate time:createdUnix:name:email:id", "SHA256 encode"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-187",
+      "http_method": "POST",
+      "path": "/api/v1/user/gpg_key_verify",
+      "description": "Verifies a GPG key by checking a signed token, marks key as verified",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.VerifyUserGPGKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/gpg_key.go",
+          "input": "APIContext with VerifyGPGKeyOption form",
+          "output": "*api.GPGKey JSON response",
+          "operations": ["Get form data", "Compute current and last token", "Trim leading zeros from KeyID", "Call VerifyGPGKey with current token, retry with last token on failure", "Find verified key and return"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "asymkey_model.VerifyGPGKey",
+          "type": "service",
+          "file_path": "models/asymkey/gpg_key_verify.go",
+          "input": "ownerID, keyID, token, signature",
+          "output": "keyID string",
+          "operations": ["Find key by owner_id and key_id", "Load subkeys", "Extract signature", "Verify signature against token (tries token, token+\\n, token+\\n\\n)", "Validate signer matches key", "Update verified=true"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "gpg_key", "description": "Find key by owner_id AND key_id"},
+            {"operation": "SELECT", "table": "gpg_key", "description": "LoadSubKeys WHERE primary_key_id=?"},
+            {"operation": "UPDATE", "table": "gpg_key", "description": "Set verified=true by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "db.Find[GPGKey]",
+          "type": "repository",
+          "file_path": "models/asymkey/gpg_key.go",
+          "input": "FindGPGKeyOptions with KeyID and IncludeSubKeys",
+          "output": "[]*GPGKey",
+          "operations": ["Find key by key_id including subkeys for response"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "gpg_key", "description": "Find by key_id (includes subkeys)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "asymkey_model.GPGKey",
+          "to": "api.GPGKey",
+          "component": "convert.ToGPGKey",
+          "mappings": [
+            {"source_field": "Verified", "target_field": "verified", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "KeyID empty after trim", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "Invalid token signature", "handler": "ctx.APIError", "response_code": 422, "response": "validation error with token hint"},
+        {"condition": "Key not found after verify", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-188",
+      "http_method": "POST",
+      "path": "/api/v1/user/gpg_keys",
+      "description": "Creates a new GPG key for the authenticated user with optional signature verification",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.CreateGPGKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/gpg_key.go",
+          "input": "APIContext with CreateGPGKeyOption form",
+          "output": "delegates to CreateUserGPGKey",
+          "operations": ["Extract form", "Call CreateUserGPGKey with doer ID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.CreateUserGPGKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/gpg_key.go",
+          "input": "CreateGPGKeyOption, uid",
+          "output": "*api.GPGKey 201 response",
+          "operations": ["Check feature flag", "Compute current and last verification tokens", "Call AddGPGKey with current token, retry with last token on signature error"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "asymkey_model.AddGPGKey",
+          "type": "service",
+          "file_path": "models/asymkey/gpg_key_add.go",
+          "input": "ownerID, content, token, signature",
+          "output": "[]*GPGKey",
+          "operations": ["Parse armored key string", "If signature provided: verify detached signature against token", "Deduplicate keys by ID", "Check key_id not already in DB", "Parse GPG key (extract emails, subkeys)", "Insert GPGKeyImport", "Insert GPGKey", "Insert subkeys"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "gpg_key", "description": "Check duplicate key_id"},
+            {"operation": "SELECT", "table": "email_address", "description": "GetEmailAddresses for owner (in parseGPGKey)"},
+            {"operation": "INSERT", "table": "gpg_key_import", "description": "Store original armored key content"},
+            {"operation": "INSERT", "table": "gpg_key", "description": "Insert primary key"},
+            {"operation": "INSERT", "table": "gpg_key", "description": "Insert each subkey"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "asymkey_model.GPGKey",
+          "to": "api.GPGKey",
+          "component": "convert.ToGPGKey",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "KeyID", "target_field": "key_id", "transformation": "direct_copy"},
+            {"source_field": "Verified", "target_field": "verified", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Feature disabled", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "Key ID already used", "handler": "HandleAddGPGKeyError", "response_code": 422, "response": "key already exists"},
+        {"condition": "Key parsing error", "handler": "HandleAddGPGKeyError", "response_code": 422, "response": "parse error"},
+        {"condition": "No matching email found", "handler": "HandleAddGPGKeyError", "response_code": 404, "response": "no email found"},
+        {"condition": "Invalid token signature", "handler": "HandleAddGPGKeyError", "response_code": 422, "response": "invalid signature"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-189",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/gpg_keys/{id}",
+      "description": "Deletes a GPG key belonging to the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.DeleteGPGKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/gpg_key.go",
+          "input": "APIContext with path param id",
+          "output": "204 No Content",
+          "operations": ["Check feature flag", "Call model DeleteGPGKey"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "asymkey_model.DeleteGPGKey",
+          "type": "service",
+          "file_path": "models/asymkey/gpg_key.go",
+          "input": "doer *User, id int64",
+          "output": "error",
+          "operations": ["Verify key exists and belongs to doer", "Delete in transaction: delete import by key_id, delete key and subkeys by key_id"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "gpg_key", "description": "GetGPGKeyForUserByID: WHERE id=? AND owner_id=?"},
+            {"operation": "DELETE", "table": "gpg_key_import", "description": "Delete import WHERE key_id=?"},
+            {"operation": "DELETE", "table": "gpg_key", "description": "Delete key and subkeys WHERE key_id=? OR primary_key_id=?"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Feature disabled", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "DB error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

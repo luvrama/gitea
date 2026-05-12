@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "Labels array elements must be all integers or all strings, cannot mix types",
+      "location": {"class": "repo", "method": "prepareForReplaceOrAdd", "file_path": "routers/api/v1/repo/issue_label.go", "line_number": 260},
+      "condition": "len(labelIDs) > 0 && len(labelNames) > 0",
+      "action": "Return 400 error: labels should be an array of strings or integers",
+      "affected_endpoints": ["ep-336", "ep-338"],
+      "code_snippet": "if len(labelIDs) > 0 && len(labelNames) > 0 {\n\tctx.APIError(http.StatusBadRequest, \"labels should be an array of strings or integers\")"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Each label element must be a float64 (integer) or string via reflect",
+      "location": {"class": "repo", "method": "prepareForReplaceOrAdd", "file_path": "routers/api/v1/repo/issue_label.go", "line_number": 253},
+      "condition": "rv.Kind() is not Float64 or String",
+      "action": "Return 400 error: a label must be an integer or a string",
+      "affected_endpoints": ["ep-336", "ep-338"],
+      "code_snippet": "default:\n\tctx.APIError(http.StatusBadRequest, \"a label must be an integer or a string\")"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "authorization",
+      "description": "User must have write permission on issues or pulls to modify labels",
+      "location": {"class": "repo", "method": "prepareForReplaceOrAdd", "file_path": "routers/api/v1/repo/issue_label.go", "line_number": 244},
+      "condition": "!ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull)",
+      "action": "Return 403 forbidden",
+      "affected_endpoints": ["ep-336", "ep-337", "ep-338", "ep-339"],
+      "code_snippet": "if !ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull) {\n\tctx.APIError(http.StatusForbidden, \"write permission is required\")"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Labels are only valid if they belong to the issue's repo or the repo owner's org",
+      "location": {"class": "issues_model", "method": "newIssueLabels", "file_path": "models/issues/issue_label.go", "line_number": 130},
+      "condition": "l.RepoID != issue.RepoID && l.OrgID != issue.Repo.OwnerID",
+      "action": "Skip the label silently (no error)",
+      "affected_endpoints": ["ep-336", "ep-338"],
+      "code_snippet": "if HasIssueLabel(ctx, issue.ID, l.ID) ||\n\t(l.RepoID != issue.RepoID && l.OrgID != issue.Repo.OwnerID) {\n\tcontinue"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Adding a label that already exists on the issue is a no-op",
+      "location": {"class": "issues_model", "method": "NewIssueLabel", "file_path": "models/issues/issue_label.go", "line_number": 87},
+      "condition": "HasIssueLabel(ctx, issue.ID, label.ID)",
+      "action": "Return nil (no error, no duplicate)",
+      "affected_endpoints": ["ep-336"],
+      "code_snippet": "if HasIssueLabel(ctx, issue.ID, label.ID) {\n\treturn nil\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Exclusive labels: adding a label removes other labels in the same exclusive scope",
+      "location": {"class": "issues_model", "method": "RemoveDuplicateExclusiveIssueLabels", "file_path": "models/issues/issue_label.go", "line_number": 63},
+      "condition": "label.ExclusiveScope() != \"\" and another label with same scope exists",
+      "action": "Delete the existing label in the same scope before adding new one",
+      "affected_endpoints": ["ep-336", "ep-338"],
+      "code_snippet": "scope := label.ExclusiveScope()\nif scope == \"\" { return nil }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Label names are resolved from both repo labels and org labels when owner is organization",
+      "location": {"class": "repo", "method": "prepareForReplaceOrAdd", "file_path": "routers/api/v1/repo/issue_label.go", "line_number": 268},
+      "condition": "ctx.Repo.Owner.IsOrganization()",
+      "action": "Also query org labels by name and append to labelIDs",
+      "affected_endpoints": ["ep-336", "ep-338"],
+      "code_snippet": "if ctx.Repo.Owner.IsOrganization() {\n\torgLabelIDs, err := issues_model.GetLabelIDsInOrgByNames(ctx, ctx.Repo.Owner.ID, labelNames)"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "authorization",
+      "description": "RemoveLabel service re-checks permission inside transaction",
+      "location": {"class": "issue_service", "method": "RemoveLabel", "file_path": "services/issue/label.go", "line_number": 56},
+      "condition": "!perm.CanWriteIssuesOrPulls(issue.IsPull)",
+      "action": "Return ErrOrgLabelNotExist or ErrRepoLabelNotExist",
+      "affected_endpoints": ["ep-337"],
+      "code_snippet": "if !perm.CanWriteIssuesOrPulls(issue.IsPull) {\n\tif label.OrgID > 0 { return issues_model.ErrOrgLabelNotExist{} }\n\treturn issues_model.ErrRepoLabelNotExist{}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "ReplaceLabels uses sorted diff algorithm to minimize DB operations",
+      "location": {"class": "issues_model", "method": "ReplaceIssueLabels", "file_path": "models/issues/issue_label.go", "line_number": 412},
+      "condition": "Always during replace",
+      "action": "Sort both old and new label lists, walk through to find toAdd and toRemove sets",
+      "affected_endpoints": ["ep-338"],
+      "code_snippet": "sort.Sort(labelSorter(labels))\nsort.Sort(labelSorter(issue.Labels))"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "validation",
+      "description": "Deploy key SSH content must be valid single-line SSH public key",
+      "location": {"class": "asymkey_model", "method": "CheckPublicKeyString", "file_path": "models/asymkey/ssh_key_parse.go", "line_number": 157},
+      "condition": "Key content contains newlines or fails SSH parsing",
+      "action": "Return error (422 in handler)",
+      "affected_endpoints": ["ep-342"],
+      "code_snippet": "if strings.ContainsAny(content, \"\\n\\r\") {\n\treturn \"\", util.NewInvalidArgumentErrorf(\"only a single line with a single key please\")"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "validation",
+      "description": "Deploy key minimum size check based on key type configuration",
+      "location": {"class": "asymkey_model", "method": "CheckPublicKeyString", "file_path": "models/asymkey/ssh_key_parse.go", "line_number": 182},
+      "condition": "setting.SSH.MinimumKeySizeCheck && length < minLen",
+      "action": "Return error: key length is not enough",
+      "affected_endpoints": ["ep-342"],
+      "code_snippet": "if minLen, found := setting.SSH.MinimumKeySizes[keyType]; found && length < minLen {\n\treturn \"\", fmt.Errorf(\"key length is not enough: got %d, needs %d\", length, minLen)"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "business_logic",
+      "description": "Deploy key deletion checks repo ownership before allowing delete",
+      "location": {"class": "asymkey_service", "method": "DeleteDeployKey", "file_path": "services/asymkey/deploy_key.go", "line_number": 62},
+      "condition": "key.RepoID != repo.ID",
+      "action": "Return error (results in 403 at handler level)",
+      "affected_endpoints": ["ep-343"],
+      "code_snippet": "if key.RepoID != repo.ID {\n\treturn fmt.Errorf(\"deploy key %d does not belong to repository %d\", id, repo.ID)"
+    }
+  ]
+}

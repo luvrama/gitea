@@ -1,0 +1,110 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 1,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "notification",
+      "entity_class": "Notification",
+      "file_path": "models/activities/notification.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk", "autoincr"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "status", "type": "SMALLINT", "code_type": "NotificationStatus (uint8)", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "source", "type": "SMALLINT", "code_type": "NotificationSource (uint8)", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "commit_id", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "comment_id", "type": "BIGINT", "code_type": "int64", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "updated_by", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "auto (created)", "constraints": ["NOT NULL"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "auto (updated)", "constraints": ["NOT NULL"]}
+      ],
+      "indexes": [
+        {"name": "u_s_uu", "columns": ["user_id", "status", "updated_unix"], "unique": false},
+        {"name": "idx_notification_user_id", "columns": ["user_id"], "unique": false},
+        {"name": "idx_notification_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_notification_status", "columns": ["status"], "unique": false},
+        {"name": "idx_notification_source", "columns": ["source"], "unique": false},
+        {"name": "idx_notification_issue_id", "columns": ["issue_id"], "unique": false},
+        {"name": "idx_notification_commit_id", "columns": ["commit_id"], "unique": false},
+        {"name": "idx_notification_updated_by", "columns": ["updated_by"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "comment", "join_column": "comment_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-015",
+      "path": "/api/v1/settings/ui",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-016",
+      "path": "/api/v1/settings/api",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-017",
+      "path": "/api/v1/settings/repository",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-018",
+      "path": "/api/v1/settings/attachment",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-019",
+      "path": "/api/v1/notifications",
+      "operations": [
+        {"store_type": "database", "store_name": "notification", "operation": "SELECT", "method": "db.Count", "description": "Count notifications matching filters"},
+        {"store_type": "database", "store_name": "notification", "operation": "SELECT", "method": "db.Find", "description": "Fetch paginated notifications"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "NotificationList.LoadRepos", "description": "Batch load repositories"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "NotificationList.LoadIssues", "description": "Batch load issues"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "NotificationList.LoadUsers", "description": "Batch load users"},
+        {"store_type": "database", "store_name": "comment", "operation": "SELECT", "method": "NotificationList.LoadComments", "description": "Batch load comments"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-020",
+      "path": "/api/v1/notifications",
+      "operations": [
+        {"store_type": "database", "store_name": "notification", "operation": "SELECT", "method": "db.Find", "description": "Find all matching notifications (unbounded)"},
+        {"store_type": "database", "store_name": "notification", "operation": "SELECT", "method": "GetNotificationByID", "description": "Fetch notification by ID (per item in loop)"},
+        {"store_type": "database", "store_name": "notification", "operation": "UPDATE", "method": "SetNotificationStatus", "description": "Update status (per item in loop)"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "Notification.loadRepo", "description": "Load repo (per item in loop)"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "Notification.loadIssue", "description": "Load issue (per item in loop)"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "Notification.loadUser", "description": "Load user (per item in loop)"},
+        {"store_type": "database", "store_name": "comment", "operation": "SELECT", "method": "Notification.loadComment", "description": "Load comment (per item in loop)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-021",
+      "path": "/api/v1/notifications/new",
+      "operations": [
+        {"store_type": "database", "store_name": "notification", "operation": "SELECT", "method": "db.Count", "description": "Count unread notifications for user"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-022",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "operations": [
+        {"store_type": "database", "store_name": "notification", "operation": "SELECT", "method": "db.Count", "description": "Count repo notifications matching filters"},
+        {"store_type": "database", "store_name": "notification", "operation": "SELECT", "method": "db.Find", "description": "Fetch paginated repo notifications"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "NotificationList.LoadRepos", "description": "Batch load repositories"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "NotificationList.LoadIssues", "description": "Batch load issues"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "NotificationList.LoadUsers", "description": "Batch load users"},
+        {"store_type": "database", "store_name": "comment", "operation": "SELECT", "method": "NotificationList.LoadComments", "description": "Batch load comments"}
+      ]
+    }
+  ]
+}

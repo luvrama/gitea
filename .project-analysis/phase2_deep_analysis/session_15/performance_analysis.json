@@ -1,0 +1,218 @@
+{
+  "total_endpoints_analyzed": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-099",
+      "http_method": "PATCH",
+      "path": "/api/v1/admin/users/{username}",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "total_operations_per_sec_target populated only when traffic data available"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_timeout",
+          "description": "HaveIBeenPwned API call has no explicit timeout configured",
+          "impact": "Request could hang indefinitely if HIBP API is slow/down",
+          "file_path": "modules/auth/password/pwn/pwn.go",
+          "line_number": 0,
+          "code_snippet": "password_module.IsPwned(ctx, password)",
+          "recommendation": "Add explicit HTTP client timeout for HIBP API calls"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "timeout",
+          "description": "Add timeout to HaveIBeenPwned API call",
+          "estimated_impact": "Prevent request hangs when external API is unavailable",
+          "implementation": "Set http.Client.Timeout or use context.WithTimeout"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-100",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/users/{username}",
+      "resource_load": {
+        "operations_per_request": 20,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem"],
+        "note": "Purge mode significantly increases operations"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "Branch protection cleanup iterates ALL protected branches in batches, checking each for user ID",
+          "impact": "For large instances with many protected branches, this is O(n) DB reads",
+          "file_path": "services/user/delete.go",
+          "line_number": 119,
+          "code_snippet": "if err = e.Limit(batchSize, start).Find(&protections); err != nil {",
+          "recommendation": "Add DB-level filtering or index on serialized user IDs in branch protections"
+        },
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Comment deletion in purge mode iterates comments in batches of 50, deleting one by one",
+          "impact": "Users with many comments will cause many individual DELETE operations",
+          "file_path": "services/user/delete.go",
+          "line_number": 97,
+          "code_snippet": "for _, comment := range comments {\n\tif err = issues_model.DeleteComment(ctx, comment); err != nil {",
+          "recommendation": "Batch delete comments instead of one-by-one"
+        },
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "Purge mode deletes all repos synchronously before user deletion",
+          "impact": "For users with many repos, this could take very long and block the request",
+          "file_path": "services/user/user.go",
+          "line_number": 130,
+          "code_snippet": "err := repo_service.DeleteOwnerRepositoriesDirectly(ctx, u)",
+          "recommendation": "Consider async purge with background job"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "async",
+          "description": "Move purge operations to background job",
+          "estimated_impact": "Prevent long-running HTTP requests for users with many repos",
+          "implementation": "Queue purge task and return 202 Accepted"
+        },
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch comment deletion instead of one-by-one",
+          "estimated_impact": "Reduce DB round-trips for users with many comments",
+          "implementation": "Use bulk DELETE with WHERE poster_id=? AND type=?"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-101",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/keys",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "total_operations_per_sec_target populated only when traffic data available"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-102",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/users/{username}/keys/{id}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem"],
+        "note": "Rewrites authorized_keys file on every key deletion"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "RewriteAllPublicKeys regenerates entire authorized_keys file on every single key deletion",
+          "impact": "For instances with many SSH keys, this is expensive I/O on every delete",
+          "file_path": "services/asymkey/ssh_key.go",
+          "line_number": 30,
+          "code_snippet": "return RewriteAllPublicKeys(ctx)",
+          "recommendation": "Debounce or batch authorized_keys rewrites"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "async",
+          "description": "Debounce authorized_keys file regeneration",
+          "estimated_impact": "Reduce filesystem I/O for bulk key operations",
+          "implementation": "Queue rewrite and coalesce multiple requests within a time window"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-103",
+      "http_method": "GET",
+      "path": "/api/v1/admin/users",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Two queries: count + paginated select"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "missing_indexes",
+          "description": "2FA filter uses LEFT JOIN on two_factor table which may be slow for large user bases",
+          "impact": "Query performance degrades with user count when is_2fa_enabled filter is used",
+          "file_path": "models/user/search.go",
+          "line_number": 148,
+          "code_snippet": "return e.Join(\"LEFT OUTER\", \"two_factor\", \"two_factor.uid = `user`.id\").Where(cond)",
+          "recommendation": "Consider adding a denormalized column or caching 2FA status"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Optimize 2FA filter query",
+          "estimated_impact": "Faster admin user search when filtering by 2FA status",
+          "implementation": "Add is_2fa_enabled column to user table or use EXISTS subquery"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-104",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/rename",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem"],
+        "note": "Includes filesystem directory rename"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-105",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/jobs",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Query + load attributes (run + repo)"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "LoadAttributes loads run and repo for each job individually via jobList.LoadAttributes",
+          "impact": "For large result sets, generates many individual SELECT queries",
+          "file_path": "routers/api/v1/shared/action.go",
+          "line_number": 60,
+          "code_snippet": "if err := jobList.LoadAttributes(ctx, true); err != nil {",
+          "recommendation": "Batch load runs and repos with IN clause"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch load job attributes instead of N+1",
+          "estimated_impact": "Reduce DB queries from O(n) to O(1) for attribute loading",
+          "implementation": "Collect unique run_ids and repo_ids, batch fetch with WHERE id IN (...)"
+        }
+      ]
+    }
+  ]
+}

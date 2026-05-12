@@ -1,0 +1,168 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-214",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/commits/{sha}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git_repo", "database"],
+        "note": "1 git commit lookup + 2 user lookups by email + optional file status + optional diff stats"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "User lookup by email is done on every request without caching (no userCache passed for single commit)",
+          "impact": "2 DB queries per request for author/committer lookup",
+          "file_path": "services/convert/git_commit.go",
+          "line_number": 91,
+          "code_snippet": "author, err := user_model.GetUserByEmail(ctx, commit.Author.Email)",
+          "recommendation": "Consider caching user-by-email lookups in a request-scoped or short-TTL cache"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "caching",
+          "description": "Disable stat/files/verification by default for high-frequency API consumers",
+          "estimated_impact": "Eliminates git diff-tree and GPG verification per request",
+          "implementation": "Already supported via query params; document recommendation for clients"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-215",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/commits",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git_repo", "database"],
+        "note": "1 git rev-list --count + 1 git log + N user lookups (cached) + optional N file statuses + optional N diff stats"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "For each commit in the page, ToCommit is called which may trigger file status and diff stat git operations",
+          "impact": "With default options (stat=true, files=true), up to 50 commits × 2 git operations = 100 git subprocess calls per request",
+          "file_path": "routers/api/v1/repo/commits.go",
+          "line_number": 195,
+          "code_snippet": "apiCommits[i], err = convert.ToCommit(ctx, ctx.Repo.Repository, ctx.Repo.GitRepo, commit, userCache, convert.ParseCommitOptions(ctx))",
+          "recommendation": "Batch file status and diff stat operations, or document that clients should disable stat/files for large listings"
+        },
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "CommitsCount runs git rev-list --count on every request without caching",
+          "impact": "For large repos, rev-list --count can be slow (seconds for repos with millions of commits)",
+          "file_path": "modules/gitrepo/commit.go",
+          "line_number": 26,
+          "code_snippet": "cmd := gitcmd.NewCommand(\"rev-list\", \"--count\")",
+          "recommendation": "Cache commit counts for default branch with short TTL"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch git operations for file status and diff stats instead of per-commit subprocess calls",
+          "estimated_impact": "Could reduce git subprocess calls from 100+ to 2-3 per request",
+          "implementation": "Use git log --stat or git log --name-status with pagination to get all info in one call"
+        },
+        {
+          "priority": "P2",
+          "type": "caching",
+          "description": "Cache commit count for default branch",
+          "estimated_impact": "Eliminates expensive rev-list --count for common case",
+          "implementation": "In-memory cache with invalidation on push"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-216",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/commits/{sha}.{diffType}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["git_repo"],
+        "note": "1 commit resolve + 1 git diff/format-patch streamed to response"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "Diff output is streamed without size limit - large commits could produce very large responses",
+          "impact": "Memory and bandwidth consumption for commits touching many files",
+          "file_path": "modules/git/diff.go",
+          "line_number": 30,
+          "code_snippet": "return cmd.WithStdoutCopy(writer).RunWithStderr(repo.Ctx)",
+          "recommendation": "Consider adding a size limit or warning header for very large diffs"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-217",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/commits/{sha}/pull",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 PR lookup + 1 issue load + 1-2 repo loads + PR-to-API conversion"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "missing_indexes",
+          "description": "Query on pull_request.merged_commit_id may not have a dedicated index",
+          "impact": "Full table scan on pull_request for repos with many PRs",
+          "file_path": "models/issues/pull.go",
+          "line_number": 995,
+          "code_snippet": "has, err := db.GetEngine(ctx).Where(\"base_repo_id = ? AND merged_commit_id = ?\", repoID, sha).Get(pr)",
+          "recommendation": "Add composite index on (base_repo_id, merged_commit_id)"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "indexing",
+          "description": "Add index on pull_request(base_repo_id, merged_commit_id)",
+          "estimated_impact": "Converts full scan to index lookup for PR-by-commit queries",
+          "implementation": "Add XORM index tag or migration"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-218",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 issue lookup + 1 user lookup + 1 watch check + 0-1 write"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-219",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 issue lookup + 1 user lookup + 1 watch check + 0-1 write"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

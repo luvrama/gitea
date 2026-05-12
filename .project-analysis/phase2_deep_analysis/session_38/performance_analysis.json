@@ -1,0 +1,185 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-254",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Multiple DB queries for permission resolution"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "GetIndividualUserRepoPermission executes 4-6 DB queries per call with no caching",
+          "impact": "Each permission check requires LoadUnits + IsCollaborator + LoadOwner + accessLevel + GetUserRepoTeams",
+          "file_path": "models/perm/access/repo_permission.go",
+          "line_number": 394,
+          "code_snippet": "func GetIndividualUserRepoPermission(ctx context.Context, repo *repo_model.Repository, user *user_model.User) (perm Permission, err error) {",
+          "recommendation": "Consider caching permission results for short TTL or batch-loading for repeated calls"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "caching",
+          "description": "Cache permission results per user+repo for short TTL",
+          "estimated_impact": "Reduce 4-6 queries to 1 cache lookup for repeated permission checks",
+          "implementation": "Add in-memory or request-scoped cache for permission results"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-255",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/reviewers",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Permission check + reviewer query"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "CanDoerChangeReviewRequests iterates over teams and calls IsTeamMember per team",
+          "impact": "For org repos with many teams, this creates N queries where N = number of teams with PR access",
+          "file_path": "services/issue/review_request.go",
+          "line_number": 266,
+          "code_snippet": "for _, team := range teams {\n\tisMember, err := organization.IsTeamMember(ctx, repo.OwnerID, team.ID, doer.ID)",
+          "recommendation": "Batch check team membership with a single IN query"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Replace per-team IsTeamMember loop with batch query",
+          "estimated_impact": "Reduce N queries to 1 for team membership check",
+          "implementation": "Use SELECT team_id FROM team_user WHERE org_id=? AND uid=? AND team_id IN (?)"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-256",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/assignees",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Efficient batch query pattern"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-257",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Simple 2-query lookup"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-258",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets",
+      "resource_load": {
+        "operations_per_request": 12,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "LoadAttributes loads ALL issue relations unnecessarily"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "unbounded_queries",
+          "description": "ListIssueAttachments calls issue.LoadAttributes which loads ALL issue data (comments, labels, milestones, reactions, etc.) just to extract attachments",
+          "impact": "For issues with many comments, this loads potentially thousands of records unnecessarily. LoadAttributes also calls Comments.LoadAttributes which loads per-comment data.",
+          "file_path": "routers/api/v1/repo/issue_attachment.go",
+          "line_number": 89,
+          "code_snippet": "if err := issue.LoadAttributes(ctx); err != nil {\n\tctx.APIErrorInternal(err)\n\treturn\n}\nctx.JSON(http.StatusOK, convert.ToAPIIssue(ctx, ctx.Doer, issue).Attachments)",
+          "recommendation": "Replace LoadAttributes with issue.LoadAttachments(ctx) and return convert.ToAPIAttachments directly"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P0",
+          "type": "query_optimization",
+          "description": "Only load attachments instead of full issue attributes",
+          "estimated_impact": "Reduce from 12+ queries to 2 queries (issue + attachments)",
+          "implementation": "Replace issue.LoadAttributes(ctx) with issue.LoadAttachments(ctx), then return convert.ToAPIAttachments(ctx.Repo.Repository, issue.Attachments)"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-259",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "storage"],
+        "note": "File upload + DB insert + content update"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "ChangeContent is called after upload to trigger notifications, but it re-loads the repo and updates issue content even though content hasn't changed",
+          "impact": "2 extra DB queries (LoadRepo + UPDATE issue) for notification trigger with no actual content change",
+          "file_path": "routers/api/v1/repo/issue_attachment.go",
+          "line_number": 157,
+          "code_snippet": "if err := issue_service.ChangeContent(ctx, issue, ctx.Doer, issue.Content, issue.ContentVersion); err != nil {",
+          "recommendation": "Use a dedicated notification method instead of ChangeContent with unchanged content"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Use dedicated notification instead of ChangeContent hack",
+          "estimated_impact": "Save 2 DB queries per attachment upload",
+          "implementation": "Call notify_service directly instead of going through ChangeContent"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-260",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Simple read-validate-update pattern"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-261",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "storage"],
+        "note": "DB delete + storage delete"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

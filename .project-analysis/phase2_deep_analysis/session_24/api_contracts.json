@@ -1,0 +1,247 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-162",
+      "http_method": "GET",
+      "path": "/api/v1/user/settings",
+      "controller_class": "user",
+      "controller_method": "GetUserSettings",
+      "description": "Get the authenticated user's settings (profile fields and privacy preferences)",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token-based auth required"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "UserSettings",
+          "fields": [
+            {"name": "full_name", "type": "string", "description": "User's full name"},
+            {"name": "website", "type": "string", "description": "User's website URL"},
+            {"name": "description", "type": "string", "description": "User bio/description"},
+            {"name": "location", "type": "string", "description": "User's location"},
+            {"name": "language", "type": "string", "description": "User's preferred language"},
+            {"name": "theme", "type": "string", "description": "UI theme preference"},
+            {"name": "diff_view_style", "type": "string", "description": "Diff view style preference"},
+            {"name": "hide_email", "type": "bool", "description": "Whether email is private"},
+            {"name": "hide_activity", "type": "bool", "description": "Whether activity is private"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-163",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/settings",
+      "controller_class": "user",
+      "controller_method": "UpdateUserSettings",
+      "description": "Update the authenticated user's settings",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token-based auth required"}],
+        "body": {
+          "type": "UserSettingsOptions",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "full_name", "type": "*string", "required": false, "validation": ["MaxSize(100)"], "description": "Full name"},
+            {"name": "website", "type": "*string", "required": false, "validation": ["OmitEmpty", "ValidUrl", "MaxSize(255)"], "description": "Website URL"},
+            {"name": "description", "type": "*string", "required": false, "validation": ["MaxSize(255)"], "description": "Bio/description"},
+            {"name": "location", "type": "*string", "required": false, "validation": ["MaxSize(50)"], "description": "Location"},
+            {"name": "language", "type": "*string", "required": false, "validation": [], "description": "Preferred language"},
+            {"name": "theme", "type": "*string", "required": false, "validation": [], "description": "UI theme"},
+            {"name": "diff_view_style", "type": "*string", "required": false, "validation": [], "description": "Diff view style"},
+            {"name": "hide_email", "type": "*bool", "required": false, "validation": [], "description": "Keep email private"},
+            {"name": "hide_activity", "type": "*bool", "required": false, "validation": [], "description": "Keep activity private"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "UserSettings",
+          "fields": [
+            {"name": "full_name", "type": "string", "description": "User's full name"},
+            {"name": "website", "type": "string", "description": "User's website URL"},
+            {"name": "description", "type": "string", "description": "User bio/description"},
+            {"name": "location", "type": "string", "description": "User's location"},
+            {"name": "language", "type": "string", "description": "User's preferred language"},
+            {"name": "theme", "type": "string", "description": "UI theme preference"},
+            {"name": "diff_view_style", "type": "string", "description": "Diff view style preference"},
+            {"name": "hide_email", "type": "bool", "description": "Whether email is private"},
+            {"name": "hide_activity", "type": "bool", "description": "Whether activity is private"}
+          ]
+        },
+        "errors": [
+          {"status_code": 500, "type": "error", "condition": "Database update failure"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-164",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/tokens",
+      "controller_class": "user",
+      "controller_method": "ListAccessTokens",
+      "description": "List the authenticated user's access tokens (requires basic auth or reverse proxy auth)",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": ["resolved by UserAssignmentAPI middleware"]}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["<=50"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Basic auth or reverse proxy auth required"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "AccessTokenList",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Token ID"},
+            {"name": "name", "type": "string", "description": "Token name"},
+            {"name": "sha1", "type": "string", "description": "Always empty in list (token not stored)"},
+            {"name": "token_last_eight", "type": "string", "description": "Last 8 chars of token"},
+            {"name": "scopes", "type": "[]string", "description": "Token scopes"},
+            {"name": "created_at", "type": "time", "description": "Creation timestamp"},
+            {"name": "last_used_at", "type": "time", "description": "Last usage timestamp"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Not self or admin"}
+        ]
+      },
+      "authentication": "basic_or_reverse_proxy",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-165",
+      "http_method": "POST",
+      "path": "/api/v1/users/{username}/tokens",
+      "controller_class": "user",
+      "controller_method": "CreateAccessToken",
+      "description": "Create a new access token for the user",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": ["resolved by UserAssignmentAPI middleware"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Basic auth or reverse proxy auth + token required"}],
+        "body": {
+          "type": "CreateAccessTokenOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": true, "validation": ["Required"], "description": "Token name"},
+            {"name": "scopes", "type": "[]string", "required": false, "validation": ["must be valid scope strings, non-empty after normalize"], "description": "Token scopes"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "AccessToken",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Token ID"},
+            {"name": "name", "type": "string", "description": "Token name"},
+            {"name": "sha1", "type": "string", "description": "The actual token value (only returned on creation)"},
+            {"name": "token_last_eight", "type": "string", "description": "Last 8 chars of token"},
+            {"name": "scopes", "type": "[]string", "description": "Token scopes"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Token name already exists, invalid scope, or empty scope"},
+          {"status_code": 403, "type": "forbidden", "condition": "Not self or admin"}
+        ]
+      },
+      "authentication": "basic_or_reverse_proxy+token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-166",
+      "http_method": "DELETE",
+      "path": "/api/v1/users/{username}/tokens/{token}",
+      "controller_class": "user",
+      "controller_method": "DeleteAccessToken",
+      "description": "Delete an access token by ID or name",
+      "request": {
+        "path_params": [
+          {"name": "username", "type": "string", "required": true, "validation": ["resolved by UserAssignmentAPI middleware"]},
+          {"name": "token", "type": "string", "required": true, "validation": ["can be numeric ID or token name"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Basic auth or reverse proxy auth + token required"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "Not self or admin"},
+          {"status_code": 404, "type": "notFound", "condition": "Token not found by ID or name"},
+          {"status_code": 422, "type": "error", "condition": "Multiple tokens match the given name"}
+        ]
+      },
+      "authentication": "basic_or_reverse_proxy+token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-167",
+      "http_method": "POST",
+      "path": "/api/v1/user/applications/oauth2",
+      "controller_class": "user",
+      "controller_method": "CreateOauth2Application",
+      "description": "Create a new OAuth2 application for the authenticated user",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Token-based auth required"}],
+        "body": {
+          "type": "CreateOAuth2ApplicationOptions",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": true, "validation": ["Required"], "description": "Application name"},
+            {"name": "confidential_client", "type": "bool", "required": false, "validation": [], "description": "Whether client is confidential"},
+            {"name": "skip_secondary_authorization", "type": "bool", "required": false, "validation": [], "description": "Whether to skip secondary authorization"},
+            {"name": "redirect_uris", "type": "[]string", "required": true, "validation": ["Required", "each URI must be valid URL or custom scheme"], "description": "Allowed redirect URIs"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "OAuth2Application",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Application ID"},
+            {"name": "name", "type": "string", "description": "Application name"},
+            {"name": "client_id", "type": "string", "description": "OAuth2 client ID (UUID)"},
+            {"name": "client_secret", "type": "string", "description": "Client secret (only returned on creation)"},
+            {"name": "confidential_client", "type": "bool", "description": "Whether client is confidential"},
+            {"name": "skip_secondary_authorization", "type": "bool", "description": "Whether secondary auth is skipped"},
+            {"name": "redirect_uris", "type": "[]string", "description": "Allowed redirect URIs"},
+            {"name": "created", "type": "time", "description": "Creation timestamp"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid redirect URI or error creating application/secret"}
+        ]
+      },
+      "authentication": "token",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

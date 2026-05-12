@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "business_logic",
+      "description": "Self-follow is a no-op (returns nil without error)",
+      "location": {"class": "user_model", "method": "FollowUser", "file_path": "models/user/follow.go", "line_number": 33},
+      "condition": "user.ID == follow.ID",
+      "action": "return nil (no-op)",
+      "affected_endpoints": ["ep-145"],
+      "code_snippet": "if user.ID == follow.ID || IsFollowing(ctx, user.ID, follow.ID) {\n\treturn nil\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "business_logic",
+      "description": "Already-following is a no-op (returns nil without error)",
+      "location": {"class": "user_model", "method": "FollowUser", "file_path": "models/user/follow.go", "line_number": 33},
+      "condition": "IsFollowing(ctx, user.ID, follow.ID) == true",
+      "action": "return nil (no-op, idempotent)",
+      "affected_endpoints": ["ep-145"],
+      "code_snippet": "if user.ID == follow.ID || IsFollowing(ctx, user.ID, follow.ID) {\n\treturn nil\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "authorization",
+      "description": "Blocked users cannot follow each other (bidirectional check)",
+      "location": {"class": "user_model", "method": "FollowUser", "file_path": "models/user/follow.go", "line_number": 37},
+      "condition": "IsUserBlockedBy(ctx, user, follow.ID) || IsUserBlockedBy(ctx, follow, user.ID)",
+      "action": "return ErrBlockedUser",
+      "affected_endpoints": ["ep-145"],
+      "code_snippet": "if IsUserBlockedBy(ctx, user, follow.ID) || IsUserBlockedBy(ctx, follow, user.ID) {\n\treturn ErrBlockedUser\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Self-unfollow is a no-op",
+      "location": {"class": "user_model", "method": "UnfollowUser", "file_path": "models/user/follow.go", "line_number": 56},
+      "condition": "userID == followID",
+      "action": "return nil (no-op)",
+      "affected_endpoints": ["ep-146"],
+      "code_snippet": "if userID == followID || !IsFollowing(ctx, userID, followID) {\n\treturn nil\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Unfollow when not following is a no-op",
+      "location": {"class": "user_model", "method": "UnfollowUser", "file_path": "models/user/follow.go", "line_number": 56},
+      "condition": "!IsFollowing(ctx, userID, followID)",
+      "action": "return nil (no-op, idempotent)",
+      "affected_endpoints": ["ep-146"],
+      "code_snippet": "if userID == followID || !IsFollowing(ctx, userID, followID) {\n\treturn nil\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "Following list includes both individuals and organizations",
+      "location": {"class": "user_model", "method": "GetUserFollowing", "file_path": "models/user/user.go", "line_number": 360},
+      "condition": "always",
+      "action": "filter user.type IN (UserTypeIndividual, UserTypeOrganization)",
+      "affected_endpoints": ["ep-142"],
+      "code_snippet": "And(\"`user`.type IN (?, ?)\", UserTypeIndividual, UserTypeOrganization)"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "GetHook checks non-admin cannot access hooks owned by other users",
+      "location": {"class": "user", "method": "GetHook", "file_path": "routers/api/v1/user/hook.go", "line_number": 60},
+      "condition": "!ctx.Doer.IsAdmin && hook.OwnerID != ctx.Doer.ID",
+      "action": "return 404 not found",
+      "affected_endpoints": ["ep-148"],
+      "code_snippet": "if !ctx.Doer.IsAdmin && hook.OwnerID != ctx.Doer.ID {\n\tctx.APIErrorNotFound()\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "CreateHook requires valid hook type",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 83},
+      "condition": "!webhook_service.IsValidHookTaskType(form.Type)",
+      "action": "return 422 'Invalid hook type'",
+      "affected_endpoints": ["ep-149"],
+      "code_snippet": "if !webhook_service.IsValidHookTaskType(form.Type) {\n\tctx.APIError(http.StatusUnprocessableEntity, \"Invalid hook type: \"+form.Type)\n}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "validation",
+      "description": "CreateHook requires url and content_type in config",
+      "location": {"class": "utils", "method": "checkCreateHookOption", "file_path": "routers/api/v1/utils/hook.go", "line_number": 87},
+      "condition": "config missing 'url' or 'content_type'",
+      "action": "return 422 'Missing config option'",
+      "affected_endpoints": ["ep-149"],
+      "code_snippet": "for _, name := range []string{\"url\", \"content_type\"} {\n\tif _, ok := form.Config[name]; !ok {"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "validation",
+      "description": "Slack webhooks require valid channel name",
+      "location": {"class": "utils", "method": "addHook", "file_path": "routers/api/v1/utils/hook.go", "line_number": 195},
+      "condition": "w.Type == SLACK && !IsValidSlackChannel(channel)",
+      "action": "return 400 'Invalid slack channel name'",
+      "affected_endpoints": ["ep-149"],
+      "code_snippet": "if !webhook_service.IsValidSlackChannel(channel) {\n\tctx.APIError(http.StatusBadRequest, \"Invalid slack channel name\")\n}"
+    }
+  ]
+}

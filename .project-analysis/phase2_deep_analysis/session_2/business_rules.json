@@ -1,0 +1,85 @@
+{
+  "total_rules": 8,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Markdown rendering endpoints require authentication token",
+      "location": {"class": "api", "method": "reqToken", "file_path": "routers/api/v1/api.go", "line_number": 346},
+      "condition": "!ctx.IsSigned",
+      "action": "Return 401 Unauthorized",
+      "affected_endpoints": ["ep-009", "ep-010"],
+      "code_snippet": "if ctx.IsSigned { return }\nctx.APIError(http.StatusUnauthorized, \"token is required\")"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "business_logic",
+      "description": "Deprecated Wiki boolean field overrides Mode field for backward compatibility",
+      "location": {"class": "misc", "method": "Markdown", "file_path": "routers/api/v1/misc/markup.go", "line_number": 56},
+      "condition": "form.Wiki == true",
+      "action": "Mode is set to 'wiki' regardless of form.Mode value",
+      "affected_endpoints": ["ep-009"],
+      "code_snippet": "mode := util.Iif(form.Wiki, \"wiki\", form.Mode)"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Render mode must be one of: empty, markdown, gfm, comment, wiki, file",
+      "location": {"class": "common", "method": "RenderMarkup", "file_path": "routers/common/markup.go", "line_number": 73},
+      "condition": "mode not in supported set",
+      "action": "Return 422 with 'unsupported render mode' message",
+      "affected_endpoints": ["ep-009"],
+      "code_snippet": "default:\n\tctx.HTTPError(http.StatusUnprocessableEntity, \"unsupported render mode: \"+mode)"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Empty or 'markdown' mode uses simple document rendering (no link processing)",
+      "location": {"class": "common", "method": "RenderMarkup", "file_path": "routers/common/markup.go", "line_number": 36},
+      "condition": "mode == \"\" || mode == \"markdown\"",
+      "action": "Use NewRenderContextSimpleDocument with RenderRaw (no post-processing)",
+      "affected_endpoints": ["ep-009"],
+      "code_snippet": "if mode == \"\" || mode == \"markdown\" {\n\trctx := renderhelper.NewRenderContextSimpleDocument(ctx, urlPathContext)"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Path parameter sanitized to prevent path traversal in gitignore template lookup",
+      "location": {"class": "misc", "method": "GetGitignoreTemplateInfo", "file_path": "routers/api/v1/misc/gitignore.go", "line_number": 44},
+      "condition": "Always applied to name path param",
+      "action": "Clean path via PathJoinRelX which strips .., leading slashes, backslashes",
+      "affected_endpoints": ["ep-012"],
+      "code_snippet": "name := util.PathJoinRelX(ctx.PathParam(\"name\"))"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "Path parameter sanitized to prevent path traversal in license template lookup",
+      "location": {"class": "misc", "method": "GetLicenseTemplateInfo", "file_path": "routers/api/v1/misc/licenses.go", "line_number": 42},
+      "condition": "Always applied to name path param",
+      "action": "Clean path via PathJoinRelX which strips .., leading slashes, backslashes",
+      "affected_endpoints": ["ep-014"],
+      "code_snippet": "name := util.PathJoinRelX(ctx.PathParam(\"name\"))"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "License list is sorted with preferred licenses first",
+      "location": {"class": "repository", "method": "LoadRepoConfig", "file_path": "modules/repository/init.go", "line_number": 105},
+      "condition": "License name is in setting.Repository.PreferredLicenses",
+      "action": "Preferred licenses appear first in the sorted list (default: Apache License 2.0, MIT License)",
+      "affected_endpoints": ["ep-013"],
+      "code_snippet": "for _, name := range setting.Repository.PreferredLicenses {\n\tif util.SliceContainsString(Licenses, name, true) {"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Layered filesystem prioritizes custom path over bindata for template files",
+      "location": {"class": "options", "method": "AssetFS", "file_path": "modules/options/base.go", "line_number": 14},
+      "condition": "File exists in both custom path and bindata",
+      "action": "Custom path file takes precedence (first layer searched)",
+      "affected_endpoints": ["ep-012", "ep-014"],
+      "code_snippet": "func AssetFS() *assetfs.LayeredFS {\n\treturn assetfs.Layered(CustomAssets(), BuiltinAssets())\n}"
+    }
+  ]
+}

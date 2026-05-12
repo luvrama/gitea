@@ -1,0 +1,199 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-226",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls",
+      "resource_load": {
+        "operations_per_request": 10,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Multiple DB queries (labels, milestone, assignees, existing PR check) + git operations (compare, push to base ref)"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Assignee validation loops through each assignee ID calling GetUserByID and CanBeAssigned individually",
+          "impact": "N+1 queries for N assignees (typically 1-3, low impact in practice)",
+          "file_path": "routers/api/v1/repo/pull.go",
+          "line_number": 540,
+          "code_snippet": "for _, aID := range assigneeIDs { assignee, err := user_model.GetUserByID(ctx, aID) }",
+          "recommendation": "Batch load users by IDs"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-227",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Multiple sequential updates (title, body, deadline, assignees, milestone, labels, state, base branch)"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Each field update is a separate DB operation without transaction wrapping all mutations",
+          "impact": "Multiple round-trips to DB; partial failure leaves inconsistent state",
+          "file_path": "routers/api/v1/repo/pull.go",
+          "line_number": 630,
+          "code_snippet": "// TODO: wrap all mutations in a transaction",
+          "recommendation": "Wrap all mutations in a single transaction"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Wrap all edit mutations in a single transaction to prevent partial writes",
+          "estimated_impact": "Prevents inconsistent state on partial failure",
+          "implementation": "Use db.WithTx around all mutation calls"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-228",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single DB query to check merge status"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-229",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "resource_load": {
+        "operations_per_request": 12,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git", "queue"],
+        "note": "Heavy operation: DB checks, git merge, push, notifications, branch deletion"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "Git merge operation is synchronous and holds a global lock on the PR",
+          "impact": "Blocks concurrent operations on same PR during merge; expected behavior for correctness",
+          "file_path": "services/pull/merge.go",
+          "line_number": 247,
+          "code_snippet": "releaser, err := globallock.Lock(ctx, getPullWorkingLockKey(pr.ID))",
+          "recommendation": "Acceptable - lock is necessary for correctness"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-230",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/update",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "DB queries + git merge/rebase of base into head"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "Holds global lock during merge/rebase operation",
+          "impact": "Blocks concurrent updates on same PR",
+          "file_path": "services/pull/update.go",
+          "line_number": 31,
+          "code_snippet": "releaser, err := globallock.Lock(ctx, getPullWorkingLockKey(pr.ID))",
+          "recommendation": "Acceptable - lock is necessary for correctness"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-231",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Load PR, check auto-merge, permission check, delete"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-232",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/commits",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "DB query + git log + convert each commit (with user lookup)"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "All commits are loaded into memory via ShowPrettyFormatLogToList before pagination is applied",
+          "impact": "For PRs with thousands of commits, all are loaded into memory even if only one page is requested",
+          "file_path": "routers/api/v1/repo/pull.go",
+          "line_number": 1430,
+          "code_snippet": "totalNumberOfCommits := len(compareInfo.Commits)",
+          "recommendation": "Use git log with --skip and -n for server-side pagination"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "pagination",
+          "description": "Use git log --skip/--max-count for server-side pagination instead of loading all commits",
+          "estimated_impact": "Reduce memory usage for large PRs from O(N) to O(page_size)",
+          "implementation": "Pass skip/limit to git log command"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-233",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/files",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "DB query + git diff (potentially large) + shortstat"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "unbounded_queries",
+          "description": "GetDiffForAPI loads ALL files (MaxFiles=-1) into memory before pagination is applied",
+          "impact": "For PRs with thousands of changed files, entire diff is parsed into memory",
+          "file_path": "routers/api/v1/repo/pull.go",
+          "line_number": 1577,
+          "code_snippet": "MaxFiles: -1, // GetDiff() will return all files",
+          "recommendation": "Implement server-side file pagination in git diff"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "pagination",
+          "description": "Limit files loaded from git diff to the requested page instead of loading all",
+          "estimated_impact": "Significant memory reduction for large PRs",
+          "implementation": "Use skip-to parameter more effectively or implement offset-based diff parsing"
+        }
+      ]
+    }
+  ]
+}

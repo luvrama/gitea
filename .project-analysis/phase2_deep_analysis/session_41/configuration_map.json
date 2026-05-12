@@ -1,0 +1,21 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "actions.workflow_dirs",
+      "type": "[]string",
+      "default_value": "[\".gitea/workflows\", \".github/workflows\"]",
+      "source_file": "modules/setting/actions.go",
+      "used_by": [{"class": "actions", "method": "ListWorkflows", "file_path": "modules/actions/workflows.go", "usage": "iterate workflow dirs to find workflow files", "impact": "determines which directories are scanned for workflow YAML files"}],
+      "affected_endpoints": ["ep-280", "ep-281", "ep-283"]
+    },
+    {
+      "key": "actions.max_rerun_attempts",
+      "type": "int64",
+      "default_value": "10",
+      "source_file": "modules/setting/actions.go",
+      "used_by": [{"class": "actions_service", "method": "validateRerun", "file_path": "services/actions/rerun.go", "usage": "cap maximum number of rerun attempts", "impact": "prevents infinite reruns of a workflow run"}],
+      "affected_endpoints": []
+    }
+  ]
+}

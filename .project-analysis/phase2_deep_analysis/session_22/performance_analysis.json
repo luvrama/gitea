@@ -1,0 +1,121 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-150",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "2 SELECTs + 1 UPDATE on webhook table"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-151",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT + 2 DELETEs (webhook + hook_task) in transaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-152",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/starred",
+      "resource_load": {
+        "operations_per_request": 51,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 query for starred repos + N queries for permissions (default page size ~50)"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "For each starred repo, GetIndividualUserRepoPermission is called individually, loading units, checking collaborator status, and loading owner",
+          "impact": "With default page size of 50, this results in ~150+ additional queries per request (units, collaborator check, owner load per repo)",
+          "file_path": "routers/api/v1/user/star.go",
+          "line_number": 30,
+          "code_snippet": "for i, starred := range starredRepos {\n\tpermission, err := access_model.GetIndividualUserRepoPermission(ctx, starred, user)\n}",
+          "recommendation": "Batch-load permissions for all repos at once, or use a JOIN-based approach to get permissions in the initial query"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch permission loading for starred repos",
+          "estimated_impact": "Reduce from ~150 queries to ~3-5 queries per request",
+          "implementation": "Create a batch version of GetIndividualUserRepoPermission that accepts multiple repos"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-153",
+      "http_method": "GET",
+      "path": "/api/v1/user/starred",
+      "resource_load": {
+        "operations_per_request": 51,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Same N+1 pattern as ep-152"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "Same N+1 pattern as ep-152 - individual permission check per starred repo",
+          "impact": "~150+ queries per request with default page size",
+          "file_path": "routers/api/v1/user/star.go",
+          "line_number": 30,
+          "code_snippet": "for i, starred := range starredRepos {\n\tpermission, err := access_model.GetIndividualUserRepoPermission(ctx, starred, user)\n}",
+          "recommendation": "Batch-load permissions for all repos at once"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch permission loading for starred repos",
+          "estimated_impact": "Reduce from ~150 queries to ~3-5 queries per request",
+          "implementation": "Create a batch version of GetIndividualUserRepoPermission that accepts multiple repos"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-154",
+      "http_method": "GET",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single SELECT on star table with unique index"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-155",
+      "http_method": "PUT",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 block check + 1 star check + 1 INSERT + 2 UPDATEs in transaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

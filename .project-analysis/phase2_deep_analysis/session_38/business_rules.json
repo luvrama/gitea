@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Only admins, repo admins, or the user themselves can query collaborator permissions",
+      "location": {"class": "repo", "method": "GetRepoPermissions", "file_path": "routers/api/v1/repo/collaborators.go", "line_number": 218},
+      "condition": "!ctx.Doer.IsAdmin && !strings.EqualFold(ctx.Doer.LowerName, collaboratorUsername) && !ctx.IsUserRepoAdmin()",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-254"],
+      "code_snippet": "if !ctx.Doer.IsAdmin && !strings.EqualFold(ctx.Doer.LowerName, collaboratorUsername) && !ctx.IsUserRepoAdmin() {\n\tctx.APIError(http.StatusForbidden, ...)"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "authorization",
+      "description": "Only users who can change review requests can view the reviewers list",
+      "location": {"class": "repo", "method": "GetReviewers", "file_path": "routers/api/v1/repo/collaborators.go", "line_number": 248},
+      "condition": "!issue_service.CanDoerChangeReviewRequests(ctx, ctx.Doer, ctx.Repo.Repository, 0)",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-255"],
+      "code_snippet": "canChooseReviewer := issue_service.CanDoerChangeReviewRequests(ctx, ctx.Doer, ctx.Repo.Repository, 0)\nif !canChooseReviewer {"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "authorization",
+      "description": "CanDoerChangeReviewRequests allows poster, owner, collaborators, and org team members with PR read access",
+      "location": {"class": "issue_service", "method": "CanDoerChangeReviewRequests", "file_path": "services/issue/review_request.go", "line_number": 236},
+      "condition": "doer.ID == posterID || doer.ID == repo.OwnerID || isCollaborator || org team member",
+      "action": "Return true (allowed)",
+      "affected_endpoints": ["ep-255"],
+      "code_snippet": "if doer.ID == posterID { return true }\nif doer.ID == repo.OwnerID { return true }"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Reviewers include collaborators with read+ access and org team members with PR read access, excluding poster",
+      "location": {"class": "pull_service", "method": "GetReviewers", "file_path": "services/pull/reviewer.go", "line_number": 25},
+      "condition": "mode >= perm.AccessModeRead for collaborators; PR unit read access for org teams",
+      "action": "Collect unique user IDs, remove posterID, fetch active users",
+      "affected_endpoints": ["ep-255"],
+      "code_snippet": "e.Table(\"collaboration\").Where(\"repo_id=?\", repo.ID).And(\"mode >= ?\", perm.AccessModeRead)"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Assignees include users with write+ access and org team members with issue/PR read access",
+      "location": {"class": "repo_model", "method": "GetRepoAssignees", "file_path": "models/repo/user_repo.go", "line_number": 99},
+      "condition": "access.mode >= perm.AccessModeWrite; org teams with issue/PR read access",
+      "action": "Collect unique user IDs, fetch active users, append owner if not org",
+      "affected_endpoints": ["ep-256"],
+      "code_snippet": "e.Table(\"access\").Where(\"repo_id = ? AND mode >= ?\", repo.ID, perm.AccessModeWrite)"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "Attachment must belong to the same repo AND the specified issue",
+      "location": {"class": "repo", "method": "attachmentBelongsToRepoOrIssue", "file_path": "routers/api/v1/repo/issue_attachment.go", "line_number": 260},
+      "condition": "attachment.RepoID != ctx.Repo.Repository.ID || attachment.IssueID != issue.ID",
+      "action": "Return 404 Not Found",
+      "affected_endpoints": ["ep-257", "ep-258", "ep-260", "ep-261"],
+      "code_snippet": "if attachment.RepoID != ctx.Repo.Repository.ID {\n\tctx.APIErrorNotFound(\"no such attachment in repo\")"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Write access to issue attachments requires being poster, repo admin, site admin, or having write permission on issues/pulls",
+      "location": {"class": "repo", "method": "canUserWriteIssueAttachment", "file_path": "routers/api/v1/repo/issue_attachment.go", "line_number": 247},
+      "condition": "ctx.Doer.ID == issue.PosterID || ctx.IsUserRepoAdmin() || ctx.IsUserSiteAdmin() || ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull)",
+      "action": "Allow write operation; otherwise return 403",
+      "affected_endpoints": ["ep-259", "ep-260", "ep-261"],
+      "code_snippet": "canEditIssue := ctx.IsSigned && (ctx.Doer.ID == issue.PosterID || ctx.IsUserRepoAdmin() || ctx.IsUserSiteAdmin() || ctx.Repo.Permission.CanWriteIssuesOrPulls(issue.IsPull))"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "validation",
+      "description": "Uploaded file type must match allowed types configured in setting.Attachment.AllowedTypes",
+      "location": {"class": "upload", "method": "Verify", "file_path": "services/context/upload/upload.go", "line_number": 40},
+      "condition": "File extension or MIME type not in allowed list",
+      "action": "Return ErrFileTypeForbidden",
+      "affected_endpoints": ["ep-259", "ep-260"],
+      "code_snippet": "if mimeType == allowEntry { return nil }\nif wildcardTypeRe.MatchString(allowEntry) && strings.HasPrefix(mimeType, allowEntry[:len(allowEntry)-1]) { return nil }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "validation",
+      "description": "Uploaded file size must not exceed setting.Attachment.MaxSize (in MB)",
+      "location": {"class": "attachment_service", "method": "uploadAttachment", "file_path": "services/attachment/attachment.go", "line_number": 82},
+      "condition": "file.size > maxFileSize (setting.Attachment.MaxSize << 20)",
+      "action": "Return util.ErrContentTooLarge",
+      "affected_endpoints": ["ep-259"],
+      "code_snippet": "if maxFileSize >= 0 && file.size > maxFileSize {\n\treturn nil, util.ErrorWrap(util.ErrContentTooLarge, ...)"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Upload filename can be overridden by query parameter 'name'",
+      "location": {"class": "repo", "method": "CreateIssueAttachment", "file_path": "routers/api/v1/repo/issue_attachment.go", "line_number": 143},
+      "condition": "ctx.FormString(\"name\") != \"\"",
+      "action": "Use query param value as filename instead of upload header filename",
+      "affected_endpoints": ["ep-259"],
+      "code_snippet": "if query := ctx.FormString(\"name\"); query != \"\" {\n\tfilename = query\n}"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "business_logic",
+      "description": "After creating attachment, ChangeContent is called to trigger notifications (content unchanged)",
+      "location": {"class": "repo", "method": "CreateIssueAttachment", "file_path": "routers/api/v1/repo/issue_attachment.go", "line_number": 157},
+      "condition": "Always after successful upload",
+      "action": "Call ChangeContent with same content to trigger IssueChangeContent notification",
+      "affected_endpoints": ["ep-259"],
+      "code_snippet": "if err := issue_service.ChangeContent(ctx, issue, ctx.Doer, issue.Content, issue.ContentVersion); err != nil {"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "business_logic",
+      "description": "Deleting attachment removes both DB record and storage file",
+      "location": {"class": "repo_model", "method": "DeleteAttachment", "file_path": "models/repo/attachment.go", "line_number": 175},
+      "condition": "remove=true parameter",
+      "action": "DELETE from DB, then delete file from storage",
+      "affected_endpoints": ["ep-261"],
+      "code_snippet": "cnt, err := db.GetEngine(ctx).In(\"id\", ids).NoAutoCondition().Delete(attachments[0])\n...\nstorage.Attachments.Delete(a.RelativePath())"
+    }
+  ]
+}

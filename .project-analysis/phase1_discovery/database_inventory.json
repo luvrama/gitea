@@ -1,0 +1,6505 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_entities": 112,
+  "entities": [
+    {
+      "id": "db-001",
+      "entity_name": "ActionArtifact",
+      "table_or_collection": "action_artifact",
+      "file_path": "models/actions/artifact.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RunID",
+          "type": "int64",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "RunAttemptID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ContentEncodingOrType",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "ArtifactPath",
+          "type": "string",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "ArtifactName",
+          "type": "string",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Status",
+          "type": "ArtifactStatus",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ExpiredUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-002",
+      "entity_name": "ActionRun",
+      "table_or_collection": "action_run",
+      "file_path": "models/actions/run.go",
+      "fields": [
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "unique"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "WorkflowID",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Index",
+          "type": "int64",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "TriggerUserID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "TriggerUser",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "Ref",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "IsRefDeleted",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "ApprovedBy",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "EventPayload",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Status",
+          "type": "Status",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Version",
+          "type": "int",
+          "constraints": []
+        },
+        {
+          "name": "LatestAttemptID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Created",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Updated",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-003",
+      "entity_name": "ActionRunAttempt",
+      "table_or_collection": "action_run_attempt",
+      "file_path": "models/actions/run_attempt.go",
+      "fields": [
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "RunID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Run",
+          "type": "*ActionRun",
+          "constraints": []
+        },
+        {
+          "name": "Attempt",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "TriggerUser",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "ConcurrencyGroup",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "ConcurrencyCancel",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Status",
+          "type": "Status",
+          "constraints": []
+        },
+        {
+          "name": "Created",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Updated",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-004",
+      "entity_name": "ActionRunJob",
+      "table_or_collection": "action_run_job",
+      "file_path": "models/actions/run_job.go",
+      "fields": [
+        {
+          "name": "RunID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Run",
+          "type": "*ActionRun",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "CommitSHA",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "JobID",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Needs",
+          "type": "[]string",
+          "constraints": []
+        },
+        {
+          "name": "RunsOn",
+          "type": "[]string",
+          "constraints": []
+        },
+        {
+          "name": "SourceTaskID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Status",
+          "type": "Status",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ConcurrencyGroup",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "ConcurrencyCancel",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "TokenPermissions",
+          "type": "*repo_model.ActionsTokenPermissions",
+          "constraints": []
+        },
+        {
+          "name": "RunAttemptID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "AttemptJobID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Created",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Updated",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-005",
+      "entity_name": "ActionRunner",
+      "table_or_collection": "action_runner",
+      "file_path": "models/actions/runner.go",
+      "fields": [
+        {
+          "name": "UUID",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Version",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Owner",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "Description",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Token",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "TokenHash",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "//",
+          "type": "TokenLastEight",
+          "constraints": []
+        },
+        {
+          "name": "LastOnline",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "LastActive",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "AgentLabels",
+          "type": "[]string",
+          "constraints": []
+        },
+        {
+          "name": "Ephemeral",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IsDisabled",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Created",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Updated",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Deleted",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-006",
+      "entity_name": "ActionRunnerToken",
+      "table_or_collection": "action_runner_token",
+      "file_path": "models/actions/runner_token.go",
+      "fields": [
+        {
+          "name": "Token",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Owner",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "Created",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Updated",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Deleted",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-007",
+      "entity_name": "ActionSchedule",
+      "table_or_collection": "action_schedule",
+      "file_path": "models/actions/schedule.go",
+      "fields": [
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "TriggerUser",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "EventPayload",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Created",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Updated",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-008",
+      "entity_name": "ActionScheduleSpec",
+      "table_or_collection": "action_schedule_spec",
+      "file_path": "models/actions/schedule_spec.go",
+      "fields": [
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "ScheduleID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Schedule",
+          "type": "*ActionSchedule",
+          "constraints": []
+        },
+        {
+          "name": "Next",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Created",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Updated",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-009",
+      "entity_name": "ActionTask",
+      "table_or_collection": "action_task",
+      "file_path": "models/actions/task.go",
+      "fields": [
+        {
+          "name": "Job",
+          "type": "*ActionRunJob",
+          "constraints": []
+        },
+        {
+          "name": "Steps",
+          "type": "[]*ActionTaskStep",
+          "constraints": []
+        },
+        {
+          "name": "RunnerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Status",
+          "type": "Status",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Started",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Stopped",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "CommitSHA",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Token",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "TokenHash",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "TokenLastEight",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "LogIndexes",
+          "type": "LogIndexes",
+          "constraints": []
+        },
+        {
+          "name": "LogExpired",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "Created",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Updated",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-010",
+      "entity_name": "ActionTaskOutput",
+      "table_or_collection": "action_task_output",
+      "file_path": "models/actions/task_output.go",
+      "fields": [
+        {
+          "name": "TaskID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "OutputKey",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "OutputValue",
+          "type": "string",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-011",
+      "entity_name": "ActionTaskStep",
+      "table_or_collection": "action_task_step",
+      "file_path": "models/actions/task_step.go",
+      "fields": [
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "TaskID",
+          "type": "int64",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Index",
+          "type": "int64",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Status",
+          "type": "Status",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Created",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Updated",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-012",
+      "entity_name": "ActionTasksVersion",
+      "table_or_collection": "action_tasks_version",
+      "file_path": "models/actions/tasks_version.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-013",
+      "entity_name": "ActionVariable",
+      "table_or_collection": "action_variable",
+      "file_path": "models/actions/variable.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Data",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Description",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-014",
+      "entity_name": "Action",
+      "table_or_collection": "action",
+      "file_path": "models/activities/action.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ActUser",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "CommentID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Comment",
+          "type": "*issues_model.Comment",
+          "constraints": []
+        },
+        {
+          "name": "Issue",
+          "type": "*issues_model.Issue",
+          "constraints": []
+        },
+        {
+          "name": "IsDeleted",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IsPrivate",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Content",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-015",
+      "entity_name": "Notification",
+      "table_or_collection": "notification",
+      "file_path": "models/activities/notification.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Status",
+          "type": "NotificationStatus",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Source",
+          "type": "NotificationSource",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "UpdatedBy",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Issue",
+          "type": "*issues_model.Issue",
+          "constraints": []
+        },
+        {
+          "name": "Repository",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "Comment",
+          "type": "*issues_model.Comment",
+          "constraints": []
+        },
+        {
+          "name": "User",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-016",
+      "entity_name": "Task",
+      "table_or_collection": "task",
+      "file_path": "models/admin/task.go",
+      "fields": [
+        {
+          "name": "DoerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Doer",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Owner",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "Status",
+          "type": "structs.TaskStatus",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "PayloadContent",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Message",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Created",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-017",
+      "entity_name": "GPGKey",
+      "table_or_collection": "g_p_g_key",
+      "file_path": "models/asymkey/gpg_key.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "KeyID",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "PrimaryKeyID",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Content",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "SubsKey",
+          "type": "[]*GPGKey",
+          "constraints": []
+        },
+        {
+          "name": "Verified",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-018",
+      "entity_name": "GPGKeyImport",
+      "table_or_collection": "g_p_g_key_import",
+      "file_path": "models/asymkey/gpg_key_import.go",
+      "fields": [
+        {
+          "name": "KeyID",
+          "type": "string",
+          "constraints": [
+            "primary_key",
+            "not_null"
+          ]
+        },
+        {
+          "name": "Content",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-019",
+      "entity_name": "PublicKey",
+      "table_or_collection": "public_key",
+      "file_path": "models/asymkey/ssh_key.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Fingerprint",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Content",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Mode",
+          "type": "perm.AccessMode",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Type",
+          "type": "KeyType",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "LoginSourceID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "HasRecentActivity",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "HasUsed",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "Verified",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-020",
+      "entity_name": "DeployKey",
+      "table_or_collection": "deploy_key",
+      "file_path": "models/asymkey/ssh_key_deploy.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "KeyID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Content",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Mode",
+          "type": "perm.AccessMode",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "HasRecentActivity",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "HasUsed",
+          "type": "bool",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-021",
+      "entity_name": "AccessToken",
+      "table_or_collection": "access_token",
+      "file_path": "models/auth/access_token.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Token",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "TokenHash",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "TokenLastEight",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "HasRecentActivity",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "HasUsed",
+          "type": "bool",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-022",
+      "entity_name": "AuthToken",
+      "table_or_collection": "auth_token",
+      "file_path": "models/auth/auth_token.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "string",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ExpiresUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-023",
+      "entity_name": "OAuth2Application",
+      "table_or_collection": "o_auth2_application",
+      "file_path": "models/auth/oauth2.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ClientID",
+          "type": "string",
+          "constraints": [
+            "unique"
+          ]
+        },
+        {
+          "name": "ConfidentialClient",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "SkipSecondaryAuthorization",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "RedirectURIs",
+          "type": "[]string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-024",
+      "entity_name": "OAuth2AuthorizationCode",
+      "table_or_collection": "o_auth2_authorization_code",
+      "file_path": "models/auth/oauth2.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Grant",
+          "type": "*OAuth2Grant",
+          "constraints": []
+        },
+        {
+          "name": "Code",
+          "type": "string",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "ValidUntil",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-025",
+      "entity_name": "OAuth2Grant",
+      "table_or_collection": "o_auth2_grant",
+      "file_path": "models/auth/oauth2.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Application",
+          "type": "*OAuth2Application",
+          "constraints": []
+        },
+        {
+          "name": "ApplicationID",
+          "type": "int64",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Counter",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Scope",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Nonce",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-026",
+      "entity_name": "Session",
+      "table_or_collection": "session",
+      "file_path": "models/auth/session.go",
+      "fields": [
+        {
+          "name": "Key",
+          "type": "string",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "Data",
+          "type": "[]byte",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-027",
+      "entity_name": "Source",
+      "table_or_collection": "source",
+      "file_path": "models/auth/source.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "IsActive",
+          "type": "bool",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "IsSyncEnabled",
+          "type": "bool",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "TwoFactorPolicy",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Cfg",
+          "type": "Config",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-028",
+      "entity_name": "TwoFactor",
+      "table_or_collection": "two_factor",
+      "file_path": "models/auth/twofactor.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "LastUsedPasscode",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-029",
+      "entity_name": "WebAuthnCredential",
+      "table_or_collection": "web_authn_credential",
+      "file_path": "models/auth/webauthn.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "LowerName",
+          "type": "string",
+          "constraints": [
+            "unique"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "CredentialID",
+          "type": "[]byte",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "SignCount",
+          "type": "uint32",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-030",
+      "entity_name": "EmailHash",
+      "table_or_collection": "email_hash",
+      "file_path": "models/avatars/avatar.go",
+      "fields": [
+        {
+          "name": "Hash",
+          "type": "string",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "Email",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-031",
+      "entity_name": "ResourceIndex",
+      "table_or_collection": "resource_index",
+      "file_path": "models/db/index.go",
+      "fields": [
+        {
+          "name": "GroupID",
+          "type": "int64",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "MaxIndex",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-032",
+      "entity_name": "dbfsMeta",
+      "table_or_collection": "dbfs_meta",
+      "file_path": "models/dbfs/dbfs.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "FullPath",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "BlockSize",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "FileSize",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreateTimestamp",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "ModifyTimestamp",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-033",
+      "entity_name": "dbfsData",
+      "table_or_collection": "dbfs_data",
+      "file_path": "models/dbfs/dbfs.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Revision",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "MetaID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "BlobOffset",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "BlobSize",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "BlobData",
+          "type": "[]byte",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-034",
+      "entity_name": "Branch",
+      "table_or_collection": "branch",
+      "file_path": "models/git/branch.go",
+      "fields": [
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CommitMessage",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Pusher",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "IsDeleted",
+          "type": "bool",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "DeletedBy",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "DeletedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-035",
+      "entity_name": "RenamedBranch",
+      "table_or_collection": "renamed_branch",
+      "file_path": "models/git/branch.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-036",
+      "entity_name": "CommitStatus",
+      "table_or_collection": "commit_status",
+      "file_path": "models/git/commit_status.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Index",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "State",
+          "type": "commitstatus.CommitStatusState",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "SHA",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "TargetURL",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Description",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "ContextHash",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Context",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Creator",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-037",
+      "entity_name": "CommitStatusIndex",
+      "table_or_collection": "commit_status_index",
+      "file_path": "models/git/commit_status.go",
+      "fields": [
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "unique"
+          ]
+        },
+        {
+          "name": "SHA",
+          "type": "string",
+          "constraints": [
+            "unique"
+          ]
+        },
+        {
+          "name": "MaxIndex",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-038",
+      "entity_name": "CommitStatusSummary",
+      "table_or_collection": "commit_status_summary",
+      "file_path": "models/git/commit_status_summary.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "SHA",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "State",
+          "type": "commitstatus.CommitStatusState",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "TargetURL",
+          "type": "string",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-039",
+      "entity_name": "LFSMetaObject",
+      "table_or_collection": "l_f_s_meta_object",
+      "file_path": "models/git/lfs.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "lfs.Pointer",
+          "type": "`xorm:\"extends\"`",
+          "constraints": []
+        },
+        {
+          "name": "RepositoryID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-040",
+      "entity_name": "LFSLock",
+      "table_or_collection": "l_f_s_lock",
+      "file_path": "models/git/lfs_lock.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Owner",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "Path",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Created",
+          "type": "time.Time",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-041",
+      "entity_name": "ProtectedBranch",
+      "table_or_collection": "protected_branch",
+      "file_path": "models/git/protected_branch.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "RuleName",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Priority",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "globRule",
+          "type": "glob.Glob",
+          "constraints": []
+        },
+        {
+          "name": "isPlainName",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "CanPush",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "WhitelistUserIDs",
+          "type": "[]int64",
+          "constraints": []
+        },
+        {
+          "name": "WhitelistTeamIDs",
+          "type": "[]int64",
+          "constraints": []
+        },
+        {
+          "name": "EnableMergeWhitelist",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "WhitelistDeployKeys",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "MergeWhitelistUserIDs",
+          "type": "[]int64",
+          "constraints": []
+        },
+        {
+          "name": "MergeWhitelistTeamIDs",
+          "type": "[]int64",
+          "constraints": []
+        },
+        {
+          "name": "CanForcePush",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "EnableForcePushAllowlist",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "ForcePushAllowlistUserIDs",
+          "type": "[]int64",
+          "constraints": []
+        },
+        {
+          "name": "ForcePushAllowlistTeamIDs",
+          "type": "[]int64",
+          "constraints": []
+        },
+        {
+          "name": "ForcePushAllowlistDeployKeys",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "EnableStatusCheck",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-042",
+      "entity_name": "ProtectedTag",
+      "table_or_collection": "protected_tag",
+      "file_path": "models/git/protected_tag.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RegexPattern",
+          "type": "*regexp.Regexp",
+          "constraints": []
+        },
+        {
+          "name": "GlobPattern",
+          "type": "glob.Glob",
+          "constraints": []
+        },
+        {
+          "name": "AllowlistUserIDs",
+          "type": "[]int64",
+          "constraints": []
+        },
+        {
+          "name": "AllowlistTeamIDs",
+          "type": "[]int64",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-043",
+      "entity_name": "IssueAssignees",
+      "table_or_collection": "issue_assignees",
+      "file_path": "models/issues/assignees.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "AssigneeID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-044",
+      "entity_name": "Comment",
+      "table_or_collection": "comment",
+      "file_path": "models/issues/comment.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Type",
+          "type": "CommentType",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "PosterID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Poster",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Issue",
+          "type": "*Issue",
+          "constraints": []
+        },
+        {
+          "name": "Label",
+          "type": "*Label",
+          "constraints": []
+        },
+        {
+          "name": "AddedLabels",
+          "type": "[]*Label",
+          "constraints": []
+        },
+        {
+          "name": "RemovedLabels",
+          "type": "[]*Label",
+          "constraints": []
+        },
+        {
+          "name": "OldProject",
+          "type": "*project_model.Project",
+          "constraints": []
+        },
+        {
+          "name": "Project",
+          "type": "*project_model.Project",
+          "constraints": []
+        },
+        {
+          "name": "OldMilestone",
+          "type": "*Milestone",
+          "constraints": []
+        },
+        {
+          "name": "Milestone",
+          "type": "*Milestone",
+          "constraints": []
+        },
+        {
+          "name": "Time",
+          "type": "*TrackedTime",
+          "constraints": []
+        },
+        {
+          "name": "Assignee",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "AssigneeTeamID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "AssigneeTeam",
+          "type": "*organization.Team",
+          "constraints": []
+        },
+        {
+          "name": "ResolveDoer",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "DependentIssueID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "DependentIssue",
+          "type": "*Issue",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-045",
+      "entity_name": "ContentHistory",
+      "table_or_collection": "content_history",
+      "file_path": "models/issues/content_history.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "CommentID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "EditedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ContentText",
+          "type": "string",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-046",
+      "entity_name": "IssueDependency",
+      "table_or_collection": "issue_dependency",
+      "file_path": "models/issues/dependency.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "DependencyID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-047",
+      "entity_name": "Issue",
+      "table_or_collection": "issue",
+      "file_path": "models/issues/issue.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "Index",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "PosterID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Poster",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "OriginalAuthorID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Title",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Content",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "RenderedContent",
+          "type": "template.HTML",
+          "constraints": []
+        },
+        {
+          "name": "ContentVersion",
+          "type": "int",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Labels",
+          "type": "[]*Label",
+          "constraints": []
+        },
+        {
+          "name": "isLabelsLoaded",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "MilestoneID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Milestone",
+          "type": "*Milestone",
+          "constraints": []
+        },
+        {
+          "name": "isMilestoneLoaded",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "Projects",
+          "type": "[]*project_model.Project",
+          "constraints": []
+        },
+        {
+          "name": "isProjectsLoaded",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "AssigneeID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Assignee",
+          "type": "*user_model.User",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-048",
+      "entity_name": "DependencyInfo",
+      "table_or_collection": "dependency_info",
+      "file_path": "models/issues/issue.go",
+      "fields": [
+        {
+          "name": "Issue",
+          "type": "`xorm:\"extends\"`",
+          "constraints": []
+        },
+        {
+          "name": "repo_model.Repository",
+          "type": "`xorm:\"extends\"`",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-049",
+      "entity_name": "IssueLabel",
+      "table_or_collection": "issue_label",
+      "file_path": "models/issues/issue_label.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "LabelID",
+          "type": "int64",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-050",
+      "entity_name": "IssuePin",
+      "table_or_collection": "issue_pin",
+      "file_path": "models/issues/issue_pin.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IsPull",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "PinOrder",
+          "type": "int",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-051",
+      "entity_name": "IssueUser",
+      "table_or_collection": "issue_user",
+      "file_path": "models/issues/issue_user.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UID",
+          "type": "int64",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-052",
+      "entity_name": "IssueWatch",
+      "table_or_collection": "issue_watch",
+      "file_path": "models/issues/issue_watch.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IsWatching",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-053",
+      "entity_name": "Label",
+      "table_or_collection": "label",
+      "file_path": "models/issues/label.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "OrgID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ExclusiveOrder",
+          "type": "int",
+          "constraints": []
+        },
+        {
+          "name": "Color",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "NumOpenIssues",
+          "type": "int",
+          "constraints": []
+        },
+        {
+          "name": "NumOpenRepoIssues",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "IsChecked",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "QueryString",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "IsSelected",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "IsExcluded",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "ArchivedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-054",
+      "entity_name": "Milestone",
+      "table_or_collection": "milestone",
+      "file_path": "models/issues/milestone.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "Content",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "RenderedContent",
+          "type": "template.HTML",
+          "constraints": []
+        },
+        {
+          "name": "NumOpenIssues",
+          "type": "int",
+          "constraints": []
+        },
+        {
+          "name": "IsOverdue",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "DeadlineString",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "TotalTrackedTime",
+          "type": "int64",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-055",
+      "entity_name": "PullRequest",
+      "table_or_collection": "pull_request",
+      "file_path": "models/issues/pull.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "ConflictedFiles",
+          "type": "[]string",
+          "constraints": []
+        },
+        {
+          "name": "ChangedProtectedFiles",
+          "type": "[]string",
+          "constraints": []
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Issue",
+          "type": "*Issue",
+          "constraints": []
+        },
+        {
+          "name": "RequestedReviewers",
+          "type": "[]*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "RequestedReviewersTeams",
+          "type": "[]*org_model.Team",
+          "constraints": []
+        },
+        {
+          "name": "isRequestedReviewersLoaded",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "HeadRepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "HeadRepo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "BaseRepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "BaseRepo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "HeadCommitID",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "MergeBase",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "AllowMaintainerEdit",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "HasMerged",
+          "type": "bool",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "MergedCommitID",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "MergerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Merger",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "MergedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-056",
+      "entity_name": "Reaction",
+      "table_or_collection": "reaction",
+      "file_path": "models/issues/reaction.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Type",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "CommentID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "OriginalAuthorID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "OriginalAuthor",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "User",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-057",
+      "entity_name": "Review",
+      "table_or_collection": "review",
+      "file_path": "models/issues/review.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Reviewer",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "ReviewerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ReviewerTeamID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "ReviewerTeam",
+          "type": "*organization.Team",
+          "constraints": []
+        },
+        {
+          "name": "Issue",
+          "type": "*Issue",
+          "constraints": []
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Content",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Official",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CommitID",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Stale",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Dismissed",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "CodeComments",
+          "type": "CodeComments",
+          "constraints": []
+        },
+        {
+          "name": "Comments",
+          "type": "[]*Comment",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-058",
+      "entity_name": "Stopwatch",
+      "table_or_collection": "stopwatch",
+      "file_path": "models/issues/stopwatch.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-059",
+      "entity_name": "TrackedTime",
+      "table_or_collection": "tracked_time",
+      "file_path": "models/issues/tracked_time.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Issue",
+          "type": "*Issue",
+          "constraints": []
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "User",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "Created",
+          "type": "time.Time",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Time",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Deleted",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-060",
+      "entity_name": "OrgUser",
+      "table_or_collection": "org_user",
+      "file_path": "models/organization/org_user.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "OrgID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "IsPublic",
+          "type": "bool",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-061",
+      "entity_name": "Team",
+      "table_or_collection": "team",
+      "file_path": "models/organization/team.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "OrgID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "AccessMode",
+          "type": "perm.AccessMode",
+          "constraints": []
+        },
+        {
+          "name": "Members",
+          "type": "[]*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "Units",
+          "type": "[]*TeamUnit",
+          "constraints": []
+        },
+        {
+          "name": "IncludesAllRepositories",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CanCreateOrgRepo",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-062",
+      "entity_name": "TeamInvite",
+      "table_or_collection": "team_invite",
+      "file_path": "models/organization/team_invite.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Token",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "InviterID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "OrgID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "TeamID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Email",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-063",
+      "entity_name": "TeamRepo",
+      "table_or_collection": "team_repo",
+      "file_path": "models/organization/team_repo.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "OrgID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "TeamID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-064",
+      "entity_name": "TeamUnit",
+      "table_or_collection": "team_unit",
+      "file_path": "models/organization/team_unit.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "OrgID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "TeamID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Type",
+          "type": "unit.Type",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-065",
+      "entity_name": "TeamUser",
+      "table_or_collection": "team_user",
+      "file_path": "models/organization/team_user.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "OrgID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "TeamID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "UID",
+          "type": "int64",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-066",
+      "entity_name": "Package",
+      "table_or_collection": "package",
+      "file_path": "models/packages/package.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Type",
+          "type": "Type",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "LowerName",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "SemverCompatible",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IsInternal",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-067",
+      "entity_name": "PackageBlob",
+      "table_or_collection": "package_blob",
+      "file_path": "models/packages/package_blob.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Size",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "HashMD5",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "HashSHA1",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "HashSHA256",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "HashSHA512",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-068",
+      "entity_name": "PackageBlobUpload",
+      "table_or_collection": "package_blob_upload",
+      "file_path": "models/packages/package_blob_upload.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "string",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "BytesReceived",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "HashStateBytes",
+          "type": "[]byte",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-069",
+      "entity_name": "PackageCleanupRule",
+      "table_or_collection": "package_cleanup_rule",
+      "file_path": "models/packages/package_cleanup_rule.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Enabled",
+          "type": "bool",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Type",
+          "type": "Type",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "KeepCount",
+          "type": "int",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "KeepPattern",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "KeepPatternMatcher",
+          "type": "*regexp.Regexp",
+          "constraints": []
+        },
+        {
+          "name": "RemoveDays",
+          "type": "int",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "RemovePattern",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "RemovePatternMatcher",
+          "type": "*regexp.Regexp",
+          "constraints": []
+        },
+        {
+          "name": "MatchFullName",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-070",
+      "entity_name": "PackageFile",
+      "table_or_collection": "package_file",
+      "file_path": "models/packages/package_file.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "VersionID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "BlobID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "LowerName",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "CompositeKey",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "IsLead",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-071",
+      "entity_name": "PackageProperty",
+      "table_or_collection": "package_property",
+      "file_path": "models/packages/package_property.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RefType",
+          "type": "PropertyType",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "RefID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Value",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-072",
+      "entity_name": "PackageVersion",
+      "table_or_collection": "package_version",
+      "file_path": "models/packages/package_version.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "PackageID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "CreatorID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Version",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "LowerVersion",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "IsInternal",
+          "type": "bool",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "MetadataJSON",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "DownloadCount",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-073",
+      "entity_name": "Access",
+      "table_or_collection": "access",
+      "file_path": "models/perm/access/access.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-074",
+      "entity_name": "Column",
+      "table_or_collection": "column",
+      "file_path": "models/project/column.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Default",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Sorting",
+          "type": "int8",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Color",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "ProjectID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "CreatorID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "NumIssues",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-075",
+      "entity_name": "ProjectIssue",
+      "table_or_collection": "project_issue",
+      "file_path": "models/project/issue.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ProjectID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ProjectColumnID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Sorting",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-076",
+      "entity_name": "Project",
+      "table_or_collection": "project",
+      "file_path": "models/project/project.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Title",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Description",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Owner",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*repo_model.Repository",
+          "constraints": []
+        },
+        {
+          "name": "CreatorID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IsClosed",
+          "type": "bool",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "TemplateType",
+          "type": "TemplateType",
+          "constraints": []
+        },
+        {
+          "name": "RenderedContent",
+          "type": "template.HTML",
+          "constraints": []
+        },
+        {
+          "name": "NumOpenIssues",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "NumClosedIssues",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "NumIssues",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-077",
+      "entity_name": "AutoMerge",
+      "table_or_collection": "auto_merge",
+      "file_path": "models/pull/automerge.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "PullID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "DoerID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Doer",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "MergeStyle",
+          "type": "repo_model.MergeStyle",
+          "constraints": []
+        },
+        {
+          "name": "Message",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-078",
+      "entity_name": "ReviewState",
+      "table_or_collection": "review_state",
+      "file_path": "models/pull/review_state.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "PullID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "CommitSHA",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "UpdatedFiles",
+          "type": "map[string]ViewedState",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-079",
+      "entity_name": "RepoArchiver",
+      "table_or_collection": "repo_archiver",
+      "file_path": "models/repo/archiver.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Type",
+          "type": "ArchiveType",
+          "constraints": [
+            "unique"
+          ]
+        },
+        {
+          "name": "CommitID",
+          "type": "string",
+          "constraints": [
+            "unique"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-080",
+      "entity_name": "Attachment",
+      "table_or_collection": "attachment",
+      "file_path": "models/repo/attachment.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UUID",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "IssueID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "ReleaseID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UploaderID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "CommentID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "DownloadCount",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Size",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "CustomDownloadURL",
+          "type": "string",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-081",
+      "entity_name": "Collaboration",
+      "table_or_collection": "collaboration",
+      "file_path": "models/repo/collaboration.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Mode",
+          "type": "perm.AccessMode",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-082",
+      "entity_name": "LanguageStat",
+      "table_or_collection": "language_stat",
+      "file_path": "models/repo/language_stats.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Language",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Percentage",
+          "type": "float32",
+          "constraints": []
+        },
+        {
+          "name": "Size",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Color",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-083",
+      "entity_name": "RepoLicense",
+      "table_or_collection": "repo_license",
+      "file_path": "models/repo/license.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "License",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-084",
+      "entity_name": "Mirror",
+      "table_or_collection": "mirror",
+      "file_path": "models/repo/mirror.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*Repository",
+          "constraints": []
+        },
+        {
+          "name": "EnablePrune",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "NextUpdateUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "LastSyncUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "LFS",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "LFSEndpoint",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "RemoteAddress",
+          "type": "string",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-085",
+      "entity_name": "PushMirror",
+      "table_or_collection": "push_mirror",
+      "file_path": "models/repo/pushmirror.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*Repository",
+          "constraints": []
+        },
+        {
+          "name": "RemoteAddress",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "SyncOnCommit",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "LastUpdateUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "LastError",
+          "type": "string",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-086",
+      "entity_name": "Redirect",
+      "table_or_collection": "redirect",
+      "file_path": "models/repo/redirect.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "LowerName",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-087",
+      "entity_name": "Release",
+      "table_or_collection": "release",
+      "file_path": "models/repo/release.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Repo",
+          "type": "*Repository",
+          "constraints": []
+        },
+        {
+          "name": "PublisherID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Publisher",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "TagName",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "OriginalAuthorID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "TargetBehind",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Sha1",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "NumCommitsBehind",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Note",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "RenderedNote",
+          "type": "template.HTML",
+          "constraints": []
+        },
+        {
+          "name": "IsDraft",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IsPrerelease",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IsTag",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Attachments",
+          "type": "[]*Attachment",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-088",
+      "entity_name": "Repository",
+      "table_or_collection": "repository",
+      "file_path": "models/repo/repo.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Owner",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "LowerName",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Description",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Website",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "OriginalServiceType",
+          "type": "api.GitServiceType",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "OriginalURL",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "NumOpenIssues",
+          "type": "int",
+          "constraints": []
+        },
+        {
+          "name": "NumOpenPulls",
+          "type": "int",
+          "constraints": []
+        },
+        {
+          "name": "NumMilestones",
+          "type": "int",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "NumClosedMilestones",
+          "type": "int",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "NumOpenMilestones",
+          "type": "int",
+          "constraints": []
+        },
+        {
+          "name": "NumProjects",
+          "type": "int",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "NumClosedProjects",
+          "type": "int",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "NumOpenProjects",
+          "type": "int",
+          "constraints": []
+        },
+        {
+          "name": "NumActionRuns",
+          "type": "int",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "NumClosedActionRuns",
+          "type": "int",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "NumOpenActionRuns",
+          "type": "int",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-089",
+      "entity_name": "RepoIndexerStatus",
+      "table_or_collection": "repo_indexer_status",
+      "file_path": "models/repo/repo_indexer.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "CommitSha",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "IndexerType",
+          "type": "RepoIndexerType",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-090",
+      "entity_name": "RepoUnit",
+      "table_or_collection": "repo_unit",
+      "file_path": "models/repo/repo_unit.go",
+      "fields": [
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Type",
+          "type": "unit.Type",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Config",
+          "type": "convert.Conversion",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "AnonymousAccessMode",
+          "type": "perm.AccessMode",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "EveryoneAccessMode",
+          "type": "perm.AccessMode",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-091",
+      "entity_name": "Star",
+      "table_or_collection": "star",
+      "file_path": "models/repo/star.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-092",
+      "entity_name": "Topic",
+      "table_or_collection": "topic",
+      "file_path": "models/repo/topic.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-093",
+      "entity_name": "RepoTopic",
+      "table_or_collection": "repo_topic",
+      "file_path": "models/repo/topic.go",
+      "fields": [
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "TopicID",
+          "type": "int64",
+          "constraints": [
+            "primary_key"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-094",
+      "entity_name": "RepoTransfer",
+      "table_or_collection": "repo_transfer",
+      "file_path": "models/repo/transfer.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Doer",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "Recipient",
+          "type": "*user_model.User",
+          "constraints": []
+        },
+        {
+          "name": "Repo",
+          "type": "*Repository",
+          "constraints": []
+        },
+        {
+          "name": "Teams",
+          "type": "[]*organization.Team",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-095",
+      "entity_name": "Upload",
+      "table_or_collection": "upload",
+      "file_path": "models/repo/upload.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UUID",
+          "type": "string",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-096",
+      "entity_name": "Watch",
+      "table_or_collection": "watch",
+      "file_path": "models/repo/watch.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Mode",
+          "type": "WatchMode",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-097",
+      "entity_name": "Secret",
+      "table_or_collection": "secret",
+      "file_path": "models/secret/secret.go",
+      "fields": [
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Data",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Description",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-098",
+      "entity_name": "AppState",
+      "table_or_collection": "app_state",
+      "file_path": "models/system/appstate.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "string",
+          "constraints": [
+            "primary_key"
+          ]
+        },
+        {
+          "name": "Content",
+          "type": "string",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-099",
+      "entity_name": "Notice",
+      "table_or_collection": "notice",
+      "file_path": "models/system/notice.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Description",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-100",
+      "entity_name": "Setting",
+      "table_or_collection": "setting",
+      "file_path": "models/system/setting.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "SettingKey",
+          "type": "string",
+          "constraints": [
+            "unique"
+          ]
+        },
+        {
+          "name": "SettingValue",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Version",
+          "type": "int",
+          "constraints": []
+        },
+        {
+          "name": "Created",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        },
+        {
+          "name": "Updated",
+          "type": "timeutil.TimeStamp",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-101",
+      "entity_name": "Badge",
+      "table_or_collection": "badge",
+      "file_path": "models/user/badge.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "Slug",
+          "type": "string",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-102",
+      "entity_name": "UserBadge",
+      "table_or_collection": "user_badge",
+      "file_path": "models/user/badge.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-103",
+      "entity_name": "Blocking",
+      "table_or_collection": "blocking",
+      "file_path": "models/user/block.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "BlockerID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Blocker",
+          "type": "*User",
+          "constraints": []
+        },
+        {
+          "name": "BlockeeID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "Blockee",
+          "type": "*User",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-104",
+      "entity_name": "EmailAddress",
+      "table_or_collection": "email_address",
+      "file_path": "models/user/email_address.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "Email",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "LowerEmail",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IsPrimary",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-105",
+      "entity_name": "ExternalLoginUser",
+      "table_or_collection": "external_login_user",
+      "file_path": "models/user/external_login_user.go",
+      "fields": [
+        {
+          "name": "ExternalID",
+          "type": "string",
+          "constraints": [
+            "primary_key",
+            "not_null"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "LoginSourceID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "not_null"
+          ]
+        },
+        {
+          "name": "RawData",
+          "type": "map[string]any",
+          "constraints": []
+        },
+        {
+          "name": "Provider",
+          "type": "string",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "AvatarURL",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "AccessToken",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "AccessTokenSecret",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "RefreshToken",
+          "type": "string",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-106",
+      "entity_name": "Follow",
+      "table_or_collection": "follow",
+      "file_path": "models/user/follow.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "FollowID",
+          "type": "int64",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-107",
+      "entity_name": "UserOpenID",
+      "table_or_collection": "user_open_i_d",
+      "file_path": "models/user/openid.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UID",
+          "type": "int64",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        },
+        {
+          "name": "URI",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Show",
+          "type": "bool",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-108",
+      "entity_name": "Redirect",
+      "table_or_collection": "redirect",
+      "file_path": "models/user/redirect.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "LowerName",
+          "type": "string",
+          "constraints": [
+            "not_null",
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-109",
+      "entity_name": "Setting",
+      "table_or_collection": "setting",
+      "file_path": "models/user/setting.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "UserID",
+          "type": "int64",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "SettingKey",
+          "type": "string",
+          "constraints": [
+            "unique",
+            "indexed"
+          ]
+        },
+        {
+          "name": "SettingValue",
+          "type": "string",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-110",
+      "entity_name": "User",
+      "table_or_collection": "user",
+      "file_path": "models/user/user.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "LowerName",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Email",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "EmailNotificationsPreference",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Passwd",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "PasswdHashAlgo",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "MustChangePassword",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "LoginSource",
+          "type": "int64",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "Rands",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Salt",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Language",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "LastLoginUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "MaxRepoCreation",
+          "type": "int",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "IsActive",
+          "type": "bool",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "IsRestricted",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "AllowCreateOrganization",
+          "type": "bool",
+          "constraints": []
+        },
+        {
+          "name": "ProhibitLogin",
+          "type": "bool",
+          "constraints": [
+            "not_null"
+          ]
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-111",
+      "entity_name": "HookTask",
+      "table_or_collection": "hook_task",
+      "file_path": "models/webhook/hooktask.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "HookID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UUID",
+          "type": "string",
+          "constraints": [
+            "unique"
+          ]
+        },
+        {
+          "name": "PayloadContent",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "PayloadVersion",
+          "type": "int",
+          "constraints": []
+        },
+        {
+          "name": "RequestContent",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "RequestInfo",
+          "type": "*HookRequest",
+          "constraints": []
+        },
+        {
+          "name": "ResponseContent",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "ResponseInfo",
+          "type": "*HookResponse",
+          "constraints": []
+        }
+      ],
+      "relationships": []
+    },
+    {
+      "id": "db-112",
+      "entity_name": "Webhook",
+      "table_or_collection": "webhook",
+      "file_path": "models/webhook/webhook.go",
+      "fields": [
+        {
+          "name": "ID",
+          "type": "int64",
+          "constraints": [
+            "primary_key",
+            "auto_increment"
+          ]
+        },
+        {
+          "name": "RepoID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "OwnerID",
+          "type": "int64",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "URL",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Name",
+          "type": "string",
+          "constraints": [
+            "not_null"
+          ]
+        },
+        {
+          "name": "HTTPMethod",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Secret",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "Events",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "*webhook_module.HookEvent",
+          "type": "`xorm:\"-\"`",
+          "constraints": []
+        },
+        {
+          "name": "IsActive",
+          "type": "bool",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "Type",
+          "type": "webhook_module.HookType",
+          "constraints": []
+        },
+        {
+          "name": "Meta",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "HeaderAuthorizationEncrypted",
+          "type": "string",
+          "constraints": []
+        },
+        {
+          "name": "CreatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        },
+        {
+          "name": "UpdatedUnix",
+          "type": "timeutil.TimeStamp",
+          "constraints": [
+            "indexed"
+          ]
+        }
+      ],
+      "relationships": []
+    }
+  ],
+  "repositories": []
+}

@@ -1,0 +1,28 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "Git Repository (local filesystem)",
+      "type": "filesystem",
+      "base_url": "local git repo path",
+      "client_class": "git.Repository",
+      "file_path": "modules/git/repo.go",
+      "http_library": "git CLI commands",
+      "endpoints_called": [
+        {"method": "CLI", "path": "git tag", "request": {"type": "tag name + commit SHA", "key_fields": ["tagName", "commitID"]}, "response": {"type": "success/error", "key_fields": []}, "purpose": "Create git tag on release publish"},
+        {"method": "CLI", "path": "git tag -d", "request": {"type": "tag name", "key_fields": ["tagName"]}, "response": {"type": "success/error", "key_fields": []}, "purpose": "Delete git tag on release delete with delTag=true"},
+        {"method": "CLI", "path": "git rev-parse / cat-file", "request": {"type": "ref/commit", "key_fields": ["target"]}, "response": {"type": "commit object", "key_fields": ["SHA"]}, "purpose": "Resolve target commit for tag creation"}
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": null
+      },
+      "authentication": "none (local filesystem access)",
+      "used_by_endpoints": ["ep-243", "ep-244", "ep-245"],
+      "config_keys": ["repository.ROOT"]
+    }
+  ]
+}

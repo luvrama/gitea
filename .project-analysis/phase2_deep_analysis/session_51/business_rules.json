@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Draft releases are only visible to users with write access to releases",
+      "location": {"class": "repo", "method": "GetReleaseByTag", "file_path": "routers/api/v1/repo/release_tags.go", "line_number": 57},
+      "condition": "release.IsDraft && (!ctx.IsSigned || !ctx.Repo.Permission.CanWrite(unit_model.TypeReleases))",
+      "action": "Return 404 Not Found",
+      "affected_endpoints": ["ep-344"],
+      "code_snippet": "if release.IsDraft {\n\tif !ctx.IsSigned || !ctx.Repo.Permission.CanWrite(unit_model.TypeReleases) {\n\t\tctx.APIErrorNotFound()"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Tag-only records (IsTag=true) are not treated as releases and return 404",
+      "location": {"class": "repo", "method": "GetReleaseByTag", "file_path": "routers/api/v1/repo/release_tags.go", "line_number": 53},
+      "condition": "release.IsTag == true",
+      "action": "Return 404 Not Found",
+      "affected_endpoints": ["ep-344", "ep-345"],
+      "code_snippet": "if release.IsTag {\n\tctx.APIErrorNotFound()\n\treturn\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "authorization",
+      "description": "Protected tag names cannot be deleted",
+      "location": {"class": "release_service", "method": "DeleteReleaseByID", "file_path": "services/release/release.go", "line_number": 369},
+      "condition": "Tag name matches a protected tag pattern and user is not allowed",
+      "action": "Return ErrProtectedTagName (422)",
+      "affected_endpoints": ["ep-345"],
+      "code_snippet": "if !isAllowed {\n\treturn ErrProtectedTagName{TagName: rel.TagName}\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Deleting a release (without delTag) marks it as tag-only rather than removing the DB record",
+      "location": {"class": "release_service", "method": "DeleteReleaseByID", "file_path": "services/release/release.go", "line_number": 399},
+      "condition": "delTag == false",
+      "action": "Set rel.IsTag = true and update in DB",
+      "affected_endpoints": ["ep-345"],
+      "code_snippet": "rel.IsTag = true\nif err := repo_model.UpdateRelease(ctx, rel); err != nil {"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Release attachments are deleted from storage when release is deleted",
+      "location": {"class": "release_service", "method": "DeleteReleaseByID", "file_path": "services/release/release.go", "line_number": 408},
+      "condition": "Release has attachments",
+      "action": "Delete attachment records and files from storage",
+      "affected_endpoints": ["ep-345"],
+      "code_snippet": "if err := repo_model.DeleteAttachmentsByRelease(ctx, rel.ID); err != nil {"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "validation",
+      "description": "Topic names must match pattern ^[a-z0-9][-.a-z0-9]*$ and be max 35 chars",
+      "location": {"class": "repo_model", "method": "ValidateTopic", "file_path": "models/repo/topic.go", "line_number": 59},
+      "condition": "len(topic) > 35 || !topicPattern.MatchString(topic)",
+      "action": "Return invalid topic error",
+      "affected_endpoints": ["ep-348", "ep-349", "ep-350"],
+      "code_snippet": "func ValidateTopic(topic string) bool {\n\treturn len(topic) <= 35 && topicPattern.MatchString(topic)\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "Maximum 25 topics allowed per repository",
+      "location": {"class": "repo", "method": "UpdateTopics", "file_path": "routers/api/v1/repo/topic.go", "line_number": 87},
+      "condition": "len(validTopics) > 25",
+      "action": "Return 422 with 'Exceeding maximum number of topics per repo'",
+      "affected_endpoints": ["ep-348", "ep-349"],
+      "code_snippet": "if len(validTopics) > 25 {\n\tctx.JSON(http.StatusUnprocessableEntity, map[string]any{...})"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Topic names are normalized to lowercase and trimmed before processing",
+      "location": {"class": "repo", "method": "AddTopic", "file_path": "routers/api/v1/repo/topic.go", "line_number": 127},
+      "condition": "Always",
+      "action": "strings.TrimSpace(strings.ToLower(topicName))",
+      "affected_endpoints": ["ep-349", "ep-350"],
+      "code_snippet": "topicName := strings.TrimSpace(strings.ToLower(ctx.PathParam(\"topic\")))"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Adding a topic that already exists on the repo is a no-op (idempotent)",
+      "location": {"class": "repo_model", "method": "AddTopic", "file_path": "models/repo/topic.go", "line_number": 218},
+      "condition": "Topic already linked to repo",
+      "action": "Return existing topic without error",
+      "affected_endpoints": ["ep-349"],
+      "code_snippet": "if topic != nil {\n\treturn topic, nil\n}"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "SaveTopics computes diff between current and desired topics, only adding/removing changes",
+      "location": {"class": "repo_model", "method": "SaveTopics", "file_path": "models/repo/topic.go", "line_number": 244},
+      "condition": "Always on UpdateTopics",
+      "action": "Determine added/removed topics and apply minimal changes",
+      "affected_endpoints": ["ep-348"],
+      "code_snippet": "for _, topicName := range topicNames {\n\tvar found bool\n\tfor _, t := range topics {"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "business_logic",
+      "description": "Topic repo_count is maintained as a denormalized counter, incremented on add, decremented on remove",
+      "location": {"class": "repo_model", "method": "addTopicByNameToRepo", "file_path": "models/repo/topic.go", "line_number": 103},
+      "condition": "Topic added or removed from repo",
+      "action": "Increment or decrement topic.RepoCount",
+      "affected_endpoints": ["ep-348", "ep-349", "ep-350"],
+      "code_snippet": "topic.RepoCount++\nif _, err := e.ID(topic.ID).Cols(\"repo_count\").Update(&topic); err != nil {"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "business_logic",
+      "description": "After topic changes, the repository.topics field is synced with current topic names",
+      "location": {"class": "repo_model", "method": "syncTopicsInRepository", "file_path": "models/repo/topic.go", "line_number": 290},
+      "condition": "After any topic add/remove/save",
+      "action": "Query all topic names for repo and update repository.topics column",
+      "affected_endpoints": ["ep-348", "ep-349", "ep-350"],
+      "code_snippet": "if _, err := db.GetEngine(ctx).ID(repoID).Cols(\"topics\").Update(&Repository{Topics: topicNames}); err != nil {"
+    }
+  ]
+}

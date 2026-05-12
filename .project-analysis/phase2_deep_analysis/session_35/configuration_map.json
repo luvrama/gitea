@@ -1,0 +1,37 @@
+{
+  "total_properties": 4,
+  "properties": [
+    {
+      "key": "mirror.ENABLED",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/mirror.go",
+      "used_by": [{"class": "repo", "method": "MirrorSync/PushMirrorSync/ListPushMirrors/GetPushMirrorByName/AddPushMirror/DeletePushMirrorByRemoteName", "file_path": "routers/api/v1/repo/mirror.go", "usage": "Guard check", "impact": "All mirror endpoints return 400 if disabled"}],
+      "affected_endpoints": ["ep-234", "ep-235", "ep-236", "ep-237", "ep-238", "ep-239"]
+    },
+    {
+      "key": "mirror.MIN_INTERVAL",
+      "type": "Duration",
+      "default_value": "10m",
+      "source_file": "modules/setting/mirror.go",
+      "used_by": [{"class": "repo", "method": "CreatePushMirror", "file_path": "routers/api/v1/repo/mirror.go", "usage": "Validate interval >= MinInterval", "impact": "Rejects push mirror creation with interval below minimum"}],
+      "affected_endpoints": ["ep-238"]
+    },
+    {
+      "key": "git.TIMEOUT.MIRROR",
+      "type": "Integer (seconds)",
+      "default_value": "300",
+      "source_file": "modules/setting/git.go",
+      "used_by": [{"class": "mirror", "method": "runPushSync", "file_path": "services/mirror/mirror_push.go", "usage": "Timeout for git push operation", "impact": "Controls how long push mirror sync waits before timing out"}],
+      "affected_endpoints": ["ep-235"]
+    },
+    {
+      "key": "lfs.START_SERVER",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "modules/setting/lfs.go",
+      "used_by": [{"class": "mirror", "method": "runPushSync", "file_path": "services/mirror/mirror_push.go", "usage": "Determines if LFS objects are synced during push", "impact": "If enabled, LFS objects are uploaded to remote during push mirror sync"}],
+      "affected_endpoints": ["ep-235"]
+    }
+  ]
+}

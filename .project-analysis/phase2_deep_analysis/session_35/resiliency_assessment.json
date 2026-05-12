@@ -1,0 +1,202 @@
+{
+  "total_findings": 8,
+  "overall_risk": "high",
+  "dependency_resiliency": [
+    {
+      "dependency": "Git Remote (Push Mirror Target)",
+      "client_class": "gitrepo.PushToExternal",
+      "file_path": "services/mirror/mirror_push.go",
+      "used_by_endpoints": ["ep-235"],
+      "timeout": {
+        "status": "configured",
+        "value_ms": "setting.Git.Timeout.Mirror * 1000 (default 300000ms)",
+        "recommendation": null
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Add retry with exponential backoff for transient network failures during push"
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "Add circuit breaker per remote to avoid repeated failures to unreachable remotes"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Limit concurrent push mirror syncs to prevent resource exhaustion"
+      },
+      "fallback": {
+        "status": "missing",
+        "behavior": null,
+        "recommendation": "Record failure in last_error and continue; already partially implemented"
+      },
+      "idempotency": {
+        "safe_to_retry": true,
+        "reason": "Git push --mirror is idempotent - pushing same refs again is safe"
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-235"],
+        "impact": "If remote is down, push_mirrors-sync blocks for timeout duration per mirror, potentially causing HTTP timeout for the caller"
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-234",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/mirror-sync",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "fallback",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Async queue push - fire and forget pattern is resilient",
+          "recommendation": null
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - async queue decouples from actual sync",
+      "graceful_degradation": "Queue handles backpressure via unique queue deduplication"
+    },
+    {
+      "endpoint_id": "ep-235",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors-sync",
+      "risk_level": "high",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Git push has timeout but total request time = N * timeout which can exceed HTTP timeouts",
+          "recommendation": "Make sync async or add overall request timeout"
+        },
+        {
+          "pattern": "retry",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "No retry on transient push failures",
+          "recommendation": "Add retry logic for network errors"
+        },
+        {
+          "pattern": "circuit_breaker",
+          "status": "missing",
+          "severity": "high",
+          "detail": "No circuit breaker - will attempt push to known-failing remotes",
+          "recommendation": "Skip mirrors with recent last_error or implement circuit breaker"
+        },
+        {
+          "pattern": "cascading_failure",
+          "status": "missing",
+          "severity": "high",
+          "detail": "Fails on first mirror error, leaving remaining mirrors unsynced",
+          "recommendation": "Continue syncing remaining mirrors even if one fails"
+        }
+      ],
+      "non_atomic_operations": ["Partial sync - some mirrors synced, some not, if error occurs mid-loop"],
+      "cascading_failure_risk": "One slow/failing remote blocks all subsequent mirrors in the loop",
+      "graceful_degradation": "Returns 500 on first failure, partial sync state"
+    },
+    {
+      "endpoint_id": "ep-236",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only DB operation",
+      "graceful_degradation": "Standard DB error handling"
+    },
+    {
+      "endpoint_id": "ep-237",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors/{name}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only DB operation",
+      "graceful_degradation": "Standard DB error handling"
+    },
+    {
+      "endpoint_id": "ep-238",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "DB insert + git remote add are not atomic, but cleanup is implemented on failure",
+          "recommendation": "Current cleanup logic is adequate"
+        },
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "low",
+          "detail": "DNS lookup in IsMigrateURLAllowed has no explicit timeout",
+          "recommendation": "Use context-aware DNS resolver"
+        }
+      ],
+      "non_atomic_operations": ["DB insert then git remote add - cleanup on failure implemented"],
+      "cascading_failure_risk": "DNS resolution hang could block request",
+      "graceful_degradation": "Cleanup deletes DB record if git remote registration fails"
+    },
+    {
+      "endpoint_id": "ep-239",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/push_mirrors/{name}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Only deletes DB record, does not remove git remote config - leaves orphaned state",
+          "recommendation": "Add git remote removal before DB delete"
+        }
+      ],
+      "non_atomic_operations": ["DB record deleted but git remote config remains"],
+      "cascading_failure_risk": "None for the request itself, but leaves inconsistent state",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "graceful.GetManager() handles shutdown context for mirror queue",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No rate limiting on mirror sync endpoints",
+      "recommendation": "Add rate limiting to prevent abuse of sync endpoints which trigger expensive git operations"
+    },
+    "dead_letter_queues": {
+      "status": "missing",
+      "detail": "Mirror queue has no DLQ - failed syncs are logged but not retried from queue",
+      "recommendation": "Add retry mechanism or DLQ for failed mirror sync operations"
+    },
+    "single_points_of_failure": [
+      "Mirror queue (single instance, no redundancy unless backed by Redis)"
+    ],
+    "cascading_failure_paths": [
+      "Remote git server down → ep-235 blocks for full timeout × N mirrors → HTTP timeout for caller"
+    ]
+  }
+}

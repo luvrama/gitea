@@ -1,0 +1,154 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 4,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "webhook",
+      "entity_class": "webhook.Webhook",
+      "file_path": "models/webhook/webhook.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": ["INDEX"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": ["INDEX"]},
+        {"name": "is_system_webhook", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": []},
+        {"name": "url", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "''", "constraints": ["NOT NULL DEFAULT ''"]},
+        {"name": "http_method", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "content_type", "type": "INT", "code_type": "HookContentType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "secret", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "events", "type": "TEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_active", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "false", "constraints": ["INDEX"]},
+        {"name": "type", "type": "VARCHAR(16)", "code_type": "webhook_module.HookType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "meta", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "last_status", "type": "INT", "code_type": "webhook_module.HookStatus", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "header_authorization_encrypted", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX updated"]}
+      ],
+      "indexes": [
+        {"name": "idx_webhook_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "idx_webhook_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "idx_webhook_is_active", "columns": ["is_active"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "one-to-many", "target_table": "hook_task", "join_column": "id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "hook_task",
+      "entity_class": "webhook.HookTask",
+      "file_path": "models/webhook/hooktask.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "hook_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]}
+      ],
+      "indexes": [
+        {"name": "idx_hook_task_hook_id", "columns": ["hook_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "webhook", "join_column": "hook_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "star",
+      "entity_class": "repo.Star",
+      "file_path": "models/repo/star.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]}
+      ],
+      "indexes": [
+        {"name": "UQE_star_s", "columns": ["uid", "repo_id"], "unique": true},
+        {"name": "idx_star_created_unix", "columns": ["created_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "user_blocking",
+      "entity_class": "user.Blocking",
+      "file_path": "models/user/block.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "blocker_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(block)"]},
+        {"name": "blockee_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(block)"]},
+        {"name": "note", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX created"]}
+      ],
+      "indexes": [
+        {"name": "UQE_user_blocking_block", "columns": ["blocker_id", "blockee_id"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "blocker_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "blockee_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-150",
+      "path": "/api/v1/user/hooks/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "utils.GetOwnerHook", "description": "Get webhook by owner_id and id"},
+        {"store_type": "database", "store_name": "webhook", "operation": "UPDATE", "method": "webhook.UpdateWebhook", "description": "Update all webhook columns"},
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "utils.GetOwnerHook", "description": "Re-fetch updated webhook"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-151",
+      "path": "/api/v1/user/hooks/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "webhook", "operation": "SELECT", "method": "webhook.GetWebhookByOwnerID", "description": "Verify webhook exists"},
+        {"store_type": "database", "store_name": "webhook", "operation": "DELETE", "method": "webhook.DeleteWebhookByID", "description": "Delete webhook record"},
+        {"store_type": "database", "store_name": "hook_task", "operation": "DELETE", "method": "webhook.DeleteWebhookByID", "description": "Delete associated hook tasks"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-152",
+      "path": "/api/v1/users/{username}/starred",
+      "operations": [
+        {"store_type": "database", "store_name": "repository JOIN star", "operation": "SELECT", "method": "repo_model.GetStarredRepos", "description": "Get starred repos with pagination"},
+        {"store_type": "database", "store_name": "repo_unit/collaboration", "operation": "SELECT", "method": "access_model.GetIndividualUserRepoPermission", "description": "Get permission per repo (N+1)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-153",
+      "path": "/api/v1/user/starred",
+      "operations": [
+        {"store_type": "database", "store_name": "repository JOIN star", "operation": "SELECT", "method": "repo_model.GetStarredRepos", "description": "Get starred repos with pagination"},
+        {"store_type": "database", "store_name": "repo_unit/collaboration", "operation": "SELECT", "method": "access_model.GetIndividualUserRepoPermission", "description": "Get permission per repo (N+1)"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-154",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "operations": [
+        {"store_type": "database", "store_name": "star", "operation": "SELECT", "method": "repo_model.IsStaring", "description": "Check if star record exists"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-155",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "operations": [
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.IsUserBlockedBy", "description": "Check if user is blocked by repo owner"},
+        {"store_type": "database", "store_name": "star", "operation": "SELECT", "method": "repo_model.IsStaring", "description": "Check if already starring"},
+        {"store_type": "database", "store_name": "star", "operation": "INSERT", "method": "repo_model.StarRepo", "description": "Insert star record"},
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "repo_model.StarRepo", "description": "Increment num_stars"},
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "repo_model.StarRepo", "description": "Increment user num_stars"}
+      ]
+    }
+  ]
+}

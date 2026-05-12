@@ -1,0 +1,35 @@
+{
+  "endpoints_by_database_table": {
+    "user": {"read": ["ep-162"], "write": ["ep-163"]},
+    "access_token": {"read": ["ep-164", "ep-166"], "write": ["ep-165", "ep-166"]},
+    "oauth2_application": {"read": [], "write": ["ep-167"]}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "setting.OAuth2.CustomSchemes": ["ep-167"],
+    "setting.SuccessfulTokensCacheSize": ["ep-164", "ep-165", "ep-166"]
+  },
+  "endpoints_by_model_class": {
+    "user_model.User": ["ep-162", "ep-163"],
+    "auth_model.AccessToken": ["ep-164", "ep-165", "ep-166"],
+    "auth_model.OAuth2Application": ["ep-167"]
+  },
+  "endpoints_by_service_class": {
+    "user_service.UpdateUser": ["ep-163"],
+    "convert.User2UserSettings": ["ep-162", "ep-163"],
+    "convert.ToOAuth2Application": ["ep-167"],
+    "forms.DetectInvalidOAuth2ApplicationRedirectURI": ["ep-167"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-162": {"reads": [], "writes": []},
+    "ep-163": {"reads": [], "writes": ["user"]},
+    "ep-164": {"reads": ["access_token"], "writes": []},
+    "ep-165": {"reads": ["access_token"], "writes": ["access_token"]},
+    "ep-166": {"reads": ["access_token"], "writes": ["access_token"]},
+    "ep-167": {"reads": [], "writes": ["oauth2_application"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-167": ["setting.OAuth2.CustomSchemes"]
+  }
+}

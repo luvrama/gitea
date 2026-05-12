@@ -1,0 +1,413 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-269",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "description": "Creates a new repo-level action variable after checking for duplicates",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.CreateVariable",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext + CreateVariableOption form",
+          "output": "HTTP 201 or error",
+          "operations": ["Extract form data", "Get repoID and variablename from path"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.GetVariable",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "FindVariablesOpts{RepoID, Name}",
+          "output": "*ActionVariable or error",
+          "operations": ["Check if variable already exists"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_variable", "description": "Find variable by repo_id and name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions_service.CreateVariable",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "ownerID=0, repoID, name, data, description",
+          "output": "*ActionVariable or error",
+          "operations": ["Validate name via secret_service.ValidateName", "Normalize EOL in data", "Insert variable"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "action_variable", "description": "Insert new variable record"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "CreateVariableOption",
+          "to": "ActionVariable",
+          "component": "actions_model.InsertVariable",
+          "mappings": [
+            {"source_field": "value", "target_field": "Data", "transformation": "computed (NormalizeStringEOL)"},
+            {"source_field": "description", "target_field": "Description", "transformation": "computed (TruncateRunes 4096)"},
+            {"source_field": "variablename (path)", "target_field": "Name", "transformation": "computed (ToUpper)"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Variable already exists", "handler": "Action.CreateVariable", "response_code": 409, "response": "AlreadyExistError"},
+        {"condition": "Invalid name (regex/prefix)", "handler": "actions_service.CreateVariable", "response_code": 400, "response": "InvalidArgument"},
+        {"condition": "DB error", "handler": "Action.CreateVariable", "response_code": 500, "response": "InternalError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-270",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "description": "Updates an existing repo-level action variable's name, value, and description",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.UpdateVariable",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext + UpdateVariableOption form",
+          "output": "HTTP 204 or error",
+          "operations": ["Extract form data", "Get repoID and variablename from path"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.GetVariable",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "FindVariablesOpts{RepoID, Name}",
+          "output": "*ActionVariable or error",
+          "operations": ["Find existing variable by repo and name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_variable", "description": "Find variable by repo_id and name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions_service.UpdateVariableNameData",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "*ActionVariable with updated fields",
+          "output": "bool (updated), error",
+          "operations": ["Validate name", "Normalize EOL", "Truncate description", "Update DB columns"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "action_variable", "description": "Update name, data, description columns"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "UpdateVariableOption",
+          "to": "ActionVariable",
+          "component": "Action.UpdateVariable",
+          "mappings": [
+            {"source_field": "name", "target_field": "Name", "transformation": "computed (defaults to path param if empty, then ToUpper)"},
+            {"source_field": "value", "target_field": "Data", "transformation": "computed (NormalizeStringEOL)"},
+            {"source_field": "description", "target_field": "Description", "transformation": "computed (TruncateRunes 4096)"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Variable not found", "handler": "Action.UpdateVariable", "response_code": 404, "response": "NotExist"},
+        {"condition": "Invalid name", "handler": "actions_service.UpdateVariableNameData", "response_code": 400, "response": "InvalidArgument"},
+        {"condition": "Data too long (>65536 runes)", "handler": "actions_model.UpdateVariableCols", "response_code": 400, "response": "InvalidArgument"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-271",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables",
+      "description": "Lists all repo-level action variables with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.ListVariables",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext",
+          "output": "HTTP 200 with []ActionVariable",
+          "operations": ["Get list options from query params", "Query variables", "Convert to API response"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_variable", "description": "Find and count variables by repo_id with pagination"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionVariable",
+          "to": "api.ActionVariable",
+          "component": "Action.ListVariables",
+          "mappings": [
+            {"source_field": "OwnerID", "target_field": "OwnerID", "transformation": "direct_copy"},
+            {"source_field": "RepoID", "target_field": "RepoID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Data", "target_field": "Data", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "Action.ListVariables", "response_code": 500, "response": "InternalError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-272",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/registration-token",
+      "description": "Gets or creates a runner registration token for the repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.CreateRegistrationToken",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext",
+          "output": "delegates to shared.GetRegistrationToken",
+          "operations": ["Delegate to shared handler with ownerID=0, repoID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.GetRegistrationToken",
+          "type": "utility",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID=0, repoID",
+          "output": "RegistrationToken JSON",
+          "operations": ["Get latest token", "If not exists or inactive, create new token", "Return token"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner_token", "description": "Get latest token by owner_id and repo_id ordered by id DESC"},
+            {"operation": "UPDATE", "table": "action_runner_token", "description": "Deactivate old tokens (conditional)"},
+            {"operation": "INSERT", "table": "action_runner_token", "description": "Insert new active token (conditional)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "DB error", "handler": "shared.GetRegistrationToken", "response_code": 500, "response": "InternalError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-273",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners",
+      "description": "Lists all runners belonging to the repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.ListRunners",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext",
+          "output": "delegates to shared.ListRunners",
+          "operations": ["Delegate to shared handler with ownerID=0, repoID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListRunners",
+          "type": "utility",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID=0, repoID",
+          "output": "ActionRunnersResponse JSON",
+          "operations": ["Build FindRunnerOptions with RepoID and disabled filter", "Query runners with pagination", "Convert to API response"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_runner", "description": "Find and count runners by repo_id with optional disabled filter"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunner",
+          "to": "api.ActionRunner",
+          "component": "convert.ToActionRunner",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Status()", "target_field": "Status", "transformation": "computed (online/offline based on LastOnline)"},
+            {"source_field": "Status()", "target_field": "Busy", "transformation": "computed (true if ACTIVE)"},
+            {"source_field": "IsDisabled", "target_field": "Disabled", "transformation": "direct_copy"},
+            {"source_field": "Ephemeral", "target_field": "Ephemeral", "transformation": "direct_copy"},
+            {"source_field": "AgentLabels", "target_field": "Labels", "transformation": "computed (array of ActionRunnerLabel)"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "DB error", "handler": "shared.ListRunners", "response_code": 500, "response": "InternalError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-274",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}",
+      "description": "Gets a specific runner belonging to the repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.GetRunner",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext",
+          "output": "delegates to shared.GetRunner",
+          "operations": ["Parse runner_id from path", "Delegate to shared handler"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.GetRunner",
+          "type": "utility",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID=0, repoID, runnerID",
+          "output": "ActionRunner JSON",
+          "operations": ["Get runner by ID", "Check EditableInContext(0, repoID)", "Convert and return"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_runner", "description": "Get runner by ID"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunner",
+          "to": "api.ActionRunner",
+          "component": "convert.ToActionRunner",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Status()", "target_field": "Status", "transformation": "computed"},
+            {"source_field": "IsDisabled", "target_field": "Disabled", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Runner not found", "handler": "shared.getRunnerByID", "response_code": 404, "response": "NotFound"},
+        {"condition": "Runner not editable in repo context", "handler": "shared.getRunnerByID", "response_code": 404, "response": "No permission to access this runner"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-275",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}",
+      "description": "Deletes a runner belonging to the repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.DeleteRunner",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext",
+          "output": "delegates to shared.DeleteRunner",
+          "operations": ["Parse runner_id from path", "Delegate to shared handler"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.DeleteRunner",
+          "type": "utility",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID=0, repoID, runnerID",
+          "output": "HTTP 204",
+          "operations": ["Get runner by ID", "Check EditableInContext", "Delete runner by ID"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner", "description": "Get runner by ID"},
+            {"operation": "DELETE", "table": "action_runner", "description": "Delete runner by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Runner not found", "handler": "shared.getRunnerByID", "response_code": 404, "response": "NotFound"},
+        {"condition": "Runner not editable in repo context", "handler": "shared.getRunnerByID", "response_code": 404, "response": "No permission"},
+        {"condition": "DB delete error", "handler": "shared.DeleteRunner", "response_code": 500, "response": "InternalError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-276",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}",
+      "description": "Updates a repo-level runner (currently only enable/disable)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "Action.UpdateRunner",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/action.go",
+          "input": "APIContext",
+          "output": "delegates to shared.UpdateRunner",
+          "operations": ["Parse runner_id from path", "Delegate to shared handler"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.UpdateRunner",
+          "type": "utility",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID=0, repoID, runnerID",
+          "output": "ActionRunner JSON",
+          "operations": ["Get runner by ID", "Check EditableInContext", "Validate form (Disabled required)", "Set runner disabled status", "Return updated runner"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner", "description": "Get runner by ID"},
+            {"operation": "UPDATE", "table": "action_runner", "description": "Update is_disabled column"},
+            {"operation": "UPDATE", "table": "action_tasks_version", "description": "Increment task version for owner/repo"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "EditActionRunnerOption",
+          "to": "ActionRunner (DB)",
+          "component": "actions_model.SetRunnerDisabled",
+          "mappings": [
+            {"source_field": "disabled", "target_field": "IsDisabled", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Runner not found", "handler": "shared.getRunnerByID", "response_code": 404, "response": "NotFound"},
+        {"condition": "Runner not editable in repo context", "handler": "shared.getRunnerByID", "response_code": 404, "response": "No permission"},
+        {"condition": "Disabled field is nil", "handler": "shared.UpdateRunner", "response_code": 422, "response": "[Disabled]: Required"}
+      ]
+    }
+  ]
+}

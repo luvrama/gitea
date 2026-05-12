@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Visibility filtering for org listing: anonymous sees public only, authenticated sees public+limited, admin sees all",
+      "location": {"class": "org", "method": "GetAll", "file_path": "routers/api/v1/org/org.go", "line_number": 168},
+      "condition": "ctx.IsSigned && !ctx.PublicOnly → add VisibleTypeLimited; ctx.Doer.IsAdmin → add VisibleTypePrivate",
+      "action": "Filter organizations by visibility level in search query",
+      "affected_endpoints": ["ep-029"],
+      "code_snippet": "vMode := []api.VisibleType{api.VisibleTypePublic}\nif ctx.IsSigned && !ctx.PublicOnly {\n\tvMode = append(vMode, api.VisibleTypeLimited)"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "authorization",
+      "description": "Only users with AllowCreateOrganization=true (or admins) can create organizations",
+      "location": {"class": "org", "method": "Create", "file_path": "routers/api/v1/org/org.go", "line_number": 207},
+      "condition": "!ctx.Doer.CanCreateOrganization()",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-030"],
+      "code_snippet": "if !ctx.Doer.CanCreateOrganization() {\n\tctx.APIError(http.StatusForbidden, nil)\n\treturn"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "CanCreateOrganization checks admin status OR (AllowCreateOrganization AND !DisableRegularOrgCreation)",
+      "location": {"class": "User", "method": "CanCreateOrganization", "file_path": "models/user/user.go", "line_number": 277},
+      "condition": "u.IsAdmin || (u.AllowCreateOrganization && !setting.Admin.DisableRegularOrgCreation)",
+      "action": "Returns true if user can create orgs",
+      "affected_endpoints": ["ep-030"],
+      "code_snippet": "return u.IsAdmin || (u.AllowCreateOrganization && !setting.Admin.DisableRegularOrgCreation)"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Organization username must be usable (not reserved, valid chars, valid pattern)",
+      "location": {"class": "organization", "method": "CreateOrganization", "file_path": "models/organization/org.go", "line_number": 237},
+      "condition": "user_model.IsUsableUsername(org.Name) returns error",
+      "action": "Return error (mapped to 422 in handler)",
+      "affected_endpoints": ["ep-030", "ep-032"],
+      "code_snippet": "if err = user_model.IsUsableUsername(org.Name); err != nil {\n\treturn err\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Organization username must not already exist as any user type",
+      "location": {"class": "organization", "method": "CreateOrganization", "file_path": "models/organization/org.go", "line_number": 241},
+      "condition": "user_model.IsUserExist(ctx, 0, org.Name) returns true",
+      "action": "Return ErrUserAlreadyExist (mapped to 422)",
+      "affected_endpoints": ["ep-030", "ep-032"],
+      "code_snippet": "isExist, err := user_model.IsUserExist(ctx, 0, org.Name)\nif isExist {\n\treturn user_model.ErrUserAlreadyExist{Name: org.Name}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Default visibility is public if not specified in create request",
+      "location": {"class": "org", "method": "Create", "file_path": "routers/api/v1/org/org.go", "line_number": 210},
+      "condition": "form.Visibility == \"\"",
+      "action": "Use VisibleTypePublic as default",
+      "affected_endpoints": ["ep-030"],
+      "code_snippet": "visibility := api.VisibleTypePublic\nif form.Visibility != \"\" {\n\tvisibility = api.VisibilityModes[string(form.Visibility)]"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Organization visibility check: public always visible, admin/self always visible, private requires membership",
+      "location": {"class": "organization", "method": "HasOrgOrUserVisible", "file_path": "models/organization/org.go", "line_number": 290},
+      "condition": "orgOrUser.Visibility == VisibleTypePrivate && !OrgFromUser(orgOrUser).hasMemberWithUserID(ctx, user.ID)",
+      "action": "Return false (org not visible)",
+      "affected_endpoints": ["ep-031"],
+      "code_snippet": "if (orgOrUser.Visibility == structs.VisibleTypePrivate || user.IsRestricted) && !OrgFromUser(orgOrUser).hasMemberWithUserID(ctx, user.ID) {\n\treturn false\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Email is hidden from anonymous users when viewing org details",
+      "location": {"class": "org", "method": "Get", "file_path": "routers/api/v1/org/org.go", "line_number": 252},
+      "condition": "ctx.Doer == nil",
+      "action": "Set org.Email to empty string in response",
+      "affected_endpoints": ["ep-031"],
+      "code_snippet": "if ctx.Doer == nil {\n\torg.Email = \"\"\n}"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "authorization",
+      "description": "reqOrgOwnership requires user to be org owner or site admin",
+      "location": {"class": "api", "method": "reqOrgOwnership", "file_path": "routers/api/v1/api.go", "line_number": 455},
+      "condition": "!ctx.IsUserSiteAdmin() && !IsOrganizationOwner(ctx, orgID, ctx.Doer.ID)",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-032", "ep-033", "ep-034"],
+      "code_snippet": "isOwner, err := organization.IsOrganizationOwner(ctx, orgID, ctx.Doer.ID)\nif !isOwner {\n\tctx.APIError(http.StatusForbidden, \"Must be an organization owner\")"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Rename with only capitalization change skips transaction and redirect creation",
+      "location": {"class": "user_service", "method": "RenameUser", "file_path": "services/user/user.go", "line_number": 53},
+      "condition": "strings.EqualFold(newUserName, u.Name)",
+      "action": "Only update name column and repo owner names, no redirect",
+      "affected_endpoints": ["ep-032"],
+      "code_snippet": "onlyCapitalization := strings.EqualFold(newUserName, u.Name)\nif onlyCapitalization {\n\tu.Name = newUserName"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "validation",
+      "description": "Organization email is validated for format and domain before update",
+      "location": {"class": "org", "method": "UpdateOrgEmailAddress", "file_path": "services/org/org.go", "line_number": 163},
+      "condition": "*email != \"\" && user_model.ValidateEmail(*email) returns error",
+      "action": "Return error (mapped to 422 via util.ErrInvalidArgument)",
+      "affected_endpoints": ["ep-033"],
+      "code_snippet": "if *email != \"\" {\n\tif err := user_model.ValidateEmail(*email); err != nil {\n\t\treturn err"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "state_transition",
+      "description": "Organization cannot be deleted if it still owns repositories or packages",
+      "location": {"class": "org", "method": "DeleteOrganization", "file_path": "services/org/org.go", "line_number": 66},
+      "condition": "count > 0 (repos) || ownsPackages",
+      "action": "Return ErrUserOwnRepos or ErrUserOwnPackages (mapped to 500)",
+      "affected_endpoints": ["ep-034"],
+      "code_snippet": "count, err := repo_model.CountRepositories(ctx, ...)\nif count > 0 {\n\treturn repo_model.ErrUserOwnRepos{UID: org.ID}"
+    }
+  ]
+}

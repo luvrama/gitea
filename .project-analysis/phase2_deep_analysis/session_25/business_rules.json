@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "OAuth2 app list only shows apps owned by the authenticated user",
+      "location": {"class": "user", "method": "ListOauth2Applications", "file_path": "routers/api/v1/user/app.go", "line_number": 213},
+      "condition": "OwnerID: ctx.Doer.ID in FindOAuth2ApplicationsOptions",
+      "action": "Only apps with uid matching Doer.ID are returned",
+      "affected_endpoints": ["ep-168"],
+      "code_snippet": "apps, total, err := db.FindAndCount[auth_model.OAuth2Application](ctx, auth_model.FindOAuth2ApplicationsOptions{\n\tListOptions: utils.GetListOptions(ctx),\n\tOwnerID:     ctx.Doer.ID,\n})"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "business_logic",
+      "description": "Client secret is hidden when listing OAuth2 applications",
+      "location": {"class": "user", "method": "ListOauth2Applications", "file_path": "routers/api/v1/user/app.go", "line_number": 224},
+      "condition": "Always on list endpoint",
+      "action": "ClientSecret set to empty string for each app in list",
+      "affected_endpoints": ["ep-168"],
+      "code_snippet": "apiApps[i].ClientSecret = \"\" // Hide secret on application list"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Builtin OAuth2 applications cannot be deleted",
+      "location": {"class": "auth_model", "method": "DeleteOAuth2Application", "file_path": "models/auth/oauth2.go", "line_number": 243},
+      "condition": "app.ClientID is in BuiltinApplications() map",
+      "action": "Return error 'application is locked'",
+      "affected_endpoints": ["ep-169"],
+      "code_snippet": "if _, builtin := builtinApps[app.ClientID]; builtin {\n\treturn fmt.Errorf(\"failed to delete OAuth2 application: application is locked: %s\", app.ClientID)\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "authorization",
+      "description": "OAuth2 app GET verifies ownership by comparing UID to Doer.ID",
+      "location": {"class": "user", "method": "GetOauth2Application", "file_path": "routers/api/v1/user/app.go", "line_number": 258},
+      "condition": "app.UID != ctx.Doer.ID",
+      "action": "Return 404 Not Found to prevent information leakage",
+      "affected_endpoints": ["ep-170"],
+      "code_snippet": "if app.UID != ctx.Doer.ID {\n\tctx.APIErrorNotFound()\n\treturn\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Redirect URIs must be valid URLs or use custom OAuth2 schemes",
+      "location": {"class": "forms", "method": "DetectInvalidOAuth2ApplicationRedirectURI", "file_path": "services/forms/user_form.go", "line_number": 368},
+      "condition": "URI scheme not in valid URLs and not in setting.OAuth2.CustomSchemes",
+      "action": "Return 400 with invalid redirect URI message",
+      "affected_endpoints": ["ep-171"],
+      "code_snippet": "valid := ok && (validation.IsValidURL(u) || util.SliceContainsString(setting.OAuth2.CustomSchemes, scheme))"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Builtin OAuth2 applications cannot be updated",
+      "location": {"class": "auth_model", "method": "UpdateOAuth2Application", "file_path": "models/auth/oauth2.go", "line_number": 218},
+      "condition": "app.ClientID is in BuiltinApplications() map",
+      "action": "Return error 'application is locked'",
+      "affected_endpoints": ["ep-171"],
+      "code_snippet": "if _, builtin := builtinApps[app.ClientID]; builtin {\n\treturn nil, fmt.Errorf(\"failed to edit OAuth2 application: application is locked: %s\", app.ClientID)\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Update always regenerates client secret with bcrypt hash",
+      "location": {"class": "OAuth2Application", "method": "GenerateClientSecret", "file_path": "models/auth/oauth2.go", "line_number": 148},
+      "condition": "Always on update",
+      "action": "Generate 32 random bytes, encode as gto_ prefixed base32, bcrypt hash stored in DB",
+      "affected_endpoints": ["ep-171"],
+      "code_snippet": "clientSecret := \"gto_\" + base32Lower.EncodeToString(rBytes)\nhashedSecret, err := bcrypt.GenerateFromPassword([]byte(clientSecret), bcrypt.DefaultCost)"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "authorization",
+      "description": "User repo list shows private repos only if requester is signed in",
+      "location": {"class": "user", "method": "ListUserRepos", "file_path": "routers/api/v1/user/repo.go", "line_number": 82},
+      "condition": "ctx.IsSigned",
+      "action": "Private repos included in query when user is authenticated",
+      "affected_endpoints": ["ep-172", "ep-174"],
+      "code_snippet": "private := ctx.IsSigned\nlistUserRepos(ctx, ctx.ContextUser, private)"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "authorization",
+      "description": "Repos filtered by permission - only repos with any unit access shown",
+      "location": {"class": "user", "method": "listUserRepos", "file_path": "routers/api/v1/user/repo.go", "line_number": 42},
+      "condition": "ctx.IsSigned && ctx.Doer.IsAdmin || permission.HasAnyUnitAccess()",
+      "action": "Only repos where user is admin or has unit access are included in response",
+      "affected_endpoints": ["ep-172", "ep-174"],
+      "code_snippet": "if ctx.IsSigned && ctx.Doer.IsAdmin || permission.HasAnyUnitAccess() {\n\tapiRepos = append(apiRepos, convert.ToRepo(ctx, repos[i], permission))\n}"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Registration token reuses existing active token or creates new one",
+      "location": {"class": "shared", "method": "GetRegistrationToken", "file_path": "routers/api/v1/shared/runners.go", "line_number": 27},
+      "condition": "Token not found (ErrNotExist) or token.IsActive is false",
+      "action": "Create new token, deactivating all old tokens for same owner/repo",
+      "affected_endpoints": ["ep-175"],
+      "code_snippet": "if errors.Is(err, util.ErrNotExist) || (token != nil && !token.IsActive) {\n\ttoken, err = actions_model.NewRunnerToken(ctx, ownerID, repoID)\n}"
+    }
+  ]
+}

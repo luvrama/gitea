@@ -1,0 +1,159 @@
+{
+  "total_findings": 6,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-064",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/repos",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only endpoint, no atomicity concerns",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-065",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/repos/{org}/{repo}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only endpoint",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-066",
+      "http_method": "PUT",
+      "path": "/api/v1/teams/{id}/repos/{org}/{repo}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Operation is idempotent - if repo already in team, returns nil (no-op)",
+          "recommendation": "None needed, already safe to retry"
+        },
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx for transactional consistency across team_repo insert, num_repos update, and access recalculation",
+          "recommendation": "None needed, transaction protects consistency"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500; partial failure within transaction is rolled back",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-067",
+      "http_method": "DELETE",
+      "path": "/api/v1/teams/{id}/repos/{org}/{repo}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "If repo not in team (HasRepository returns false), returns nil (no-op). If team includes all repos, also no-op.",
+          "recommendation": "None needed, safe to retry"
+        },
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Uses db.WithTx for transactional consistency across team_repo delete, access recalculation, and watch cleanup",
+          "recommendation": "None needed, transaction protects consistency"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500; partial failure within transaction is rolled back",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-068",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/teams/search",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only endpoint",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-069",
+      "http_method": "GET",
+      "path": "/api/v1/teams/{id}/activities/feeds",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only endpoint",
+          "recommendation": "None needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses modules/graceful for shutdown handling with SIGTERM",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in rate limiting on API endpoints",
+      "recommendation": "Consider adding rate limiting middleware or using a reverse proxy"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "These endpoints are synchronous, no async flows"
+    },
+    "single_points_of_failure": ["database"],
+    "cascading_failure_paths": ["Database down → all 6 endpoints return 500"]
+  }
+}

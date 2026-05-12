@@ -1,0 +1,52 @@
+{
+  "endpoints_by_database_table": {
+    "user": {"read": ["ep-123", "ep-124", "ep-125", "ep-126", "ep-127"], "write": ["ep-128"]},
+    "action": {"read": ["ep-126", "ep-127"], "write": []},
+    "team_user": {"read": ["ep-124"], "write": []},
+    "follow": {"read": ["ep-124"], "write": []},
+    "repository": {"read": ["ep-127"], "write": []}
+  },
+  "endpoints_by_external_service": {
+    "Avatar Storage": ["ep-128"]
+  },
+  "endpoints_by_config_property": {
+    "API.DefaultPagingNum": ["ep-123", "ep-127"],
+    "API.MaxResponseItems": ["ep-123", "ep-127"],
+    "Avatar.MaxWidth": ["ep-128"],
+    "Avatar.MaxHeight": ["ep-128"],
+    "Avatar.MaxOriginSize": ["ep-128"]
+  },
+  "endpoints_by_model_class": {
+    "user_model.User": ["ep-123", "ep-124", "ep-125", "ep-126", "ep-127", "ep-128"],
+    "activities_model.Action": ["ep-126", "ep-127"],
+    "activities_model.UserHeatmapData": ["ep-126"]
+  },
+  "endpoints_by_service_class": {
+    "user_model.SearchUsers": ["ep-123"],
+    "user_model.IsUserVisibleToViewer": ["ep-124"],
+    "activities_model.GetUserHeatmapDataByUser": ["ep-126"],
+    "feed_service.GetFeeds": ["ep-127"],
+    "user_service.UploadAvatar": ["ep-128"],
+    "convert.ToUser": ["ep-123", "ep-124", "ep-125"],
+    "convert.ToActivities": ["ep-127"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-123": {"reads": ["user"], "writes": []},
+    "ep-124": {"reads": ["user", "team_user", "follow"], "writes": []},
+    "ep-125": {"reads": [], "writes": []},
+    "ep-126": {"reads": ["user", "action"], "writes": []},
+    "ep-127": {"reads": ["user", "action", "repository"], "writes": []},
+    "ep-128": {"reads": [], "writes": ["user"]}
+  },
+  "external_services_by_endpoint": {
+    "ep-128": ["Avatar Storage"]
+  },
+  "config_properties_by_endpoint": {
+    "ep-123": ["API.DefaultPagingNum", "API.MaxResponseItems"],
+    "ep-124": [],
+    "ep-125": [],
+    "ep-126": [],
+    "ep-127": ["API.DefaultPagingNum", "API.MaxResponseItems"],
+    "ep-128": ["Avatar.MaxWidth", "Avatar.MaxHeight", "Avatar.MaxOriginSize"]
+  }
+}

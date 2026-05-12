@@ -1,0 +1,418 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-246",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/trees/{sha}",
+      "description": "Retrieves git tree by SHA with pagination, listing entries (files/dirs) in the tree",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetTree",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/tree.go",
+          "input": "APIContext with sha path param",
+          "output": "GitTreeResponse JSON",
+          "operations": ["Extract sha from path param", "Call files_service.GetTreeBySHA"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "files.GetTreeBySHA",
+          "type": "service",
+          "file_path": "services/repository/files/tree.go",
+          "input": "repo, gitRepo, sha, page, perPage, recursive",
+          "output": "*api.GitTreeResponse",
+          "operations": ["Get tree from git by SHA", "List entries (recursive or not)", "Apply pagination", "Build GitEntry array with URLs"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "git.Entries",
+          "to": "[]api.GitEntry",
+          "component": "files.GetTreeBySHA",
+          "mappings": [
+            {"source_field": "Name()", "target_field": "Path", "transformation": "direct_copy"},
+            {"source_field": "Mode()", "target_field": "Mode", "transformation": "computed"},
+            {"source_field": "Type()", "target_field": "Type", "transformation": "direct_copy"},
+            {"source_field": "Size()", "target_field": "Size", "transformation": "direct_copy"},
+            {"source_field": "ID.String()", "target_field": "SHA", "transformation": "direct_copy"},
+            {"source_field": "IsDir()/IsSubModule()", "target_field": "URL", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "SHA is empty", "handler": "repo.GetTree", "response_code": 400, "response": "sha not provided"},
+        {"condition": "Tree not found by SHA", "handler": "repo.GetTree", "response_code": 400, "response": "ErrSHANotFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-247",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/refs",
+      "description": "Lists all git references in the repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetGitAllRefs",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/git_ref.go",
+          "input": "APIContext",
+          "output": "[]Reference JSON",
+          "operations": ["Call getGitRefsInternal with empty filter"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.getGitRefsInternal",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/git_ref.go",
+          "input": "APIContext, filter string",
+          "output": "[]Reference JSON",
+          "operations": ["Call utils.GetGitRefs", "Convert refs to API format", "Return array"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "utils.GetGitRefs",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/git.go",
+          "input": "APIContext, filter string",
+          "output": "[]*git.Reference, string, error",
+          "operations": ["Call GitRepo.GetRefsFiltered with filter"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*git.Reference",
+          "to": "[]*api.Reference",
+          "component": "repo.getGitRefsInternal",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Ref", "transformation": "direct_copy"},
+            {"source_field": "Object.String()", "target_field": "Object.SHA", "transformation": "direct_copy"},
+            {"source_field": "Type", "target_field": "Object.Type", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "No refs found", "handler": "repo.getGitRefsInternal", "response_code": 404, "response": "notFound"},
+        {"condition": "Git error", "handler": "repo.getGitRefsInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-248",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/git/refs/{ref}",
+      "description": "Get specific ref or filtered list of refs by prefix",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.GetGitRefs",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/git_ref.go",
+          "input": "APIContext with ref path param (wildcard)",
+          "output": "Reference or []Reference JSON",
+          "operations": ["Extract ref from path wildcard param", "Call getGitRefsInternal with ref as filter"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.getGitRefsInternal",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/git_ref.go",
+          "input": "APIContext, filter string",
+          "output": "Reference or []Reference JSON",
+          "operations": ["Call utils.GetGitRefs with 'refs/' + filter", "If single exact match, return single object", "Otherwise return array"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "utils.GetGitRefs",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/git.go",
+          "input": "APIContext, filter string",
+          "output": "[]*git.Reference, string, error",
+          "operations": ["Prepend 'refs/' to filter", "Call GitRepo.GetRefsFiltered"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*git.Reference",
+          "to": "*api.Reference or []*api.Reference",
+          "component": "repo.getGitRefsInternal",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Ref", "transformation": "direct_copy"},
+            {"source_field": "Object.String()", "target_field": "Object.SHA", "transformation": "direct_copy"},
+            {"source_field": "Type", "target_field": "Object.Type", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "No matching refs found", "handler": "repo.getGitRefsInternal", "response_code": 404, "response": "notFound"},
+        {"condition": "Git error", "handler": "repo.getGitRefsInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-249",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/diffpatch",
+      "description": "Applies a diff patch to the repository creating a new commit on specified branch",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ApplyDiffPatch",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/patch.go",
+          "input": "APIContext with ApplyDiffPatchFileOptions body",
+          "output": "FileResponse JSON (201)",
+          "operations": ["Get form options via getAPIChangeRepoFileOptions", "Build ApplyDiffPatchOptions", "Call files.ApplyDiffPatch"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo.ReqChangeRepoFileOptionsAndCheck",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/file.go",
+          "input": "APIContext with FileOptions",
+          "output": "ChangeRepoFilesOptions stored in ctx.Data",
+          "operations": ["Parse common file options", "Check write permission to target branch", "Store options in context"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "files.ApplyDiffPatch",
+          "type": "service",
+          "file_path": "services/repository/files/patch.go",
+          "input": "repo, doer, ApplyDiffPatchOptions",
+          "output": "*structs.FileResponse",
+          "operations": ["Check repo not archived", "Open git repo", "Validate options (branch exists, permissions)", "Create temp repo", "Clone old branch", "Apply patch with git apply", "Write tree", "Commit tree", "Push to new branch"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "branch", "description": "Check if old branch exists"},
+            {"operation": "SELECT", "table": "branch", "description": "Check if new branch exists"},
+            {"operation": "SELECT", "table": "protected_branch", "description": "Check branch protection rules"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "ApplyDiffPatchFileOptions",
+          "to": "ApplyDiffPatchOptions",
+          "component": "repo.ApplyDiffPatch",
+          "mappings": [
+            {"source_field": "Content", "target_field": "Content", "transformation": "direct_copy"},
+            {"source_field": "Message", "target_field": "Message", "transformation": "computed"},
+            {"source_field": "FileOptions.BranchName", "target_field": "OldBranch", "transformation": "direct_copy"},
+            {"source_field": "FileOptions.NewBranchName", "target_field": "NewBranch", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Repo is archived", "handler": "handleChangeRepoFilesError", "response_code": 423, "response": "repoArchivedError"},
+        {"condition": "Push rejected", "handler": "handleChangeRepoFilesError", "response_code": 403, "response": "push rejected message"},
+        {"condition": "User cannot commit (protected branch)", "handler": "handleChangeRepoFilesError", "response_code": 403, "response": "ErrUserCannotCommit"},
+        {"condition": "Branch already exists", "handler": "handleChangeRepoFilesError", "response_code": 422, "response": "ErrBranchAlreadyExists"},
+        {"condition": "Branch not found", "handler": "handleChangeRepoFilesError", "response_code": 404, "response": "ErrNotExist"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-250",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators",
+      "description": "Lists all collaborators of a repository with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.ListCollaborators",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/collaborators.go",
+          "input": "APIContext",
+          "output": "[]User JSON",
+          "operations": ["Get list options (page/limit)", "Call repo_model.GetCollaborators", "Convert to API users"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "collaboration", "description": "Find collaborations for repo with pagination"},
+            {"operation": "SELECT", "table": "user", "description": "Load user details for collaborator IDs"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*repo_model.Collaborator",
+          "to": "[]*api.User",
+          "component": "repo.ListCollaborators",
+          "mappings": [
+            {"source_field": "Collaborator.User", "target_field": "User", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Database error", "handler": "repo.ListCollaborators", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-251",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "description": "Checks if a user is a collaborator of the repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.IsCollaborator",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/collaborators.go",
+          "input": "APIContext with collaborator path param",
+          "output": "204 No Content or 404",
+          "operations": ["Get user by name", "Check if user is collaborator", "Return 204 if yes, 404 if no"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get user by username"},
+            {"operation": "SELECT", "table": "collaboration", "description": "Check collaboration record exists"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User does not exist", "handler": "repo.IsCollaborator", "response_code": 422, "response": "ErrUserNotExist"},
+        {"condition": "User is not a collaborator", "handler": "repo.IsCollaborator", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-252",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "description": "Adds or updates a collaborator with specified permission level",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.AddOrUpdateCollaborator",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/collaborators.go",
+          "input": "APIContext with collaborator path param and AddCollaboratorOption body",
+          "output": "204 No Content",
+          "operations": ["Get form body", "Get user by name", "Check user is active", "Parse permission", "Call repo_service.AddOrUpdateCollaborator"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get collaborator user by name"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_service.AddOrUpdateCollaborator",
+          "type": "service",
+          "file_path": "services/repository/collaboration.go",
+          "input": "repo, user, accessMode",
+          "output": "error",
+          "operations": ["Validate access mode", "Load repo owner", "Check user blocks", "Within transaction: check existing collaboration", "Insert or update collaboration", "Recalculate user access"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Load repo owner"},
+            {"operation": "SELECT", "table": "blocked_user", "description": "Check user blocks"},
+            {"operation": "SELECT", "table": "collaboration", "description": "Check existing collaboration"},
+            {"operation": "INSERT/UPDATE", "table": "collaboration", "description": "Create or update collaboration record"},
+            {"operation": "UPDATE", "table": "access", "description": "Recalculate user access permissions"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User does not exist", "handler": "repo.AddOrUpdateCollaborator", "response_code": 422, "response": "ErrUserNotExist"},
+        {"condition": "User account is inactive", "handler": "repo.AddOrUpdateCollaborator", "response_code": 500, "response": "collaborator's account is inactive"},
+        {"condition": "User is blocked", "handler": "repo.AddOrUpdateCollaborator", "response_code": 403, "response": "ErrBlockedUser"},
+        {"condition": "Invalid access mode", "handler": "repo_service.AddOrUpdateCollaborator", "response_code": 500, "response": "ErrInvalidAccessMode"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-253",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}",
+      "description": "Removes a collaborator from the repository and cleans up related data",
+      "steps": [
+        {
+          "step": 1,
+          "component": "repo.DeleteCollaborator",
+          "type": "controller",
+          "file_path": "routers/api/v1/repo/collaborators.go",
+          "input": "APIContext with collaborator path param",
+          "output": "204 No Content",
+          "operations": ["Get user by name", "Call repo_service.DeleteCollaboration"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get collaborator user by name"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "repo_service.DeleteCollaboration",
+          "type": "service",
+          "file_path": "services/repository/collaboration.go",
+          "input": "repo, collaborator user",
+          "output": "error",
+          "operations": ["Within transaction: delete collaboration record", "Load repo owner", "Recalculate all accesses", "Unwatch repo", "Reconsider watches (remove if no access)", "Unassign from issues if no longer eligible"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "DELETE", "table": "collaboration", "description": "Remove collaboration record"},
+            {"operation": "UPDATE", "table": "access", "description": "Recalculate all repo accesses"},
+            {"operation": "DELETE", "table": "watch", "description": "Remove watch if no access"},
+            {"operation": "DELETE", "table": "stopwatch", "description": "Remove stopwatches in repo"},
+            {"operation": "DELETE", "table": "issue_watch", "description": "Remove issue watches in repo"},
+            {"operation": "DELETE", "table": "issue_assignees", "description": "Unassign from issues if not eligible"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User does not exist", "handler": "repo.DeleteCollaborator", "response_code": 422, "response": "ErrUserNotExist"},
+        {"condition": "Database error in transaction", "handler": "repo.DeleteCollaborator", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

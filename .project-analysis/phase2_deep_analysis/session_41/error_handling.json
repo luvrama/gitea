@@ -1,0 +1,34 @@
+{
+  "total_patterns": 8,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "APIErrorInternal", "status_code": 500, "response_type": "error JSON", "message_template": "internal server error"},
+      {"exception_type": "APIError", "status_code": 0, "response_type": "error JSON", "message_template": "custom message"},
+      {"exception_type": "APIErrorNotFound", "status_code": 404, "response_type": "error JSON", "message_template": "not found"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-277", "path": "/api/v1/repos/{owner}/{repo}/actions/jobs", "error_scenarios": [
+      {"exception": "invalid status", "trigger": "status query param not in valid set", "status_code": 400, "response": "error", "logged": false, "retryable": false},
+      {"exception": "db error", "trigger": "database query failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-278", "path": "/api/v1/repos/{owner}/{repo}/actions/runs", "error_scenarios": [
+      {"exception": "invalid status", "trigger": "status query param not in valid set", "status_code": 400, "response": "error", "logged": false, "retryable": false},
+      {"exception": "user not found", "trigger": "actor username doesn't exist", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-279", "path": "/api/v1/repos/{owner}/{repo}/actions/tasks", "error_scenarios": [
+      {"exception": "db error", "trigger": "database query failure", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"exception": "ep-283 validation", "endpoint_id": "ep-283", "path": "/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches", "error_scenarios": [
+      {"exception": "empty ref", "trigger": "ref field is empty in request body", "status_code": 422, "response": "validationError", "logged": false, "retryable": false},
+      {"exception": "workflow disabled", "trigger": "workflow is disabled in repo config", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false},
+      {"exception": "ref not found", "trigger": "git ref doesn't exist", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "workflow not found", "trigger": "workflow file not in commit tree", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "util.ErrNotExist", "file_path": "modules/util/error.go", "extends": "error", "used_in": ["DispatchActionWorkflow", "GetActionWorkflow", "EnableOrDisableWorkflow"], "http_status": 404},
+    {"class": "util.ErrPermissionDenied", "file_path": "modules/util/error.go", "extends": "error", "used_in": ["DispatchActionWorkflow"], "http_status": 403},
+    {"class": "util.ErrInvalidArgument", "file_path": "modules/util/error.go", "extends": "error", "used_in": ["convertToInternal"], "http_status": 400}
+  ]
+}

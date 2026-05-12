@@ -1,0 +1,44 @@
+{
+  "database_type": "none",
+  "database_technology": "N/A",
+  "total_tables_or_collections": 0,
+  "tables": [],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-009",
+      "path": "/api/v1/markdown",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-010",
+      "path": "/api/v1/markdown/raw",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-011",
+      "path": "/api/v1/gitignore/templates",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-012",
+      "path": "/api/v1/gitignore/templates/{name}",
+      "operations": [
+        {"store_type": "database", "store_name": "filesystem (layered asset FS)", "operation": "SELECT", "method": "LayeredFS.ReadFile", "description": "Read gitignore template file from bindata or custom path"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-013",
+      "path": "/api/v1/licenses",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-014",
+      "path": "/api/v1/licenses/{name}",
+      "operations": [
+        {"store_type": "database", "store_name": "filesystem (layered asset FS)", "operation": "SELECT", "method": "LayeredFS.ReadFile", "description": "Read license template file from bindata or custom path"}
+      ]
+    }
+  ]
+}

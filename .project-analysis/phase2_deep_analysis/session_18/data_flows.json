@@ -1,0 +1,433 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-123",
+      "http_method": "GET",
+      "path": "/api/v1/users/search",
+      "description": "Search users by keyword/uid with pagination, converting results to API format",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.Search",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/user.go",
+          "input": "query params: q, uid, page, limit",
+          "output": "JSON response with user list",
+          "operations": ["Parse pagination options", "Parse uid param", "Handle special user IDs (ghost/actions)", "Call SearchUsers", "Set link/count headers", "Convert to API users"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Search users by keyword/uid with visibility filter"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "utils.GetListOptions",
+          "type": "utility",
+          "file_path": "routers/api/v1/utils/page.go",
+          "input": "APIContext",
+          "output": "db.ListOptions{Page, PageSize}",
+          "operations": ["Parse page param (min 1)", "Parse limit param via ToCorrectPageSize"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.SearchUsers",
+          "type": "repository",
+          "file_path": "models/user/search.go",
+          "input": "SearchUserOptions",
+          "output": "[]*User, int64 count, error",
+          "operations": ["Build search condition with keyword LIKE on lower_name/full_name/email", "Apply visibility filter", "Apply BuildCanSeeUserCondition", "Count total results", "Apply pagination", "Execute query with SELECT user.*"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT COUNT", "table": "user", "description": "Count matching users"},
+            {"operation": "SELECT", "table": "user", "description": "Fetch paginated user results"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToUsers",
+          "type": "utility",
+          "file_path": "services/convert/user.go",
+          "input": "[]*user_model.User, doer",
+          "output": "[]*api.User",
+          "operations": ["Iterate users", "Convert each to API User struct", "Apply privacy rules for email visibility"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.User",
+          "to": "api.User",
+          "component": "convert.toUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"},
+            {"source_field": "Email", "target_field": "email", "transformation": "computed (privacy check)"},
+            {"source_field": "NumFollowers", "target_field": "followers_count", "transformation": "direct_copy"},
+            {"source_field": "Visibility", "target_field": "visibility", "transformation": "computed (string conversion)"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Database error in SearchUsers", "handler": "user.Search", "response_code": 500, "response": "{ok: false, error: err.Error()}"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-124",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}",
+      "description": "Get user profile, checking visibility permissions",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.UserAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/user.go",
+          "input": "path param: username",
+          "output": "ctx.ContextUser populated",
+          "operations": ["Extract username from path", "Check if doer matches username (case-insensitive)", "Otherwise GetUserByName from DB", "Handle user redirects"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Get user by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.GetInfo",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/user.go",
+          "input": "ctx.ContextUser, ctx.Doer",
+          "output": "JSON api.User",
+          "operations": ["Check IsUserVisibleToViewer", "If not visible, return 404 (fake not-exist)", "Convert to API user"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_user", "description": "Check org membership for private user visibility"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToUser",
+          "type": "utility",
+          "file_path": "services/convert/user.go",
+          "input": "user_model.User, doer",
+          "output": "*api.User",
+          "operations": ["Determine signed/authed status", "Build API user struct", "Apply email privacy", "Include admin fields if authed"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.User",
+          "to": "api.User",
+          "component": "convert.toUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "Email", "target_field": "email", "transformation": "computed (privacy)"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "User not visible to viewer", "handler": "user.GetInfo", "response_code": 404, "response": "ErrUserNotExist"},
+        {"condition": "User not found", "handler": "context.UserAssignmentAPI", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-125",
+      "http_method": "GET",
+      "path": "/api/v1/user",
+      "description": "Return the authenticated user's full profile with private fields",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetAuthenticatedUser",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/user.go",
+          "input": "ctx.Doer",
+          "output": "JSON api.User",
+          "operations": ["Convert doer to API user with authed=true (self-view)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.ToUser",
+          "type": "utility",
+          "file_path": "services/convert/user.go",
+          "input": "ctx.Doer, ctx.Doer",
+          "output": "*api.User",
+          "operations": ["signed=true, authed=true (doer==user)", "Include all private fields: IsAdmin, LoginName, SourceID, LastLogin, Language, IsActive, ProhibitLogin", "Show real email regardless of KeepEmailPrivate"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.User",
+          "to": "api.User",
+          "component": "convert.toUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "Email", "target_field": "email", "transformation": "direct_copy (authed)"},
+            {"source_field": "IsAdmin", "target_field": "is_admin", "transformation": "direct_copy (authed only)"},
+            {"source_field": "LoginName", "target_field": "login_name", "transformation": "direct_copy (authed only)"},
+            {"source_field": "LastLoginUnix", "target_field": "last_login", "transformation": "computed (AsTime)"}
+          ]
+        }
+      ],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-126",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/heatmap",
+      "description": "Get user contribution heatmap data grouped by 15-minute intervals for the past year",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.UserAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/user.go",
+          "input": "path param: username",
+          "output": "ctx.ContextUser populated",
+          "operations": ["Resolve username to user model"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Get user by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.GetUserHeatmapData",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/user.go",
+          "input": "ctx.ContextUser, ctx.Doer",
+          "output": "JSON []UserHeatmapData",
+          "operations": ["Call GetUserHeatmapDataByUser"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "activities_model.GetUserHeatmapDataByUser",
+          "type": "service",
+          "file_path": "models/activities/user_heatmap.go",
+          "input": "user, doer",
+          "output": "[]*UserHeatmapData, error",
+          "operations": ["Check ActivityReadable (KeepActivityPrivate)", "Build ActivityQueryCondition", "Query action table grouped by 15-min intervals", "Filter to last 373 days"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action", "description": "Aggregate contributions grouped by 900-second intervals, filtered by user and time range"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "action table rows",
+          "to": "UserHeatmapData",
+          "component": "getUserHeatmapData",
+          "mappings": [
+            {"source_field": "created_unix / 900 * 900", "target_field": "timestamp", "transformation": "computed (15-min grouping)"},
+            {"source_field": "count(user_id)", "target_field": "contributions", "transformation": "computed (aggregation)"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "ActivityQueryCondition error", "handler": "GetUserHeatmapData", "response_code": 500, "response": "internal error"},
+        {"condition": "DB query error", "handler": "GetUserHeatmapData", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-127",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/activities/feeds",
+      "description": "List user activity feeds with privacy filtering and pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.UserAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/user.go",
+          "input": "path param: username",
+          "output": "ctx.ContextUser populated",
+          "operations": ["Resolve username to user model"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Get user by name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.ListUserActivityFeeds",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/user.go",
+          "input": "ctx.ContextUser, ctx.Doer, query params",
+          "output": "JSON []api.Activity",
+          "operations": ["Determine includePrivate (admin or self)", "Parse pagination", "Parse only-performed-by and date params", "Call feed_service.GetFeeds", "Set total count header", "Convert to API activities"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "feed_service.GetFeeds",
+          "type": "service",
+          "file_path": "services/feed/feed.go",
+          "input": "GetFeedsOptions",
+          "output": "ActionList, int64, error",
+          "operations": ["Delegate to activities_model.GetFeeds"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "activities_model.GetFeeds",
+          "type": "repository",
+          "file_path": "models/activities/action_list.go",
+          "input": "GetFeedsOptions",
+          "output": "ActionList, int64, error",
+          "operations": ["Build query condition (ActivityQueryCondition or shortcut for self/admin)", "For page < 10: FindAndCount directly", "For page >= 10: query IDs first then fetch full records", "LoadAttributes on results (ActUser, Repo, Comment, Issue)"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT COUNT", "table": "action", "description": "Count matching actions"},
+            {"operation": "SELECT", "table": "action", "description": "Fetch paginated actions"},
+            {"operation": "SELECT", "table": "user", "description": "Load ActUser for each action"},
+            {"operation": "SELECT", "table": "repository", "description": "Load Repo for each action"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToActivities",
+          "type": "utility",
+          "file_path": "services/convert/activity.go",
+          "input": "ActionList, doer",
+          "output": "[]*api.Activity",
+          "operations": ["For each action: get repo permission for doer", "Build Activity struct with user/repo conversion"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access/team_user", "description": "GetDoerRepoPermission for each action's repo"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "activities_model.Action",
+          "to": "api.Activity",
+          "component": "convert.ToActivity",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "UserID", "target_field": "user_id", "transformation": "direct_copy"},
+            {"source_field": "OpType.String()", "target_field": "op_type", "transformation": "computed"},
+            {"source_field": "ActUser", "target_field": "act_user", "transformation": "computed (ToUser)"},
+            {"source_field": "Repo", "target_field": "repo", "transformation": "computed (ToRepo)"},
+            {"source_field": "CreatedUnix", "target_field": "created", "transformation": "computed (AsTime)"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "GetFeeds DB error", "handler": "ListUserActivityFeeds", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-128",
+      "http_method": "POST",
+      "path": "/api/v1/user/avatar",
+      "description": "Upload a new avatar for the authenticated user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.UpdateAvatar",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/avatar.go",
+          "input": "JSON body: {image: base64_string}",
+          "output": "204 No Content",
+          "operations": ["Get form from request body", "Decode base64 image", "Call user_service.UploadAvatar"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_service.UploadAvatar",
+          "type": "service",
+          "file_path": "services/user/avatar.go",
+          "input": "user, []byte image data",
+          "output": "error",
+          "operations": ["Process avatar image (crop/resize)", "Begin transaction", "Set UseCustomAvatar=true", "Generate avatar hash", "Update user columns", "Save to storage"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "user", "description": "Update use_custom_avatar and avatar columns"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "avatar.ProcessAvatarImage",
+          "type": "utility",
+          "file_path": "modules/avatar/avatar.go",
+          "input": "[]byte raw image data",
+          "output": "[]byte processed image data",
+          "operations": ["Decode image config (type/dimensions)", "Validate image type (png/jpeg/gif/webp)", "Check max width/height", "If small enough, return original", "Crop to square", "Resize to DefaultAvatarSize * RenderedSizeFactor", "Encode as PNG"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "storage.SaveFrom(storage.Avatars, ...)",
+          "type": "utility",
+          "file_path": "modules/storage/storage.go",
+          "input": "relative path, writer func",
+          "output": "error",
+          "operations": ["Save processed image to configured avatar storage (local/minio/azure)"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "base64 string",
+          "to": "processed image bytes",
+          "component": "avatar.ProcessAvatarImage",
+          "mappings": [
+            {"source_field": "base64 encoded image", "target_field": "cropped/resized PNG bytes", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid base64 encoding", "handler": "user.UpdateAvatar", "response_code": 400, "response": "error"},
+        {"condition": "Image processing failure (unsupported type, too large)", "handler": "user_service.UploadAvatar", "response_code": 500, "response": "internal error"},
+        {"condition": "Storage write failure", "handler": "user_service.UploadAvatar", "response_code": 500, "response": "internal error"},
+        {"condition": "DB update failure", "handler": "user_service.UploadAvatar", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

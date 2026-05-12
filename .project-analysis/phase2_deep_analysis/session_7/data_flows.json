@@ -1,0 +1,513 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-042",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/actions/runners/registration-token",
+      "description": "Gets or creates a runner registration token for the organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name from path parameter, handle redirects"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetOrgByName: find org by lower_name and type=1"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Organization.ID, ctx.Doer.ID",
+          "output": "pass/fail authorization",
+          "operations": ["Check if user is org owner or site admin"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_user JOIN team", "description": "IsOrganizationOwner: check team_user with authorize=owner"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "shared.GetRegistrationToken",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID=org.ID, repoID=0",
+          "output": "RegistrationToken JSON",
+          "operations": ["Get latest runner token", "If not found or inactive, create new token"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner_token", "description": "GetLatestRunnerToken: get latest token by owner_id and repo_id ordered by id DESC"},
+            {"operation": "UPDATE", "table": "action_runner_token", "description": "NewRunnerToken: deactivate all existing tokens for this owner/repo"},
+            {"operation": "INSERT", "table": "action_runner_token", "description": "NewRunnerToken: insert new active token with random 40-char string"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "ActionRunnerToken",
+          "to": "RegistrationToken",
+          "component": "shared.GetRegistrationToken",
+          "mappings": [{"source_field": "Token", "target_field": "token", "transformation": "direct_copy"}]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "Not org owner", "handler": "reqOrgOwnership", "response_code": 403, "response": "forbidden"},
+        {"condition": "DB error", "handler": "shared.GetRegistrationToken", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-043",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/variables",
+      "description": "Lists all org-level action variables with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetOrgByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Organization.ID, ctx.Doer.ID",
+          "output": "pass/fail",
+          "operations": ["Check org ownership"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_user JOIN team", "description": "IsOrganizationOwner"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "Action.ListVariables",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/action.go",
+          "input": "ctx.Org.Organization.ID, page, limit",
+          "output": "[]ActionVariable JSON",
+          "operations": ["Get list options from query params", "FindAndCount variables by ownerID with pagination"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_variable", "description": "FindAndCount: WHERE owner_id=orgID AND repo_id=0 with LIMIT/OFFSET"},
+            {"operation": "SELECT COUNT", "table": "action_variable", "description": "Count matching variables"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionVariable",
+          "to": "api.ActionVariable",
+          "component": "Action.ListVariables",
+          "mappings": [
+            {"source_field": "OwnerID", "target_field": "owner_id", "transformation": "direct_copy"},
+            {"source_field": "RepoID", "target_field": "repo_id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Data", "target_field": "data", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "Not org owner", "handler": "reqOrgOwnership", "response_code": 403, "response": "forbidden"},
+        {"condition": "DB error", "handler": "Action.ListVariables", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-044",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "description": "Gets a single org-level variable by name",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetOrgByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Organization.ID, ctx.Doer.ID",
+          "output": "pass/fail",
+          "operations": ["Check org ownership"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_user JOIN team", "description": "IsOrganizationOwner"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions_service.GetVariable",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "FindVariablesOpts{OwnerID, Name}",
+          "output": "*ActionVariable",
+          "operations": ["Find variables matching ownerID and name", "Return error if not exactly 1 result"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_variable", "description": "FindVariables: WHERE owner_id=orgID AND repo_id=0 AND name=UPPER(variablename)"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionVariable",
+          "to": "api.ActionVariable",
+          "component": "Action.GetVariable",
+          "mappings": [
+            {"source_field": "OwnerID", "target_field": "owner_id", "transformation": "direct_copy"},
+            {"source_field": "RepoID", "target_field": "repo_id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Data", "target_field": "data", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "Variable not found (len(vars)!=1)", "handler": "Action.GetVariable", "response_code": 404, "response": "notFound"},
+        {"condition": "Not org owner", "handler": "reqOrgOwnership", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-045",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "description": "Deletes an org-level variable by name",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetOrgByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Organization.ID, ctx.Doer.ID",
+          "output": "pass/fail",
+          "operations": ["Check org ownership"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_user JOIN team", "description": "IsOrganizationOwner"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "actions_service.DeleteVariableByName",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "ownerID, repoID=0, name",
+          "output": "error",
+          "operations": ["Find variable by name (GetVariable)", "Delete variable by ID"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_variable", "description": "GetVariable: find by owner_id, repo_id, name"},
+            {"operation": "DELETE", "table": "action_variable", "description": "DeleteVariable: delete by ID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "Variable not found", "handler": "Action.DeleteVariable", "response_code": 404, "response": "notFound"},
+        {"condition": "Invalid name", "handler": "Action.DeleteVariable", "response_code": 400, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-046",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "description": "Creates a new org-level variable",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetOrgByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Organization.ID, ctx.Doer.ID",
+          "output": "pass/fail",
+          "operations": ["Check org ownership"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_user JOIN team", "description": "IsOrganizationOwner"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "Action.CreateVariable",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/action.go",
+          "input": "ownerID, variablename, CreateVariableOption",
+          "output": "201 Created",
+          "operations": ["Check if variable already exists (conflict check)", "Call actions_service.CreateVariable"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_variable", "description": "GetVariable: check existence by owner_id and name"},
+            {"operation": "INSERT", "table": "action_variable", "description": "InsertVariable: insert with uppercased name, normalized EOL data"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "Variable already exists", "handler": "Action.CreateVariable", "response_code": 409, "response": "conflict"},
+        {"condition": "Invalid name (regex/prefix)", "handler": "actions_service.CreateVariable", "response_code": 400, "response": "error"},
+        {"condition": "Data too long (>65536 runes)", "handler": "InsertVariable", "response_code": 400, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-047",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "description": "Updates an existing org-level variable",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetOrgByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Organization.ID, ctx.Doer.ID",
+          "output": "pass/fail",
+          "operations": ["Check org ownership"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_user JOIN team", "description": "IsOrganizationOwner"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "Action.UpdateVariable",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/action.go",
+          "input": "ownerID, variablename, UpdateVariableOption",
+          "output": "204 No Content",
+          "operations": ["Get existing variable by name", "Update name/data/description fields", "Call UpdateVariableNameData"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_variable", "description": "GetVariable: find existing variable"},
+            {"operation": "UPDATE", "table": "action_variable", "description": "UpdateVariableCols: update name, data, description columns"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "Variable not found", "handler": "Action.UpdateVariable", "response_code": 404, "response": "notFound"},
+        {"condition": "Invalid new name", "handler": "UpdateVariableNameData", "response_code": 400, "response": "error"},
+        {"condition": "Data too long", "handler": "UpdateVariableCols", "response_code": 400, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-048",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runners",
+      "description": "Lists all runners belonging to the organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetOrgByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Organization.ID, ctx.Doer.ID",
+          "output": "pass/fail",
+          "operations": ["Check org ownership"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_user JOIN team", "description": "IsOrganizationOwner"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "shared.ListRunners",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID=org.ID, repoID=0",
+          "output": "ActionRunnersResponse JSON",
+          "operations": ["Build FindRunnerOptions with ownerID and optional disabled filter", "FindAndCount runners", "Convert each runner to API format"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_runner", "description": "FindAndCount: WHERE owner_id=orgID with optional is_disabled filter, paginated"},
+            {"operation": "SELECT COUNT", "table": "action_runner", "description": "Count matching runners"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunner",
+          "to": "api.ActionRunner",
+          "component": "convert.ToActionRunner",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Status()", "target_field": "status", "transformation": "computed"},
+            {"source_field": "Status()==ACTIVE", "target_field": "busy", "transformation": "computed"},
+            {"source_field": "IsDisabled", "target_field": "disabled", "transformation": "direct_copy"},
+            {"source_field": "Ephemeral", "target_field": "ephemeral", "transformation": "direct_copy"},
+            {"source_field": "AgentLabels", "target_field": "labels", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "Not org owner", "handler": "reqOrgOwnership", "response_code": 403, "response": "forbidden"},
+        {"condition": "DB error", "handler": "shared.ListRunners", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-049",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "description": "Gets a specific runner by ID within the org context",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetOrgByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Org.Organization.ID, ctx.Doer.ID",
+          "output": "pass/fail",
+          "operations": ["Check org ownership"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_user JOIN team", "description": "IsOrganizationOwner"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "shared.GetRunner",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "input": "ownerID=org.ID, repoID=0, runnerID",
+          "output": "ActionRunner JSON",
+          "operations": ["Get runner by ID", "Check EditableInContext (runner.OwnerID == ownerID)", "Convert to API format"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_runner", "description": "GetRunnerByID: WHERE id=runnerID"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunner",
+          "to": "api.ActionRunner",
+          "component": "convert.ToActionRunner",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Status()", "target_field": "status", "transformation": "computed"},
+            {"source_field": "Status()==ACTIVE", "target_field": "busy", "transformation": "computed"},
+            {"source_field": "IsDisabled", "target_field": "disabled", "transformation": "direct_copy"},
+            {"source_field": "Ephemeral", "target_field": "ephemeral", "transformation": "direct_copy"},
+            {"source_field": "AgentLabels", "target_field": "labels", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "Runner not found", "handler": "shared.getRunnerByID", "response_code": 404, "response": "notFound"},
+        {"condition": "Runner not editable in org context", "handler": "shared.getRunnerByID", "response_code": 404, "response": "No permission to access this runner"}
+      ]
+    }
+  ]
+}

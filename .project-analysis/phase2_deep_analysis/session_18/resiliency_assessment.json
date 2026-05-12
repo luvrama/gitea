@@ -1,0 +1,180 @@
+{
+  "total_findings": 8,
+  "overall_risk": "medium",
+  "dependency_resiliency": [
+    {
+      "dependency": "Avatar Storage (local/minio/azure)",
+      "client_class": "storage.ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "used_by_endpoints": ["ep-128"],
+      "timeout": {
+        "status": "missing",
+        "value_ms": null,
+        "recommendation": "Add timeout configuration for remote storage operations (minio/azure). Local storage doesn't need it."
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Add retry with exponential backoff for transient storage failures"
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "Not critical for avatar uploads (low frequency), but consider for high-traffic deployments"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Not critical - avatar uploads are infrequent"
+      },
+      "fallback": {
+        "status": "missing",
+        "behavior": null,
+        "recommendation": "Return error to user; avatar is not critical path. Could queue for retry."
+      },
+      "idempotency": {
+        "safe_to_retry": true,
+        "reason": "Avatar upload overwrites the same path, so retrying is safe"
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-128"],
+        "impact": "Users cannot update avatars; existing avatars continue to work"
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-123",
+      "http_method": "GET",
+      "path": "/api/v1/users/search",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Only depends on local database",
+          "recommendation": "Database connection pool handles timeouts"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database overload from expensive LIKE queries on large user tables",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-124",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Minimal - simple lookup",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-125",
+      "http_method": "GET",
+      "path": "/api/v1/user",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - uses pre-loaded user from auth middleware",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-126",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/heatmap",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Only depends on local database",
+          "recommendation": "Database connection pool handles timeouts"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Heavy aggregation query could slow down under load",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-127",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/activities/feeds",
+      "risk_level": "medium",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "cascading_failure",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "N+1 permission queries in ToActivities could amplify database load under high traffic",
+          "recommendation": "Batch permission checks to reduce query count"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "High query count per request (5+ queries) could saturate DB connection pool under load",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-128",
+      "http_method": "POST",
+      "path": "/api/v1/user/avatar",
+      "risk_level": "medium",
+      "dependency_count": 2,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "DB update and storage write are in same transaction via db.WithTx, but storage write failure after DB commit could leave inconsistent state",
+          "recommendation": "Storage write is inside the transaction, so rollback handles this. Current implementation is correct."
+        },
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "No timeout on storage write operation for remote storage backends",
+          "recommendation": "Add context timeout for storage operations"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Storage backend failure blocks avatar uploads but doesn't affect other endpoints",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled by modules/graceful package with SIGTERM handling",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in rate limiting on API endpoints",
+      "recommendation": "Consider adding rate limiting middleware for public endpoints like user search"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "These endpoints are synchronous, no async flows"
+    },
+    "single_points_of_failure": [
+      "Database (all endpoints depend on it)"
+    ],
+    "cascading_failure_paths": [
+      "Database overload from ep-127 N+1 queries → connection pool exhaustion → all API endpoints fail"
+    ]
+  }
+}

@@ -1,0 +1,409 @@
+{
+  "total_flows": 7,
+  "flows": [
+    {
+      "endpoint_id": "ep-135",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/variables/{variablename}",
+      "description": "Retrieves a single user-level action variable by name",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetVariable",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/action.go",
+          "input": "APIContext with path param variablename",
+          "output": "JSON ActionVariable or error",
+          "operations": ["extract variablename from path", "call actions_service.GetVariable"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "actions_service.GetVariable",
+          "type": "service",
+          "file_path": "services/actions/variables.go",
+          "input": "FindVariablesOpts{OwnerID, Name}",
+          "output": "*ActionVariable or error",
+          "operations": ["call actions_model.FindVariables", "check exactly 1 result returned"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_variable", "description": "find variable by owner_id and name"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionVariable",
+          "to": "api.ActionVariable",
+          "component": "user.GetVariable",
+          "mappings": [
+            {"source_field": "OwnerID", "target_field": "owner_id", "transformation": "direct_copy"},
+            {"source_field": "RepoID", "target_field": "repo_id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Data", "target_field": "data", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "variable not found (len(vars) != 1)", "handler": "user.GetVariable", "response_code": 404, "response": "notFound"},
+        {"condition": "database error", "handler": "user.GetVariable", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-136",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/variables",
+      "description": "Lists all user-level action variables with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListVariables",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/action.go",
+          "input": "APIContext with page/limit query params",
+          "output": "JSON []ActionVariable with pagination headers",
+          "operations": ["get list options from query params", "call db.FindAndCount", "transform results", "set pagination headers"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "db.FindAndCount[ActionVariable]",
+          "type": "repository",
+          "file_path": "models/db/list.go",
+          "input": "FindVariablesOpts{OwnerID, ListOptions}",
+          "output": "[]*ActionVariable, int64, error",
+          "operations": ["build query with owner_id=doer.ID and repo_id=0", "apply pagination", "execute count and find"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "action_variable", "description": "find all variables for user with pagination"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*actions_model.ActionVariable",
+          "to": "[]*api.ActionVariable",
+          "component": "user.ListVariables",
+          "mappings": [
+            {"source_field": "OwnerID", "target_field": "owner_id", "transformation": "direct_copy"},
+            {"source_field": "RepoID", "target_field": "repo_id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Data", "target_field": "data", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "description", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "database error", "handler": "user.ListVariables", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-137",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/runs",
+      "description": "Lists workflow runs for the authenticated user across all their repos",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListWorkflowRuns",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/action.go",
+          "input": "APIContext",
+          "output": "delegates to shared.ListRuns",
+          "operations": ["call shared.ListRuns(ctx, ctx.Doer.ID, 0)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListRuns",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/action.go",
+          "input": "ownerID, repoID=0",
+          "output": "JSON ActionWorkflowRunsResponse",
+          "operations": ["parse query params (event, branch, status, actor, head_sha)", "build FindRunOptions", "resolve actor username to user ID", "call db.FindAndCount", "load trigger users", "load repos", "load repo owners", "convert to API response"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run", "description": "find runs joined with repository by owner_id"},
+            {"operation": "SELECT", "table": "user", "description": "load trigger users for runs"},
+            {"operation": "SELECT", "table": "repository", "description": "load repos for runs"},
+            {"operation": "SELECT", "table": "user", "description": "load repo owners"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*actions_model.ActionRun",
+          "to": "[]*api.ActionWorkflowRun",
+          "component": "convert.ToActionWorkflowRun",
+          "mappings": [
+            {"source_field": "ActionRun fields", "target_field": "ActionWorkflowRun fields", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "invalid status query param", "handler": "shared.ListRuns", "response_code": 400, "response": "error"},
+        {"condition": "actor username not found", "handler": "shared.ListRuns", "response_code": 500, "response": "internal error"},
+        {"condition": "database error", "handler": "shared.ListRuns", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-138",
+      "http_method": "GET",
+      "path": "/api/v1/user/actions/jobs",
+      "description": "Lists workflow jobs for the authenticated user across all their repos",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListWorkflowJobs",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/action.go",
+          "input": "APIContext",
+          "output": "delegates to shared.ListJobs",
+          "operations": ["call shared.ListJobs(ctx, ctx.Doer.ID, 0, 0, nil)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListJobs",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/action.go",
+          "input": "ownerID, repoID=0, runID=0",
+          "output": "JSON ActionWorkflowJobsResponse",
+          "operations": ["parse status query params", "build FindRunJobOptions", "call db.FindAndCount", "load job attributes (run, repo)", "convert each job to API response"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run_job", "description": "find jobs joined with repository by owner_id"},
+            {"operation": "SELECT", "table": "action_run", "description": "load run for each job"},
+            {"operation": "SELECT", "table": "repository", "description": "load repo for each job"},
+            {"operation": "SELECT", "table": "action_task_step", "description": "load task steps for jobs"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*actions_model.ActionRunJob",
+          "to": "[]*api.ActionWorkflowJob",
+          "component": "convert.ToActionWorkflowJob",
+          "mappings": [
+            {"source_field": "ActionRunJob fields", "target_field": "ActionWorkflowJob fields", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "invalid status query param", "handler": "shared.ListJobs", "response_code": 400, "response": "error"},
+        {"condition": "database error", "handler": "shared.ListJobs", "response_code": 500, "response": "internal error"},
+        {"condition": "job missing run or repository", "handler": "shared.ListJobs", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-139",
+      "http_method": "GET",
+      "path": "/api/v1/user/followers",
+      "description": "List the authenticated user's followers with visibility filtering",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListMyFollowers",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "APIContext",
+          "output": "delegates to listUserFollowers(ctx, ctx.Doer)",
+          "operations": ["call listUserFollowers with current user"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.listUserFollowers",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "user, listOptions",
+          "output": "JSON []User",
+          "operations": ["get list options", "call user_model.GetUserFollowers", "set pagination headers", "convert to API users"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.GetUserFollowers",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "user, viewer, listOptions",
+          "output": "[]*User, int64, error",
+          "operations": ["JOIN follow ON user.id=follow.user_id WHERE follow.follow_id=u.ID", "filter by user type=individual", "apply visibility condition based on viewer"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user JOIN follow", "description": "get followers with visibility filtering"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*user_model.User",
+          "to": "[]*api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"},
+            {"source_field": "Email/GetPlaceholderEmail()", "target_field": "email", "transformation": "computed"},
+            {"source_field": "AvatarLink(ctx)", "target_field": "avatar_url", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "database error", "handler": "user.listUserFollowers", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-140",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/followers",
+      "description": "List the given user's followers with visibility filtering",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListFollowers",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "APIContext with ctx.ContextUser set by middleware",
+          "output": "delegates to listUserFollowers(ctx, ctx.ContextUser)",
+          "operations": ["call listUserFollowers with context user"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.listUserFollowers",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "user, listOptions",
+          "output": "JSON []User",
+          "operations": ["get list options", "call user_model.GetUserFollowers", "set pagination headers", "convert to API users"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.GetUserFollowers",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "user, viewer, listOptions",
+          "output": "[]*User, int64, error",
+          "operations": ["JOIN follow ON user.id=follow.user_id WHERE follow.follow_id=u.ID", "filter by user type=individual", "apply visibility condition based on viewer"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user JOIN follow", "description": "get followers with visibility filtering"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*user_model.User",
+          "to": "[]*api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"},
+            {"source_field": "Email/GetPlaceholderEmail()", "target_field": "email", "transformation": "computed"},
+            {"source_field": "AvatarLink(ctx)", "target_field": "avatar_url", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "user not found (middleware)", "handler": "middleware", "response_code": 404, "response": "notFound"},
+        {"condition": "database error", "handler": "user.listUserFollowers", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-141",
+      "http_method": "GET",
+      "path": "/api/v1/user/following",
+      "description": "List the users that the authenticated user is following with visibility filtering",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.ListMyFollowing",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "APIContext",
+          "output": "delegates to listUserFollowing(ctx, ctx.Doer)",
+          "operations": ["call listUserFollowing with current user"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.listUserFollowing",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/follower.go",
+          "input": "user, listOptions",
+          "output": "JSON []User",
+          "operations": ["get list options", "call user_model.GetUserFollowing", "set pagination headers", "convert to API users"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.GetUserFollowing",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "user, viewer, listOptions",
+          "output": "[]*User, int64, error",
+          "operations": ["JOIN follow ON user.id=follow.follow_id WHERE follow.user_id=u.ID", "filter by user type IN (individual, organization)", "apply visibility condition based on viewer"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user JOIN follow", "description": "get following users with visibility filtering"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "[]*user_model.User",
+          "to": "[]*api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"},
+            {"source_field": "Email/GetPlaceholderEmail()", "target_field": "email", "transformation": "computed"},
+            {"source_field": "AvatarLink(ctx)", "target_field": "avatar_url", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "database error", "handler": "user.listUserFollowing", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

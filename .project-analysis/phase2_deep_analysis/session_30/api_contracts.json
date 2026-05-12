@@ -1,0 +1,219 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-202",
+      "http_method": "DELETE",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "controller_class": "packages",
+      "controller_method": "DeletePackageVersion",
+      "description": "Delete a specific version of a package",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user"]},
+          {"name": "type", "type": "string", "required": true, "validation": ["valid package type"]},
+          {"name": "name", "type": "string", "required": true, "validation": ["package must exist"]},
+          {"name": "version", "type": "string", "required": true, "validation": ["version must exist"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with package scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 204, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 403, "type": "APIError", "condition": "User lacks write access to packages"},
+          {"status_code": 404, "type": "APIError", "condition": "Package version not found"},
+          {"status_code": 500, "type": "APIError", "condition": "Internal error during deletion"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-203",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}/files",
+      "controller_class": "packages",
+      "controller_method": "ListPackageFiles",
+      "description": "Gets all files of a specific package version",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user"]},
+          {"name": "type", "type": "string", "required": true, "validation": ["valid package type"]},
+          {"name": "name", "type": "string", "required": true, "validation": ["package must exist"]},
+          {"name": "version", "type": "string", "required": true, "validation": ["version must exist"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with package scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]PackageFile",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "File ID"},
+            {"name": "size", "type": "int64", "description": "File size in bytes"},
+            {"name": "name", "type": "string", "description": "File name"},
+            {"name": "md5", "type": "string", "description": "MD5 hash"},
+            {"name": "sha1", "type": "string", "description": "SHA1 hash"},
+            {"name": "sha256", "type": "string", "description": "SHA256 hash"},
+            {"name": "sha512", "type": "string", "description": "SHA512 hash"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIError", "condition": "Package version not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-204",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}",
+      "controller_class": "packages",
+      "controller_method": "ListPackageVersions",
+      "description": "Gets all versions of a specific package",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user"]},
+          {"name": "type", "type": "string", "required": true, "validation": ["valid package type"]},
+          {"name": "name", "type": "string", "required": true, "validation": ["package must exist"]}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["respects API.DefaultPagingNum and API.MaxResponseItems"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with package scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]Package",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Version ID"},
+            {"name": "owner", "type": "User", "description": "Package owner"},
+            {"name": "repository", "type": "Repository", "description": "Linked repository or null"},
+            {"name": "creator", "type": "User", "description": "Version creator"},
+            {"name": "type", "type": "string", "description": "Package type"},
+            {"name": "name", "type": "string", "description": "Package name"},
+            {"name": "version", "type": "string", "description": "Version string"},
+            {"name": "html_url", "type": "string", "description": "HTML URL"},
+            {"name": "created_at", "type": "datetime", "description": "Creation timestamp"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIError", "condition": "Package not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-205",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/latest",
+      "controller_class": "packages",
+      "controller_method": "GetLatestPackageVersion",
+      "description": "Gets the latest version of a package",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user"]},
+          {"name": "type", "type": "string", "required": true, "validation": ["valid package type"]},
+          {"name": "name", "type": "string", "required": true, "validation": ["package must exist"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with package scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "Package",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Version ID"},
+            {"name": "owner", "type": "User", "description": "Package owner"},
+            {"name": "repository", "type": "Repository", "description": "Linked repository or null"},
+            {"name": "creator", "type": "User", "description": "Version creator"},
+            {"name": "type", "type": "string", "description": "Package type"},
+            {"name": "name", "type": "string", "description": "Package name"},
+            {"name": "version", "type": "string", "description": "Version string"},
+            {"name": "html_url", "type": "string", "description": "HTML URL"},
+            {"name": "created_at", "type": "datetime", "description": "Creation timestamp"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "APIError", "condition": "No versions found for the package"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-206",
+      "http_method": "POST",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/link/{repo_name}",
+      "controller_class": "packages",
+      "controller_method": "LinkPackage",
+      "description": "Link a package to a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user"]},
+          {"name": "type", "type": "string", "required": true, "validation": ["valid package type"]},
+          {"name": "name", "type": "string", "required": true, "validation": ["package must exist"]},
+          {"name": "repo_name", "type": "string", "required": true, "validation": ["repository must exist under same owner"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with package scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 201, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 400, "type": "APIError", "condition": "Package already linked to a repository"},
+          {"status_code": 403, "type": "APIError", "condition": "User lacks write access to packages unit on repo, or owner mismatch"},
+          {"status_code": 404, "type": "APIError", "condition": "Package or repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-207",
+      "http_method": "POST",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/unlink",
+      "controller_class": "packages",
+      "controller_method": "UnlinkPackage",
+      "description": "Unlink a package from its repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": ["must exist as user"]},
+          {"name": "type", "type": "string", "required": true, "validation": ["valid package type"]},
+          {"name": "name", "type": "string", "required": true, "validation": ["package must exist"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token with package scope"}],
+        "body": null
+      },
+      "response": {
+        "success": {"status_code": 204, "type": "empty", "fields": []},
+        "errors": [
+          {"status_code": 400, "type": "APIError", "condition": "Package is not linked to any repository"},
+          {"status_code": 403, "type": "APIError", "condition": "User lacks write access or is not owner/org admin"},
+          {"status_code": 404, "type": "APIError", "condition": "Package not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

@@ -1,0 +1,381 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-202",
+      "http_method": "DELETE",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}",
+      "description": "Deletes a package version and all associated files/properties, defers blob cleanup to cron",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.PackageAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/package.go",
+          "input": "path params (owner, type, name, version)",
+          "output": "ctx.Package with Descriptor",
+          "operations": ["Resolve user by username", "Determine access mode", "Get version by name and version", "Build PackageDescriptor with files, properties, metadata"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get owner user"},
+            {"operation": "SELECT", "table": "package_version JOIN package", "description": "Get version by name/version"},
+            {"operation": "SELECT", "table": "package", "description": "Get package by ID"},
+            {"operation": "SELECT", "table": "package_file", "description": "Get files for version"},
+            {"operation": "SELECT", "table": "package_blob", "description": "Get blob for each file"},
+            {"operation": "SELECT", "table": "package_property", "description": "Get package and version properties"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "packages.DeletePackageVersion",
+          "type": "controller",
+          "file_path": "routers/api/v1/packages/package.go",
+          "input": "ctx with Package.Descriptor.Version",
+          "output": "HTTP 204",
+          "operations": ["Call RemovePackageVersion service"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "packages_service.RemovePackageVersion",
+          "type": "service",
+          "file_path": "services/packages/packages.go",
+          "input": "*PackageVersion",
+          "output": "error",
+          "operations": ["Get PackageDescriptor", "Call specialization OnBeforeRemovePackageVersion", "In transaction: delete version properties, file properties, files, version", "Notify PackageDelete"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "package_version", "description": "Get descriptor again"},
+            {"operation": "DELETE", "table": "package_property", "description": "Delete version properties"},
+            {"operation": "DELETE", "table": "package_property", "description": "Delete file properties by version"},
+            {"operation": "DELETE", "table": "package_file", "description": "Delete files by version"},
+            {"operation": "DELETE", "table": "package_version", "description": "Delete version"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Package version not found", "handler": "PackageAssignmentAPI", "response_code": 404, "response": "notFound"},
+        {"condition": "Internal error in RemovePackageVersion", "handler": "DeletePackageVersion", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-203",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/{version}/files",
+      "description": "Returns all files of a package version, data pre-loaded by middleware",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.PackageAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/package.go",
+          "input": "path params (owner, type, name, version)",
+          "output": "ctx.Package with Descriptor including Files",
+          "operations": ["Resolve user", "Determine access mode", "Get version", "Build PackageDescriptor with files"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get owner"},
+            {"operation": "SELECT", "table": "package_version JOIN package", "description": "Get version"},
+            {"operation": "SELECT", "table": "package_file", "description": "Get files for version"},
+            {"operation": "SELECT", "table": "package_blob", "description": "Get blob for each file"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "packages.ListPackageFiles",
+          "type": "controller",
+          "file_path": "routers/api/v1/packages/package.go",
+          "input": "ctx.Package.Descriptor.Files",
+          "output": "[]api.PackageFile",
+          "operations": ["Iterate over descriptor files", "Convert each to api.PackageFile via convert.ToPackageFile"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "PackageFileDescriptor",
+          "to": "api.PackageFile",
+          "component": "convert.ToPackageFile",
+          "mappings": [
+            {"source_field": "File.ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Blob.Size", "target_field": "Size", "transformation": "direct_copy"},
+            {"source_field": "File.Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Blob.HashMD5", "target_field": "HashMD5", "transformation": "direct_copy"},
+            {"source_field": "Blob.HashSHA1", "target_field": "HashSHA1", "transformation": "direct_copy"},
+            {"source_field": "Blob.HashSHA256", "target_field": "HashSHA256", "transformation": "direct_copy"},
+            {"source_field": "Blob.HashSHA512", "target_field": "HashSHA512", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Package version not found", "handler": "PackageAssignmentAPI", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-204",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}",
+      "description": "Lists all versions of a package with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.PackageAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/package.go",
+          "input": "path params (owner, type, name) - no version",
+          "output": "ctx.Package with partial Descriptor (package only, no version)",
+          "operations": ["Resolve user", "Determine access mode", "Get package by name (no version lookup)"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get owner"},
+            {"operation": "SELECT", "table": "package", "description": "Get package by name"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "packages.ListPackageVersions",
+          "type": "controller",
+          "file_path": "routers/api/v1/packages/package.go",
+          "input": "ctx.Package.Owner.ID, path type/name",
+          "output": "[]api.Package with pagination headers",
+          "operations": ["Get list options", "Call searchPackages with exact name match"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "searchPackages",
+          "type": "utility",
+          "file_path": "routers/api/v1/packages/package.go",
+          "input": "PackageSearchOptions",
+          "output": "[]api.Package, count",
+          "operations": ["SearchVersions with pagination", "GetPackageDescriptors for results", "Convert each to api.Package"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "package_version JOIN package", "description": "Search versions with count"},
+            {"operation": "SELECT", "table": "package, user, repo, package_file, package_blob, package_property", "description": "Build descriptors for each version"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "PackageDescriptor",
+          "to": "api.Package",
+          "component": "convert.ToPackage",
+          "mappings": [
+            {"source_field": "Version.ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Owner", "target_field": "Owner", "transformation": "computed"},
+            {"source_field": "Repository", "target_field": "Repository", "transformation": "computed"},
+            {"source_field": "Package.Type", "target_field": "Type", "transformation": "direct_copy"},
+            {"source_field": "Package.Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Version.Version", "target_field": "Version", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Package not found", "handler": "PackageAssignmentAPI", "response_code": 404, "response": "notFound"},
+        {"condition": "SearchVersions error", "handler": "ListPackageVersions", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-205",
+      "http_method": "GET",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/latest",
+      "description": "Gets the latest version of a package using MAX(id) grouped by package_id",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.PackageAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/package.go",
+          "input": "path params (owner, type, name)",
+          "output": "ctx.Package with Owner",
+          "operations": ["Resolve user", "Determine access mode", "Get package by name"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get owner"},
+            {"operation": "SELECT", "table": "package", "description": "Get package by name"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "packages.GetLatestPackageVersion",
+          "type": "controller",
+          "file_path": "routers/api/v1/packages/package.go",
+          "input": "ctx.Package.Owner.ID, path type/name",
+          "output": "api.Package",
+          "operations": ["Call SearchLatestVersions", "Get PackageDescriptor for result", "Convert to api.Package"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "package_version JOIN package", "description": "SearchLatestVersions with MAX(id) GROUP BY package_id"},
+            {"operation": "SELECT", "table": "package, user, repo, package_file, package_blob, package_property", "description": "Build PackageDescriptor"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "PackageDescriptor",
+          "to": "api.Package",
+          "component": "convert.ToPackage",
+          "mappings": [
+            {"source_field": "Version.ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Package.Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Version.Version", "target_field": "Version", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "No versions found", "handler": "GetLatestPackageVersion", "response_code": 404, "response": "notFound"},
+        {"condition": "SearchLatestVersions error", "handler": "GetLatestPackageVersion", "response_code": 500, "response": "APIErrorInternal"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-206",
+      "http_method": "POST",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/link/{repo_name}",
+      "description": "Links a package to a repository owned by the same user/org",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.PackageAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/package.go",
+          "input": "path params (owner, type, name)",
+          "output": "ctx.Package with Owner, ctx.ContextUser",
+          "operations": ["Resolve user", "Determine access mode"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get owner"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "packages.LinkPackage",
+          "type": "controller",
+          "file_path": "routers/api/v1/packages/package.go",
+          "input": "ctx.ContextUser.ID, path type/name/repo_name",
+          "output": "HTTP 201",
+          "operations": ["Get package by name", "Get repository by name", "Call LinkToRepository service"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "package", "description": "GetPackageByName"},
+            {"operation": "SELECT", "table": "repository", "description": "GetRepositoryByName"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "packages_service.LinkToRepository",
+          "type": "service",
+          "file_path": "services/packages/package_update.go",
+          "input": "*Package, *Repository, *User",
+          "output": "error",
+          "operations": ["Validate pkg.OwnerID == repo.OwnerID", "Validate pkg.RepoID == 0", "Check doer has write access to TypePackages on repo", "Set repository link"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "access, team_unit", "description": "GetDoerRepoPermission"},
+            {"operation": "UPDATE", "table": "package", "description": "SetRepositoryLink sets repo_id"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Package not found", "handler": "LinkPackage", "response_code": 404, "response": "notFound"},
+        {"condition": "Repository not found", "handler": "LinkPackage", "response_code": 404, "response": "notFound"},
+        {"condition": "Package already linked (RepoID > 0)", "handler": "LinkPackage", "response_code": 400, "response": "ErrInvalidArgument"},
+        {"condition": "Owner mismatch or no write permission", "handler": "LinkPackage", "response_code": 403, "response": "ErrPermissionDenied"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-207",
+      "http_method": "POST",
+      "path": "/api/v1/packages/{owner}/{type}/{name}/-/unlink",
+      "description": "Unlinks a package from its linked repository",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.PackageAssignmentAPI",
+          "type": "controller",
+          "file_path": "services/context/package.go",
+          "input": "path params (owner, type, name)",
+          "output": "ctx.Package with Owner, ctx.ContextUser",
+          "operations": ["Resolve user", "Determine access mode"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Get owner"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "packages.UnlinkPackage",
+          "type": "controller",
+          "file_path": "routers/api/v1/packages/package.go",
+          "input": "ctx.ContextUser.ID, path type/name",
+          "output": "HTTP 204",
+          "operations": ["Get package by name", "Call UnlinkFromRepository service"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "package", "description": "GetPackageByName"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "packages_service.UnlinkFromRepository",
+          "type": "service",
+          "file_path": "services/packages/package_update.go",
+          "input": "*Package, *User",
+          "output": "error",
+          "operations": ["Validate pkg.RepoID > 0", "Get repository by ID", "Check doer has write access to TypePackages on repo", "Check doer is owner or org admin", "Unlink repository"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "GetRepositoryByID"},
+            {"operation": "SELECT", "table": "access, team_unit", "description": "GetDoerRepoPermission"},
+            {"operation": "SELECT", "table": "user", "description": "GetUserByID for owner"},
+            {"operation": "SELECT", "table": "org_user", "description": "IsOrgAdmin check if org"},
+            {"operation": "UPDATE", "table": "package", "description": "UnlinkRepository sets repo_id=0"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Package not found", "handler": "UnlinkPackage", "response_code": 404, "response": "notFound"},
+        {"condition": "Package not linked (RepoID == 0)", "handler": "UnlinkPackage", "response_code": 400, "response": "ErrInvalidArgument"},
+        {"condition": "No write permission or not owner/org admin", "handler": "UnlinkPackage", "response_code": 403, "response": "ErrPermissionDenied"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,500 @@
+{
+  "total_flows": 7,
+  "flows": [
+    {
+      "endpoint_id": "ep-099",
+      "http_method": "PATCH",
+      "path": "/api/v1/admin/users/{username}",
+      "description": "Updates user auth settings, email, and profile fields in sequence",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.EditUser",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/user.go",
+          "input": "APIContext with EditUserOption form",
+          "output": "JSON User response",
+          "operations": ["Parse form", "Delegate to service layers"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_service.UpdateAuth",
+          "type": "service",
+          "file_path": "services/user/update.go",
+          "input": "User, UpdateAuthOptions",
+          "output": "error",
+          "operations": ["Validate login source", "Validate password complexity/length/pwned", "Set password hash", "Update auth columns", "Delete auth tokens if password changed"],
+          "calls_external": true,
+          "database_ops": [
+            {"operation": "SELECT", "table": "login_source", "description": "Get auth source by ID"},
+            {"operation": "UPDATE", "table": "user", "description": "Update login_type, login_source, login_name, passwd, salt, must_change_password, prohibit_login"},
+            {"operation": "DELETE", "table": "auth_token", "description": "Delete auth tokens if password changed"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_service.ReplacePrimaryEmailAddress",
+          "type": "service",
+          "file_path": "services/user/email.go",
+          "input": "User, email string",
+          "output": "error",
+          "operations": ["Validate email format", "Check if email already used", "Delete old primary email", "Insert new primary email", "Update user.email column"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "email_address", "description": "Check if email exists"},
+            {"operation": "SELECT", "table": "email_address", "description": "Get current primary email"},
+            {"operation": "DELETE", "table": "email_address", "description": "Remove old primary"},
+            {"operation": "INSERT", "table": "email_address", "description": "Insert new primary"},
+            {"operation": "UPDATE", "table": "user", "description": "Update email column"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "user_service.UpdateUser",
+          "type": "service",
+          "file_path": "services/user/update.go",
+          "input": "User, UpdateOptions",
+          "output": "error",
+          "operations": ["Build column list from non-nil options", "Check last admin constraint", "Check visibility mode allowed", "Update user columns"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "user", "description": "Update profile columns (full_name, website, location, etc.)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToUser",
+          "type": "utility",
+          "file_path": "services/convert/user.go",
+          "input": "User model",
+          "output": "api.User",
+          "operations": ["Convert user model to API response struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "EditUserOption",
+          "to": "UpdateAuthOptions",
+          "component": "admin.EditUser",
+          "mappings": [
+            {"source_field": "SourceID", "target_field": "LoginSource", "transformation": "computed"},
+            {"source_field": "LoginName", "target_field": "LoginName", "transformation": "direct_copy"},
+            {"source_field": "Password", "target_field": "Password", "transformation": "direct_copy"},
+            {"source_field": "MustChangePassword", "target_field": "MustChangePassword", "transformation": "direct_copy"},
+            {"source_field": "ProhibitLogin", "target_field": "ProhibitLogin", "transformation": "direct_copy"}
+          ]
+        },
+        {
+          "from": "user_model.User",
+          "to": "api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "UserName", "transformation": "direct_copy"},
+            {"source_field": "Email", "target_field": "Email", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Password too short", "handler": "admin.EditUser", "response_code": 400, "response": "error"},
+        {"condition": "Password not complex", "handler": "admin.EditUser", "response_code": 400, "response": "error"},
+        {"condition": "Password pwned", "handler": "admin.EditUser", "response_code": 400, "response": "error"},
+        {"condition": "Email invalid/already used", "handler": "admin.EditUser", "response_code": 400, "response": "error"},
+        {"condition": "Last admin user removal", "handler": "admin.EditUser", "response_code": 400, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-100",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/users/{username}",
+      "description": "Deletes user account with optional purge of all owned data",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.DeleteUser",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/user.go",
+          "input": "APIContext with purge query param",
+          "output": "204 No Content",
+          "operations": ["Check user is not org", "Check not self-delete", "Delegate to service"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_service.DeleteUser",
+          "type": "service",
+          "file_path": "services/user/user.go",
+          "input": "User, purge bool",
+          "output": "error",
+          "operations": ["Check last admin", "If purge: disable user, delete repos, remove from orgs, delete packages", "In transaction: verify no repos/orgs/packages remain, delete user data, delete unlinked attachments", "Rewrite authorized_keys", "Remove user directory and avatar from storage"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "user", "description": "Disable user (purge mode)"},
+            {"operation": "DELETE", "table": "repository", "description": "Delete all owned repos (purge)"},
+            {"operation": "DELETE", "table": "org_user", "description": "Remove from orgs (purge)"},
+            {"operation": "SELECT", "table": "repository", "description": "Count owned repos"},
+            {"operation": "SELECT", "table": "org_user", "description": "Count org memberships"},
+            {"operation": "DELETE", "table": "multiple", "description": "Delete watches, stars, follows, tokens, keys, etc."}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "deleteUser (internal)",
+          "type": "service",
+          "file_path": "services/user/delete.go",
+          "input": "User, purge bool",
+          "output": "error",
+          "operations": ["Decrement watch/star/follow counters", "Delete all user-related beans", "Delete comments if purge or user is new", "Remove user from branch protections", "Delete public keys and GPG keys", "Clear assignees", "Remove external login links", "Delete auth tokens", "Delete user record"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "UPDATE", "table": "repository", "description": "Decrement num_watches, num_stars"},
+            {"operation": "UPDATE", "table": "user", "description": "Decrement num_followers, num_following"},
+            {"operation": "DELETE", "table": "access_token", "description": "Delete access tokens"},
+            {"operation": "DELETE", "table": "collaboration", "description": "Delete collaborations"},
+            {"operation": "DELETE", "table": "watch", "description": "Delete watches"},
+            {"operation": "DELETE", "table": "star", "description": "Delete stars"},
+            {"operation": "DELETE", "table": "follow", "description": "Delete follows"},
+            {"operation": "DELETE", "table": "action", "description": "Delete actions"},
+            {"operation": "DELETE", "table": "comment", "description": "Delete comments (conditional)"},
+            {"operation": "DELETE", "table": "public_key", "description": "Delete SSH keys"},
+            {"operation": "DELETE", "table": "gpg_key", "description": "Delete GPG keys"},
+            {"operation": "DELETE", "table": "user", "description": "Delete user record"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User is organization", "handler": "admin.DeleteUser", "response_code": 422, "response": "validationError"},
+        {"condition": "Self-delete attempt", "handler": "admin.DeleteUser", "response_code": 422, "response": "validationError"},
+        {"condition": "User owns repos (non-purge)", "handler": "admin.DeleteUser", "response_code": 422, "response": "validationError"},
+        {"condition": "User has orgs (non-purge)", "handler": "admin.DeleteUser", "response_code": 422, "response": "validationError"},
+        {"condition": "User owns packages (non-purge)", "handler": "admin.DeleteUser", "response_code": 422, "response": "validationError"},
+        {"condition": "Last admin user", "handler": "admin.DeleteUser", "response_code": 422, "response": "validationError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-101",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/keys",
+      "description": "Creates a new SSH public key for the specified user",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.CreatePublicKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/user.go",
+          "input": "APIContext with CreateKeyOption form",
+          "output": "JSON PublicKey response",
+          "operations": ["Parse form", "Delegate to user.CreateUserPublicKey"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.CreateUserPublicKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/key.go",
+          "input": "CreateKeyOption, userID",
+          "output": "JSON PublicKey",
+          "operations": ["Check SSH key feature enabled", "Validate key string format", "Add key to DB", "Convert to API response"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "INSERT", "table": "public_key", "description": "Insert new SSH public key"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToPublicKey",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "PublicKey model",
+          "output": "api.PublicKey",
+          "operations": ["Convert key model to API struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "CreateKeyOption",
+          "to": "asymkey_model.PublicKey",
+          "component": "asymkey_model.AddPublicKey",
+          "mappings": [
+            {"source_field": "title", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "key", "target_field": "Content", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "SSH keys feature disabled", "handler": "user.CreateUserPublicKey", "response_code": 404, "response": "notFound"},
+        {"condition": "Invalid key format", "handler": "user.CreateUserPublicKey", "response_code": 422, "response": "validationError"},
+        {"condition": "Key already exists", "handler": "user.CreateUserPublicKey", "response_code": 422, "response": "validationError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-102",
+      "http_method": "DELETE",
+      "path": "/api/v1/admin/users/{username}/keys/{id}",
+      "description": "Deletes a user's SSH public key and rewrites authorized_keys",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.DeleteUserPublicKey",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/user.go",
+          "input": "APIContext with key id path param",
+          "output": "204 No Content",
+          "operations": ["Extract key ID", "Delegate to asymkey_service.DeletePublicKey"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "asymkey_service.DeletePublicKey",
+          "type": "service",
+          "file_path": "services/asymkey/ssh_key.go",
+          "input": "doer User, key ID",
+          "output": "error",
+          "operations": ["Get key by ID", "Check access (admin or owner)", "Delete key from DB", "Rewrite authorized_keys file"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "public_key", "description": "Get key by ID"},
+            {"operation": "DELETE", "table": "public_key", "description": "Delete key record"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "asymkey_service.RewriteAllPublicKeys",
+          "type": "service",
+          "file_path": "services/asymkey/ssh_key_authorized_keys.go",
+          "input": "context",
+          "output": "error",
+          "operations": ["Regenerate authorized_keys file from all keys in DB"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "public_key", "description": "Read all public keys for authorized_keys regeneration"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Key not found", "handler": "admin.DeleteUserPublicKey", "response_code": 404, "response": "notFound"},
+        {"condition": "Access denied", "handler": "admin.DeleteUserPublicKey", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-103",
+      "http_method": "GET",
+      "path": "/api/v1/admin/users",
+      "description": "Search and list users with filtering, sorting, and pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.SearchUsers",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/user.go",
+          "input": "APIContext with query params",
+          "output": "JSON UserList",
+          "operations": ["Parse pagination, sort, order, visibility, filter params", "Validate sort/order/visibility values", "Build SearchUserOptions", "Call user_model.SearchUsers", "Convert results"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_model.SearchUsers",
+          "type": "repository",
+          "file_path": "models/user/search.go",
+          "input": "SearchUserOptions",
+          "output": "[]*User, int64, error",
+          "operations": ["Build SQL conditions from options", "LEFT JOIN two_factor if 2FA filter", "Execute count query", "Execute paginated select query"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Count matching users"},
+            {"operation": "SELECT", "table": "user", "description": "Fetch paginated user list (with optional LEFT JOIN two_factor)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToUser",
+          "type": "utility",
+          "file_path": "services/convert/user.go",
+          "input": "[]User models",
+          "output": "[]api.User",
+          "operations": ["Convert each user to API struct in loop"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.User",
+          "to": "api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "UserName", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "FullName", "transformation": "direct_copy"},
+            {"source_field": "Email", "target_field": "Email", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid sort mode", "handler": "admin.SearchUsers", "response_code": 422, "response": "validationError"},
+        {"condition": "Invalid sort order", "handler": "admin.SearchUsers", "response_code": 422, "response": "validationError"},
+        {"condition": "Invalid visibility", "handler": "admin.SearchUsers", "response_code": 422, "response": "validationError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-104",
+      "http_method": "POST",
+      "path": "/api/v1/admin/users/{username}/rename",
+      "description": "Renames a user, updating repos, redirects, and filesystem",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.RenameUser",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/user.go",
+          "input": "APIContext with RenameUserOption form",
+          "output": "204 No Content",
+          "operations": ["Check user is not org", "Extract new name", "Delegate to user_service.RenameUser"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_service.RenameUser",
+          "type": "service",
+          "file_path": "services/user/user.go",
+          "input": "User, newUserName, doer",
+          "output": "error",
+          "operations": ["Check if name unchanged (no-op)", "Validate username usability", "Handle capitalization-only change", "Begin transaction", "Check user existence", "Update repository owner names", "Create user redirect", "Update agit references", "Update container repository names", "Update user name/lower_name", "Rename filesystem directory", "Commit transaction"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "Check if new name exists"},
+            {"operation": "UPDATE", "table": "repository", "description": "Update owner_name in repos"},
+            {"operation": "INSERT", "table": "user_redirect", "description": "Create redirect from old name"},
+            {"operation": "UPDATE", "table": "user", "description": "Update name and lower_name"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "User is organization", "handler": "admin.RenameUser", "response_code": 422, "response": "validationError"},
+        {"condition": "Name already exists", "handler": "admin.RenameUser", "response_code": 422, "response": "validationError"},
+        {"condition": "Name reserved", "handler": "admin.RenameUser", "response_code": 422, "response": "validationError"},
+        {"condition": "Name pattern not allowed", "handler": "admin.RenameUser", "response_code": 422, "response": "validationError"},
+        {"condition": "Name chars not allowed", "handler": "admin.RenameUser", "response_code": 422, "response": "validationError"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-105",
+      "http_method": "GET",
+      "path": "/api/v1/admin/actions/jobs",
+      "description": "Lists all workflow jobs across all repos with optional status filter",
+      "steps": [
+        {
+          "step": 1,
+          "component": "admin.ListWorkflowJobs",
+          "type": "controller",
+          "file_path": "routers/api/v1/admin/action.go",
+          "input": "APIContext",
+          "output": "JSON ActionWorkflowJobsResponse",
+          "operations": ["Delegate to shared.ListJobs(ctx, 0, 0, 0, nil)"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "shared.ListJobs",
+          "type": "service",
+          "file_path": "routers/api/v1/shared/action.go",
+          "input": "ctx, ownerID=0, repoID=0, runID=0",
+          "output": "JSON response",
+          "operations": ["Parse pagination and status params", "Convert status strings to internal enum", "Query jobs with FindAndCount", "Load job attributes (run, repo)", "Convert each job to API struct"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action_run_job", "description": "Find and count jobs with filters"},
+            {"operation": "SELECT", "table": "action_run", "description": "Load run attributes for each job"},
+            {"operation": "SELECT", "table": "repository", "description": "Load repository for each job"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToActionWorkflowJob",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "Repository, Task, RunJob",
+          "output": "api.ActionWorkflowJob",
+          "operations": ["Convert job model to API response struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "actions_model.ActionRunJob",
+          "to": "api.ActionWorkflowJob",
+          "component": "convert.ToActionWorkflowJob",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Status", "transformation": "computed"},
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid status value", "handler": "shared.ListJobs", "response_code": 400, "response": "error"}
+      ]
+    }
+  ]
+}

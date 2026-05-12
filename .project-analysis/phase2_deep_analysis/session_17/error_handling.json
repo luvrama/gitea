@@ -1,0 +1,54 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "any error", "status_code": 500, "response_type": "error JSON", "message_template": "APIErrorInternal"},
+        {"exception_type": "not found", "status_code": 404, "response_type": "error JSON", "message_template": "APIErrorNotFound"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-114",
+      "path": "/api/v1/admin/actions/runners",
+      "error_scenarios": [
+        {"exception": "DB error", "trigger": "FindAndCount fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-115",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "error_scenarios": [
+        {"exception": "util.ErrNotExist", "trigger": "Runner ID not found", "status_code": 404, "response": "Runner not found", "logged": false, "retryable": false},
+        {"exception": "DB error", "trigger": "GetRunnerByID fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-117",
+      "path": "/api/v1/admin/actions/runners/{runner_id}",
+      "error_scenarios": [
+        {"exception": "nil Disabled", "trigger": "form.Disabled == nil", "status_code": 422, "response": "[Disabled]: Required", "logged": false, "retryable": false},
+        {"exception": "DB error", "trigger": "SetRunnerDisabled fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    }
+  ],
+  "custom_exceptions": [
+    {
+      "class": "util.ErrNotExist",
+      "file_path": "modules/util/error.go",
+      "extends": "error",
+      "used_in": ["actions_model.GetRunnerByID", "user_model.AddUserBadges"],
+      "http_status": 404
+    },
+    {
+      "class": "util.ErrAlreadyExist",
+      "file_path": "modules/util/error.go",
+      "extends": "error",
+      "used_in": ["user_model.AddUserBadges"],
+      "http_status": 500
+    }
+  ]
+}

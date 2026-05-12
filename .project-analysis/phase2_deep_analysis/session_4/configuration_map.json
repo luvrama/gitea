@@ -1,0 +1,29 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "api.default_paging_num",
+      "type": "Integer",
+      "default_value": "30",
+      "source_file": "custom/conf/app.ini [api]",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Default page size when limit param is 0 or negative", "impact": "Controls default number of results per page"}],
+      "affected_endpoints": ["ep-026", "ep-027"]
+    },
+    {
+      "key": "api.max_response_items",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "custom/conf/app.ini [api]",
+      "used_by": [{"class": "convert", "method": "ToCorrectPageSize", "file_path": "services/convert/utils.go", "usage": "Maximum allowed page size", "impact": "Caps the limit parameter to prevent excessive result sets"}],
+      "affected_endpoints": ["ep-026", "ep-027"]
+    },
+    {
+      "key": "service.default_org_member_visible",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "custom/conf/app.ini [service]",
+      "used_by": [{"class": "organization", "method": "CreateOrganization", "file_path": "models/organization/org.go", "usage": "Default is_public value for new org members", "impact": "Controls whether new org memberships are public by default"}],
+      "affected_endpoints": ["ep-026", "ep-027"]
+    }
+  ]
+}

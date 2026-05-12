@@ -1,0 +1,46 @@
+{
+  "endpoints_by_database_table": {
+    "action_run": {"read": ["ep-285", "ep-286", "ep-287", "ep-288", "ep-289", "ep-290", "ep-291"], "write": ["ep-287", "ep-288", "ep-289"]},
+    "action_run_attempt": {"read": ["ep-285", "ep-286", "ep-287", "ep-288", "ep-289", "ep-291"], "write": ["ep-287", "ep-288", "ep-289"]},
+    "action_run_job": {"read": ["ep-287", "ep-288", "ep-289", "ep-290", "ep-291", "ep-292"], "write": ["ep-287", "ep-288", "ep-289"]},
+    "action_task": {"read": ["ep-292"], "write": []},
+    "action_task_step": {"read": ["ep-292"], "write": []},
+    "action_runner": {"read": ["ep-292"], "write": []},
+    "repository": {"read": ["ep-285", "ep-286", "ep-290", "ep-291", "ep-292"], "write": []},
+    "user": {"read": ["ep-285", "ep-286"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "actions.MAX_RERUN_ATTEMPTS": ["ep-287", "ep-288", "ep-289"]
+  },
+  "endpoints_by_model_class": {
+    "ActionRun": ["ep-285", "ep-286", "ep-287", "ep-288", "ep-289", "ep-290", "ep-291"],
+    "ActionRunAttempt": ["ep-286", "ep-287", "ep-288", "ep-289", "ep-291"],
+    "ActionRunJob": ["ep-287", "ep-288", "ep-289", "ep-290", "ep-291", "ep-292"],
+    "ActionTask": ["ep-292"],
+    "ActionTaskStep": ["ep-292"]
+  },
+  "endpoints_by_service_class": {
+    "actions_service.RerunWorkflowRunJobs": ["ep-287", "ep-288", "ep-289"],
+    "actions_service.GetFailedJobsForRerun": ["ep-288"],
+    "convert.ToActionWorkflowRun": ["ep-285", "ep-286", "ep-287"],
+    "convert.ToActionWorkflowJob": ["ep-289", "ep-290", "ep-291", "ep-292"],
+    "shared.ListJobs": ["ep-290", "ep-291"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-285": {"reads": ["action_run", "action_run_attempt", "repository", "user"], "writes": []},
+    "ep-286": {"reads": ["action_run", "action_run_attempt", "repository", "user"], "writes": []},
+    "ep-287": {"reads": ["action_run", "action_run_attempt", "action_run_job", "action_variable"], "writes": ["action_run_attempt", "action_run_job", "action_run"]},
+    "ep-288": {"reads": ["action_run", "action_run_attempt", "action_run_job", "action_variable"], "writes": ["action_run_attempt", "action_run_job", "action_run"]},
+    "ep-289": {"reads": ["action_run", "action_run_attempt", "action_run_job", "action_variable"], "writes": ["action_run_attempt", "action_run_job", "action_run"]},
+    "ep-290": {"reads": ["action_run", "action_run_job", "repository"], "writes": []},
+    "ep-291": {"reads": ["action_run", "action_run_attempt", "action_run_job", "repository"], "writes": []},
+    "ep-292": {"reads": ["action_run_job", "action_run", "action_task", "action_task_step", "action_runner"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-287": ["actions.MAX_RERUN_ATTEMPTS"],
+    "ep-288": ["actions.MAX_RERUN_ATTEMPTS"],
+    "ep-289": ["actions.MAX_RERUN_ATTEMPTS"]
+  }
+}

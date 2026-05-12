@@ -1,0 +1,105 @@
+{
+  "total_rules": 10,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Draft releases are only visible to users with write access to the releases unit and proper API token scope",
+      "location": {"class": "repo", "method": "canAccessReleaseDraft", "file_path": "routers/api/v1/repo/release.go", "line_number": 22},
+      "condition": "ctx.IsSigned && ctx.Repo.Permission.CanWrite(unit.TypeReleases) && (not API token OR has write:repository scope)",
+      "action": "Return true allowing draft access",
+      "affected_endpoints": ["ep-240", "ep-242"],
+      "code_snippet": "if !ctx.IsSigned || !ctx.Repo.Permission.CanWrite(unit.TypeReleases) {\n\treturn false\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Tag-only records (IsTag=true) are treated as non-existent releases and return 404",
+      "location": {"class": "repo", "method": "GetRelease", "file_path": "routers/api/v1/repo/release.go", "line_number": 72},
+      "condition": "release.IsTag == true",
+      "action": "Return 404 not found",
+      "affected_endpoints": ["ep-240", "ep-241", "ep-244", "ep-245"],
+      "code_snippet": "if err != nil && repo_model.IsErrReleaseNotExist(err) || release.IsTag {\n\tctx.APIErrorNotFound()\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Latest release excludes drafts, prereleases, and tag-only records",
+      "location": {"class": "repo_model", "method": "GetLatestReleaseByRepoID", "file_path": "models/repo/release.go", "line_number": 222},
+      "condition": "is_draft=false AND is_prerelease=false AND is_tag=false",
+      "action": "Return most recent release ordered by created_unix DESC",
+      "affected_endpoints": ["ep-241"],
+      "code_snippet": "And(builder.Eq{\"is_draft\": false}).\nAnd(builder.Eq{\"is_prerelease\": false}).\nAnd(builder.Eq{\"is_tag\": false})"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Cannot create a release on an empty repository",
+      "location": {"class": "repo", "method": "CreateRelease", "file_path": "routers/api/v1/repo/release.go", "line_number": 175},
+      "condition": "ctx.Repo.Repository.IsEmpty == true",
+      "action": "Return 422 Unprocessable Entity",
+      "affected_endpoints": ["ep-243"],
+      "code_snippet": "if ctx.Repo.Repository.IsEmpty {\n\tctx.APIError(http.StatusUnprocessableEntity, errors.New(\"repo is empty\"))\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "If target is not provided, default branch is used as the release target",
+      "location": {"class": "repo", "method": "CreateRelease", "file_path": "routers/api/v1/repo/release.go", "line_number": 185},
+      "condition": "len(form.Target) == 0",
+      "action": "Set form.Target = ctx.Repo.Repository.DefaultBranch",
+      "affected_endpoints": ["ep-243"],
+      "code_snippet": "if len(form.Target) == 0 {\n\tform.Target = ctx.Repo.Repository.DefaultBranch\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "If a tag record already exists, it is converted to a release (tag-to-release conversion)",
+      "location": {"class": "repo", "method": "CreateRelease", "file_path": "routers/api/v1/repo/release.go", "line_number": 210},
+      "condition": "Existing release found AND rel.IsTag == true",
+      "action": "Update existing tag record with release fields and set IsTag=false",
+      "affected_endpoints": ["ep-243"],
+      "code_snippet": "rel.IsTag = false\nrel.Repo = ctx.Repo.Repository\nrel.Publisher = ctx.Doer"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "authorization",
+      "description": "Protected tag names prevent release creation and deletion",
+      "location": {"class": "release_service", "method": "createTag", "file_path": "services/release/release.go", "line_number": 93},
+      "condition": "Tag matches protected tag pattern AND user not in allowlist",
+      "action": "Return ErrProtectedTagName error",
+      "affected_endpoints": ["ep-243", "ep-245"],
+      "code_snippet": "if !isAllowed {\n\treturn false, ErrProtectedTagName{TagName: rel.TagName}\n}"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Git tag is only created when release is not a draft (published)",
+      "location": {"class": "release_service", "method": "createTag", "file_path": "services/release/release.go", "line_number": 80},
+      "condition": "!rel.IsDraft",
+      "action": "Create git tag (annotated if msg provided, lightweight otherwise)",
+      "affected_endpoints": ["ep-243", "ep-244"],
+      "code_snippet": "if !rel.IsDraft {\n\tif !gitrepo.IsTagExist(ctx, rel.Repo, rel.TagName) {"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Deleting a release with delTag=false converts it back to a tag-only record instead of removing it",
+      "location": {"class": "release_service", "method": "DeleteReleaseByID", "file_path": "services/release/release.go", "line_number": 244},
+      "condition": "delTag == false",
+      "action": "Set rel.IsTag=true and update, then delete attachments",
+      "affected_endpoints": ["ep-245"],
+      "code_snippet": "rel.IsTag = true\nif err := repo_model.UpdateRelease(ctx, rel); err != nil {"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "validation",
+      "description": "Release title is truncated to 255 characters on create and update",
+      "location": {"class": "repo_model", "method": "UpdateRelease", "file_path": "models/repo/release.go", "line_number": 137},
+      "condition": "Always on insert/update",
+      "action": "rel.Title = util.EllipsisDisplayString(rel.Title, 255)",
+      "affected_endpoints": ["ep-243", "ep-244"],
+      "code_snippet": "rel.Title = util.EllipsisDisplayString(rel.Title, 255)"
+    }
+  ]
+}

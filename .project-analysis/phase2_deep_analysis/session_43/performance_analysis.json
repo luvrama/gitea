@@ -1,0 +1,123 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-293",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/artifacts",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 FindAndCount query + N convert calls (in-memory, no DB)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-294",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}",
+      "resource_load": {
+        "operations_per_request": 10,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "storage"],
+        "note": "4 SELECT queries + 1 transaction with multiple DELETEs + N storage deletions"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "Storage file deletions (logs + artifacts) happen synchronously after DB transaction, blocking the response",
+          "impact": "Response time proportional to number of tasks + artifacts in the run",
+          "file_path": "services/actions/cleanup.go",
+          "line_number": 253,
+          "code_snippet": "for _, art := range artifacts {\n\tif err := storage.ActionsArtifacts.Delete(art.StoragePath); err != nil {",
+          "recommendation": "Move storage deletions to background goroutine or queue"
+        },
+        {
+          "severity": "medium",
+          "type": "unbounded_queries",
+          "description": "All jobs, tasks, and artifacts for a run are loaded into memory without limit",
+          "impact": "For runs with many jobs/artifacts, memory usage could spike",
+          "file_path": "services/actions/cleanup.go",
+          "line_number": 183,
+          "code_snippet": "jobs, err := actions_model.GetAllRunJobsByRepoAndRunID(ctx, run.RepoID, run.ID)",
+          "recommendation": "Acceptable for typical runs (few jobs), but could be problematic for matrix builds with hundreds of jobs"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "async",
+          "description": "Move storage file deletions to background after DB transaction completes",
+          "estimated_impact": "Reduce response time by eliminating storage I/O from request path",
+          "implementation": "Use graceful.GetManager().ShutdownContext() pattern (already used in DeleteOrgRepos)"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-295",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 FindAndCount query + N convert calls (in-memory)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-296",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single primary key lookup"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-297",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT by PK + 1 UPDATE (soft delete)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-298",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "storage"],
+        "note": "1 SELECT by PK + 1 storage operation (presigned URL or file read)"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_timeout",
+          "description": "Storage.ServeDirectURL and Storage.Open calls have no explicit timeout",
+          "impact": "If object storage is slow/unresponsive, request hangs",
+          "file_path": "services/actions/artifacts.go",
+          "line_number": 34,
+          "code_snippet": "u, err := storage.ActionsArtifacts.ServeDirectURL(art.StoragePath, art.ArtifactPath, method, &storage.ServeDirectOptions{ContentType: contentType})",
+          "recommendation": "Add context timeout for storage operations"
+        }
+      ],
+      "optimization_recommendations": []
+    }
+  ]
+}

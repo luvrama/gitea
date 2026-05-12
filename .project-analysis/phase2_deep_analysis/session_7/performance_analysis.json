@@ -1,0 +1,120 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-042",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/actions/runners/registration-token",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_runner_token"],
+        "note": "1 SELECT + conditional (1 UPDATE + 1 INSERT) within transaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-043",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/variables",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_variable"],
+        "note": "1 org resolve + 1 ownership check + 1 FindAndCount (2 queries: count + select)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-044",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_variable"],
+        "note": "1 org resolve + 1 ownership check + 1 SELECT"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-045",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_variable"],
+        "note": "1 org resolve + 1 ownership check + 1 SELECT (find) + 1 DELETE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-046",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_variable"],
+        "note": "1 org resolve + 1 ownership check + 1 SELECT (existence check) + 1 INSERT"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "Existence check before insert could be replaced by unique constraint handling",
+          "impact": "Extra SELECT query on every create request",
+          "file_path": "routers/api/v1/org/action.go",
+          "line_number": 245,
+          "code_snippet": "v, err := actions_service.GetVariable(ctx, actions_model.FindVariablesOpts{OwnerID: ownerID, Name: variableName})",
+          "recommendation": "Could rely on DB unique constraint error instead of pre-check SELECT, but current approach gives cleaner error messages"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-047",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_variable"],
+        "note": "1 org resolve + 1 ownership check + 1 SELECT (get existing) + 1 UPDATE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-048",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runners",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_runner"],
+        "note": "1 org resolve + 1 ownership check + 1 FindAndCount (2 queries)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-049",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["action_runner"],
+        "note": "1 org resolve + 1 ownership check + 1 SELECT by ID"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

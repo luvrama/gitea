@@ -1,0 +1,153 @@
+{
+  "total_endpoints_analyzed": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-352",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "2 DB queries: release lookup + attachment lookup"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-353",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "release lookup + LoadAttributes (loads repo, publisher, attachments)"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "LoadAttributes loads full release data (repo, publisher, all attachments) when only attachments are needed",
+          "impact": "Extra DB queries for repo and publisher that are not used in the response",
+          "file_path": "routers/api/v1/repo/release_attachment.go",
+          "line_number": 119,
+          "code_snippet": "if err := release.LoadAttributes(ctx); err != nil {",
+          "recommendation": "Load only attachments directly instead of full LoadAttributes"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Replace LoadAttributes with direct attachment query for this endpoint",
+          "estimated_impact": "Eliminate 1-2 unnecessary DB queries per request",
+          "implementation": "Use GetAttachmentsByReleaseID or similar direct query"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-354",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "storage"],
+        "note": "release lookup + storage write + DB insert"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_timeout",
+          "description": "Storage write operation has no explicit timeout configured",
+          "impact": "Large file uploads to slow storage could block request thread indefinitely",
+          "file_path": "services/attachment/attachment.go",
+          "line_number": 30,
+          "code_snippet": "size, err := storage.Attachments.Save(attach.RelativePath(), file, size)",
+          "recommendation": "Add context timeout for storage operations"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "timeout",
+          "description": "Add timeout to storage save operation",
+          "estimated_impact": "Prevent request thread blocking on slow storage",
+          "implementation": "Use context.WithTimeout around storage.Save call"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-355",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "release lookup + attachment lookup + attachment update"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-356",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "storage"],
+        "note": "release lookup + attachment lookup + DB delete + storage delete"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "synchronous_blocking",
+          "description": "Storage file deletion is synchronous on the request path",
+          "impact": "If storage is slow, delete response is delayed",
+          "file_path": "models/repo/attachment.go",
+          "line_number": 163,
+          "code_snippet": "if err := storage.Attachments.Delete(a.RelativePath()); err != nil {",
+          "recommendation": "Consider async file deletion after DB record is removed"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "async",
+          "description": "Perform storage file deletion asynchronously",
+          "estimated_impact": "Faster delete response times",
+          "implementation": "Queue file deletion after DB record removal"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-357",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/labels",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "label list query + count query"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-358",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "single label lookup"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

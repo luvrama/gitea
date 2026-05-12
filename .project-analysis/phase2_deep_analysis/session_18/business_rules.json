@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "User search results are filtered by visibility: anonymous users only see public users, restricted users only see public, non-restricted see public+limited",
+      "location": {"class": "user_model", "method": "BuildCanSeeUserCondition", "file_path": "models/user/search.go", "line_number": 155},
+      "condition": "actor == nil || actor.IsRestricted || !actor.IsAdmin",
+      "action": "Apply visibility filter to search results",
+      "affected_endpoints": ["ep-123"],
+      "code_snippet": "cond = cond.Or(builder.In(\"`user`.visibility\", structs.VisibleTypePublic, structs.VisibleTypeLimited))"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "business_logic",
+      "description": "Special user IDs (GhostUser=-1, ActionsUser=-2) return synthetic user objects without DB query",
+      "location": {"class": "user", "method": "Search", "file_path": "routers/api/v1/user/user.go", "line_number": 60},
+      "condition": "uid == user_model.GhostUserID || uid == user_model.ActionsUserID",
+      "action": "Return synthetic user without DB query, maxResults=1",
+      "affected_endpoints": ["ep-123"],
+      "code_snippet": "users = []*user_model.User{user_model.NewGhostUser()}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "authorization",
+      "description": "Email search is restricted: non-admin users can only find users by email if keep_email_private is false, or if searching for themselves",
+      "location": {"class": "SearchUserOptions", "method": "toSearchQueryBase", "file_path": "models/user/search.go", "line_number": 82},
+      "condition": "opts.SearchByEmail && opts.Actor != nil && !opts.Actor.IsAdmin",
+      "action": "Add condition: keep_email_private=false OR id=actor.ID",
+      "affected_endpoints": ["ep-123"],
+      "code_snippet": "emailCond = emailCond.And(builder.Or(builder.Eq{\"keep_email_private\": false}, builder.Eq{\"id\": opts.Actor.ID}))"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "authorization",
+      "description": "User profile visibility check: private users are only visible to admins, self, followers, or org co-members",
+      "location": {"class": "user_model", "method": "IsUserVisibleToViewer", "file_path": "models/user/user.go", "line_number": 1422},
+      "condition": "u.Visibility == VisibleTypePrivate",
+      "action": "Check follower relationship and shared org membership",
+      "affected_endpoints": ["ep-124"],
+      "code_snippet": "follower := IsFollowing(ctx, u.ID, viewer.ID)"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "authorization",
+      "description": "When user is not visible, return 404 with fake ErrUserNotExist to prevent information leakage",
+      "location": {"class": "user", "method": "GetInfo", "file_path": "routers/api/v1/user/user.go", "line_number": 103},
+      "condition": "!user_model.IsUserVisibleToViewer(ctx, ctx.ContextUser, ctx.Doer)",
+      "action": "Return 404 with ErrUserNotExist (not 403)",
+      "affected_endpoints": ["ep-124"],
+      "code_snippet": "ctx.APIErrorNotFound(\"GetUserByName\", user_model.ErrUserNotExist{Name: ctx.PathParam(\"username\")})"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Private fields (is_admin, login_name, source_id, last_login, language, is_active, prohibit_login) only shown when authed (self or admin)",
+      "location": {"class": "convert", "method": "toUser", "file_path": "services/convert/user.go", "line_number": 73},
+      "condition": "authed (doer.ID == user.ID || doer.IsAdmin)",
+      "action": "Include admin/login/activity fields in response",
+      "affected_endpoints": ["ep-124", "ep-125"],
+      "code_snippet": "if authed { result.IsAdmin = user.IsAdmin; result.LoginName = user.LoginName }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Email is hidden when user has KeepEmailPrivate=true, unless viewer is authed (self or admin)",
+      "location": {"class": "convert", "method": "toUser", "file_path": "services/convert/user.go", "line_number": 69},
+      "condition": "signed && (!user.KeepEmailPrivate || authed)",
+      "action": "Show real email; otherwise show placeholder",
+      "affected_endpoints": ["ep-123", "ep-124", "ep-125"],
+      "code_snippet": "if signed && (!user.KeepEmailPrivate || authed) { result.Email = user.Email }"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Heatmap returns empty array if user has KeepActivityPrivate=true and viewer is not admin/self",
+      "location": {"class": "activities_model", "method": "getUserHeatmapData", "file_path": "models/activities/user_heatmap.go", "line_number": 37},
+      "condition": "!ActivityReadable(user, doer)",
+      "action": "Return empty heatmap data",
+      "affected_endpoints": ["ep-126"],
+      "code_snippet": "if !ActivityReadable(user, doer) { return hdata, nil }"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Heatmap groups contributions by 15-minute intervals (900 seconds) to support timezone shifting on client",
+      "location": {"class": "activities_model", "method": "getUserHeatmapData", "file_path": "models/activities/user_heatmap.go", "line_number": 42},
+      "condition": "Always",
+      "action": "Group by created_unix / 900 * 900",
+      "affected_endpoints": ["ep-126"],
+      "code_snippet": "groupBy := \"created_unix / 900 * 900\""
+    },
+    {
+      "rule_id": "br-010",
+      "category": "business_logic",
+      "description": "Activity feeds include private actions only when viewer is admin or the requested user themselves",
+      "location": {"class": "user", "method": "ListUserActivityFeeds", "file_path": "routers/api/v1/user/user.go", "line_number": 163},
+      "condition": "ctx.IsSigned && (ctx.Doer.IsAdmin || ctx.Doer.ID == ctx.ContextUser.ID)",
+      "action": "Set IncludePrivate=true in feed options",
+      "affected_endpoints": ["ep-127"],
+      "code_snippet": "includePrivate := ctx.IsSigned && (ctx.Doer.IsAdmin || ctx.Doer.ID == ctx.ContextUser.ID)"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "validation",
+      "description": "Avatar image must be valid base64 and a supported image type (png/jpeg/gif/webp) within size limits",
+      "location": {"class": "avatar", "method": "processAvatarImage", "file_path": "modules/avatar/avatar.go", "line_number": 53},
+      "condition": "imgType not in [png, jpeg, gif, webp] OR width > MaxWidth OR height > MaxHeight",
+      "action": "Return error",
+      "affected_endpoints": ["ep-128"],
+      "code_snippet": "if imgType != \"png\" && imgType != \"jpeg\" && imgType != \"gif\" && imgType != \"webp\" { return nil, errors.New(\"unsupported avatar image type\") }"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "business_logic",
+      "description": "Avatar upload is transactional: DB update and storage write happen in same transaction",
+      "location": {"class": "user_service", "method": "UploadAvatar", "file_path": "services/user/avatar.go", "line_number": 26},
+      "condition": "Always",
+      "action": "Use db.WithTx to wrap DB update + storage save",
+      "affected_endpoints": ["ep-128"],
+      "code_snippet": "return db.WithTx(ctx, func(ctx context.Context) error {"
+    }
+  ]
+}

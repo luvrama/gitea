@@ -1,0 +1,42 @@
+{
+  "endpoints_by_database_table": {
+    "reaction": {"read": ["ep-300", "ep-301", "ep-303", "ep-304"], "write": ["ep-301", "ep-302", "ep-304", "ep-305"]},
+    "comment": {"read": ["ep-300", "ep-301", "ep-302"], "write": []},
+    "issue": {"read": ["ep-300", "ep-301", "ep-302", "ep-303", "ep-304", "ep-305"], "write": []},
+    "user": {"read": ["ep-299", "ep-300", "ep-303"], "write": []},
+    "user_blocking": {"read": ["ep-301", "ep-304"], "write": []},
+    "repository": {"read": ["ep-304"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "ui.REACTIONS": ["ep-300", "ep-301", "ep-303", "ep-304"]
+  },
+  "endpoints_by_model_class": {
+    "issues_model.Reaction": ["ep-300", "ep-301", "ep-302", "ep-303", "ep-304", "ep-305"],
+    "issues_model.Comment": ["ep-300", "ep-301", "ep-302"],
+    "issues_model.Issue": ["ep-300", "ep-301", "ep-302", "ep-303", "ep-304", "ep-305"],
+    "git.Note": ["ep-299"],
+    "api.Note": ["ep-299"]
+  },
+  "endpoints_by_service_class": {
+    "issue_service.CreateCommentReaction": ["ep-301"],
+    "issue_service.CreateIssueReaction": ["ep-304"],
+    "convert.ToCommit": ["ep-299"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-299": {"reads": ["user"], "writes": []},
+    "ep-300": {"reads": ["comment", "issue", "reaction", "user"], "writes": []},
+    "ep-301": {"reads": ["comment", "issue", "user_blocking", "reaction"], "writes": ["reaction"]},
+    "ep-302": {"reads": ["comment", "issue"], "writes": ["reaction"]},
+    "ep-303": {"reads": ["issue", "reaction", "user"], "writes": []},
+    "ep-304": {"reads": ["issue", "repository", "user_blocking", "reaction"], "writes": ["reaction"]},
+    "ep-305": {"reads": ["issue"], "writes": ["reaction"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-300": ["ui.REACTIONS"],
+    "ep-301": ["ui.REACTIONS"],
+    "ep-303": ["ui.REACTIONS"],
+    "ep-304": ["ui.REACTIONS"]
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "database_type": "SQL",
+  "database_technology": "PostgreSQL/MySQL/SQLite (via XORM)",
+  "total_tables_or_collections": 5,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "org_user",
+      "entity_class": "organization.OrgUser",
+      "file_path": "models/organization/org_user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "UNIQUE(s) with org_id"]},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "UNIQUE(s) with uid"]},
+        {"name": "is_public", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX"]}
+      ],
+      "indexes": [
+        {"name": "UQE_org_user_s", "columns": ["uid", "org_id"], "unique": true},
+        {"name": "IDX_org_user_uid", "columns": ["uid"], "unique": false},
+        {"name": "IDX_org_user_org_id", "columns": ["org_id"], "unique": false},
+        {"name": "IDX_org_user_is_public", "columns": ["is_public"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "user",
+      "entity_class": "user_model.User",
+      "file_path": "models/user/user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": []},
+        {"name": "type", "type": "INT", "code_type": "UserType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["0=individual, 1=organization"]},
+        {"name": "num_members", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_user_lower_name", "columns": ["lower_name"], "unique": true}
+      ],
+      "relationships": []
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "team",
+      "entity_class": "organization.Team",
+      "file_path": "models/organization/team.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "authorize", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "num_members", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "org_id"}
+      ]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "team_user",
+      "entity_class": "organization.TeamUser",
+      "file_path": "models/organization/team_user.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "org_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "team_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "uid", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_team_user_s", "columns": ["team_id", "uid"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "team", "join_column": "team_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "uid"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "access",
+      "entity_class": "access_model.Access",
+      "file_path": "models/perm/access/access.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "UQE_access_s", "columns": ["user_id", "repo_id"], "unique": true}
+      ],
+      "relationships": []
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-070",
+      "path": "/api/v1/orgs/{org}/members",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "orgAssignment", "description": "Resolve org by name"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "IsOrgMember", "description": "Check doer membership"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "CountOrgMembers", "description": "Count members"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "GetOrgUsersByOrgID", "description": "Get member records"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUsersByIDs", "description": "Load user details"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-071",
+      "path": "/api/v1/orgs/{org}/public_members",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "orgAssignment", "description": "Resolve org by name"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "CountOrgMembers", "description": "Count public members"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "GetOrgUsersByOrgID", "description": "Get public member records"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUsersByIDs", "description": "Load user details"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-072",
+      "path": "/api/v1/orgs/{org}/members/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "orgAssignment", "description": "Resolve org"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByName", "description": "Resolve target user"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "IsOrgMember", "description": "Check doer membership"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "IsOrgMember", "description": "Check target user membership"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-073",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "orgAssignment", "description": "Resolve org"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByName", "description": "Resolve target user"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "IsPublicMembership", "description": "Check public membership"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-074",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "orgAssignment", "description": "Resolve org"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "reqOrgMembership", "description": "Check doer is member"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByName", "description": "Resolve target user"},
+        {"store_type": "database", "store_name": "team/team_user", "operation": "SELECT", "method": "IsOwnedBy", "description": "Check org ownership (conditional)"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "ChangeOrgUserStatus", "description": "Get OrgUser record"},
+        {"store_type": "database", "store_name": "org_user", "operation": "UPDATE", "method": "ChangeOrgUserStatus", "description": "Set is_public=true"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-075",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "orgAssignment", "description": "Resolve org"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "reqOrgMembership", "description": "Check doer is member"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByName", "description": "Resolve target user"},
+        {"store_type": "database", "store_name": "team/team_user", "operation": "SELECT", "method": "IsOwnedBy", "description": "Check org ownership (conditional)"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "ChangeOrgUserStatus", "description": "Get OrgUser record"},
+        {"store_type": "database", "store_name": "org_user", "operation": "UPDATE", "method": "ChangeOrgUserStatus", "description": "Set is_public=false"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-076",
+      "path": "/api/v1/orgs/{org}/members/{username}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "orgAssignment", "description": "Resolve org"},
+        {"store_type": "database", "store_name": "team/team_user", "operation": "SELECT", "method": "reqOrgOwnership", "description": "Check doer is owner"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "GetUserByName", "description": "Resolve target user"},
+        {"store_type": "database", "store_name": "org_user", "operation": "SELECT", "method": "RemoveOrgUser", "description": "Check membership"},
+        {"store_type": "database", "store_name": "team/team_user", "operation": "SELECT", "method": "RemoveOrgUser", "description": "Check if last owner"},
+        {"store_type": "database", "store_name": "org_user", "operation": "DELETE", "method": "RemoveOrgUser", "description": "Delete org_user record"},
+        {"store_type": "database", "store_name": "user", "operation": "UPDATE", "method": "RemoveOrgUser", "description": "Decrement num_members"},
+        {"store_type": "database", "store_name": "access", "operation": "DELETE", "method": "RemoveOrgUser", "description": "Delete access records"},
+        {"store_type": "database", "store_name": "watch", "operation": "UPDATE", "method": "RemoveOrgUser", "description": "Unwatch repos"},
+        {"store_type": "database", "store_name": "team_user", "operation": "DELETE", "method": "removeTeamMember", "description": "Remove from teams"}
+      ]
+    }
+  ]
+}

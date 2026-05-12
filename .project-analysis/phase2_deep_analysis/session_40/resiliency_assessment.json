@@ -1,0 +1,183 @@
+{
+  "total_findings": 8,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-269",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Check-then-insert pattern for duplicate detection is not atomic but acceptable due to UNIQUE constraint on DB",
+          "recommendation": "DB unique constraint prevents actual duplicates; current approach is fine"
+        }
+      ],
+      "non_atomic_operations": ["Check existence then insert - race condition mitigated by DB unique constraint"],
+      "cascading_failure_risk": "none - only DB dependency",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-270",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "PUT is idempotent - repeated calls with same data produce same result",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-271",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only DB query with pagination, no external calls",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-272",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/registration-token",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Token creation uses DB transaction to deactivate old tokens and insert new one atomically",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-273",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Read-only DB query with pagination",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-274",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Single row DB lookup by ID",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-275",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "missing",
+          "severity": "low",
+          "detail": "Deleting an already-deleted runner returns 404 (soft delete via deleted timestamp), not idempotent",
+          "recommendation": "Acceptable behavior for DELETE operations"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none - orphaned tasks will be handled by cleanup jobs",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-276",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "low",
+          "detail": "SetRunnerDisabled uses DB transaction to update runner and increment task version atomically",
+          "recommendation": "No action needed - properly transactional"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "none",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled by modules/graceful package",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting for API",
+      "recommendation": "Consider adding rate limiting for token generation endpoint"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": ["Database"],
+    "cascading_failure_paths": []
+  }
+}

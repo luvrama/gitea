@@ -1,0 +1,161 @@
+{
+  "total_findings": 8,
+  "overall_risk": "medium",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-190",
+      "http_method": "GET",
+      "path": "/api/v1/user/blocks",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "No external dependencies, only database queries",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-191",
+      "http_method": "GET",
+      "path": "/api/v1/user/blocks/{username}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Simple DB lookup, no external dependencies",
+          "recommendation": "N/A"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-192",
+      "http_method": "PUT",
+      "path": "/api/v1/user/blocks/{username}",
+      "risk_level": "high",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "All operations wrapped in db.WithTx, so atomicity is maintained. However, the transaction is very long-running for users with many shared resources.",
+          "recommendation": "Consider splitting into blocking record insert (sync) + cleanup (async)"
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "UNIQUE constraint on (blocker_id, blockee_id) prevents duplicate blocks. Retry would fail with constraint violation.",
+          "recommendation": "Check if already blocked before attempting insert to make idempotent"
+        },
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "high",
+          "detail": "No timeout on the transaction. With many shared resources, the paginated cleanup loops could run for a very long time.",
+          "recommendation": "Add context timeout or limit the number of cleanup iterations"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Long transaction could hold locks on multiple tables (follow, star, watch, issue_assignees, collaboration, repo_transfer), potentially blocking other operations",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-193",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/blocks/{username}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "If block doesn't exist, CanUnblockUser returns false and error is returned. Not fully idempotent.",
+          "recommendation": "Could return 204 even if not blocked for true idempotency"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability returns 500",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-194",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/subscriptions",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "N+1 queries could be slow with large page sizes, no request-level timeout",
+          "recommendation": "Add context timeout for the permission loading loop"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Slow database responses amplified by N+1 pattern",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-195",
+      "http_method": "GET",
+      "path": "/api/v1/user/subscriptions",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "N+1 queries could be slow with large page sizes, no request-level timeout",
+          "recommendation": "Add context timeout for the permission loading loop"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Slow database responses amplified by N+1 pattern",
+      "graceful_degradation": "none"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": "Add dedicated readiness check that verifies DB connectivity"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea handles graceful shutdown via graceful module",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No built-in rate limiting on API endpoints",
+      "recommendation": "Add rate limiting especially for write endpoints like block/unblock"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message processing in these endpoints"
+    },
+    "single_points_of_failure": ["database"],
+    "cascading_failure_paths": [
+      "Database slow → ep-192 BlockUser transaction holds locks for extended time → other write operations blocked"
+    ]
+  }
+}

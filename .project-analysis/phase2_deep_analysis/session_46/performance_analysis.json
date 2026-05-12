@@ -1,0 +1,159 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-312",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT for rule + 1 SELECT for users with access + 1 SELECT for teams with access"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-313",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections",
+      "resource_load": {
+        "operations_per_request": "2 + 2*N (N = number of rules)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT all rules + for each rule: 1 SELECT users + 1 SELECT teams in ToBranchProtection"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "ToBranchProtection is called per rule, each call queries users with unit access and teams with repo access",
+          "impact": "For repos with many protection rules, this results in 2*N additional queries",
+          "file_path": "services/convert/convert.go",
+          "line_number": 141,
+          "code_snippet": "readers, err := access_model.GetUsersWithUnitAccess(ctx, repo, ...)\nteamReaders, err := organization.GetTeamsWithAccessToAnyRepoUnit(ctx, ...)",
+          "recommendation": "Pre-fetch users and teams once and pass to ToBranchProtection"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch the user/team access queries outside the loop",
+          "estimated_impact": "Reduce from 2*N+1 queries to 3 queries for listing",
+          "implementation": "Fetch readers and teamReaders once before the loop and pass them to a variant of ToBranchProtection"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-314",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections",
+      "resource_load": {
+        "operations_per_request": 12,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Check exists + resolve 4 user whitelists + resolve 4 team whitelists + insert + reload + convert"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "updateUserWhitelist calls GetUserByID and GetIndividualUserRepoPermission for each user in the whitelist",
+          "impact": "For large whitelists, this is 2*M queries per whitelist type (4 types = 8*M queries)",
+          "file_path": "models/git/protected_branch.go",
+          "line_number": 305,
+          "code_snippet": "for _, userID := range newWhitelist {\n\tuser, err := user_model.GetUserByID(ctx, userID)\n\tperm, err := access_model.GetIndividualUserRepoPermission(ctx, repo, user)",
+          "recommendation": "Batch fetch users and permissions instead of per-user queries"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch user lookups and permission checks in updateUserWhitelist",
+          "estimated_impact": "Reduce from 2*M queries to 2 queries per whitelist type",
+          "implementation": "Use GetUsersByIDs and batch permission check"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-315",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "resource_load": {
+        "operations_per_request": 15,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Get existing + resolve whitelists + update + check branch exists + check PRs + reload + convert"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "Same N+1 pattern in updateUserWhitelist as ep-314, plus CheckPRsForBaseBranch iterates matched branches",
+          "impact": "For glob rules matching many branches, each branch triggers a PR query",
+          "file_path": "routers/api/v1/repo/branch.go",
+          "line_number": 680,
+          "code_snippet": "for _, branchName := range matchedBranches {\n\tif err = pull_service.CheckPRsForBaseBranch(ctx, ctx.Repo.Repository, branchName); err != nil {",
+          "recommendation": "Batch PR checks or use a single query with IN clause for multiple base branches"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch PR checks for multiple matched branches",
+          "estimated_impact": "Reduce from N queries to 1 query for glob rules matching many branches",
+          "implementation": "Query all unmerged PRs for any of the matched base branches in one query"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-316",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT to find rule + 1 DELETE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-317",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/branch_protections/priority",
+      "resource_load": {
+        "operations_per_request": "N (one UPDATE per ID)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "N UPDATE statements within a transaction, one per rule ID"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "Each priority update is a separate UPDATE statement within the transaction",
+          "impact": "For repos with many rules, this is N separate UPDATE queries",
+          "file_path": "models/git/protected_branch.go",
+          "line_number": 280,
+          "code_snippet": "for _, id := range ids {\n\tif _, err := db.GetEngine(ctx).ID(id).Where(\"repo_id = ?\", repo.ID).Cols(\"priority\").Update(...)",
+          "recommendation": "Use CASE WHEN batch update for all IDs in a single query"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Use a single UPDATE with CASE WHEN for all priority values",
+          "estimated_impact": "Reduce from N queries to 1 query",
+          "implementation": "UPDATE protected_branch SET priority = CASE id WHEN x THEN 1 WHEN y THEN 2 ... END WHERE repo_id = ?"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "total_properties": 1,
+  "properties": [
+    {
+      "key": "repository.issue.MAX_PINNED",
+      "type": "Integer",
+      "default_value": "3",
+      "source_file": "modules/setting/repository.go",
+      "used_by": [
+        {"class": "issues_model", "method": "PinIssue", "file_path": "models/issues/issue_pin.go", "usage": "Compare pin count against max", "impact": "Determines max number of pinned issues/PRs per repo"},
+        {"class": "issues_model", "method": "IsNewPinAllowed", "file_path": "models/issues/issue_pin.go", "usage": "Check if new pin is allowed", "impact": "Controls whether new pins can be created"}
+      ],
+      "affected_endpoints": ["ep-376", "ep-381"]
+    }
+  ]
+}

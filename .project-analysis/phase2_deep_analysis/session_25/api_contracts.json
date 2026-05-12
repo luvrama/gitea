@@ -1,0 +1,291 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-168",
+      "http_method": "GET",
+      "path": "/api/v1/user/applications/oauth2",
+      "controller_class": "user",
+      "controller_method": "ListOauth2Applications",
+      "description": "List the authenticated user's OAuth2 applications",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["<=50"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.OAuth2Application",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Unique identifier"},
+            {"name": "name", "type": "string", "description": "Application name"},
+            {"name": "client_id", "type": "string", "description": "OAuth2 client ID"},
+            {"name": "client_secret", "type": "string", "description": "Always empty string in list"},
+            {"name": "confidential_client", "type": "bool", "description": "Whether client is confidential"},
+            {"name": "skip_secondary_authorization", "type": "bool", "description": "Skip secondary auth"},
+            {"name": "redirect_uris", "type": "[]string", "description": "Allowed redirect URIs"},
+            {"name": "created", "type": "time.Time", "description": "Creation timestamp"}
+          ]
+        },
+        "errors": [
+          {"status_code": 500, "type": "internal error", "condition": "Database query failure"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-169",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "controller_class": "user",
+      "controller_method": "DeleteOauth2Application",
+      "description": "Delete an OAuth2 application by ID",
+      "request": {
+        "path_params": [{"name": "id", "type": "int64", "required": true, "validation": ["format:int64"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Application not found or not owned by user"},
+          {"status_code": 500, "type": "internal error", "condition": "Database error or builtin app locked"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-170",
+      "http_method": "GET",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "controller_class": "user",
+      "controller_method": "GetOauth2Application",
+      "description": "Get a specific OAuth2 application by ID",
+      "request": {
+        "path_params": [{"name": "id", "type": "int64", "required": true, "validation": ["format:int64"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.OAuth2Application",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Unique identifier"},
+            {"name": "name", "type": "string", "description": "Application name"},
+            {"name": "client_id", "type": "string", "description": "OAuth2 client ID"},
+            {"name": "client_secret", "type": "string", "description": "Always empty string"},
+            {"name": "confidential_client", "type": "bool", "description": "Whether client is confidential"},
+            {"name": "skip_secondary_authorization", "type": "bool", "description": "Skip secondary auth"},
+            {"name": "redirect_uris", "type": "[]string", "description": "Allowed redirect URIs"},
+            {"name": "created", "type": "time.Time", "description": "Creation timestamp"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Application not found or UID mismatch"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-171",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/applications/oauth2/{id}",
+      "controller_class": "user",
+      "controller_method": "UpdateOauth2Application",
+      "description": "Update an OAuth2 application, regenerating the client secret",
+      "request": {
+        "path_params": [{"name": "id", "type": "int64", "required": true, "validation": ["format:int64"]}],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "CreateOAuth2ApplicationOptions",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": true, "validation": ["binding:Required"], "description": "Application name"},
+            {"name": "confidential_client", "type": "bool", "required": false, "validation": [], "description": "Whether client is confidential"},
+            {"name": "skip_secondary_authorization", "type": "bool", "required": false, "validation": [], "description": "Skip secondary auth"},
+            {"name": "redirect_uris", "type": "[]string", "required": true, "validation": ["binding:Required", "valid URLs or custom schemes"], "description": "Allowed redirect URIs"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.OAuth2Application",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Unique identifier"},
+            {"name": "name", "type": "string", "description": "Application name"},
+            {"name": "client_id", "type": "string", "description": "OAuth2 client ID"},
+            {"name": "client_secret", "type": "string", "description": "Newly generated client secret"},
+            {"name": "confidential_client", "type": "bool", "description": "Whether client is confidential"},
+            {"name": "skip_secondary_authorization", "type": "bool", "description": "Skip secondary auth"},
+            {"name": "redirect_uris", "type": "[]string", "description": "Allowed redirect URIs"},
+            {"name": "created", "type": "time.Time", "description": "Creation timestamp"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid redirect URI or error updating secret"},
+          {"status_code": 404, "type": "notFound", "condition": "Application not found or UID mismatch"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-172",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/repos",
+      "controller_class": "user",
+      "controller_method": "ListUserRepos",
+      "description": "List the repos owned by the given user",
+      "request": {
+        "path_params": [{"name": "username", "type": "string", "required": true, "validation": []}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["<=50"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Repository ID"},
+            {"name": "name", "type": "string", "description": "Repository name"},
+            {"name": "full_name", "type": "string", "description": "Full repository name (owner/name)"},
+            {"name": "private", "type": "bool", "description": "Whether repo is private"},
+            {"name": "owner", "type": "User", "description": "Repository owner"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "User not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-173",
+      "http_method": "GET",
+      "path": "/api/v1/user/repos",
+      "controller_class": "user",
+      "controller_method": "ListMyRepos",
+      "description": "List the repos that the authenticated user owns",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["<=50"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Repository ID"},
+            {"name": "name", "type": "string", "description": "Repository name"},
+            {"name": "full_name", "type": "string", "description": "Full repository name"},
+            {"name": "private", "type": "bool", "description": "Whether repo is private"},
+            {"name": "owner", "type": "User", "description": "Repository owner"}
+          ]
+        },
+        "errors": [
+          {"status_code": 500, "type": "internal error", "condition": "Database query failure"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-174",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/repos",
+      "controller_class": "user",
+      "controller_method": "ListOrgRepos",
+      "description": "List an organization's repos",
+      "request": {
+        "path_params": [{"name": "org", "type": "string", "required": true, "validation": []}],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": [">=1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["<=50"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Repository ID"},
+            {"name": "name", "type": "string", "description": "Repository name"},
+            {"name": "full_name", "type": "string", "description": "Full repository name"},
+            {"name": "private", "type": "bool", "description": "Whether repo is private"},
+            {"name": "owner", "type": "User", "description": "Repository owner"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Organization not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-175",
+      "http_method": "POST",
+      "path": "/api/v1/user/actions/runners/registration-token",
+      "controller_class": "user",
+      "controller_method": "CreateRegistrationToken",
+      "description": "Get a user's actions runner registration token",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "RegistrationToken",
+          "fields": [
+            {"name": "token", "type": "string", "description": "Registration token string"}
+          ]
+        },
+        "errors": [
+          {"status_code": 500, "type": "internal error", "condition": "Database error creating/fetching token"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

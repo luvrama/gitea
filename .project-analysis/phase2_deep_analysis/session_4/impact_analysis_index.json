@@ -1,0 +1,55 @@
+{
+  "endpoints_by_database_table": {
+    "notification": {"read": ["ep-023", "ep-024", "ep-025"], "write": ["ep-023", "ep-025"]},
+    "repository": {"read": ["ep-023", "ep-024", "ep-025"], "write": []},
+    "issue": {"read": ["ep-023", "ep-024", "ep-025"], "write": []},
+    "user": {"read": ["ep-023", "ep-024", "ep-025", "ep-027", "ep-028"], "write": []},
+    "comment": {"read": ["ep-023", "ep-024", "ep-025"], "write": []},
+    "org_user": {"read": ["ep-026", "ep-027", "ep-028"], "write": []},
+    "team": {"read": ["ep-028"], "write": []},
+    "team_user": {"read": ["ep-028"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "api.default_paging_num": ["ep-026", "ep-027"],
+    "api.max_response_items": ["ep-026", "ep-027"],
+    "service.default_org_member_visible": ["ep-026", "ep-027"]
+  },
+  "endpoints_by_model_class": {
+    "activities_model.Notification": ["ep-023", "ep-024", "ep-025"],
+    "organization.Organization": ["ep-026", "ep-027", "ep-028"],
+    "organization.OrgUser": ["ep-026", "ep-027", "ep-028"],
+    "organization.Team": ["ep-028"],
+    "organization.TeamUser": ["ep-028"],
+    "structs.NotificationThread": ["ep-023", "ep-024", "ep-025"],
+    "structs.OrganizationPermissions": ["ep-028"]
+  },
+  "endpoints_by_service_class": {
+    "convert.ToNotificationThread": ["ep-023", "ep-024", "ep-025"],
+    "convert.ToOrganization": ["ep-026", "ep-027"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-023": {"reads": ["notification", "repository", "issue", "user", "comment", "access"], "writes": ["notification"]},
+    "ep-024": {"reads": ["notification", "repository", "issue", "user", "comment", "access"], "writes": []},
+    "ep-025": {"reads": ["notification", "repository", "issue", "user", "comment", "access"], "writes": ["notification"]},
+    "ep-026": {"reads": ["user", "org_user"], "writes": []},
+    "ep-027": {"reads": ["user", "org_user"], "writes": []},
+    "ep-028": {"reads": ["user", "org_user", "team", "team_user"], "writes": []}
+  },
+  "external_services_by_endpoint": {
+    "ep-023": [],
+    "ep-024": [],
+    "ep-025": [],
+    "ep-026": [],
+    "ep-027": [],
+    "ep-028": []
+  },
+  "config_properties_by_endpoint": {
+    "ep-023": [],
+    "ep-024": [],
+    "ep-025": [],
+    "ep-026": ["api.default_paging_num", "api.max_response_items"],
+    "ep-027": ["api.default_paging_num", "api.max_response_items"],
+    "ep-028": []
+  }
+}

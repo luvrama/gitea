@@ -1,0 +1,37 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "context.APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "generic error", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"},
+        {"exception_type": "not found", "status_code": 404, "response_type": "JSON", "message_template": "not found"},
+        {"exception_type": "validation error", "status_code": 422, "response_type": "JSON", "message_template": "unprocessable entity"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-344",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "error_scenarios": [
+        {"exception": "ErrReleaseNotExist", "trigger": "Tag name not found in release table", "status_code": 404, "response": "notFound", "logged": false, "retryable": true},
+        {"exception": "IsTag=true", "trigger": "Record is tag-only, not a release", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+        {"exception": "Draft without access", "trigger": "User lacks write permission for draft", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-345",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "error_scenarios": [
+        {"exception": "ErrReleaseNotExist", "trigger": "Tag name not found", "status_code": 404, "response": "notFound", "logged": false, "retryable": true},
+        {"exception": "ErrProtectedTagName", "trigger": "Tag is protected", "status_code": 422, "response": "validationError", "logged": false, "retryable": false}
+      ]
+    }
+  ],
+  "custom_exceptions": [
+    {"class": "ErrReleaseNotExist", "file_path": "models/repo/release.go", "extends": "util.ErrNotExist", "used_in": ["repo_model.GetRelease"], "http_status": 404},
+    {"class": "ErrProtectedTagName", "file_path": "services/release/release.go", "extends": "util.ErrPermissionDenied", "used_in": ["release_service.DeleteReleaseByID"], "http_status": 422}
+  ]
+}

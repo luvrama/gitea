@@ -1,0 +1,159 @@
+{
+  "total_findings": 8,
+  "overall_risk": "medium",
+  "dependency_resiliency": [
+    {
+      "dependency": "Object Storage (Attachments)",
+      "client_class": "storage.ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "used_by_endpoints": ["ep-259", "ep-261"],
+      "timeout": {
+        "status": "missing",
+        "value_ms": null,
+        "recommendation": "Add timeout configuration for storage operations, especially for S3/MinIO backends"
+      },
+      "retry": {
+        "status": "missing",
+        "policy": null,
+        "recommendation": "Add retry with exponential backoff for transient storage failures"
+      },
+      "circuit_breaker": {
+        "status": "missing",
+        "implementation": null,
+        "recommendation": "Consider circuit breaker for storage backend to prevent cascading failures"
+      },
+      "bulkhead": {
+        "status": "missing",
+        "isolation_type": "none",
+        "recommendation": "Isolate storage operations with connection pool limits"
+      },
+      "fallback": {
+        "status": "missing",
+        "behavior": null,
+        "recommendation": "Return 503 with retry-after header when storage is unavailable"
+      },
+      "idempotency": {
+        "safe_to_retry": true,
+        "reason": "Upload uses UUID-based paths, so retrying creates a new file; delete is idempotent"
+      },
+      "blast_radius": {
+        "affected_endpoints": ["ep-259", "ep-261"],
+        "impact": "Attachment uploads and deletions fail; existing attachments remain readable from DB metadata"
+      }
+    }
+  ],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-254",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "risk_level": "low",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "timeout",
+          "status": "not_applicable",
+          "severity": "low",
+          "detail": "Database-only endpoint, relies on DB connection pool timeouts",
+          "recommendation": "Ensure DB connection pool has appropriate timeouts configured"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Database unavailability causes 500 errors",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-258",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets",
+      "risk_level": "medium",
+      "dependency_count": 1,
+      "findings": [
+        {
+          "pattern": "cascading_failure",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "LoadAttributes loads excessive data; a slow DB could cause request timeouts for issues with many comments",
+          "recommendation": "Replace with targeted LoadAttachments call to reduce DB load"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "Heavy issues with many comments could cause slow responses",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-259",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets",
+      "risk_level": "medium",
+      "dependency_count": 2,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Storage save and DB insert are in a transaction, but ChangeContent after upload is separate - if it fails, attachment exists but notification is lost",
+          "recommendation": "Make ChangeContent failure non-fatal or include in same transaction"
+        },
+        {
+          "pattern": "timeout",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "No timeout on storage.Save operation for large files",
+          "recommendation": "Add context timeout for storage operations"
+        }
+      ],
+      "non_atomic_operations": ["Storage save + DB insert (transactional) followed by separate ChangeContent call"],
+      "cascading_failure_risk": "Storage unavailability blocks all attachment uploads",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-261",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}",
+      "risk_level": "medium",
+      "dependency_count": 2,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "DB delete happens first, then storage delete. If storage delete fails, DB record is gone but file remains orphaned",
+          "recommendation": "Log orphaned files for cleanup; consider soft-delete pattern"
+        }
+      ],
+      "non_atomic_operations": ["DB delete followed by storage delete - storage failure leaves orphaned file"],
+      "cascading_failure_risk": "Storage failure during delete leaves orphaned files",
+      "graceful_degradation": "DB record deleted successfully even if storage fails (partial success)"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/v1/version",
+      "readiness": null,
+      "recommendation": "Add dedicated readiness check that verifies DB and storage connectivity"
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Gitea uses graceful.GetManager() for shutdown coordination",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting for attachment uploads",
+      "recommendation": "Add rate limiting for POST attachment endpoints to prevent abuse"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async message processing in these endpoints"
+    },
+    "single_points_of_failure": [
+      "Object storage backend for attachments"
+    ],
+    "cascading_failure_paths": [
+      "Storage down → ep-259 upload fails → users cannot attach files to issues",
+      "Storage down → ep-261 delete partially fails → orphaned files accumulate"
+    ]
+  }
+}

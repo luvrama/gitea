@@ -1,0 +1,411 @@
+{
+  "total_integrations": 7,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "GPG binary (gpg --export)",
+      "type": "process_exec",
+      "base_url": "local process",
+      "client_class": "process.GetManager().ExecDir",
+      "file_path": "services/asymkey/sign.go",
+      "http_library": "os/exec via modules/process",
+      "endpoints_called": [
+        {
+          "method": "EXEC",
+          "path": "gpg --export -a <keyID>",
+          "request": {
+            "type": "args",
+            "key_fields": [
+              "keyID"
+            ]
+          },
+          "response": {
+            "type": "stdout string",
+            "key_fields": [
+              "armored_key"
+            ]
+          },
+          "purpose": "Export GPG public key in ASCII armor format"
+        }
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {
+          "enabled": false,
+          "implementation": null,
+          "config_source": null
+        },
+        "fallback": null
+      },
+      "authentication": "none",
+      "used_by_endpoints": [
+        "ep-004",
+        "ep-005"
+      ],
+      "config_keys": [
+        "repository.SIGNING_KEY",
+        "git.HOME_PATH"
+      ]
+    },
+    {
+      "integration_id": "ext-001",
+      "name": "Object Storage (Minio/Azure/Local)",
+      "type": "cloud_service",
+      "base_url": "configured via app.ini [actions.artifact_storage]",
+      "client_class": "storage.ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "http_library": "minio-go / azure-blob SDK",
+      "endpoints_called": [
+        {
+          "method": "GET",
+          "path": "ServeDirectURL",
+          "request": {
+            "type": "string",
+            "key_fields": [
+              "storagePath"
+            ]
+          },
+          "response": {
+            "type": "URL",
+            "key_fields": [
+              "presigned_url"
+            ]
+          },
+          "purpose": "Generate presigned download URL for direct serve"
+        },
+        {
+          "method": "DELETE",
+          "path": "Delete",
+          "request": {
+            "type": "string",
+            "key_fields": [
+              "storagePath"
+            ]
+          },
+          "response": {
+            "type": "error",
+            "key_fields": []
+          },
+          "purpose": "Delete artifact file from storage"
+        },
+        {
+          "method": "GET",
+          "path": "Open",
+          "request": {
+            "type": "string",
+            "key_fields": [
+              "storagePath"
+            ]
+          },
+          "response": {
+            "type": "io.ReadCloser",
+            "key_fields": []
+          },
+          "purpose": "Open artifact file for streaming"
+        }
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {
+          "enabled": false,
+          "implementation": null,
+          "config_source": null
+        },
+        "fallback": "If ServeDirect fails, falls back to reading from storage and serving via app"
+      },
+      "authentication": "api-key",
+      "used_by_endpoints": [
+        "ep-037",
+        "ep-038",
+        "ep-128",
+        "ep-259",
+        "ep-261",
+        "ep-262",
+        "ep-263",
+        "ep-294",
+        "ep-298",
+        "ep-354",
+        "ep-356"
+      ],
+      "config_keys": [
+        "actions.artifact_storage.STORAGE_TYPE",
+        "actions.artifact_storage.SERVE_DIRECT",
+        "actions.artifact_storage.MINIO_ENDPOINT"
+      ]
+    },
+    {
+      "integration_id": "ext-001",
+      "name": "HaveIBeenPwned API",
+      "type": "http_api",
+      "base_url": "https://api.pwnedpasswords.com/range/",
+      "client_class": "pwn.Client",
+      "file_path": "modules/auth/password/pwn/pwn.go",
+      "http_library": "net/http (http.DefaultClient)",
+      "endpoints_called": [
+        {
+          "method": "GET",
+          "path": "/{sha1_prefix}",
+          "request": {
+            "type": "none",
+            "key_fields": []
+          },
+          "response": {
+            "type": "text/plain",
+            "key_fields": [
+              "suffix:count pairs"
+            ]
+          },
+          "purpose": "Check if password SHA1 prefix matches known breached passwords"
+        }
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {
+          "enabled": false,
+          "implementation": null,
+          "config_source": null
+        },
+        "fallback": "Error is wrapped as ErrIsPwnedRequest and logged; user creation proceeds with 400 error"
+      },
+      "authentication": "none",
+      "used_by_endpoints": [
+        "ep-098"
+      ],
+      "config_keys": [
+        "PasswordCheckPwn"
+      ]
+    },
+    {
+      "integration_id": "ext-001",
+      "name": "HaveIBeenPwned API",
+      "type": "http_api",
+      "base_url": "https://api.pwnedpasswords.com",
+      "client_class": "password.IsPwned",
+      "file_path": "modules/auth/password/pwn/pwn.go",
+      "http_library": "net/http",
+      "endpoints_called": [
+        {
+          "method": "GET",
+          "path": "/range/{hash_prefix}",
+          "request": {
+            "type": "string",
+            "key_fields": [
+              "sha1_prefix"
+            ]
+          },
+          "response": {
+            "type": "text/plain",
+            "key_fields": [
+              "hash_suffixes"
+            ]
+          },
+          "purpose": "Check if password has been compromised"
+        }
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {
+          "enabled": false,
+          "implementation": null,
+          "config_source": null
+        },
+        "fallback": "If request fails, error is returned but treated as non-blocking in some contexts"
+      },
+      "authentication": "none",
+      "used_by_endpoints": [
+        "ep-099"
+      ],
+      "config_keys": [
+        "PASSWORD_CHECK_PWN"
+      ]
+    },
+    {
+      "integration_id": "ext-001",
+      "name": "Avatar Storage Backend",
+      "type": "cloud_service",
+      "base_url": "configured via setting.Avatar.Storage",
+      "client_class": "ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "http_library": "storage abstraction (local/minio/azure)",
+      "endpoints_called": [
+        {
+          "method": "DELETE",
+          "path": "<avatar_relative_path>",
+          "request": {
+            "type": "string",
+            "key_fields": [
+              "path"
+            ]
+          },
+          "response": {
+            "type": "error",
+            "key_fields": []
+          },
+          "purpose": "Delete avatar file from storage"
+        }
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {
+          "enabled": false,
+          "implementation": null,
+          "config_source": null
+        },
+        "fallback": "Logs warning if file doesn't exist (ErrNotExist), otherwise propagates error"
+      },
+      "authentication": "none",
+      "used_by_endpoints": [
+        "ep-129"
+      ],
+      "config_keys": [
+        "avatar.STORAGE_TYPE",
+        "avatar.PATH"
+      ]
+    },
+    {
+      "integration_id": "ext-001",
+      "name": "Git Remote (Push Mirror Target)",
+      "type": "http_api",
+      "base_url": "configured per push mirror (remote_address)",
+      "client_class": "gitrepo",
+      "file_path": "services/mirror/mirror_push.go",
+      "http_library": "git command-line (via gitrepo.PushToExternal)",
+      "endpoints_called": [
+        {
+          "method": "POST",
+          "path": "git push --mirror",
+          "request": {
+            "type": "git protocol",
+            "key_fields": [
+              "refs/heads/*",
+              "refs/tags/*"
+            ]
+          },
+          "response": {
+            "type": "git protocol",
+            "key_fields": []
+          },
+          "purpose": "Push all refs to remote mirror"
+        },
+        {
+          "method": "POST",
+          "path": "LFS batch API",
+          "request": {
+            "type": "lfs.Pointer[]",
+            "key_fields": [
+              "oid",
+              "size"
+            ]
+          },
+          "response": {
+            "type": "lfs batch response",
+            "key_fields": []
+          },
+          "purpose": "Upload LFS objects to remote"
+        }
+      ],
+      "resilience": {
+        "timeout_ms": "setting.Git.Timeout.Mirror * 1000",
+        "retry_policy": null,
+        "circuit_breaker": {
+          "enabled": false,
+          "implementation": null,
+          "config_source": null
+        },
+        "fallback": null
+      },
+      "authentication": "bearer",
+      "used_by_endpoints": [
+        "ep-235",
+        "ep-334"
+      ],
+      "config_keys": [
+        "git.TIMEOUT.MIRROR",
+        "lfs.START_SERVER"
+      ]
+    },
+    {
+      "integration_id": "ext-001",
+      "name": "Git Repository (local filesystem)",
+      "type": "filesystem",
+      "base_url": "local git repo path",
+      "client_class": "git.Repository",
+      "file_path": "modules/git/repo.go",
+      "http_library": "git CLI commands",
+      "endpoints_called": [
+        {
+          "method": "CLI",
+          "path": "git tag",
+          "request": {
+            "type": "tag name + commit SHA",
+            "key_fields": [
+              "tagName",
+              "commitID"
+            ]
+          },
+          "response": {
+            "type": "success/error",
+            "key_fields": []
+          },
+          "purpose": "Create git tag on release publish"
+        },
+        {
+          "method": "CLI",
+          "path": "git tag -d",
+          "request": {
+            "type": "tag name",
+            "key_fields": [
+              "tagName"
+            ]
+          },
+          "response": {
+            "type": "success/error",
+            "key_fields": []
+          },
+          "purpose": "Delete git tag on release delete with delTag=true"
+        },
+        {
+          "method": "CLI",
+          "path": "git rev-parse / cat-file",
+          "request": {
+            "type": "ref/commit",
+            "key_fields": [
+              "target"
+            ]
+          },
+          "response": {
+            "type": "commit object",
+            "key_fields": [
+              "SHA"
+            ]
+          },
+          "purpose": "Resolve target commit for tag creation"
+        }
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {
+          "enabled": false,
+          "implementation": null,
+          "config_source": null
+        },
+        "fallback": null
+      },
+      "authentication": "none (local filesystem access)",
+      "used_by_endpoints": [
+        "ep-243",
+        "ep-244",
+        "ep-245"
+      ],
+      "config_keys": [
+        "repository.ROOT"
+      ]
+    }
+  ]
+}

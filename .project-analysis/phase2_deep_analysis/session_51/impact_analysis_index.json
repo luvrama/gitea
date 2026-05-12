@@ -1,0 +1,35 @@
+{
+  "endpoints_by_database_table": {
+    "release": {"read": ["ep-344", "ep-345"], "write": ["ep-345"]},
+    "repo_license": {"read": ["ep-346"], "write": []},
+    "topic": {"read": ["ep-347", "ep-351"], "write": ["ep-348", "ep-349", "ep-350"]},
+    "repo_topic": {"read": ["ep-347", "ep-351"], "write": ["ep-348", "ep-349", "ep-350"]},
+    "repository": {"read": [], "write": ["ep-348", "ep-349", "ep-350"]},
+    "attachment": {"read": ["ep-344", "ep-345"], "write": ["ep-345"]},
+    "user": {"read": ["ep-344"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {},
+  "endpoints_by_model_class": {
+    "repo_model.Release": ["ep-344", "ep-345"],
+    "repo_model.RepoLicense": ["ep-346"],
+    "repo_model.Topic": ["ep-347", "ep-348", "ep-349", "ep-350", "ep-351"],
+    "repo_model.RepoTopic": ["ep-347", "ep-348", "ep-349", "ep-350"]
+  },
+  "endpoints_by_service_class": {
+    "release_service": ["ep-345"],
+    "convert": ["ep-344", "ep-351"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-344": {"reads": ["release", "repository", "user", "attachment"], "writes": []},
+    "ep-345": {"reads": ["release"], "writes": ["release", "attachment"]},
+    "ep-346": {"reads": ["repo_license"], "writes": []},
+    "ep-347": {"reads": ["topic", "repo_topic"], "writes": []},
+    "ep-348": {"reads": ["topic", "repo_topic"], "writes": ["topic", "repo_topic", "repository"]},
+    "ep-349": {"reads": ["topic", "repo_topic"], "writes": ["topic", "repo_topic", "repository"]},
+    "ep-350": {"reads": ["topic", "repo_topic"], "writes": ["topic", "repo_topic", "repository"]},
+    "ep-351": {"reads": ["topic"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {}
+}

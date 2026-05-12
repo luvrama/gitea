@@ -1,0 +1,45 @@
+{
+  "endpoints_by_database_table": {
+    "follow": {"read": ["ep-142", "ep-143", "ep-144", "ep-145", "ep-146"], "write": ["ep-145", "ep-146"]},
+    "user": {"read": ["ep-142", "ep-144"], "write": ["ep-145", "ep-146"]},
+    "webhook": {"read": ["ep-147", "ep-148"], "write": ["ep-149"]},
+    "blocked_user": {"read": ["ep-145"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "API.DefaultPagingNum": ["ep-142", "ep-147"],
+    "API.MaxResponseItems": ["ep-142", "ep-147"],
+    "SecretKey": ["ep-147", "ep-148", "ep-149"]
+  },
+  "endpoints_by_model_class": {
+    "user_model.Follow": ["ep-142", "ep-143", "ep-144", "ep-145", "ep-146"],
+    "user_model.User": ["ep-142", "ep-143", "ep-144", "ep-145", "ep-146"],
+    "webhook.Webhook": ["ep-147", "ep-148", "ep-149"]
+  },
+  "endpoints_by_service_class": {
+    "user_model": ["ep-142", "ep-143", "ep-144", "ep-145", "ep-146"],
+    "webhook_service": ["ep-147", "ep-148", "ep-149"],
+    "utils": ["ep-147", "ep-148", "ep-149"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-142": {"reads": ["follow", "user"], "writes": []},
+    "ep-143": {"reads": ["follow"], "writes": []},
+    "ep-144": {"reads": ["user", "follow"], "writes": []},
+    "ep-145": {"reads": ["follow", "blocked_user"], "writes": ["follow", "user"]},
+    "ep-146": {"reads": ["follow"], "writes": ["follow", "user"]},
+    "ep-147": {"reads": ["webhook"], "writes": []},
+    "ep-148": {"reads": ["webhook"], "writes": []},
+    "ep-149": {"reads": [], "writes": ["webhook"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-142": ["API.DefaultPagingNum", "API.MaxResponseItems"],
+    "ep-143": [],
+    "ep-144": [],
+    "ep-145": [],
+    "ep-146": [],
+    "ep-147": ["API.DefaultPagingNum", "API.MaxResponseItems", "SecretKey"],
+    "ep-148": ["SecretKey"],
+    "ep-149": ["SecretKey"]
+  }
+}

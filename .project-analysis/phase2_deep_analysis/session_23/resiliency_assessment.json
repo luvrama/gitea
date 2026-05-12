@@ -1,0 +1,137 @@
+{
+  "total_findings": 6,
+  "overall_risk": "low",
+  "dependency_resiliency": [],
+  "endpoint_resiliency": [
+    {
+      "endpoint_id": "ep-156",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/starred/{owner}/{repo}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Unstar is idempotent - if not starring, returns nil without error",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - only DB dependency",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-157",
+      "http_method": "GET",
+      "path": "/api/v1/user/keys",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only DB query",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-158",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/keys",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only DB query",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-159",
+      "http_method": "GET",
+      "path": "/api/v1/user/keys/{id}",
+      "risk_level": "low",
+      "dependency_count": 0,
+      "findings": [],
+      "non_atomic_operations": [],
+      "cascading_failure_risk": "None - read-only DB query",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-160",
+      "http_method": "POST",
+      "path": "/api/v1/user/keys",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "configured",
+          "severity": "medium",
+          "detail": "Key is inserted in DB within transaction, then authorized_keys file is appended. If file append fails after DB insert, key exists in DB but not in authorized_keys.",
+          "recommendation": "The file append is inside the transaction's addKey call, but file system operations cannot be rolled back. A subsequent RewriteAllPublicKeys would fix inconsistency."
+        },
+        {
+          "pattern": "idempotency",
+          "status": "configured",
+          "severity": "low",
+          "detail": "Duplicate key creation is rejected by fingerprint and name uniqueness checks, making retries safe",
+          "recommendation": "No action needed"
+        }
+      ],
+      "non_atomic_operations": ["DB insert + filesystem append to authorized_keys are not atomically linked"],
+      "cascading_failure_risk": "If filesystem is full, key creation fails but DB transaction rolls back",
+      "graceful_degradation": "none"
+    },
+    {
+      "endpoint_id": "ep-161",
+      "http_method": "DELETE",
+      "path": "/api/v1/user/keys/{id}",
+      "risk_level": "medium",
+      "dependency_count": 0,
+      "findings": [
+        {
+          "pattern": "non_atomic",
+          "status": "missing",
+          "severity": "medium",
+          "detail": "Key is deleted from DB, then entire authorized_keys file is rewritten. If rewrite fails, key is gone from DB but still in authorized_keys file until next successful rewrite.",
+          "recommendation": "Consider wrapping delete + rewrite in a more robust pattern, or queue the rewrite"
+        },
+        {
+          "pattern": "bulkhead",
+          "status": "configured",
+          "severity": "low",
+          "detail": "SSH op locker serializes authorized_keys rewrites preventing concurrent file corruption",
+          "recommendation": "No action needed - lock prevents race conditions"
+        }
+      ],
+      "non_atomic_operations": ["DB delete + full authorized_keys file rewrite are not atomically linked"],
+      "cascading_failure_risk": "Global SSH op lock means concurrent key deletions are serialized, potentially causing latency spikes",
+      "graceful_degradation": "If builtin SSH server is used, authorized_keys rewrite is skipped entirely"
+    }
+  ],
+  "system_level": {
+    "health_checks": {
+      "status": "configured",
+      "liveness": "/api/healthz",
+      "readiness": "/api/healthz",
+      "recommendation": null
+    },
+    "graceful_shutdown": {
+      "status": "configured",
+      "detail": "Handled by modules/graceful package",
+      "recommendation": null
+    },
+    "rate_limiting": {
+      "status": "missing",
+      "detail": "No per-endpoint rate limiting on these endpoints",
+      "recommendation": "Consider rate limiting key creation to prevent abuse"
+    },
+    "dead_letter_queues": {
+      "status": "not_applicable",
+      "detail": "No async flows in these endpoints"
+    },
+    "single_points_of_failure": [
+      "Filesystem for authorized_keys file (mitigated by builtin SSH server option)"
+    ],
+    "cascading_failure_paths": []
+  }
+}

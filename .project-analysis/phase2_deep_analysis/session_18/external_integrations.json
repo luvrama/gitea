@@ -1,0 +1,26 @@
+{
+  "total_integrations": 1,
+  "integrations": [
+    {
+      "integration_id": "ext-001",
+      "name": "Avatar Storage",
+      "type": "cloud_service",
+      "base_url": "configured via setting.Avatar.Storage",
+      "client_class": "storage.ObjectStorage",
+      "file_path": "modules/storage/storage.go",
+      "http_library": "storage abstraction (local/minio/azure)",
+      "endpoints_called": [
+        {"method": "PUT", "path": "user avatar relative path", "request": {"type": "[]byte", "key_fields": ["image data"]}, "response": {"type": "error", "key_fields": []}, "purpose": "Save processed avatar image to storage"}
+      ],
+      "resilience": {
+        "timeout_ms": null,
+        "retry_policy": null,
+        "circuit_breaker": {"enabled": false, "implementation": null, "config_source": null},
+        "fallback": null
+      },
+      "authentication": "configured per storage type (minio access key, azure credentials)",
+      "used_by_endpoints": ["ep-128"],
+      "config_keys": ["avatar.STORAGE_TYPE", "avatar.MINIO_ENDPOINT", "avatar.MINIO_ACCESS_KEY_ID"]
+    }
+  ]
+}

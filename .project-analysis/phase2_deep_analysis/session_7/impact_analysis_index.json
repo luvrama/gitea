@@ -1,0 +1,49 @@
+{
+  "endpoints_by_database_table": {
+    "action_variable": {"read": ["ep-043", "ep-044", "ep-045", "ep-046", "ep-047"], "write": ["ep-045", "ep-046", "ep-047"]},
+    "action_runner": {"read": ["ep-048", "ep-049"], "write": []},
+    "action_runner_token": {"read": ["ep-042"], "write": ["ep-042"]},
+    "user": {"read": ["ep-042", "ep-043", "ep-044", "ep-045", "ep-046", "ep-047", "ep-048", "ep-049"], "write": []},
+    "team_user": {"read": ["ep-042", "ep-043", "ep-044", "ep-045", "ep-046", "ep-047", "ep-048", "ep-049"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "setting.API.DefaultPagingNum": ["ep-043", "ep-048"],
+    "setting.API.MaxResponseItems": ["ep-043", "ep-048"]
+  },
+  "endpoints_by_model_class": {
+    "ActionVariable": ["ep-043", "ep-044", "ep-045", "ep-046", "ep-047"],
+    "ActionRunner": ["ep-048", "ep-049"],
+    "ActionRunnerToken": ["ep-042"]
+  },
+  "endpoints_by_service_class": {
+    "actions_service.GetVariable": ["ep-044", "ep-045", "ep-046", "ep-047"],
+    "actions_service.CreateVariable": ["ep-046"],
+    "actions_service.UpdateVariableNameData": ["ep-047"],
+    "actions_service.DeleteVariableByName": ["ep-045"],
+    "shared.GetRegistrationToken": ["ep-042"],
+    "shared.ListRunners": ["ep-048"],
+    "shared.GetRunner": ["ep-049"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-042": {"reads": ["action_runner_token", "user", "team_user"], "writes": ["action_runner_token"]},
+    "ep-043": {"reads": ["action_variable", "user", "team_user"], "writes": []},
+    "ep-044": {"reads": ["action_variable", "user", "team_user"], "writes": []},
+    "ep-045": {"reads": ["action_variable", "user", "team_user"], "writes": ["action_variable"]},
+    "ep-046": {"reads": ["action_variable", "user", "team_user"], "writes": ["action_variable"]},
+    "ep-047": {"reads": ["action_variable", "user", "team_user"], "writes": ["action_variable"]},
+    "ep-048": {"reads": ["action_runner", "user", "team_user"], "writes": []},
+    "ep-049": {"reads": ["action_runner", "user", "team_user"], "writes": []}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-042": [],
+    "ep-043": ["setting.API.DefaultPagingNum", "setting.API.MaxResponseItems"],
+    "ep-044": [],
+    "ep-045": [],
+    "ep-046": [],
+    "ep-047": [],
+    "ep-048": ["setting.API.DefaultPagingNum", "setting.API.MaxResponseItems"],
+    "ep-049": []
+  }
+}

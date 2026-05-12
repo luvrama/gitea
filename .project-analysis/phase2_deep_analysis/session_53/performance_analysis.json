@@ -1,0 +1,160 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-359",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/labels",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single INSERT operation"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-360",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT + UPDATE with subquery count"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "writes_on_reads",
+          "description": "UpdateLabel recalculates num_issues and num_closed_issues via subqueries on every update, even if only name/color changed",
+          "impact": "Extra subquery cost on issue_label table for every label edit",
+          "file_path": "models/issues/label.go",
+          "line_number": 497,
+          "code_snippet": "SetExpr(\"num_issues\", builder.Select(\"count(*)\").From(\"issue_label\")...)",
+          "recommendation": "Only recalculate counts when relevant fields change, or use a separate refresh mechanism"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-361",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "SELECT + 3 DELETEs in transaction"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-362",
+      "http_method": "GET",
+      "path": "/api/v1/repos/search",
+      "resource_load": {
+        "operations_per_request": "2 + N*2 (N = result count)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Search query + count + LoadOwner + GetPermission per result"
+      },
+      "performance_issues": [
+        {
+          "severity": "high",
+          "type": "n_plus_1_queries",
+          "description": "For each search result, LoadOwner and GetDoerRepoPermission are called individually in a loop",
+          "impact": "With default page size of 50, this results in 100+ additional queries per request",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "line_number": 196,
+          "code_snippet": "for i, repo := range repos {\n\tif err = repo.LoadOwner(ctx); err != nil {",
+          "recommendation": "Batch load owners and permissions for all repos at once"
+        },
+        {
+          "severity": "medium",
+          "type": "no_caching",
+          "description": "High-frequency search endpoint hits DB directly with no caching layer",
+          "impact": "Every search request executes full DB query even for identical parameters",
+          "file_path": "routers/api/v1/repo/repo.go",
+          "line_number": 192,
+          "code_snippet": "repos, count, err := repo_model.SearchRepository(ctx, opts)",
+          "recommendation": "Consider short-TTL cache for common search queries"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P1",
+          "type": "query_optimization",
+          "description": "Batch load owners and permissions instead of N+1 pattern",
+          "estimated_impact": "Reduce queries from 2+2N to ~4 total",
+          "implementation": "Use LoadAttributes which already batch-loads, and batch permission check"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-363",
+      "http_method": "POST",
+      "path": "/api/v1/user/repos",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem"],
+        "note": "DB inserts + git init + optional initial commit"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-364",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{template_owner}/{template_repo}/generate",
+      "resource_load": {
+        "operations_per_request": 10,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem"],
+        "note": "DB inserts + git clone/init + copy labels/topics/hooks/webhooks/avatar/branches"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "Template generation copies git content synchronously which can be slow for large repos",
+          "impact": "Request blocks until full git content is copied, potentially timing out for large templates",
+          "file_path": "services/repository/template.go",
+          "line_number": 140,
+          "code_snippet": "if err = GenerateGitContent(ctx, templateRepo, generateRepo); err != nil {",
+          "recommendation": "Consider async generation with status polling for large templates"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-365",
+      "http_method": "POST",
+      "path": "/api/v1/org/{org}/repos",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem"],
+        "note": "Org lookup + repo creation (same as ep-366)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-366",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/repos",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "filesystem"],
+        "note": "Org lookup + permission check + repo creation"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

@@ -1,0 +1,34 @@
+{
+  "endpoints_by_database_table": {
+    "issue": {"read": ["ep-319", "ep-320"], "write": ["ep-319", "ep-320"]},
+    "comment": {"read": [], "write": ["ep-319", "ep-320"]},
+    "webhook": {"read": ["ep-321", "ep-322", "ep-323"], "write": []},
+    "hook_task": {"read": [], "write": ["ep-323"]},
+    "repository": {"read": ["ep-318"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {},
+  "endpoints_by_model_class": {
+    "Issue": ["ep-319", "ep-320"],
+    "Webhook": ["ep-321", "ep-322", "ep-323"],
+    "HookTask": ["ep-323"],
+    "Repository": ["ep-318"]
+  },
+  "endpoints_by_service_class": {
+    "repository.MergeUpstream": ["ep-318"],
+    "issues_model.LockIssue": ["ep-319"],
+    "issues_model.UnlockIssue": ["ep-320"],
+    "webhook_service.ToHook": ["ep-321", "ep-322"],
+    "webhook_service.PrepareWebhook": ["ep-323"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-318": {"reads": ["repository"], "writes": []},
+    "ep-319": {"reads": ["issue"], "writes": ["issue", "comment"]},
+    "ep-320": {"reads": ["issue"], "writes": ["issue", "comment"]},
+    "ep-321": {"reads": ["webhook"], "writes": []},
+    "ep-322": {"reads": ["webhook"], "writes": []},
+    "ep-323": {"reads": ["webhook"], "writes": ["hook_task"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {}
+}

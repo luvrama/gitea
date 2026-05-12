@@ -1,0 +1,21 @@
+{
+  "total_properties": 2,
+  "properties": [
+    {
+      "key": "setting.OAuth2.CustomSchemes",
+      "type": "[]string",
+      "default_value": "[]",
+      "source_file": "custom/conf/app.ini [oauth2]",
+      "used_by": [{"class": "forms", "method": "DetectInvalidOAuth2ApplicationRedirectURI", "file_path": "services/forms/user_form.go", "usage": "Check if redirect URI scheme is in custom schemes list", "impact": "Allows non-standard URI schemes for OAuth2 redirect URIs"}],
+      "affected_endpoints": ["ep-167"]
+    },
+    {
+      "key": "setting.SuccessfulTokensCacheSize",
+      "type": "int",
+      "default_value": "20",
+      "source_file": "custom/conf/app.ini",
+      "used_by": [{"class": "auth_model", "method": "init (AccessToken model registration)", "file_path": "models/auth/access_token.go", "usage": "Initialize LRU cache for successful token lookups", "impact": "Controls size of in-memory token validation cache"}],
+      "affected_endpoints": ["ep-164", "ep-165", "ep-166"]
+    }
+  ]
+}

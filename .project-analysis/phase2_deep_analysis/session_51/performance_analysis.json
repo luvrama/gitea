@@ -1,0 +1,155 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-344",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["release", "user", "attachment"],
+        "note": "4 DB queries: release lookup, repo load, user load, attachments load"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Cache release data for frequently accessed releases",
+          "estimated_impact": "Reduce DB load for popular releases",
+          "implementation": "Add in-memory or Redis cache with TTL for release lookups by tag"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-345",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/releases/tags/{tag}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["release", "attachment", "storage"],
+        "note": "SELECT release, UPDATE release, SELECT attachments, DELETE attachments, delete from storage"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-346",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/licenses",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["repo_license"],
+        "note": "Single SELECT query"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-347",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/topics",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["topic", "repo_topic"],
+        "note": "FindAndCount = 2 queries (find + count)"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-348",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/topics",
+      "resource_load": {
+        "operations_per_request": 8,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["topic", "repo_topic", "repository"],
+        "note": "Multiple operations: find existing, add new (per topic), remove old (per topic), sync"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "SaveTopics iterates over added/removed topics, performing individual INSERT/UPDATE/DELETE per topic",
+          "impact": "With 25 topics being replaced, could be up to 50+ individual DB operations",
+          "file_path": "models/repo/topic.go",
+          "line_number": 260,
+          "code_snippet": "for _, topicName := range addedTopicNames {\n\t_, err := addTopicByNameToRepo(ctx, repoID, topicName)",
+          "recommendation": "Batch INSERT/UPDATE operations for topics"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "query_optimization",
+          "description": "Batch topic add/remove operations instead of per-topic queries",
+          "estimated_impact": "Reduce from O(n) queries to O(1) for bulk topic replacement",
+          "implementation": "Use bulk INSERT and bulk DELETE with IN clause"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-349",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/topics/{topic}",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["topic", "repo_topic", "repository"],
+        "note": "Count topics, check exists, insert/update topic, insert repo_topic, sync repository"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-350",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/topics/{topic}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["topic", "repo_topic", "repository"],
+        "note": "Check exists, update count, delete link, sync repository"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-351",
+      "http_method": "GET",
+      "path": "/api/v1/topics/search",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["topic"],
+        "note": "FindAndCount = 2 queries (find + count)"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "missing_indexes",
+          "description": "Topic search uses LIKE '%keyword%' which cannot use standard B-tree indexes efficiently",
+          "impact": "Full table scan on topic.name for substring searches",
+          "file_path": "models/repo/topic.go",
+          "line_number": 176,
+          "code_snippet": "cond = cond.And(builder.Like{\"topic.name\", opts.Keyword})",
+          "recommendation": "For large topic tables, consider full-text search index or trigram index (PostgreSQL)"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "indexing",
+          "description": "Add trigram index on topic.name for PostgreSQL or use prefix matching",
+          "estimated_impact": "Faster topic search for large datasets",
+          "implementation": "CREATE INDEX idx_topic_name_trgm ON topic USING gin (name gin_trgm_ops) for PostgreSQL"
+        }
+      ]
+    }
+  ]
+}

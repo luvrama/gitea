@@ -1,0 +1,491 @@
+{
+  "total_flows": 7,
+  "flows": [
+    {
+      "endpoint_id": "ep-070",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/members",
+      "description": "Lists org members with visibility filtering based on doer's membership status",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "middleware",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name via GetOrgByName", "Handle user redirects for renamed orgs"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Find org by lower_name and type=1"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.ListMembers",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/member.go",
+          "input": "ctx with org resolved",
+          "output": "isMember bool",
+          "operations": ["Check if doer is org member via IsOrgMember"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "org_user", "description": "Check existence of uid+org_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "listMembers",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/member.go",
+          "input": "ctx, isMember bool",
+          "output": "[]*api.User JSON response",
+          "operations": ["Build FindOrgMembersOpts", "Count members", "Find members", "Convert to API users"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "org_user", "description": "COUNT with visibility filter"},
+            {"operation": "SELECT", "table": "org_user", "description": "Get OrgUser records with pagination"},
+            {"operation": "SELECT", "table": "user", "description": "GetUsersByIDs for member details"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.User",
+          "to": "api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"},
+            {"source_field": "Email", "target_field": "email", "transformation": "computed"},
+            {"source_field": "AvatarLink()", "target_field": "avatar_url", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error on IsOrgMember", "handler": "ListMembers", "response_code": 500, "response": "internal error"},
+        {"condition": "DB error on CountOrgMembers/FindOrgMembers", "handler": "listMembers", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-071",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/public_members",
+      "description": "Lists org public members only (isMember=false always passed to listMembers)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "middleware",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Find org by lower_name and type=1"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "listMembers",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/member.go",
+          "input": "ctx, isMember=false",
+          "output": "[]*api.User JSON response",
+          "operations": ["Build FindOrgMembersOpts with PublicOnly=true", "Count public members", "Find public members", "Convert to API users"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "org_user", "description": "COUNT where is_public=true"},
+            {"operation": "SELECT", "table": "org_user", "description": "Get public OrgUser records with pagination"},
+            {"operation": "SELECT", "table": "user", "description": "GetUsersByIDs for member details"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.User",
+          "to": "api.User",
+          "component": "convert.ToUser",
+          "mappings": [
+            {"source_field": "Name", "target_field": "login", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "DB error", "handler": "listMembers", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-072",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/members/{username}",
+      "description": "Checks if user is org member. Complex logic: if doer is member/admin, checks directly; otherwise redirects to public_members check.",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "middleware",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Find org by lower_name and type=1"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.GetContextUserByPathParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/helper.go",
+          "input": "path param {username}",
+          "output": "*user_model.User",
+          "operations": ["Resolve user by name", "Handle user redirects"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetUserByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org.IsMember",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/member.go",
+          "input": "ctx with org and target user",
+          "output": "204/303/404 status",
+          "operations": ["Check if doer is org member", "If member/admin: check target user membership", "If not member: redirect to public_members"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "org_user", "description": "IsOrgMember check for doer"},
+            {"operation": "SELECT", "table": "org_user", "description": "IsOrgMember check for target user (conditional)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "User not found", "handler": "GetContextUserByPathParam", "response_code": 404, "response": "notFound"},
+        {"condition": "Target user not a member (doer is member)", "handler": "IsMember", "response_code": 404, "response": "notFound"},
+        {"condition": "Doer not a member/admin", "handler": "IsMember", "response_code": 303, "response": "redirect to public_members"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-073",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "description": "Checks if user is a public member of the organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "middleware",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Find org by lower_name and type=1"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.GetContextUserByPathParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/helper.go",
+          "input": "path param {username}",
+          "output": "*user_model.User",
+          "operations": ["Resolve user by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetUserByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org.IsPublicMember",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/member.go",
+          "input": "ctx with org and target user",
+          "output": "204/404 status",
+          "operations": ["Check IsPublicMembership(orgID, userID)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "org_user", "description": "Check uid+org_id+is_public=true existence"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "User not found", "handler": "GetContextUserByPathParam", "response_code": 404, "response": "notFound"},
+        {"condition": "Not a public member", "handler": "IsPublicMember", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-074",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "description": "Publicize a user's membership. Requires doer to be the target user, admin, or org owner.",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "middleware",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Find org by lower_name and type=1"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgMembership",
+          "type": "middleware",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Doer, ctx.Org.Organization.ID",
+          "output": "pass or 403",
+          "operations": ["Check if doer is org member or site admin"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "org_user", "description": "IsOrganizationMember check"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user.GetContextUserByPathParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/helper.go",
+          "input": "path param {username}",
+          "output": "*user_model.User",
+          "operations": ["Resolve target user by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetUserByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "checkCanChangeOrgUserStatus",
+          "type": "utility",
+          "file_path": "routers/api/v1/org/member.go",
+          "input": "ctx, targetUser",
+          "output": "pass or 403/500",
+          "operations": ["Check if doer==target OR doer.IsAdmin OR doer is org owner"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team/team_user", "description": "IsOwnedBy check (conditional)"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "organization.ChangeOrgUserStatus",
+          "type": "repository",
+          "file_path": "models/organization/org.go",
+          "input": "orgID, uid, public=true",
+          "output": "error",
+          "operations": ["Get OrgUser record", "Update is_public=true"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "org_user", "description": "Get OrgUser by uid+org_id"},
+            {"operation": "UPDATE", "table": "org_user", "description": "Set is_public=true"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "Doer not org member", "handler": "reqOrgMembership", "response_code": 403, "response": "forbidden"},
+        {"condition": "User not found", "handler": "GetContextUserByPathParam", "response_code": 404, "response": "notFound"},
+        {"condition": "Doer cannot change status", "handler": "checkCanChangeOrgUserStatus", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-075",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/public_members/{username}",
+      "description": "Conceal a user's membership. Same authorization as PublicizeMember.",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "middleware",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Find org by lower_name and type=1"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgMembership",
+          "type": "middleware",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Doer, ctx.Org.Organization.ID",
+          "output": "pass or 403",
+          "operations": ["Check if doer is org member or site admin"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "org_user", "description": "IsOrganizationMember check"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user.GetContextUserByPathParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/helper.go",
+          "input": "path param {username}",
+          "output": "*user_model.User",
+          "operations": ["Resolve target user by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetUserByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "checkCanChangeOrgUserStatus",
+          "type": "utility",
+          "file_path": "routers/api/v1/org/member.go",
+          "input": "ctx, targetUser",
+          "output": "pass or 403/500",
+          "operations": ["Check if doer==target OR doer.IsAdmin OR doer is org owner"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team/team_user", "description": "IsOwnedBy check (conditional)"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "organization.ChangeOrgUserStatus",
+          "type": "repository",
+          "file_path": "models/organization/org.go",
+          "input": "orgID, uid, public=false",
+          "output": "error",
+          "operations": ["Get OrgUser record", "Update is_public=false"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "org_user", "description": "Get OrgUser by uid+org_id"},
+            {"operation": "UPDATE", "table": "org_user", "description": "Set is_public=false"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "Doer not org member", "handler": "reqOrgMembership", "response_code": 403, "response": "forbidden"},
+        {"condition": "User not found", "handler": "GetContextUserByPathParam", "response_code": 404, "response": "notFound"},
+        {"condition": "Doer cannot change status", "handler": "checkCanChangeOrgUserStatus", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-076",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/members/{username}",
+      "description": "Remove a member from an organization. Removes from all teams, deletes repo access, unwatches repos. Requires org ownership.",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment",
+          "type": "middleware",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["Resolve org by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Find org by lower_name and type=1"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "reqOrgOwnership",
+          "type": "middleware",
+          "file_path": "routers/api/v1/api.go",
+          "input": "ctx.Doer, ctx.Org.Organization.ID",
+          "output": "pass or 403",
+          "operations": ["Check if doer is site admin or org owner"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team/team_user", "description": "IsOrganizationOwner check"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user.GetContextUserByPathParam",
+          "type": "utility",
+          "file_path": "routers/api/v1/user/helper.go",
+          "input": "path param {username}",
+          "output": "*user_model.User",
+          "operations": ["Resolve target user by name"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetUserByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "org_service.RemoveOrgUser",
+          "type": "service",
+          "file_path": "services/org/user.go",
+          "input": "ctx, org, user",
+          "output": "error",
+          "operations": [
+            "Check if user is org member",
+            "Check if user is last owner (prevent removal)",
+            "Within transaction: delete OrgUser, decrement num_members",
+            "Get accessible repos, unwatch them, delete access records",
+            "Remove from all teams via removeTeamMember per team"
+          ],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "org_user", "description": "Check membership exists"},
+            {"operation": "SELECT", "table": "team/team_user", "description": "IsOrganizationOwner check"},
+            {"operation": "SELECT", "table": "team", "description": "GetOwnerTeam"},
+            {"operation": "DELETE", "table": "org_user", "description": "Remove org_user record"},
+            {"operation": "UPDATE", "table": "user", "description": "Decrement num_members"},
+            {"operation": "SELECT", "table": "team_user", "description": "Get user's team IDs"},
+            {"operation": "SELECT", "table": "team_repo/repository", "description": "Get accessible repo IDs"},
+            {"operation": "UPDATE", "table": "watch", "description": "Unwatch repos"},
+            {"operation": "DELETE", "table": "access", "description": "Delete access records"},
+            {"operation": "SELECT", "table": "team_user", "description": "GetUserOrgTeams"},
+            {"operation": "DELETE", "table": "team_user", "description": "Remove from each team"},
+            {"operation": "UPDATE", "table": "team", "description": "Decrement num_members per team"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Org not found", "handler": "orgAssignment", "response_code": 404, "response": "notFound"},
+        {"condition": "Doer not org owner", "handler": "reqOrgOwnership", "response_code": 403, "response": "forbidden"},
+        {"condition": "User not found", "handler": "GetContextUserByPathParam", "response_code": 404, "response": "notFound"},
+        {"condition": "User not a member", "handler": "RemoveOrgUser", "response_code": 204, "response": "silent success (no-op)"},
+        {"condition": "User is last owner", "handler": "RemoveOrgUser", "response_code": 500, "response": "internal error (ErrLastOrgOwner)"}
+      ]
+    }
+  ]
+}

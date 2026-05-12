@@ -1,0 +1,38 @@
+{
+  "total_patterns": 7,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [
+      {"exception_type": "generic error", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"},
+      {"exception_type": "not found", "status_code": 404, "response_type": "JSON error", "message_template": "not found"},
+      {"exception_type": "validation error", "status_code": 422, "response_type": "JSON error", "message_template": "varies"}
+    ]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-091", "path": "/api/v1/admin/hooks", "error_scenarios": [
+      {"exception": "DB error", "trigger": "GetGlobalWebhooks fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true},
+      {"exception": "Decryption error", "trigger": "HeaderAuthorization() fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-092", "path": "/api/v1/admin/hooks/{id}", "error_scenarios": [
+      {"exception": "ErrWebhookNotExist", "trigger": "Webhook ID not found with repo_id=0, owner_id=0", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+      {"exception": "DB error", "trigger": "Database query fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-095", "path": "/api/v1/admin/hooks/{id}", "error_scenarios": [
+      {"exception": "ErrWebhookNotExist", "trigger": "Delete count=0 (webhook not found)", "status_code": 404, "response": "not found", "logged": false, "retryable": false},
+      {"exception": "DB error", "trigger": "Transaction fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+    ]},
+    {"endpoint_id": "ep-098", "path": "/api/v1/admin/users", "error_scenarios": [
+      {"exception": "ErrSourceNotExist", "trigger": "Auth source ID not found", "status_code": 422, "response": "validation error", "logged": false, "retryable": false},
+      {"exception": "PasswordIsRequired", "trigger": "Password too short for plain auth", "status_code": 400, "response": "PasswordIsRequired", "logged": false, "retryable": false},
+      {"exception": "PasswordComplexity", "trigger": "Password not complex enough", "status_code": 400, "response": "PasswordComplexity", "logged": false, "retryable": false},
+      {"exception": "PasswordPwned", "trigger": "Password found in breach database", "status_code": 400, "response": "PasswordPwned", "logged": false, "retryable": false},
+      {"exception": "ErrIsPwnedRequest", "trigger": "HaveIBeenPwned API call fails", "status_code": 400, "response": "PasswordPwned", "logged": true, "retryable": true},
+      {"exception": "ErrUserAlreadyExist", "trigger": "Username already taken", "status_code": 422, "response": "validation error", "logged": false, "retryable": false},
+      {"exception": "ErrEmailAlreadyUsed", "trigger": "Email already registered", "status_code": 422, "response": "validation error", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrWebhookNotExist", "file_path": "models/webhook/webhook.go", "extends": "util.ErrNotExist", "used_in": ["webhook.GetSystemOrDefaultWebhook", "webhook.DeleteDefaultSystemWebhook"], "http_status": 404},
+    {"class": "ErrIsPwnedRequest", "file_path": "modules/auth/password/pwn.go", "extends": "error", "used_in": ["password.IsPwned"], "http_status": 400},
+    {"class": "ErrUserAlreadyExist", "file_path": "models/user/error.go", "extends": "error", "used_in": ["user_model.createUser"], "http_status": 422}
+  ]
+}

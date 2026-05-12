@@ -1,0 +1,159 @@
+{
+  "total_flows": 8,
+  "flows": [
+    {
+      "endpoint_id": "ep-226",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls",
+      "description": "Creates a new pull request with labels, assignees, milestone, reviewers",
+      "steps": [
+        {"step": 1, "component": "repo.CreatePullRequest", "type": "controller", "file_path": "routers/api/v1/repo/pull.go", "input": "CreatePullRequestOption", "output": "PullRequest JSON", "operations": ["Parse form", "Validate head != base"], "calls_external": false, "database_ops": [], "cache_ops": [], "async": false},
+        {"step": 2, "component": "parseCompareInfo", "type": "utility", "file_path": "routers/api/v1/repo/pull.go", "input": "base..head string", "output": "CompareInfo", "operations": ["Parse compare param", "Resolve head repo", "Check permissions", "Get compare info via git"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "repository", "description": "Load head repo"}], "cache_ops": [], "async": false},
+        {"step": 3, "component": "issues_model.GetUnmergedPullRequest", "type": "repository", "file_path": "models/issues/pull.go", "input": "headRepoID, baseRepoID, headBranch, baseBranch", "output": "PullRequest or nil", "operations": ["Check for existing unmerged PR with same targets"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "Find existing PR"}], "cache_ops": [], "async": false},
+        {"step": 4, "component": "issues_model.GetLabelsInRepoByIDs", "type": "repository", "file_path": "models/issues/label.go", "input": "repoID, labelIDs", "output": "[]Label", "operations": ["Fetch labels by IDs"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "label", "description": "Get repo labels"}], "cache_ops": [], "async": false},
+        {"step": 5, "component": "issues_model.GetMilestoneByRepoID", "type": "repository", "file_path": "models/issues/milestone.go", "input": "repoID, milestoneID", "output": "Milestone", "operations": ["Fetch milestone"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "milestone", "description": "Get milestone"}], "cache_ops": [], "async": false},
+        {"step": 6, "component": "issues_model.MakeIDsFromAPIAssigneesToAdd", "type": "repository", "file_path": "models/issues/assignees.go", "input": "assignee, assignees", "output": "[]int64", "operations": ["Resolve usernames to IDs"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "user", "description": "Resolve assignee users"}], "cache_ops": [], "async": false},
+        {"step": 7, "component": "access_model.CanBeAssigned", "type": "repository", "file_path": "models/perm/access/repo_permission.go", "input": "user, repo, isPull", "output": "bool", "operations": ["Check assignee has access"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "access", "description": "Check user access"}], "cache_ops": [], "async": false},
+        {"step": 8, "component": "pull_service.NewPullRequest", "type": "service", "file_path": "services/pull/pull.go", "input": "NewPullRequestOptions", "output": "error", "operations": ["Check blocked users", "Check collaborator/member", "Create issue+PR in transaction", "Add assignees", "Push to base repo ref", "Sync commit divergence", "Add code owners review"], "calls_external": false, "database_ops": [{"operation": "INSERT", "table": "issue", "description": "Create issue"}, {"operation": "INSERT", "table": "pull_request", "description": "Create PR"}, {"operation": "INSERT", "table": "issue_assignees", "description": "Add assignees"}], "cache_ops": [], "async": false},
+        {"step": 9, "component": "convert.ToAPIPullRequest", "type": "utility", "file_path": "services/convert/pull.go", "input": "PullRequest, doer", "output": "api.PullRequest", "operations": ["Convert to API response"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "Load relations"}], "cache_ops": [], "async": false}
+      ],
+      "data_transformations": [
+        {"from": "CreatePullRequestOption", "to": "issues_model.Issue + issues_model.PullRequest", "component": "repo.CreatePullRequest", "mappings": [{"source_field": "title", "target_field": "Title", "transformation": "direct_copy"}, {"source_field": "body", "target_field": "Content", "transformation": "direct_copy"}, {"source_field": "head", "target_field": "HeadBranch", "transformation": "computed"}, {"source_field": "base", "target_field": "BaseBranch", "transformation": "computed"}]}
+      ],
+      "error_paths": [
+        {"condition": "head == base", "handler": "repo.CreatePullRequest", "response_code": 422, "response": "validationError"},
+        {"condition": "PR already exists", "handler": "repo.CreatePullRequest", "response_code": 409, "response": "error"},
+        {"condition": "User blocked", "handler": "pull_service.NewPullRequest", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-227",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}",
+      "description": "Edit pull request properties (title, body, state, base, assignees, labels, milestone, deadline, allow_maintainer_edit)",
+      "steps": [
+        {"step": 1, "component": "repo.EditPullRequest", "type": "controller", "file_path": "routers/api/v1/repo/pull.go", "input": "EditPullRequestOption", "output": "PullRequest JSON", "operations": ["Parse form", "Load PR", "Check permissions"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "Get PR by index"}], "cache_ops": [], "async": false},
+        {"step": 2, "component": "issue_service.ChangeTitle", "type": "service", "file_path": "services/issue/issue.go", "input": "issue, doer, title", "output": "error", "operations": ["Update title, create comment"], "calls_external": false, "database_ops": [{"operation": "UPDATE", "table": "issue", "description": "Update title"}], "cache_ops": [], "async": false},
+        {"step": 3, "component": "issue_service.ChangeContent", "type": "service", "file_path": "services/issue/content.go", "input": "issue, doer, body, contentVersion", "output": "error", "operations": ["Update body with optimistic locking"], "calls_external": false, "database_ops": [{"operation": "UPDATE", "table": "issue", "description": "Update content"}], "cache_ops": [], "async": false},
+        {"step": 4, "component": "issues_model.UpdateIssueDeadline", "type": "repository", "file_path": "models/issues/issue_update.go", "input": "issue, deadline, doer", "output": "error", "operations": ["Update deadline"], "calls_external": false, "database_ops": [{"operation": "UPDATE", "table": "issue", "description": "Update deadline"}], "cache_ops": [], "async": false},
+        {"step": 5, "component": "issue_service.UpdateAssignees", "type": "service", "file_path": "services/issue/assignee.go", "input": "issue, assignee, assignees, doer", "output": "error", "operations": ["Replace assignees"], "calls_external": false, "database_ops": [{"operation": "UPDATE", "table": "issue_assignees", "description": "Update assignees"}], "cache_ops": [], "async": false},
+        {"step": 6, "component": "issue_service.ChangeMilestoneAssign", "type": "service", "file_path": "services/issue/milestone.go", "input": "issue, doer, oldMilestoneID", "output": "error", "operations": ["Change milestone"], "calls_external": false, "database_ops": [{"operation": "UPDATE", "table": "issue", "description": "Update milestone"}], "cache_ops": [], "async": false},
+        {"step": 7, "component": "issues_model.ReplaceIssueLabels", "type": "repository", "file_path": "models/issues/issue_label.go", "input": "issue, labels, doer", "output": "error", "operations": ["Replace all labels"], "calls_external": false, "database_ops": [{"operation": "DELETE", "table": "issue_label", "description": "Remove old labels"}, {"operation": "INSERT", "table": "issue_label", "description": "Add new labels"}], "cache_ops": [], "async": false},
+        {"step": 8, "component": "pull_service.ChangeTargetBranch", "type": "service", "file_path": "services/pull/pull.go", "input": "pr, doer, newBase", "output": "error", "operations": ["Change base branch"], "calls_external": false, "database_ops": [{"operation": "UPDATE", "table": "pull_request", "description": "Update base branch"}], "cache_ops": [], "async": false},
+        {"step": 9, "component": "pull_service.SetAllowEdits", "type": "service", "file_path": "services/pull/edits.go", "input": "doer, pr, allow", "output": "error", "operations": ["Update allow_maintainer_edit"], "calls_external": false, "database_ops": [{"operation": "UPDATE", "table": "pull_request", "description": "Update allow_maintainer_edit"}], "cache_ops": [], "async": false}
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Content version mismatch", "handler": "repo.EditPullRequest", "response_code": 409, "response": "error"},
+        {"condition": "PR already merged, state change attempted", "handler": "repo.EditPullRequest", "response_code": 412, "response": "error"},
+        {"condition": "New base branch not found", "handler": "repo.EditPullRequest", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-228",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "description": "Check if a pull request has been merged (returns 204 if merged, 404 if not)",
+      "steps": [
+        {"step": 1, "component": "repo.IsPullRequestMerged", "type": "controller", "file_path": "routers/api/v1/repo/pull.go", "input": "index path param", "output": "204 or 404", "operations": ["Load PR by index", "Check HasMerged flag"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "Get PR by index"}], "cache_ops": [], "async": false}
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "PR not found", "handler": "repo.IsPullRequestMerged", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-229",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "description": "Merge a pull request using specified merge style, or schedule auto-merge, or mark as manually merged",
+      "steps": [
+        {"step": 1, "component": "repo.MergePullRequest", "type": "controller", "file_path": "routers/api/v1/repo/pull.go", "input": "MergePullRequestForm", "output": "200 status", "operations": ["Parse form", "Load PR", "Set issue read"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "Get PR"}, {"operation": "UPDATE", "table": "issue_user", "description": "Mark as read"}], "cache_ops": [], "async": false},
+        {"step": 2, "component": "pull_service.CheckPullMergeable", "type": "service", "file_path": "services/pull/check.go", "input": "doer, perm, pr, mergeCheckType, mergeStyle, forceMerge", "output": "error", "operations": ["Check merged/closed", "Check permission", "Check WIP", "Check mergeable status", "Check branch protection", "Check signing requirements", "Check dependencies"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "protected_branch", "description": "Check branch protection"}, {"operation": "SELECT", "table": "issue_dependency", "description": "Check dependencies"}], "cache_ops": [], "async": false},
+        {"step": 3, "component": "pull_service.MergedManually", "type": "service", "file_path": "services/pull/merge.go", "input": "pr, doer, gitRepo, commitID", "output": "error", "operations": ["Mark PR as manually merged (if manually-merged style)"], "calls_external": false, "database_ops": [{"operation": "UPDATE", "table": "pull_request", "description": "Set merged state"}], "cache_ops": [], "async": false},
+        {"step": 4, "component": "pull_service.GetDefaultMergeMessage", "type": "service", "file_path": "services/pull/merge.go", "input": "gitRepo, pr, mergeStyle", "output": "string", "operations": ["Generate default merge commit message"], "calls_external": false, "database_ops": [], "cache_ops": [], "async": false},
+        {"step": 5, "component": "automerge.ScheduleAutoMerge", "type": "service", "file_path": "services/automerge/automerge.go", "input": "doer, pr, style, message, deleteBranch", "output": "scheduled bool, error", "operations": ["Schedule auto-merge in DB and queue (if merge_when_checks_succeed)"], "calls_external": false, "database_ops": [{"operation": "INSERT", "table": "pull_auto_merge", "description": "Schedule auto-merge"}], "cache_ops": [], "async": true},
+        {"step": 6, "component": "pull_service.Merge", "type": "service", "file_path": "services/pull/merge.go", "input": "pr, doer, mergeStyle, headCommitID, message", "output": "error", "operations": ["Acquire lock", "Validate merge style allowed", "Do merge and push", "Notify", "Handle cross-references"], "calls_external": false, "database_ops": [{"operation": "UPDATE", "table": "pull_request", "description": "Set merged"}, {"operation": "UPDATE", "table": "issue", "description": "Close issue"}], "cache_ops": [{"operation": "DELETE", "key": "commits_count_cache", "description": "Reset commit count cache"}], "async": false},
+        {"step": 7, "component": "repo_service.DeleteBranchAfterMerge", "type": "service", "file_path": "services/repository/branch.go", "input": "doer, prID", "output": "error", "operations": ["Delete head branch if configured"], "calls_external": false, "database_ops": [{"operation": "DELETE", "table": "branch", "description": "Mark branch deleted"}], "cache_ops": [], "async": false}
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "PR closed", "handler": "pull_service.CheckPullMergeable", "response_code": 404, "response": "notFound"},
+        {"condition": "No permission", "handler": "pull_service.CheckPullMergeable", "response_code": 405, "response": "empty"},
+        {"condition": "Merge conflict", "handler": "pull_service.Merge", "response_code": 409, "response": "ErrMergeConflicts"},
+        {"condition": "Already scheduled", "handler": "automerge.ScheduleAutoMerge", "response_code": 409, "response": "error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-230",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/update",
+      "description": "Update PR by merging or rebasing base branch into head branch",
+      "steps": [
+        {"step": 1, "component": "repo.UpdatePullRequest", "type": "controller", "file_path": "routers/api/v1/repo/pull.go", "input": "index, style query param", "output": "200 status", "operations": ["Load PR", "Check not merged/closed", "Load repos"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "Get PR by index"}], "cache_ops": [], "async": false},
+        {"step": 2, "component": "pull_service.IsUserAllowedToUpdate", "type": "service", "file_path": "services/pull/update.go", "input": "pr, doer", "output": "pushAllowed, rebaseAllowed", "operations": ["Check PR unit enabled", "Check push permission on head repo", "Check maintainer edit permission"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "repo_unit", "description": "Check PR unit"}, {"operation": "SELECT", "table": "access", "description": "Check permissions"}], "cache_ops": [], "async": false},
+        {"step": 3, "component": "pull_service.Update", "type": "service", "file_path": "services/pull/update.go", "input": "pr, doer, message, rebase", "output": "error", "operations": ["Acquire global lock", "Check divergence", "Merge or rebase base into head", "Trigger PR test task"], "calls_external": false, "database_ops": [], "cache_ops": [], "async": false}
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "PR already merged", "handler": "repo.UpdatePullRequest", "response_code": 422, "response": "validationError"},
+        {"condition": "PR closed", "handler": "repo.UpdatePullRequest", "response_code": 422, "response": "validationError"},
+        {"condition": "Merge conflict", "handler": "pull_service.Update", "response_code": 409, "response": "error"},
+        {"condition": "Not allowed", "handler": "repo.UpdatePullRequest", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-231",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+      "description": "Cancel a scheduled auto-merge for a pull request",
+      "steps": [
+        {"step": 1, "component": "repo.CancelScheduledAutoMerge", "type": "controller", "file_path": "routers/api/v1/repo/pull.go", "input": "index path param", "output": "204 status", "operations": ["Load PR", "Get scheduled merge", "Check permission"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "Get PR"}, {"operation": "SELECT", "table": "pull_auto_merge", "description": "Get scheduled merge"}], "cache_ops": [], "async": false},
+        {"step": 2, "component": "pull_service.IsUserAllowedToMerge", "type": "service", "file_path": "services/pull/merge.go", "input": "pr, perm, doer", "output": "bool", "operations": ["Check if user can merge (if not the scheduler)"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "access", "description": "Check permissions"}], "cache_ops": [], "async": false},
+        {"step": 3, "component": "automerge.RemoveScheduledAutoMerge", "type": "service", "file_path": "services/automerge/automerge.go", "input": "doer, pull", "output": "error", "operations": ["Delete auto-merge record", "Create comment"], "calls_external": false, "database_ops": [{"operation": "DELETE", "table": "pull_auto_merge", "description": "Remove scheduled merge"}, {"operation": "INSERT", "table": "comment", "description": "Add unschedule comment"}], "cache_ops": [], "async": false}
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "No auto-merge scheduled", "handler": "repo.CancelScheduledAutoMerge", "response_code": 404, "response": "notFound"},
+        {"condition": "Not scheduler and no merge permission", "handler": "repo.CancelScheduledAutoMerge", "response_code": 403, "response": "forbidden"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-232",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/commits",
+      "description": "Get paginated list of commits for a pull request",
+      "steps": [
+        {"step": 1, "component": "repo.GetPullRequestCommits", "type": "controller", "file_path": "routers/api/v1/repo/pull.go", "input": "index, page, limit, verification, files", "output": "CommitList JSON", "operations": ["Load PR", "Load base repo"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "Get PR by index"}], "cache_ops": [], "async": false},
+        {"step": 2, "component": "git_service.GetCompareInfo", "type": "service", "file_path": "services/git/compare.go", "input": "baseRepo, baseRef, headRef", "output": "CompareInfo with commits", "operations": ["Get merge base", "List commits between merge base and head"], "calls_external": false, "database_ops": [], "cache_ops": [], "async": false},
+        {"step": 3, "component": "convert.ToCommit", "type": "utility", "file_path": "services/convert/git_commit.go", "input": "git.Commit, options", "output": "api.Commit", "operations": ["Convert each commit to API format with optional verification and files"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "user", "description": "Resolve commit authors via userCache"}], "cache_ops": [], "async": false}
+      ],
+      "data_transformations": [
+        {"from": "git.Commit", "to": "api.Commit", "component": "convert.ToCommit", "mappings": [{"source_field": "ID", "target_field": "SHA", "transformation": "direct_copy"}, {"source_field": "Author", "target_field": "Author", "transformation": "enriched"}]}
+      ],
+      "error_paths": [
+        {"condition": "PR not found", "handler": "repo.GetPullRequestCommits", "response_code": 404, "response": "notFound"},
+        {"condition": "Bad revision", "handler": "repo.GetPullRequestCommits", "response_code": 404, "response": "notFound"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-233",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/files",
+      "description": "Get paginated list of changed files for a pull request",
+      "steps": [
+        {"step": 1, "component": "repo.GetPullRequestFiles", "type": "controller", "file_path": "routers/api/v1/repo/pull.go", "input": "index, skip-to, whitespace, page, limit", "output": "ChangedFileList JSON", "operations": ["Load PR", "Load repos"], "calls_external": false, "database_ops": [{"operation": "SELECT", "table": "pull_request", "description": "Get PR by index"}], "cache_ops": [], "async": false},
+        {"step": 2, "component": "git_service.GetCompareInfo", "type": "service", "file_path": "services/git/compare.go", "input": "baseRepo, baseRef, headRef", "output": "CompareInfo", "operations": ["Get compare base commit ID"], "calls_external": false, "database_ops": [], "cache_ops": [], "async": false},
+        {"step": 3, "component": "gitdiff.GetDiffForAPI", "type": "service", "file_path": "services/gitdiff/gitdiff.go", "input": "DiffOptions", "output": "Diff", "operations": ["Run git diff between start and end commits", "Parse diff output into DiffFile structs"], "calls_external": false, "database_ops": [], "cache_ops": [], "async": false},
+        {"step": 4, "component": "gitdiff.GetDiffShortStat", "type": "service", "file_path": "services/gitdiff/gitdiff.go", "input": "startCommitID, endCommitID", "output": "DiffShortStat", "operations": ["Get total file count via git diff --shortstat"], "calls_external": false, "database_ops": [], "cache_ops": [], "async": false},
+        {"step": 5, "component": "convert.ToChangedFile", "type": "utility", "file_path": "services/convert/convert.go", "input": "DiffFile, repo, commitID", "output": "api.ChangedFile", "operations": ["Convert diff file to API format with URLs"], "calls_external": false, "database_ops": [], "cache_ops": [], "async": false}
+      ],
+      "data_transformations": [
+        {"from": "gitdiff.DiffFile", "to": "api.ChangedFile", "component": "convert.ToChangedFile", "mappings": [{"source_field": "Name", "target_field": "Filename", "transformation": "direct_copy"}, {"source_field": "IsDeleted/IsCreated/IsRenamed", "target_field": "Status", "transformation": "computed"}, {"source_field": "Addition", "target_field": "Additions", "transformation": "direct_copy"}]}
+      ],
+      "error_paths": [
+        {"condition": "PR not found", "handler": "repo.GetPullRequestFiles", "response_code": 404, "response": "notFound"}
+      ]
+    }
+  ]
+}

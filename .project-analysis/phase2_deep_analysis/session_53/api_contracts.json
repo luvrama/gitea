@@ -1,0 +1,383 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-359",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/labels",
+      "controller_class": "repo",
+      "controller_method": "CreateLabel",
+      "description": "Create a label for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "CreateLabelOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": true, "validation": ["Required"], "description": "Display name for the label"},
+            {"name": "color", "type": "string", "required": true, "validation": ["Required", "valid hex color"], "description": "Color hex code e.g. #00aabb"},
+            {"name": "exclusive", "type": "bool", "required": false, "validation": [], "description": "Whether label is exclusive"},
+            {"name": "description", "type": "string", "required": false, "validation": [], "description": "Label description"},
+            {"name": "is_archived", "type": "bool", "required": false, "validation": [], "description": "Whether label is archived"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "Label",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Label ID"},
+            {"name": "name", "type": "string", "description": "Label name"},
+            {"name": "exclusive", "type": "bool", "description": "Whether exclusive"},
+            {"name": "is_archived", "type": "bool", "description": "Whether archived"},
+            {"name": "color", "type": "string", "description": "Color without # prefix"},
+            {"name": "description", "type": "string", "description": "Label description"},
+            {"name": "url", "type": "string", "description": "API URL for label"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid color format"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-360",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "controller_class": "repo",
+      "controller_method": "EditLabel",
+      "description": "Update a label for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "int64", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "EditLabelOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "*string", "required": false, "validation": [], "description": "New label name"},
+            {"name": "color", "type": "*string", "required": false, "validation": ["valid hex color if provided"], "description": "New color"},
+            {"name": "exclusive", "type": "*bool", "required": false, "validation": [], "description": "New exclusive flag"},
+            {"name": "description", "type": "*string", "required": false, "validation": [], "description": "New description"},
+            {"name": "is_archived", "type": "*bool", "required": false, "validation": [], "description": "New archived flag"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "Label",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Label ID"},
+            {"name": "name", "type": "string", "description": "Label name"},
+            {"name": "exclusive", "type": "bool", "description": "Whether exclusive"},
+            {"name": "is_archived", "type": "bool", "description": "Whether archived"},
+            {"name": "color", "type": "string", "description": "Color without # prefix"},
+            {"name": "description", "type": "string", "description": "Label description"},
+            {"name": "url", "type": "string", "description": "API URL for label"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Label not found in repo"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid color format"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-361",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/labels/{id}",
+      "controller_class": "repo",
+      "controller_method": "DeleteLabel",
+      "description": "Delete a label from a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "int64", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-362",
+      "http_method": "GET",
+      "path": "/api/v1/repos/search",
+      "controller_class": "repo",
+      "controller_method": "Search",
+      "description": "Search for repositories",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "q", "type": "string", "required": false, "default": "", "validation": []},
+          {"name": "topic", "type": "boolean", "required": false, "default": false, "validation": []},
+          {"name": "includeDesc", "type": "boolean", "required": false, "default": false, "validation": []},
+          {"name": "uid", "type": "int64", "required": false, "default": null, "validation": []},
+          {"name": "priority_owner_id", "type": "int64", "required": false, "default": null, "validation": []},
+          {"name": "team_id", "type": "int64", "required": false, "default": null, "validation": []},
+          {"name": "starredBy", "type": "int64", "required": false, "default": null, "validation": []},
+          {"name": "private", "type": "boolean", "required": false, "default": true, "validation": []},
+          {"name": "is_private", "type": "boolean", "required": false, "default": null, "validation": []},
+          {"name": "template", "type": "boolean", "required": false, "default": null, "validation": []},
+          {"name": "archived", "type": "boolean", "required": false, "default": null, "validation": []},
+          {"name": "mode", "type": "string", "required": false, "default": "", "validation": ["one of: fork, source, mirror, collaborative, empty"]},
+          {"name": "exclusive", "type": "boolean", "required": false, "default": false, "validation": []},
+          {"name": "sort", "type": "string", "required": false, "default": "alpha", "validation": ["one of: alpha, created, updated, size, git_size, lfs_size, stars, forks, id"]},
+          {"name": "order", "type": "string", "required": false, "default": "asc", "validation": ["one of: asc, desc"]},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "SearchResults",
+          "fields": [
+            {"name": "ok", "type": "bool", "description": "Always true on success"},
+            {"name": "data", "type": "[]Repository", "description": "Array of repository objects"}
+          ]
+        },
+        "errors": [
+          {"status_code": 422, "type": "validationError", "condition": "Invalid sort mode or order"},
+          {"status_code": 500, "type": "SearchError", "condition": "Internal search error"}
+        ]
+      },
+      "authentication": "none (public, but results filtered by auth)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-363",
+      "http_method": "POST",
+      "path": "/api/v1/user/repos",
+      "controller_class": "repo",
+      "controller_method": "Create",
+      "description": "Create a repository for the authenticated user",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "CreateRepoOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": true, "validation": ["Required", "AlphaDashDot", "MaxSize(100)"], "description": "Repository name"},
+            {"name": "description", "type": "string", "required": false, "validation": ["MaxSize(2048)"], "description": "Repository description"},
+            {"name": "private", "type": "bool", "required": false, "validation": [], "description": "Whether private"},
+            {"name": "issue_labels", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Label-Set to use"},
+            {"name": "auto_init", "type": "bool", "required": false, "validation": [], "description": "Auto-initialize with README"},
+            {"name": "template", "type": "bool", "required": false, "validation": [], "description": "Whether template repo"},
+            {"name": "gitignores", "type": "string", "required": false, "validation": [], "description": "Gitignores to use"},
+            {"name": "license", "type": "string", "required": false, "validation": ["MaxSize(100)"], "description": "License to use"},
+            {"name": "readme", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Readme template"},
+            {"name": "default_branch", "type": "string", "required": false, "validation": ["GitRefName", "MaxSize(100)"], "description": "Default branch name"},
+            {"name": "trust_model", "type": "string", "required": false, "validation": ["enum: default,collaborator,committer,collaboratorcommitter"], "description": "Trust model"},
+            {"name": "object_format_name", "type": "string", "required": false, "validation": ["MaxSize(6)"], "description": "Object format (sha1)"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Repository ID"},
+            {"name": "name", "type": "string", "description": "Repository name"},
+            {"name": "full_name", "type": "string", "description": "Full name owner/repo"},
+            {"name": "private", "type": "bool", "description": "Whether private"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid readme template"},
+          {"status_code": 409, "type": "conflict", "condition": "Repository with same name already exists"},
+          {"status_code": 422, "type": "validationError", "condition": "Reserved name or invalid pattern"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-364",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{template_owner}/{template_repo}/generate",
+      "controller_class": "repo",
+      "controller_method": "Generate",
+      "description": "Create a repository using a template",
+      "request": {
+        "path_params": [
+          {"name": "template_owner", "type": "string", "required": true, "validation": []},
+          {"name": "template_repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "GenerateRepoOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "owner", "type": "string", "required": true, "validation": [], "description": "Owner of new repo"},
+            {"name": "name", "type": "string", "required": true, "validation": ["Required", "AlphaDashDot", "MaxSize(100)"], "description": "New repo name"},
+            {"name": "default_branch", "type": "string", "required": false, "validation": [], "description": "Default branch"},
+            {"name": "description", "type": "string", "required": false, "validation": ["MaxSize(2048)"], "description": "Description"},
+            {"name": "private", "type": "bool", "required": false, "validation": [], "description": "Whether private"},
+            {"name": "git_content", "type": "bool", "required": false, "validation": [], "description": "Include git content"},
+            {"name": "topics", "type": "bool", "required": false, "validation": [], "description": "Include topics"},
+            {"name": "git_hooks", "type": "bool", "required": false, "validation": [], "description": "Include git hooks"},
+            {"name": "webhooks", "type": "bool", "required": false, "validation": [], "description": "Include webhooks"},
+            {"name": "avatar", "type": "bool", "required": false, "validation": [], "description": "Include avatar"},
+            {"name": "labels", "type": "bool", "required": false, "validation": [], "description": "Include labels"},
+            {"name": "protected_branch", "type": "bool", "required": false, "validation": [], "description": "Include protected branches"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Repository ID"},
+            {"name": "name", "type": "string", "description": "Repository name"},
+            {"name": "full_name", "type": "string", "description": "Full name owner/repo"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User not allowed to create repo for target owner"},
+          {"status_code": 404, "type": "notFound", "condition": "Template repo or owner not found"},
+          {"status_code": 409, "type": "conflict", "condition": "Repository with same name already exists"},
+          {"status_code": 422, "type": "validationError", "condition": "Not a template repo, or no template items selected"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-365",
+      "http_method": "POST",
+      "path": "/api/v1/org/{org}/repos",
+      "controller_class": "repo",
+      "controller_method": "CreateOrgRepoDeprecated",
+      "description": "Create a repository in an organization (deprecated)",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "CreateRepoOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": true, "validation": ["Required", "AlphaDashDot", "MaxSize(100)"], "description": "Repository name"},
+            {"name": "description", "type": "string", "required": false, "validation": ["MaxSize(2048)"], "description": "Description"},
+            {"name": "private", "type": "bool", "required": false, "validation": [], "description": "Whether private"},
+            {"name": "auto_init", "type": "bool", "required": false, "validation": [], "description": "Auto-initialize"},
+            {"name": "gitignores", "type": "string", "required": false, "validation": [], "description": "Gitignores"},
+            {"name": "license", "type": "string", "required": false, "validation": ["MaxSize(100)"], "description": "License"},
+            {"name": "readme", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Readme template"},
+            {"name": "default_branch", "type": "string", "required": false, "validation": ["GitRefName", "MaxSize(100)"], "description": "Default branch"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Repository ID"},
+            {"name": "name", "type": "string", "description": "Repository name"}
+          ]
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User not allowed to create repos in org"},
+          {"status_code": 404, "type": "notFound", "condition": "Organization not found"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid name or options"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-366",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/repos",
+      "controller_class": "repo",
+      "controller_method": "CreateOrgRepo",
+      "description": "Create a repository in an organization",
+      "request": {
+        "path_params": [
+          {"name": "org", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": {
+          "type": "CreateRepoOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "name", "type": "string", "required": true, "validation": ["Required", "AlphaDashDot", "MaxSize(100)"], "description": "Repository name"},
+            {"name": "description", "type": "string", "required": false, "validation": ["MaxSize(2048)"], "description": "Description"},
+            {"name": "private", "type": "bool", "required": false, "validation": [], "description": "Whether private"},
+            {"name": "auto_init", "type": "bool", "required": false, "validation": [], "description": "Auto-initialize"},
+            {"name": "gitignores", "type": "string", "required": false, "validation": [], "description": "Gitignores"},
+            {"name": "license", "type": "string", "required": false, "validation": ["MaxSize(100)"], "description": "License"},
+            {"name": "readme", "type": "string", "required": false, "validation": ["MaxSize(255)"], "description": "Readme template"},
+            {"name": "default_branch", "type": "string", "required": false, "validation": ["GitRefName", "MaxSize(100)"], "description": "Default branch"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "Repository",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Repository ID"},
+            {"name": "name", "type": "string", "description": "Repository name"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid readme template"},
+          {"status_code": 403, "type": "forbidden", "condition": "User not allowed to create repos in org"},
+          {"status_code": 404, "type": "notFound", "condition": "Organization not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

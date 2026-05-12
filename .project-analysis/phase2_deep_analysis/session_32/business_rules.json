@@ -1,0 +1,85 @@
+{
+  "total_rules": 8,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "validation",
+      "description": "SHA must be a valid git ref pattern (no control chars, no .., no //, etc.)",
+      "location": {"class": "repo", "method": "GetSingleCommit", "file_path": "routers/api/v1/repo/commits.go", "line_number": 60},
+      "condition": "!git.IsValidRefPattern(sha)",
+      "action": "Return 422 with validation error",
+      "affected_endpoints": ["ep-214"],
+      "code_snippet": "if !git.IsValidRefPattern(sha) {\n\tctx.APIError(http.StatusUnprocessableEntity, \"no valid ref or sha: \"+sha)\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Since/until parameters must be valid RFC3339 (ISO 8601) timestamps",
+      "location": {"class": "repo", "method": "GetAllCommits", "file_path": "routers/api/v1/repo/commits.go", "line_number": 131},
+      "condition": "time.Parse(time.RFC3339, since) fails",
+      "action": "Return 422 with validation error",
+      "affected_endpoints": ["ep-215"],
+      "code_snippet": "if _, err := time.Parse(time.RFC3339, since); err != nil {\n\tctx.APIError(http.StatusUnprocessableEntity, \"invalid 'since' format...\")\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Empty repositories cannot list commits - returns 409 Conflict",
+      "location": {"class": "repo", "method": "GetAllCommits", "file_path": "routers/api/v1/repo/commits.go", "line_number": 140},
+      "condition": "ctx.Repo.Repository.IsEmpty",
+      "action": "Return 409 with 'Git Repository is empty' message",
+      "affected_endpoints": ["ep-215"],
+      "code_snippet": "if ctx.Repo.Repository.IsEmpty {\n\tctx.JSON(http.StatusConflict, api.APIError{Message: \"Git Repository is empty.\"})\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Page size is capped at setting.Git.CommitsRangeSize (default 50)",
+      "location": {"class": "repo", "method": "GetAllCommits", "file_path": "routers/api/v1/repo/commits.go", "line_number": 149},
+      "condition": "listOptions.PageSize > setting.Git.CommitsRangeSize",
+      "action": "Cap page size to CommitsRangeSize",
+      "affected_endpoints": ["ep-215"],
+      "code_snippet": "if listOptions.PageSize > setting.Git.CommitsRangeSize {\n\tlistOptions.PageSize = setting.Git.CommitsRangeSize\n}"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "authorization",
+      "description": "Only admin or the user themselves can change issue subscription for a user",
+      "location": {"class": "repo", "method": "setIssueSubscription", "file_path": "routers/api/v1/repo/issue_subscription.go", "line_number": 107},
+      "condition": "user.ID != ctx.Doer.ID && !ctx.Doer.IsAdmin",
+      "action": "Return 403 Forbidden",
+      "affected_endpoints": ["ep-218", "ep-219"],
+      "code_snippet": "if user.ID != ctx.Doer.ID && !ctx.Doer.IsAdmin {\n\tctx.APIError(http.StatusForbidden, ...)\n}"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "If subscription state already matches desired state, return 200 (no change)",
+      "location": {"class": "repo", "method": "setIssueSubscription", "file_path": "routers/api/v1/repo/issue_subscription.go", "line_number": 114},
+      "condition": "current == watch",
+      "action": "Return 200 OK (idempotent, no DB write)",
+      "affected_endpoints": ["ep-218", "ep-219"],
+      "code_snippet": "if current == watch {\n\tctx.Status(http.StatusOK)\n\treturn\n}"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "CheckIssueWatch considers explicit watch, repo watch mode, and participation",
+      "location": {"class": "issues", "method": "CheckIssueWatch", "file_path": "models/issues/issue_watch.go", "line_number": 72},
+      "condition": "no explicit issue_watch record exists",
+      "action": "Falls back to repo watch mode or user participation check",
+      "affected_endpoints": ["ep-218", "ep-219"],
+      "code_snippet": "return repo_model.IsWatchMode(w.Mode) || IsUserParticipantsOfIssue(ctx, user, issue), nil"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Commit options (stat, verification, files) default to true when query param is empty string",
+      "location": {"class": "convert", "method": "ParseCommitOptions", "file_path": "services/convert/git_commit.go", "line_number": 84},
+      "condition": "ctx.FormString(\"stat\") == \"\"",
+      "action": "Defaults to true - includes stats/verification/files",
+      "affected_endpoints": ["ep-214", "ep-215"],
+      "code_snippet": "Stat: ctx.FormString(\"stat\") == \"\" || ctx.FormBool(\"stat\")"
+    }
+  ]
+}

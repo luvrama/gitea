@@ -1,0 +1,47 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "APIErrorInternal", "status_code": 500, "response_type": "JSON error", "message_template": "internal server error"},
+        {"exception_type": "APIError", "status_code": "variable", "response_type": "JSON error", "message_template": "error message from err"},
+        {"exception_type": "APIErrorNotFound", "status_code": 404, "response_type": "JSON error", "message_template": "not found"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-123",
+      "path": "/api/v1/users/search",
+      "error_scenarios": [
+        {"exception": "database error", "trigger": "SearchUsers fails", "status_code": 500, "response": "{ok: false, error: err.Error()}", "logged": false, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-124",
+      "path": "/api/v1/users/{username}",
+      "error_scenarios": [
+        {"exception": "ErrUserNotExist", "trigger": "Username not found or user not visible", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-126",
+      "path": "/api/v1/users/{username}/heatmap",
+      "error_scenarios": [
+        {"exception": "database error", "trigger": "Heatmap query fails", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-128",
+      "path": "/api/v1/user/avatar",
+      "error_scenarios": [
+        {"exception": "base64 decode error", "trigger": "Invalid base64 in image field", "status_code": 400, "response": "error message", "logged": false, "retryable": false},
+        {"exception": "image processing error", "trigger": "Unsupported type or oversized image", "status_code": 500, "response": "internal error", "logged": true, "retryable": false},
+        {"exception": "storage error", "trigger": "Failed to save avatar to storage", "status_code": 500, "response": "internal error", "logged": true, "retryable": true}
+      ]
+    }
+  ],
+  "custom_exceptions": []
+}

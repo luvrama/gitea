@@ -1,0 +1,130 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-023",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "resource_load": {
+        "operations_per_request": "2 + 7*N (N = number of matching notifications)",
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Unbounded N: no pagination on the find query"
+      },
+      "performance_issues": [
+        {
+          "severity": "critical",
+          "type": "unbounded_queries",
+          "description": "db.Find called without ListOptions (no pagination), loading ALL matching notifications for the repo into memory",
+          "impact": "If a user has thousands of unread notifications for a repo, all are loaded at once causing memory pressure and slow queries",
+          "file_path": "routers/api/v1/notify/repo.go",
+          "line_number": 143,
+          "code_snippet": "nl, err := db.Find[activities_model.Notification](ctx, opts)",
+          "recommendation": "Add ListOptions to opts or use a batch-update query instead of per-item loop"
+        },
+        {
+          "severity": "critical",
+          "type": "n_plus_1_queries",
+          "description": "For each notification: SetNotificationStatus does SELECT+UPDATE (2 queries), LoadAttributes does 4 SELECTs (repo, issue, user, comment), ToNotificationThread does GetIndividualUserRepoPermission + GetLastComment (2 more). Total: ~8 DB round-trips per notification.",
+          "impact": "100 notifications = ~800 DB queries in a single request",
+          "file_path": "routers/api/v1/notify/repo.go",
+          "line_number": 155,
+          "code_snippet": "for _, n := range nl {\n\tnotif, err := activities_model.SetNotificationStatus(ctx, n.ID, ctx.Doer, targetStatus)\n\t_ = notif.LoadAttributes(ctx)",
+          "recommendation": "Use batch UPDATE query, then batch-load attributes using NotificationList.LoadAttributes pattern"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P0",
+          "type": "query_optimization",
+          "description": "Replace per-item SetNotificationStatus loop with a single batch UPDATE",
+          "estimated_impact": "Reduce N*2 queries to 1 query for the status update",
+          "implementation": "UPDATE notification SET status=? WHERE id IN (?) AND user_id=?"
+        },
+        {
+          "priority": "P0",
+          "type": "pagination",
+          "description": "Add pagination or a hard limit to the initial find query",
+          "estimated_impact": "Prevent unbounded memory usage and query time",
+          "implementation": "Add ListOptions with a reasonable max (e.g., 1000) or paginate"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-024",
+      "http_method": "GET",
+      "path": "/api/v1/notifications/threads/{id}",
+      "resource_load": {
+        "operations_per_request": 7,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Fixed cost: 1 notification + 4 attribute loads + permission check + GetLastComment"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-025",
+      "http_method": "PATCH",
+      "path": "/api/v1/notifications/threads/{id}",
+      "resource_load": {
+        "operations_per_request": 9,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Fixed cost: getThread(1) + SetNotificationStatus(2: re-fetch + update) + LoadAttributes(4) + convert(2)"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "GetNotificationByID is called twice: once in getThread and once inside SetNotificationStatus",
+          "impact": "1 extra SELECT per request (minor for single-item endpoint)",
+          "file_path": "models/activities/notification.go",
+          "line_number": 235,
+          "code_snippet": "notification, err := GetNotificationByID(ctx, notificationID)",
+          "recommendation": "Pass the already-fetched notification to avoid re-fetch, or accept the minor overhead"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-026",
+      "http_method": "GET",
+      "path": "/api/v1/user/orgs",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 count + 1 paginated select. ToOrganization is pure field mapping."
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-027",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/orgs",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 user lookup + 1 count + 1 paginated select"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-028",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/orgs/{org}/permissions",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "2 user lookups + 1 membership check + 1 max authorize + 1 can create repo"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

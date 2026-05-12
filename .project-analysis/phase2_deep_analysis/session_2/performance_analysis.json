@@ -1,0 +1,167 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-009",
+      "http_method": "POST",
+      "path": "/api/v1/markdown",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["cpu"],
+        "note": "CPU-bound markdown parsing and HTML sanitization. No DB or external calls."
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_timeout",
+          "description": "No timeout on markdown rendering - large or malicious input could consume CPU indefinitely",
+          "impact": "A single request with extremely large markdown input could block a goroutine for extended time",
+          "file_path": "routers/common/markup.go",
+          "line_number": 36,
+          "code_snippet": "markdown.RenderRaw(rctx, strings.NewReader(text), ctx.Resp)",
+          "recommendation": "Add context timeout or input size limit for markdown rendering"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "timeout",
+          "description": "Add request body size limit and rendering timeout",
+          "estimated_impact": "Prevents resource exhaustion from oversized inputs",
+          "implementation": "Use context.WithTimeout and limit request body size via middleware"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-010",
+      "http_method": "POST",
+      "path": "/api/v1/markdown/raw",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["cpu"],
+        "note": "CPU-bound markdown parsing with pipe-based streaming. No DB or external calls."
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "no_timeout",
+          "description": "No timeout or size limit on raw body reading and rendering",
+          "impact": "Unbounded request body could exhaust memory; rendering has no timeout",
+          "file_path": "routers/api/v1/misc/markup.go",
+          "line_number": 84,
+          "code_snippet": "markdown.RenderRaw(markup.NewRenderContext(ctx), ctx.Req.Body, ctx.Resp)",
+          "recommendation": "Add io.LimitReader on request body and context timeout"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "timeout",
+          "description": "Limit request body size and add rendering timeout",
+          "estimated_impact": "Prevents memory exhaustion and CPU starvation",
+          "implementation": "Wrap ctx.Req.Body with io.LimitReader; use context.WithTimeout"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-011",
+      "http_method": "GET",
+      "path": "/api/v1/gitignore/templates",
+      "resource_load": {
+        "operations_per_request": 0,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": [],
+        "note": "Returns pre-loaded in-memory slice. Zero cost per request."
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-012",
+      "http_method": "GET",
+      "path": "/api/v1/gitignore/templates/{name}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["filesystem"],
+        "note": "Single filesystem read per request. Files are small (< 10KB typically)."
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "Gitignore template files are read from disk on every request with no in-memory caching",
+          "impact": "Minimal - files are small and OS-level page cache likely handles this",
+          "file_path": "modules/assetfs/layered.go",
+          "line_number": 85,
+          "code_snippet": "func (l *LayeredFS) ReadFile(elems ...string) ([]byte, error) {",
+          "recommendation": "Consider adding response-level caching headers (ETag/Last-Modified) for static content"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Add HTTP caching headers since gitignore templates rarely change",
+          "estimated_impact": "Reduces redundant requests from clients",
+          "implementation": "Add Cache-Control: public, max-age=3600 or ETag header"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-013",
+      "http_method": "GET",
+      "path": "/api/v1/licenses",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["cpu"],
+        "note": "Allocates response array and iterates pre-loaded license list. Lightweight."
+      },
+      "performance_issues": [],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Response could be cached since license list is static after startup",
+          "estimated_impact": "Eliminates per-request allocation of response array",
+          "implementation": "Cache the serialized JSON response or add HTTP caching headers"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-014",
+      "http_method": "GET",
+      "path": "/api/v1/licenses/{name}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["filesystem"],
+        "note": "Single filesystem read per request. License files can be larger (up to ~35KB)."
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "License template files are read from disk on every request with no in-memory caching",
+          "impact": "Minimal - OS page cache handles this, but license files are larger than gitignore files",
+          "file_path": "modules/assetfs/layered.go",
+          "line_number": 85,
+          "code_snippet": "func (l *LayeredFS) ReadFile(elems ...string) ([]byte, error) {",
+          "recommendation": "Consider adding response-level caching headers for static content"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Add HTTP caching headers since license templates rarely change",
+          "estimated_impact": "Reduces redundant requests and filesystem reads from clients",
+          "implementation": "Add Cache-Control: public, max-age=3600 or ETag header"
+        }
+      ]
+    }
+  ]
+}

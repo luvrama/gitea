@@ -1,0 +1,494 @@
+{
+  "total_flows": 7,
+  "flows": [
+    {
+      "endpoint_id": "ep-035",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/activities/feeds",
+      "description": "Fetches paginated activity feeds for an organization, filtering by visibility based on auth status",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true)",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization, ctx.ContextUser",
+          "operations": ["resolve org by name from DB"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetOrgByName: find org by lower_name and type=1"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.ListOrgActivityFeeds",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "ctx with org resolved",
+          "output": "JSON response",
+          "operations": ["determine includePrivate based on admin/membership", "build GetFeedsOptions", "call feed_service.GetFeeds"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team_user", "description": "IsOrgMember check if non-admin signed-in user is org member"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "feed_service.GetFeeds",
+          "type": "service",
+          "file_path": "services/feed/feed.go",
+          "input": "GetFeedsOptions",
+          "output": "ActionList, count, error",
+          "operations": ["delegates to activities_model.GetFeeds"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "activities_model.GetFeeds",
+          "type": "repository",
+          "file_path": "models/activities/action_list.go",
+          "input": "GetFeedsOptions",
+          "output": "ActionList, count, error",
+          "operations": ["build query condition based on actor/visibility", "paginated query on action table", "LoadAttributes (batch load users, repos, issues, comments)"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "action", "description": "paginated query with conditions"},
+            {"operation": "SELECT", "table": "user", "description": "LoadActUsers batch"},
+            {"operation": "SELECT", "table": "repository", "description": "LoadRepositories batch"},
+            {"operation": "SELECT", "table": "user", "description": "loadRepoOwner batch"},
+            {"operation": "SELECT", "table": "issue", "description": "LoadIssues batch"},
+            {"operation": "SELECT", "table": "comment", "description": "LoadComments batch"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToActivities",
+          "type": "utility",
+          "file_path": "services/convert/activity.go",
+          "input": "ActionList, doer",
+          "output": "[]*api.Activity",
+          "operations": ["for each action: GetDoerRepoPermission (N+1 pattern)", "convert to API struct with ToUser, ToRepo, ToAPIComment"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access/collaboration/team", "description": "GetDoerRepoPermission per action (N+1)"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "activities_model.Action",
+          "to": "api.Activity",
+          "component": "convert.ToActivity",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "OpType", "target_field": "OpType", "transformation": "computed"},
+            {"source_field": "ActUser", "target_field": "ActUser", "transformation": "enriched"},
+            {"source_field": "Repo", "target_field": "Repo", "transformation": "enriched"},
+            {"source_field": "CreatedUnix", "target_field": "Created", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "org not found", "handler": "orgAssignment middleware", "response_code": 404, "response": "notFound"},
+        {"condition": "IsOrgMember fails", "handler": "ListOrgActivityFeeds", "response_code": 500, "response": "internal error"},
+        {"condition": "GetFeeds fails", "handler": "ListOrgActivityFeeds", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-036",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/repos",
+      "description": "Deletes all repositories in an organization asynchronously in background",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true) + reqOrgOwnership()",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization verified as owned by doer",
+          "operations": ["resolve org", "verify ownership"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetOrgByName"},
+            {"operation": "SELECT", "table": "team_user+team", "description": "reqOrgOwnership check"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.DeleteOrgRepos",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "ctx with org",
+          "output": "202 Accepted or 204 No Content",
+          "operations": ["get all repo IDs for org", "if empty return 204", "spawn background goroutine", "return 202"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repository", "description": "GetOrgRepositoryIDs: SELECT id FROM repository WHERE owner_id=?"}],
+          "cache_ops": [],
+          "async": true
+        },
+        {
+          "step": 3,
+          "component": "org.deleteOrgReposBackground",
+          "type": "service",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "org, repoIDs, doer",
+          "output": "none (background)",
+          "operations": ["for each repoID: GetRepositoryByID then DeleteRepository", "log errors as system notices"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "repository", "description": "GetRepositoryByID per repo"},
+            {"operation": "DELETE", "table": "multiple", "description": "DeleteRepository: cascading delete of repo and all related data"}
+          ],
+          "cache_ops": [],
+          "async": true
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "org not found", "handler": "orgAssignment middleware", "response_code": 404, "response": "notFound"},
+        {"condition": "not org owner", "handler": "reqOrgOwnership middleware", "response_code": 403, "response": "forbidden"},
+        {"condition": "GetOrgRepositoryIDs fails", "handler": "DeleteOrgRepos", "response_code": 500, "response": "internal error"},
+        {"condition": "background deletion fails", "handler": "deleteOrgReposBackground", "response_code": 0, "response": "logged as system notice, no HTTP response"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-037",
+      "http_method": "POST",
+      "path": "/api/v1/orgs/{org}/avatar",
+      "description": "Upload and set a custom avatar for an organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true) + reqOrgOwnership()",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["resolve org", "verify ownership"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetOrgByName"},
+            {"operation": "SELECT", "table": "team_user+team", "description": "reqOrgOwnership check"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.UpdateAvatar",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/avatar.go",
+          "input": "UpdateUserAvatarOption (base64 image)",
+          "output": "204 No Content",
+          "operations": ["base64 decode image", "call user_service.UploadAvatar"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_service.UploadAvatar",
+          "type": "service",
+          "file_path": "services/user/avatar.go",
+          "input": "user, image data bytes",
+          "output": "error",
+          "operations": ["ProcessAvatarImage (decode, validate, crop, resize)", "within transaction: update user cols, save to storage"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "user", "description": "UpdateUserCols: set use_custom_avatar=true, avatar=hash"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "storage.SaveFrom(storage.Avatars, ...)",
+          "type": "utility",
+          "file_path": "modules/storage/storage.go",
+          "input": "avatar path, image bytes",
+          "output": "error",
+          "operations": ["write avatar file to configured storage backend"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "base64 string",
+          "to": "[]byte (processed PNG)",
+          "component": "avatar.ProcessAvatarImage",
+          "mappings": [
+            {"source_field": "image", "target_field": "avatarData", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "invalid base64", "handler": "UpdateAvatar", "response_code": 400, "response": "error"},
+        {"condition": "unsupported image type", "handler": "UploadAvatar", "response_code": 500, "response": "internal error"},
+        {"condition": "image too large (width/height)", "handler": "UploadAvatar", "response_code": 500, "response": "internal error"},
+        {"condition": "storage write fails", "handler": "UploadAvatar", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-038",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/avatar",
+      "description": "Delete the custom avatar of an organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true) + reqOrgOwnership()",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["resolve org", "verify ownership"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetOrgByName"},
+            {"operation": "SELECT", "table": "team_user+team", "description": "reqOrgOwnership check"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.DeleteAvatar",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/avatar.go",
+          "input": "ctx with org",
+          "output": "204 No Content",
+          "operations": ["call user_service.DeleteAvatar"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_service.DeleteAvatar",
+          "type": "service",
+          "file_path": "services/user/avatar.go",
+          "input": "user",
+          "output": "error",
+          "operations": ["within transaction: set use_custom_avatar=false, avatar=empty", "delete avatar file from storage"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "user", "description": "set avatar='', use_custom_avatar=false"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "storage.Avatars.Delete",
+          "type": "utility",
+          "file_path": "modules/storage/storage.go",
+          "input": "avatar relative path",
+          "output": "error",
+          "operations": ["delete avatar file from storage backend"],
+          "calls_external": true,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "org not found", "handler": "orgAssignment middleware", "response_code": 404, "response": "notFound"},
+        {"condition": "DB update fails", "handler": "DeleteAvatar", "response_code": 500, "response": "internal error"},
+        {"condition": "storage delete fails (non ErrNotExist)", "handler": "DeleteAvatar", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-039",
+      "http_method": "GET",
+      "path": "/api/v1/orgs/{org}/actions/secrets",
+      "description": "List an organization's actions secrets (names and metadata only, not values)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true) + reqOrgOwnership()",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["resolve org", "verify ownership"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetOrgByName"},
+            {"operation": "SELECT", "table": "team_user+team", "description": "reqOrgOwnership check"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.Action.ListActionsSecrets",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/action.go",
+          "input": "ctx with org",
+          "output": "JSON array of secrets",
+          "operations": ["build FindSecretsOptions with OwnerID and pagination", "db.FindAndCount", "map to API structs"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "secret", "description": "FindAndCount with owner_id=orgID, repo_id=0, paginated"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "secret_model.Secret",
+          "to": "api.Secret",
+          "component": "ListActionsSecrets inline",
+          "mappings": [
+            {"source_field": "Name", "target_field": "Name", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix", "target_field": "Created", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "org not found", "handler": "orgAssignment middleware", "response_code": 404, "response": "notFound"},
+        {"condition": "db query fails", "handler": "ListActionsSecrets", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-040",
+      "http_method": "PUT",
+      "path": "/api/v1/orgs/{org}/actions/secrets/{secretname}",
+      "description": "Create or update a secret value in an organization",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true) + reqOrgOwnership()",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["resolve org", "verify ownership"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetOrgByName"},
+            {"operation": "SELECT", "table": "team_user+team", "description": "reqOrgOwnership check"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.Action.CreateOrUpdateSecret",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/action.go",
+          "input": "CreateOrUpdateSecretOption + secretname path param",
+          "output": "201 Created or 204 No Content",
+          "operations": ["extract form", "call secret_service.CreateOrUpdateSecret"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "secret_service.CreateOrUpdateSecret",
+          "type": "service",
+          "file_path": "services/secrets/secrets.go",
+          "input": "ownerID, repoID=0, name, data, description",
+          "output": "secret, created bool, error",
+          "operations": ["ValidateName (regex + forbidden prefix check)", "find existing secret by name", "if not found: InsertEncryptedSecret", "if found: UpdateSecret"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "secret", "description": "find existing secret by owner_id, repo_id, name"},
+            {"operation": "INSERT", "table": "secret", "description": "InsertEncryptedSecret if new (encrypts data with SECRET_KEY)"},
+            {"operation": "UPDATE", "table": "secret", "description": "UpdateSecret if existing (re-encrypts data)"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "plaintext data string",
+          "to": "encrypted data in DB",
+          "component": "secret_model.InsertEncryptedSecret / UpdateSecret",
+          "mappings": [
+            {"source_field": "data", "target_field": "Data", "transformation": "computed"},
+            {"source_field": "name", "target_field": "Name", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "invalid name (regex/prefix)", "handler": "CreateOrUpdateSecret", "response_code": 400, "response": "error"},
+        {"condition": "data too long (>65536)", "handler": "InsertEncryptedSecret/UpdateSecret", "response_code": 500, "response": "internal error"},
+        {"condition": "encryption fails", "handler": "CreateOrUpdateSecret", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-041",
+      "http_method": "DELETE",
+      "path": "/api/v1/orgs/{org}/actions/secrets/{secretname}",
+      "description": "Delete a secret from an organization by name",
+      "steps": [
+        {
+          "step": 1,
+          "component": "orgAssignment(true) + reqOrgOwnership()",
+          "type": "utility",
+          "file_path": "routers/api/v1/api.go",
+          "input": "path param {org}",
+          "output": "ctx.Org.Organization",
+          "operations": ["resolve org", "verify ownership"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "user", "description": "GetOrgByName"},
+            {"operation": "SELECT", "table": "team_user+team", "description": "reqOrgOwnership check"}
+          ],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.Action.DeleteSecret",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/action.go",
+          "input": "secretname path param",
+          "output": "204 No Content",
+          "operations": ["call secret_service.DeleteSecretByName"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "secret_service.DeleteSecretByName",
+          "type": "service",
+          "file_path": "services/secrets/secrets.go",
+          "input": "ownerID, repoID=0, name",
+          "output": "error",
+          "operations": ["find secret by name", "verify exactly 1 result", "delete by ID"],
+          "calls_external": false,
+          "database_ops": [
+            {"operation": "SELECT", "table": "secret", "description": "find secret by owner_id, repo_id=0, name"},
+            {"operation": "DELETE", "table": "secret", "description": "DeleteByID"}
+          ],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "secret not found", "handler": "DeleteSecret", "response_code": 404, "response": "notFound"},
+        {"condition": "invalid name", "handler": "DeleteSecret", "response_code": 400, "response": "error"},
+        {"condition": "db error", "handler": "DeleteSecret", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

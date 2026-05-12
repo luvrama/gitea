@@ -1,0 +1,195 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-009",
+      "http_method": "POST",
+      "path": "/api/v1/markdown",
+      "controller_class": "misc",
+      "controller_method": "Markdown",
+      "description": "Render a markdown document as HTML",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Content-Type", "required": true, "description": "Must be application/json"}],
+        "body": {
+          "type": "MarkdownOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "Text", "type": "string", "required": false, "validation": [], "description": "Markdown text to render"},
+            {"name": "Mode", "type": "string", "required": false, "validation": ["one of: empty, markdown, gfm, comment, wiki, file"], "description": "Render mode"},
+            {"name": "Context", "type": "string", "required": false, "validation": [], "description": "URL path context for resolving links. Format: /subpath/{user}/{repo}/src/{branch,commit,tag}/{identifier/path}/{file/dir}"},
+            {"name": "Wiki", "type": "boolean", "required": false, "validation": [], "description": "Deprecated: use Mode=wiki instead"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "text/html",
+          "fields": [{"name": "body", "type": "string", "description": "Rendered HTML content"}]
+        },
+        "errors": [
+          {"status_code": 401, "type": "APIError", "condition": "No valid token provided (reqToken middleware)"},
+          {"status_code": 422, "type": "validationError", "condition": "Invalid form binding or unsupported render mode"},
+          {"status_code": 500, "type": "APIError", "condition": "Internal rendering error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-010",
+      "http_method": "POST",
+      "path": "/api/v1/markdown/raw",
+      "controller_class": "misc",
+      "controller_method": "MarkdownRaw",
+      "description": "Render raw markdown as HTML (no special link handling)",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [{"name": "Content-Type", "required": true, "description": "Must be text/plain"}],
+        "body": {
+          "type": "raw string",
+          "content_type": "text/plain",
+          "fields": [
+            {"name": "body", "type": "string", "required": true, "validation": [], "description": "Raw markdown text in request body"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "text/html",
+          "fields": [{"name": "body", "type": "string", "description": "Rendered HTML content"}]
+        },
+        "errors": [
+          {"status_code": 401, "type": "APIError", "condition": "No valid token provided (reqToken middleware)"},
+          {"status_code": 422, "type": "validationError", "condition": "Rendering validation error"},
+          {"status_code": 500, "type": "APIError", "condition": "Internal rendering error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-011",
+      "http_method": "GET",
+      "path": "/api/v1/gitignore/templates",
+      "controller_class": "misc",
+      "controller_method": "ListGitignoresTemplates",
+      "description": "Returns a list of all gitignore template names",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]string",
+          "fields": [{"name": "body", "type": "[]string", "description": "Array of gitignore template names"}]
+        },
+        "errors": []
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-012",
+      "http_method": "GET",
+      "path": "/api/v1/gitignore/templates/{name}",
+      "controller_class": "misc",
+      "controller_method": "GetGitignoreTemplateInfo",
+      "description": "Returns information about a specific gitignore template",
+      "request": {
+        "path_params": [{"name": "name", "type": "string", "required": true, "validation": ["sanitized via util.PathJoinRelX to prevent path traversal"]}],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "GitignoreTemplateInfo",
+          "fields": [
+            {"name": "name", "type": "string", "description": "Name of the gitignore template"},
+            {"name": "source", "type": "string", "description": "Content of the gitignore template"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Template name does not exist in gitignore directory"}
+        ]
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-013",
+      "http_method": "GET",
+      "path": "/api/v1/licenses",
+      "controller_class": "misc",
+      "controller_method": "ListLicenseTemplates",
+      "description": "Returns a list of all license templates with metadata",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]LicensesTemplateListEntry",
+          "fields": [
+            {"name": "key", "type": "string", "description": "License identifier"},
+            {"name": "name", "type": "string", "description": "License display name"},
+            {"name": "url", "type": "string", "description": "API URL to get full license details"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-014",
+      "http_method": "GET",
+      "path": "/api/v1/licenses/{name}",
+      "controller_class": "misc",
+      "controller_method": "GetLicenseTemplateInfo",
+      "description": "Returns full information about a specific license template including body text",
+      "request": {
+        "path_params": [{"name": "name", "type": "string", "required": true, "validation": ["sanitized via util.PathJoinRelX to prevent path traversal"]}],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "LicenseTemplateInfo",
+          "fields": [
+            {"name": "key", "type": "string", "description": "License identifier"},
+            {"name": "name", "type": "string", "description": "License display name"},
+            {"name": "url", "type": "string", "description": "API URL for this license"},
+            {"name": "implementation", "type": "string", "description": "Static implementation guidance text"},
+            {"name": "body", "type": "string", "description": "Full license text"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "License name does not exist in license directory"}
+        ]
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    }
+  ]
+}

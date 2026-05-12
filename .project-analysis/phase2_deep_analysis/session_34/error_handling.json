@@ -1,0 +1,26 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {"class": "context.APIContext", "file_path": "services/context/api.go", "handles": [{"exception_type": "internal error", "status_code": 500, "response_type": "APIError", "message_template": "Internal Server Error"}]}
+  ],
+  "endpoint_specific": [
+    {"endpoint_id": "ep-226", "path": "/api/v1/repos/{owner}/{repo}/pulls", "error_scenarios": [
+      {"exception": "ErrPullRequestAlreadyExists", "trigger": "Unmerged PR with same targets exists", "status_code": 409, "response": "error", "logged": false, "retryable": false},
+      {"exception": "ErrBlockedUser", "trigger": "Poster blocked by repo owner", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false},
+      {"exception": "ErrMustCollaborator", "trigger": "User not collaborator/member", "status_code": 403, "response": "forbidden", "logged": false, "retryable": false}
+    ]},
+    {"endpoint_id": "ep-229", "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}/merge", "error_scenarios": [
+      {"exception": "ErrIsClosed", "trigger": "PR issue is closed", "status_code": 404, "response": "notFound", "logged": false, "retryable": false},
+      {"exception": "ErrNoPermissionToMerge", "trigger": "User lacks merge permission", "status_code": 405, "response": "empty", "logged": false, "retryable": false},
+      {"exception": "ErrIsWorkInProgress", "trigger": "PR title has WIP prefix", "status_code": 405, "response": "empty", "logged": false, "retryable": false},
+      {"exception": "ErrMergeConflicts", "trigger": "Git merge conflict", "status_code": 409, "response": "ErrMergeConflicts JSON", "logged": false, "retryable": false},
+      {"exception": "ErrInvalidMergeStyle", "trigger": "Merge style not allowed for repo", "status_code": 405, "response": "empty", "logged": false, "retryable": false},
+      {"exception": "ErrAlreadyScheduledToAutoMerge", "trigger": "Auto-merge already scheduled", "status_code": 409, "response": "error", "logged": false, "retryable": false}
+    ]}
+  ],
+  "custom_exceptions": [
+    {"class": "ErrPullRequestAlreadyExists", "file_path": "models/issues/pull.go", "extends": "util.ErrAlreadyExist", "used_in": ["repo.CreatePullRequest"], "http_status": 409},
+    {"class": "ErrMergeConflicts", "file_path": "services/pull/merge.go", "extends": "error", "used_in": ["pull_service.Merge"], "http_status": 409},
+    {"class": "ErrAlreadyScheduledToAutoMerge", "file_path": "models/pull/automerge.go", "extends": "error", "used_in": ["automerge.ScheduleAutoMerge"], "http_status": 409}
+  ]
+}

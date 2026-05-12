@@ -1,0 +1,36 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "attachment.ALLOWED_TYPES",
+      "type": "String",
+      "default_value": ".avif,.cpuprofile,.csv,.dmp,.docx,.fodg,.fodp,.fods,.fodt,.gif,.gz,.jpeg,.jpg,.json,.jsonc,.log,.md,.mov,.mp4,.odf,.odg,.odp,.ods,.odt,.patch,.pdf,.png,.pptx,.svg,.tgz,.txt,.webm,.webp,.xls,.xlsx,.zip",
+      "source_file": "modules/setting/attachment.go",
+      "used_by": [
+        {"class": "attachment_service", "method": "UploadAttachmentForIssue", "file_path": "services/attachment/attachment.go", "usage": "Passed to upload.Verify for type validation", "impact": "Controls which file types can be uploaded"},
+        {"class": "attachment_service", "method": "UpdateAttachment", "file_path": "services/attachment/attachment.go", "usage": "Passed to upload.Verify for rename validation", "impact": "Controls which file extensions are allowed for rename"}
+      ],
+      "affected_endpoints": ["ep-259", "ep-260"]
+    },
+    {
+      "key": "attachment.MAX_SIZE",
+      "type": "Integer",
+      "default_value": "100",
+      "source_file": "modules/setting/attachment.go",
+      "used_by": [
+        {"class": "attachment_service", "method": "UploadAttachmentForIssue", "file_path": "services/attachment/attachment.go", "usage": "MaxSize<<20 used as byte limit for uploads", "impact": "Files exceeding this size (in MB) are rejected with 413"}
+      ],
+      "affected_endpoints": ["ep-259"]
+    },
+    {
+      "key": "attachment.ENABLED",
+      "type": "Boolean",
+      "default_value": "true",
+      "source_file": "modules/setting/attachment.go",
+      "used_by": [
+        {"class": "setting", "method": "loadAttachmentFrom", "file_path": "modules/setting/attachment.go", "usage": "Global toggle for attachment feature", "impact": "When false, attachment uploads may be disabled at middleware level"}
+      ],
+      "affected_endpoints": ["ep-259", "ep-260", "ep-261"]
+    }
+  ]
+}

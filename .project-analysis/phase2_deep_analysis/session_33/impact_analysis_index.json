@@ -1,0 +1,54 @@
+{
+  "endpoints_by_database_table": {
+    "issue_watch": {"read": ["ep-220", "ep-221"], "write": []},
+    "issue": {"read": ["ep-220", "ep-221", "ep-222", "ep-223", "ep-224", "ep-225"], "write": []},
+    "pull_request": {"read": ["ep-222", "ep-223", "ep-224", "ep-225"], "write": []},
+    "user": {"read": ["ep-221", "ep-222"], "write": []},
+    "repository": {"read": ["ep-222", "ep-223", "ep-224", "ep-225"], "write": []},
+    "branch": {"read": ["ep-222", "ep-223", "ep-224"], "write": []},
+    "watch": {"read": ["ep-220"], "write": []},
+    "review": {"read": ["ep-222", "ep-223", "ep-224"], "write": []},
+    "label": {"read": ["ep-222"], "write": []},
+    "milestone": {"read": ["ep-222"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "setting.IsInTesting": ["ep-223", "ep-224"],
+    "API.DefaultPagingNum": ["ep-221", "ep-222"]
+  },
+  "endpoints_by_model_class": {
+    "IssueWatch": ["ep-220", "ep-221"],
+    "PullRequest": ["ep-222", "ep-223", "ep-224", "ep-225"],
+    "Issue": ["ep-220", "ep-221", "ep-222", "ep-223", "ep-224", "ep-225"],
+    "User": ["ep-220", "ep-221", "ep-222"],
+    "Branch": ["ep-222", "ep-223", "ep-224"]
+  },
+  "endpoints_by_service_class": {
+    "pull_service": ["ep-223", "ep-224", "ep-225"],
+    "convert": ["ep-221", "ep-222", "ep-223", "ep-224"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-220": {"reads": ["issue", "issue_watch", "watch"], "writes": []},
+    "ep-221": {"reads": ["issue", "issue_watch", "user"], "writes": []},
+    "ep-222": {"reads": ["user", "pull_request", "issue", "repository", "label", "milestone", "review", "branch"], "writes": []},
+    "ep-223": {"reads": ["pull_request", "issue", "repository", "branch", "review"], "writes": []},
+    "ep-224": {"reads": ["repository", "pull_request", "issue", "branch", "review"], "writes": []},
+    "ep-225": {"reads": ["pull_request", "repository"], "writes": []}
+  },
+  "external_services_by_endpoint": {
+    "ep-220": [],
+    "ep-221": [],
+    "ep-222": [],
+    "ep-223": [],
+    "ep-224": [],
+    "ep-225": []
+  },
+  "config_properties_by_endpoint": {
+    "ep-220": [],
+    "ep-221": ["API.DefaultPagingNum"],
+    "ep-222": ["API.DefaultPagingNum"],
+    "ep-223": ["setting.IsInTesting"],
+    "ep-224": ["setting.IsInTesting"],
+    "ep-225": []
+  }
+}

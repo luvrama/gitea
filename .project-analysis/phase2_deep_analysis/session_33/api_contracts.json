@@ -1,0 +1,248 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-220",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/check",
+      "controller_class": "repo",
+      "controller_method": "CheckIssueSubscription",
+      "description": "Check if the authenticated user is subscribed to an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format: int64"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "WatchInfo",
+          "fields": [
+            {"name": "subscribed", "type": "bool", "description": "Whether user is watching the issue"},
+            {"name": "ignored", "type": "bool", "description": "Inverse of subscribed"},
+            {"name": "reason", "type": "any", "description": "Always nil"},
+            {"name": "created_at", "type": "time.Time", "description": "Issue creation time"},
+            {"name": "url", "type": "string", "description": "Subscriptions API URL"},
+            {"name": "repository_url", "type": "string", "description": "Repository API URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Issue does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-221",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions",
+      "controller_class": "repo",
+      "controller_method": "GetIssueSubscribers",
+      "description": "Get users who subscribed to an issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format: int64"]}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "User ID"},
+            {"name": "login", "type": "string", "description": "Username"},
+            {"name": "full_name", "type": "string", "description": "Full name"},
+            {"name": "email", "type": "string", "description": "Email address"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Issue does not exist"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-222",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls",
+      "controller_class": "repo",
+      "controller_method": "ListPullRequests",
+      "description": "List a repo's pull requests with filtering and pagination",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "base_branch", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "state", "type": "string", "required": false, "default": "open", "validation": ["enum: open, closed, all"]},
+          {"name": "sort", "type": "string", "required": false, "default": null, "validation": ["enum: oldest, recentupdate, recentclose, leastupdate, mostcomment, leastcomment, priority"]},
+          {"name": "milestone", "type": "integer", "required": false, "default": null, "validation": ["format: int64"]},
+          {"name": "labels", "type": "array[integer]", "required": false, "default": null, "validation": ["format: int64"]},
+          {"name": "poster", "type": "string", "required": false, "default": null, "validation": []},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["minimum: 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": ["minimum: 0"]}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]PullRequest",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "PR ID"},
+            {"name": "number", "type": "int64", "description": "PR index number"},
+            {"name": "title", "type": "string", "description": "PR title"},
+            {"name": "state", "type": "string", "description": "open/closed"},
+            {"name": "merged", "type": "bool", "description": "Whether merged"},
+            {"name": "base", "type": "PRBranchInfo", "description": "Base branch info"},
+            {"name": "head", "type": "PRBranchInfo", "description": "Head branch info"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"},
+          {"status_code": 500, "type": "error", "condition": "Internal server error"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-223",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}",
+      "controller_class": "repo",
+      "controller_method": "GetPullRequest",
+      "description": "Get a single pull request by index",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format: int64"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "PullRequest",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "PR ID"},
+            {"name": "number", "type": "int64", "description": "PR index"},
+            {"name": "title", "type": "string", "description": "PR title"},
+            {"name": "body", "type": "string", "description": "PR description"},
+            {"name": "state", "type": "string", "description": "open/closed"},
+            {"name": "merged", "type": "bool", "description": "Whether merged"},
+            {"name": "mergeable", "type": "bool", "description": "Whether can be merged"},
+            {"name": "base", "type": "PRBranchInfo", "description": "Base branch info"},
+            {"name": "head", "type": "PRBranchInfo", "description": "Head branch info"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Pull request not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-224",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{base}/{head}",
+      "controller_class": "repo",
+      "controller_method": "GetPullRequestByBaseHead",
+      "description": "Get a pull request by base and head branch references",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "base", "type": "string", "required": true, "validation": []},
+          {"name": "head", "type": "string", "required": true, "validation": ["Can be branch name or owner:branch or owner/repo:branch"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "PullRequest",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "PR ID"},
+            {"name": "number", "type": "int64", "description": "PR index"},
+            {"name": "title", "type": "string", "description": "PR title"},
+            {"name": "state", "type": "string", "description": "open/closed"},
+            {"name": "merged", "type": "bool", "description": "Whether merged"},
+            {"name": "base", "type": "PRBranchInfo", "description": "Base branch info"},
+            {"name": "head", "type": "PRBranchInfo", "description": "Head branch info"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Pull request or head repo not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-225",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/{index}.{diffType}",
+      "controller_class": "repo",
+      "controller_method": "DownloadPullDiffOrPatch",
+      "description": "Get a pull request diff or patch file",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format: int64"]},
+          {"name": "diffType", "type": "string", "required": true, "validation": ["enum: diff, patch"]}
+        ],
+        "query_params": [
+          {"name": "binary", "type": "boolean", "required": false, "default": false, "validation": []}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "string",
+          "fields": [
+            {"name": "body", "type": "text/plain", "description": "Raw diff or patch content"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Pull request not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

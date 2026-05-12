@@ -1,0 +1,261 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-001",
+      "http_method": "GET",
+      "path": "/api/v1/version",
+      "controller_class": "misc",
+      "controller_method": "Version",
+      "description": "Returns the version of the Gitea application",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "structs.ServerVersion",
+          "fields": [
+            {"name": "version", "type": "string", "description": "Server version string"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-002",
+      "http_method": "GET",
+      "path": "/api/v1/label/templates",
+      "controller_class": "misc",
+      "controller_method": "ListLabelTemplates",
+      "description": "Returns a list of all label template display names",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]string",
+          "fields": [
+            {"name": "[]", "type": "string", "description": "Array of label template display names"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-003",
+      "http_method": "GET",
+      "path": "/api/v1/label/templates/{name}",
+      "controller_class": "misc",
+      "controller_method": "GetLabelTemplate",
+      "description": "Returns all labels in a specific label template",
+      "request": {
+        "path_params": [
+          {"name": "name", "type": "string", "required": true, "validation": ["PathJoinRelX sanitization"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]*api.LabelTemplate",
+          "fields": [
+            {"name": "name", "type": "string", "description": "Label name"},
+            {"name": "exclusive", "type": "bool", "description": "Whether label is exclusive"},
+            {"name": "color", "type": "string", "description": "Label color hex without #"},
+            {"name": "description", "type": "string", "description": "Label description"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Template name not found in labelTemplateFileMap"}
+        ]
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-004",
+      "http_method": "GET",
+      "path": "/api/v1/signing-key.gpg",
+      "controller_class": "misc",
+      "controller_method": "SigningKeyGPG",
+      "description": "Returns the GPG public key of the default signing key",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "text/plain",
+          "fields": [
+            {"name": "body", "type": "string", "description": "GPG armored public key"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "No signing key configured or format is not openpgp"},
+          {"status_code": 500, "type": "APIError", "condition": "Error running gpg --export or reading key"}
+        ]
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-005",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/signing-key.gpg",
+      "controller_class": "misc",
+      "controller_method": "SigningKeyGPG",
+      "description": "Returns the GPG signing key for a given repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "text/plain",
+          "fields": [
+            {"name": "body", "type": "string", "description": "GPG armored public key"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "No signing key configured or format is not openpgp"},
+          {"status_code": 500, "type": "APIError", "condition": "Error running gpg --export or reading key"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-006",
+      "http_method": "GET",
+      "path": "/api/v1/signing-key.pub",
+      "controller_class": "misc",
+      "controller_method": "SigningKeySSH",
+      "description": "Returns the SSH public key of the default signing key",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "text/plain",
+          "fields": [
+            {"name": "body", "type": "string", "description": "SSH public key"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "No signing key configured or format is not ssh"},
+          {"status_code": 500, "type": "APIError", "condition": "Error reading SSH key file"}
+        ]
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-007",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/signing-key.pub",
+      "controller_class": "misc",
+      "controller_method": "SigningKeySSH",
+      "description": "Returns the SSH signing key for a given repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "text/plain",
+          "fields": [
+            {"name": "body", "type": "string", "description": "SSH public key"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "No signing key configured or format is not ssh"},
+          {"status_code": 500, "type": "APIError", "condition": "Error reading SSH key file"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-008",
+      "http_method": "POST",
+      "path": "/api/v1/markup",
+      "controller_class": "misc",
+      "controller_method": "Markup",
+      "description": "Renders a markup document as HTML supporting multiple modes (markdown, comment, wiki, file, gfm)",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [
+          {"name": "Content-Type", "required": true, "description": "application/json"}
+        ],
+        "body": {
+          "type": "structs.MarkupOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "Text", "type": "string", "required": true, "validation": [], "description": "Markup text to render"},
+            {"name": "Mode", "type": "string", "required": false, "validation": ["one of: empty/markdown, gfm, comment, wiki, file"], "description": "Render mode"},
+            {"name": "Context", "type": "string", "required": false, "validation": [], "description": "URL path context for link resolution"},
+            {"name": "Wiki", "type": "bool", "required": false, "validation": ["deprecated, use Mode=wiki"], "description": "Is wiki page (deprecated)"},
+            {"name": "FilePath", "type": "string", "required": false, "validation": [], "description": "File path for extension detection in file mode"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "text/html",
+          "fields": [
+            {"name": "body", "type": "string", "description": "Rendered HTML"}
+          ]
+        },
+        "errors": [
+          {"status_code": 422, "type": "validationError", "condition": "Unsupported render mode or invalid argument"},
+          {"status_code": 500, "type": "APIError", "condition": "Internal rendering error"}
+        ]
+      },
+      "authentication": "none",
+      "rate_limiting": "none",
+      "caching": {"cache_control": "no-transform", "ttl_seconds": null}
+    }
+  ]
+}

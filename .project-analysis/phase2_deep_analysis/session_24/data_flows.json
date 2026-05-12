@@ -1,0 +1,418 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-162",
+      "http_method": "GET",
+      "path": "/api/v1/user/settings",
+      "description": "Returns the authenticated user's settings by converting the already-loaded Doer object",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.GetUserSettings",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/settings.go",
+          "input": "context.APIContext (Doer already loaded)",
+          "output": "api.UserSettings JSON",
+          "operations": ["Convert ctx.Doer to UserSettings struct via convert.User2UserSettings"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "convert.User2UserSettings",
+          "type": "utility",
+          "file_path": "services/convert/user.go",
+          "input": "*user_model.User",
+          "output": "api.UserSettings",
+          "operations": ["Direct field mapping from User model to UserSettings struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "user_model.User",
+          "to": "api.UserSettings",
+          "component": "convert.User2UserSettings",
+          "mappings": [
+            {"source_field": "FullName", "target_field": "full_name", "transformation": "direct_copy"},
+            {"source_field": "Website", "target_field": "website", "transformation": "direct_copy"},
+            {"source_field": "Location", "target_field": "location", "transformation": "direct_copy"},
+            {"source_field": "Language", "target_field": "language", "transformation": "direct_copy"},
+            {"source_field": "Description", "target_field": "description", "transformation": "direct_copy"},
+            {"source_field": "Theme", "target_field": "theme", "transformation": "direct_copy"},
+            {"source_field": "KeepEmailPrivate", "target_field": "hide_email", "transformation": "direct_copy"},
+            {"source_field": "KeepActivityPrivate", "target_field": "hide_activity", "transformation": "direct_copy"},
+            {"source_field": "DiffViewStyle", "target_field": "diff_view_style", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": []
+    },
+    {
+      "endpoint_id": "ep-163",
+      "http_method": "PATCH",
+      "path": "/api/v1/user/settings",
+      "description": "Updates user settings fields and returns the updated settings",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.UpdateUserSettings",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/settings.go",
+          "input": "api.UserSettingsOptions (from bind middleware)",
+          "output": "api.UserSettings JSON",
+          "operations": ["Extract form from context", "Build UpdateOptions from optional fields", "Call user_service.UpdateUser"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user_service.UpdateUser",
+          "type": "service",
+          "file_path": "services/user/update.go",
+          "input": "*user_model.User, *UpdateOptions",
+          "output": "error",
+          "operations": ["Build column list from non-nil optional fields", "Update user struct fields in-memory", "Call UpdateUserCols with specific columns"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "user", "description": "Update only specified columns for user"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "user_model.UpdateUserCols",
+          "type": "repository",
+          "file_path": "models/user/user.go",
+          "input": "*User, cols...string",
+          "output": "error",
+          "operations": ["Validate user fields", "Execute UPDATE with specific columns"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "user", "description": "UPDATE user SET col1=?, col2=? WHERE id=?"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.User2UserSettings",
+          "type": "utility",
+          "file_path": "services/convert/user.go",
+          "input": "*user_model.User (modified in-memory)",
+          "output": "api.UserSettings",
+          "operations": ["Convert updated user to settings response"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "api.UserSettingsOptions",
+          "to": "user_service.UpdateOptions",
+          "component": "user.UpdateUserSettings",
+          "mappings": [
+            {"source_field": "FullName", "target_field": "FullName", "transformation": "computed"},
+            {"source_field": "Website", "target_field": "Website", "transformation": "computed"},
+            {"source_field": "Description", "target_field": "Description", "transformation": "computed"},
+            {"source_field": "Location", "target_field": "Location", "transformation": "computed"},
+            {"source_field": "Language", "target_field": "Language", "transformation": "computed"},
+            {"source_field": "Theme", "target_field": "Theme", "transformation": "computed"},
+            {"source_field": "DiffViewStyle", "target_field": "DiffViewStyle", "transformation": "computed"},
+            {"source_field": "HideEmail", "target_field": "KeepEmailPrivate", "transformation": "computed"},
+            {"source_field": "HideActivity", "target_field": "KeepActivityPrivate", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "UpdateUser returns error", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-164",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/tokens",
+      "description": "Lists access tokens for the specified user with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.UserAssignmentAPI",
+          "type": "utility",
+          "file_path": "services/context/api.go",
+          "input": "path param {username}",
+          "output": "ctx.ContextUser",
+          "operations": ["Resolve username to user, handle redirects"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "Lookup user by lower_name"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.ListAccessTokens",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/app.go",
+          "input": "ctx.ContextUser.ID, pagination params",
+          "output": "[]*api.AccessToken JSON",
+          "operations": ["Build ListAccessTokensOptions", "Call db.FindAndCount", "Map to API structs"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access_token", "description": "SELECT with uid=? ORDER BY created_unix DESC LIMIT/OFFSET"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "auth_model.AccessToken",
+          "to": "api.AccessToken",
+          "component": "user.ListAccessTokens",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "TokenLastEight", "target_field": "token_last_eight", "transformation": "direct_copy"},
+            {"source_field": "Scope.StringSlice()", "target_field": "scopes", "transformation": "computed"},
+            {"source_field": "CreatedUnix.AsTime()", "target_field": "created_at", "transformation": "computed"},
+            {"source_field": "UpdatedUnix.AsTime()", "target_field": "last_used_at", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "db.FindAndCount fails", "handler": "ctx.APIErrorInternal", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-165",
+      "http_method": "POST",
+      "path": "/api/v1/users/{username}/tokens",
+      "description": "Creates a new access token with specified name and scopes",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.CreateAccessToken",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/app.go",
+          "input": "api.CreateAccessTokenOption",
+          "output": "api.AccessToken JSON (with token value)",
+          "operations": ["Check name uniqueness", "Validate and normalize scopes", "Create token"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "auth_model.AccessTokenByNameExists",
+          "type": "repository",
+          "file_path": "models/auth/access_token.go",
+          "input": "*AccessToken (UID, Name)",
+          "output": "bool, error",
+          "operations": ["Check if token name already exists for user"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access_token", "description": "EXISTS check WHERE name=? AND uid=?"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "AccessTokenScope.Normalize",
+          "type": "utility",
+          "file_path": "models/auth/access_token_scope.go",
+          "input": "comma-joined scopes string",
+          "output": "AccessTokenScope, error",
+          "operations": ["Parse scope string into bitmap", "Validate each scope", "Deduplicate and normalize"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "auth_model.NewAccessToken",
+          "type": "repository",
+          "file_path": "models/auth/access_token.go",
+          "input": "*AccessToken",
+          "output": "error",
+          "operations": ["Generate random salt (10 chars)", "Generate random token (20 bytes hex)", "Hash token with SHA256", "Store last 8 chars", "INSERT into access_token"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "access_token", "description": "Insert new token with hash and salt"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "auth_model.AccessToken",
+          "to": "api.AccessToken",
+          "component": "user.CreateAccessToken",
+          "mappings": [
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "Token", "target_field": "sha1", "transformation": "direct_copy"},
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "TokenLastEight", "target_field": "token_last_eight", "transformation": "direct_copy"},
+            {"source_field": "Scope.StringSlice()", "target_field": "scopes", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Token name already exists", "handler": "ctx.APIError", "response_code": 400, "response": "access token name has been used already"},
+        {"condition": "Invalid scope string", "handler": "ctx.APIError", "response_code": 400, "response": "invalid access token scope provided"},
+        {"condition": "Empty scope after normalize", "handler": "ctx.APIError", "response_code": 400, "response": "access token must have a scope"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-166",
+      "http_method": "DELETE",
+      "path": "/api/v1/users/{username}/tokens/{token}",
+      "description": "Deletes an access token identified by ID or name",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.DeleteAccessToken",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/app.go",
+          "input": "path param {id} (token ID or name)",
+          "output": "204 No Content",
+          "operations": ["Parse path param as int64", "If 0, lookup by name", "Delete by ID"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "db.Find[auth_model.AccessToken]",
+          "type": "repository",
+          "file_path": "models/auth/access_token.go",
+          "input": "ListAccessTokensOptions{Name, UserID}",
+          "output": "[]*AccessToken",
+          "operations": ["Find tokens by name for user (only if ID parse fails)"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access_token", "description": "SELECT WHERE name=? AND uid=?"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "auth_model.DeleteAccessTokenByID",
+          "type": "repository",
+          "file_path": "models/auth/access_token.go",
+          "input": "tokenID int64, userID int64",
+          "output": "error",
+          "operations": ["DELETE from access_token WHERE id=? AND uid=?", "Check affected rows == 1"],
+          "calls_external": false,
+          "database_ops": [{"operation": "DELETE", "table": "access_token", "description": "DELETE WHERE id=? AND uid=?"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [],
+      "error_paths": [
+        {"condition": "Name lookup returns 0 results", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"},
+        {"condition": "Name lookup returns >1 results", "handler": "ctx.APIError", "response_code": 422, "response": "multiple matches for token name"},
+        {"condition": "DeleteAccessTokenByID returns ErrAccessTokenNotExist", "handler": "ctx.APIErrorNotFound", "response_code": 404, "response": "not found"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-167",
+      "http_method": "POST",
+      "path": "/api/v1/user/applications/oauth2",
+      "description": "Creates a new OAuth2 application and generates its client secret",
+      "steps": [
+        {
+          "step": 1,
+          "component": "user.CreateOauth2Application",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/app.go",
+          "input": "api.CreateOAuth2ApplicationOptions",
+          "output": "api.OAuth2Application JSON (with secret)",
+          "operations": ["Validate redirect URIs", "Create application", "Generate client secret"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "forms.DetectInvalidOAuth2ApplicationRedirectURI",
+          "type": "utility",
+          "file_path": "services/forms/user_form.go",
+          "input": "[]string redirect URIs",
+          "output": "string (invalid URI or empty)",
+          "operations": ["For each URI, check scheme:path format", "Validate URL or check against custom schemes"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "auth_model.CreateOAuth2Application",
+          "type": "repository",
+          "file_path": "models/auth/oauth2.go",
+          "input": "CreateOAuth2ApplicationOptions",
+          "output": "*OAuth2Application, error",
+          "operations": ["Generate UUID client ID", "Build OAuth2Application struct", "INSERT into oauth2_application"],
+          "calls_external": false,
+          "database_ops": [{"operation": "INSERT", "table": "oauth2_application", "description": "Insert new OAuth2 application with UUID client_id"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "OAuth2Application.GenerateClientSecret",
+          "type": "repository",
+          "file_path": "models/auth/oauth2.go",
+          "input": "*OAuth2Application",
+          "output": "string (plaintext secret), error",
+          "operations": ["Generate 32 random bytes", "Encode as base32 with 'gto_' prefix", "Hash with bcrypt", "UPDATE client_secret column"],
+          "calls_external": false,
+          "database_ops": [{"operation": "UPDATE", "table": "oauth2_application", "description": "UPDATE SET client_secret=bcrypt_hash WHERE id=?"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToOAuth2Application",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*auth.OAuth2Application",
+          "output": "*api.OAuth2Application",
+          "operations": ["Map model fields to API struct"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "auth_model.OAuth2Application",
+          "to": "api.OAuth2Application",
+          "component": "convert.ToOAuth2Application",
+          "mappings": [
+            {"source_field": "ID", "target_field": "id", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "name", "transformation": "direct_copy"},
+            {"source_field": "ClientID", "target_field": "client_id", "transformation": "direct_copy"},
+            {"source_field": "ClientSecret", "target_field": "client_secret", "transformation": "direct_copy"},
+            {"source_field": "ConfidentialClient", "target_field": "confidential_client", "transformation": "direct_copy"},
+            {"source_field": "SkipSecondaryAuthorization", "target_field": "skip_secondary_authorization", "transformation": "direct_copy"},
+            {"source_field": "RedirectURIs", "target_field": "redirect_uris", "transformation": "direct_copy"},
+            {"source_field": "CreatedUnix.AsTime()", "target_field": "created", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid redirect URI detected", "handler": "ctx.APIError", "response_code": 400, "response": "invalid redirect URI: <uri>"},
+        {"condition": "CreateOAuth2Application fails", "handler": "ctx.APIError", "response_code": 400, "response": "error creating oauth2 application"},
+        {"condition": "GenerateClientSecret fails", "handler": "ctx.APIError", "response_code": 400, "response": "error creating application secret"}
+      ]
+    }
+  ]
+}

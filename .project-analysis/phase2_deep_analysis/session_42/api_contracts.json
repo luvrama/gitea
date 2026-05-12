@@ -1,0 +1,342 @@
+{
+  "total_endpoints": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-285",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}",
+      "controller_class": "repo.Action",
+      "controller_method": "GetWorkflowRun",
+      "description": "Gets a specific workflow run by ID",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "run", "type": "integer", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.ActionWorkflowRun",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Run ID"},
+            {"name": "url", "type": "string", "description": "API URL of the run"},
+            {"name": "html_url", "type": "string", "description": "HTML URL of the run"},
+            {"name": "run_number", "type": "int64", "description": "Run index number"},
+            {"name": "run_attempt", "type": "int64", "description": "Current attempt number"},
+            {"name": "event", "type": "string", "description": "Trigger event name"},
+            {"name": "display_title", "type": "string", "description": "Run title"},
+            {"name": "head_branch", "type": "string", "description": "Branch name"},
+            {"name": "head_sha", "type": "string", "description": "Commit SHA"},
+            {"name": "status", "type": "string", "description": "Run status"},
+            {"name": "conclusion", "type": "string", "description": "Run conclusion"},
+            {"name": "started_at", "type": "time", "description": "Start time"},
+            {"name": "completed_at", "type": "time", "description": "Completion time"},
+            {"name": "previous_attempt_url", "type": "*string", "description": "URL of previous attempt or null"},
+            {"name": "path", "type": "string", "description": "Workflow path@ref"},
+            {"name": "repository", "type": "Repository", "description": "Repository info"},
+            {"name": "trigger_actor", "type": "User", "description": "User who triggered this attempt"},
+            {"name": "actor", "type": "User", "description": "User who triggered the initial run"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid request"},
+          {"status_code": 404, "type": "notFound", "condition": "Run not found in repo"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-286",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}",
+      "controller_class": "repo.Action",
+      "controller_method": "GetWorkflowRunAttempt",
+      "description": "Gets a specific workflow run attempt by run ID and attempt number",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "run", "type": "integer", "required": true, "validation": []},
+          {"name": "attempt", "type": "integer", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.ActionWorkflowRun",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Run ID"},
+            {"name": "run_attempt", "type": "int64", "description": "Attempt number"},
+            {"name": "status", "type": "string", "description": "Attempt status"},
+            {"name": "conclusion", "type": "string", "description": "Attempt conclusion"},
+            {"name": "started_at", "type": "time", "description": "Attempt start time"},
+            {"name": "completed_at", "type": "time", "description": "Attempt completion time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid request"},
+          {"status_code": 404, "type": "notFound", "condition": "Run or attempt not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-287",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun",
+      "controller_class": "repo.Action",
+      "controller_method": "RerunWorkflowRun",
+      "description": "Reruns an entire workflow run creating a new attempt",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "run", "type": "integer", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.ActionWorkflowRun",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Run ID"},
+            {"name": "run_attempt", "type": "int64", "description": "New attempt number"},
+            {"name": "status", "type": "string", "description": "New run status"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Run not done or invalid argument"},
+          {"status_code": 403, "type": "forbidden", "condition": "Permission denied"},
+          {"status_code": 404, "type": "notFound", "condition": "Run not found"},
+          {"status_code": 409, "type": "error", "condition": "Attempt already exists"},
+          {"status_code": 422, "type": "validationError", "condition": "Validation failed"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-288",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun-failed-jobs",
+      "controller_class": "repo.Action",
+      "controller_method": "RerunFailedWorkflowRun",
+      "description": "Reruns all failed or cancelled jobs in a workflow run",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "run", "type": "integer", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Run not done or invalid argument"},
+          {"status_code": 403, "type": "forbidden", "condition": "Permission denied"},
+          {"status_code": 404, "type": "notFound", "condition": "Run not found"},
+          {"status_code": 409, "type": "error", "condition": "Attempt already exists"},
+          {"status_code": 422, "type": "validationError", "condition": "Validation failed"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-289",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs/{job_id}/rerun",
+      "controller_class": "repo.Action",
+      "controller_method": "RerunWorkflowJob",
+      "description": "Reruns a specific workflow job in a run",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "run", "type": "integer", "required": true, "validation": []},
+          {"name": "job_id", "type": "integer", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 201,
+          "type": "api.ActionWorkflowJob",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "New job ID"},
+            {"name": "run_id", "type": "int64", "description": "Run ID"},
+            {"name": "name", "type": "string", "description": "Job name"},
+            {"name": "status", "type": "string", "description": "Job status"},
+            {"name": "run_attempt", "type": "int64", "description": "Attempt number"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Run not done or invalid argument"},
+          {"status_code": 403, "type": "forbidden", "condition": "Permission denied"},
+          {"status_code": 404, "type": "notFound", "condition": "Run or job not found"},
+          {"status_code": 409, "type": "error", "condition": "Attempt already exists"},
+          {"status_code": 422, "type": "validationError", "condition": "Validation failed"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-290",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs",
+      "controller_class": "repo.Action",
+      "controller_method": "ListWorkflowRunJobs",
+      "description": "Lists all jobs for a workflow run (latest attempt)",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "run", "type": "integer", "required": true, "validation": ["must be > 0"]}
+        ],
+        "query_params": [
+          {"name": "status", "type": "string", "required": false, "default": null, "validation": ["pending|queued|in_progress|failure|success|skipped"]},
+          {"name": "page", "type": "integer", "required": false, "default": null, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.ActionWorkflowJobsResponse",
+          "fields": [
+            {"name": "total_count", "type": "int64", "description": "Total number of jobs"},
+            {"name": "workflow_jobs", "type": "[]ActionWorkflowJob", "description": "List of jobs"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid status or runID <= 0"},
+          {"status_code": 404, "type": "notFound", "condition": "Run not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-291",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}/jobs",
+      "controller_class": "repo.Action",
+      "controller_method": "ListWorkflowRunAttemptJobs",
+      "description": "Lists all jobs for a specific workflow run attempt",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "run", "type": "integer", "required": true, "validation": []},
+          {"name": "attempt", "type": "integer", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "status", "type": "string", "required": false, "default": null, "validation": ["pending|queued|in_progress|failure|success|skipped"]},
+          {"name": "page", "type": "integer", "required": false, "default": null, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.ActionWorkflowJobsResponse",
+          "fields": [
+            {"name": "total_count", "type": "int64", "description": "Total number of jobs"},
+            {"name": "workflow_jobs", "type": "[]ActionWorkflowJob", "description": "List of jobs"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid status filter"},
+          {"status_code": 404, "type": "notFound", "condition": "Run or attempt not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-292",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}",
+      "controller_class": "repo.Action",
+      "controller_method": "GetWorkflowJob",
+      "description": "Gets a specific workflow job for a workflow run",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "job_id", "type": "integer", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.ActionWorkflowJob",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Job ID"},
+            {"name": "url", "type": "string", "description": "API URL"},
+            {"name": "html_url", "type": "string", "description": "HTML URL"},
+            {"name": "run_id", "type": "int64", "description": "Run ID"},
+            {"name": "run_url", "type": "string", "description": "Run API URL"},
+            {"name": "name", "type": "string", "description": "Job name"},
+            {"name": "labels", "type": "[]string", "description": "Runner labels (runs-on)"},
+            {"name": "run_attempt", "type": "int64", "description": "Attempt number"},
+            {"name": "head_sha", "type": "string", "description": "Commit SHA"},
+            {"name": "head_branch", "type": "string", "description": "Branch name"},
+            {"name": "status", "type": "string", "description": "Job status"},
+            {"name": "conclusion", "type": "string", "description": "Job conclusion"},
+            {"name": "runner_id", "type": "int64", "description": "Runner ID"},
+            {"name": "runner_name", "type": "string", "description": "Runner name"},
+            {"name": "steps", "type": "[]ActionWorkflowStep", "description": "Job steps"},
+            {"name": "created_at", "type": "time", "description": "Creation time"},
+            {"name": "started_at", "type": "time", "description": "Start time"},
+            {"name": "completed_at", "type": "time", "description": "Completion time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid request"},
+          {"status_code": 404, "type": "notFound", "condition": "Job not found or belongs to different repo"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

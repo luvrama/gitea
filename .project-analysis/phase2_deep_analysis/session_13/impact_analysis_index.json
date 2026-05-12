@@ -1,0 +1,51 @@
+{
+  "endpoints_by_database_table": {
+    "label": {"read": ["ep-084", "ep-085", "ep-086"], "write": ["ep-085", "ep-086"]},
+    "issue_label": {"read": [], "write": ["ep-086"]},
+    "comment": {"read": [], "write": ["ep-086"]},
+    "user_blocking": {"read": ["ep-087", "ep-088", "ep-089", "ep-090"], "write": ["ep-089", "ep-090"]},
+    "user": {"read": ["ep-087", "ep-088", "ep-089", "ep-090"], "write": []},
+    "follow": {"read": [], "write": ["ep-089"]},
+    "star": {"read": ["ep-089"], "write": ["ep-089"]},
+    "watch": {"read": ["ep-089"], "write": ["ep-089"]},
+    "issue_assignees": {"read": ["ep-089"], "write": ["ep-089"]},
+    "collaboration": {"read": ["ep-089"], "write": ["ep-089"]},
+    "repo_transfer": {"read": ["ep-089"], "write": ["ep-089"]},
+    "org_user": {"read": ["ep-089", "ep-090"], "write": []}
+  },
+  "endpoints_by_external_service": {},
+  "endpoints_by_config_property": {
+    "API.DefaultPagingNum": ["ep-084", "ep-087"],
+    "API.MaxResponseItems": ["ep-084", "ep-087"]
+  },
+  "endpoints_by_model_class": {
+    "issues_model.Label": ["ep-084", "ep-085", "ep-086"],
+    "user_model.Blocking": ["ep-087", "ep-088", "ep-089", "ep-090"],
+    "user_model.User": ["ep-087", "ep-088", "ep-089", "ep-090"]
+  },
+  "endpoints_by_service_class": {
+    "convert.ToLabel": ["ep-084", "ep-085"],
+    "convert.ToUser": ["ep-087"],
+    "user_service.BlockUser": ["ep-089"],
+    "user_service.UnblockUser": ["ep-090"]
+  },
+  "database_tables_by_endpoint": {
+    "ep-084": {"reads": ["label"], "writes": []},
+    "ep-085": {"reads": ["label"], "writes": ["label"]},
+    "ep-086": {"reads": ["label"], "writes": ["label", "issue_label", "comment"]},
+    "ep-087": {"reads": ["user_blocking", "user"], "writes": []},
+    "ep-088": {"reads": ["user", "user_blocking"], "writes": []},
+    "ep-089": {"reads": ["user", "user_blocking", "org_user", "star", "watch", "issue_assignees", "collaboration", "repo_transfer"], "writes": ["user_blocking", "follow", "star", "watch", "issue_assignees", "collaboration", "repo_transfer"]},
+    "ep-090": {"reads": ["user", "user_blocking", "org_user"], "writes": ["user_blocking"]}
+  },
+  "external_services_by_endpoint": {},
+  "config_properties_by_endpoint": {
+    "ep-084": ["API.DefaultPagingNum", "API.MaxResponseItems"],
+    "ep-085": [],
+    "ep-086": [],
+    "ep-087": ["API.DefaultPagingNum", "API.MaxResponseItems"],
+    "ep-088": [],
+    "ep-089": [],
+    "ep-090": []
+  }
+}

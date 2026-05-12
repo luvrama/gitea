@@ -1,0 +1,113 @@
+{
+  "total_endpoints_analyzed": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-318",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/merge-upstream",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "git"],
+        "note": "Involves git push/merge operations which can be expensive"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "synchronous_blocking",
+          "description": "Git push and merge operations are synchronous and can be slow for large repos",
+          "impact": "Request blocks until git operations complete, potentially seconds for large repos",
+          "file_path": "services/repository/merge_upstream.go",
+          "line_number": 38,
+          "code_snippet": "err = gitrepo.Push(ctx, repo.BaseRepo, repo, git.PushOptions{...})",
+          "recommendation": "Consider async merge with status polling for large repositories"
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P2",
+          "type": "async",
+          "description": "Consider making merge-upstream async for large repos",
+          "estimated_impact": "Prevent request timeouts on large repositories",
+          "implementation": "Queue the merge operation and return a task ID for polling"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-319",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/lock",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Simple DB transaction: SELECT + UPDATE + INSERT"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-320",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/lock",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Simple DB transaction: SELECT + UPDATE + INSERT"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-321",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single paginated query + N ToHook conversions"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "Webhook list is fetched from DB on every request with no caching",
+          "impact": "Low impact since webhook lists are typically small",
+          "file_path": "routers/api/v1/repo/hook.go",
+          "line_number": 62,
+          "code_snippet": "hooks, count, err := db.FindAndCount[webhook.Webhook](ctx, opts)",
+          "recommendation": "Acceptable for typical usage; caching not needed unless high traffic"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-322",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single SELECT by id and repo_id"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-323",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}/tests",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database", "queue"],
+        "note": "SELECT webhook + INSERT hook_task + enqueue"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

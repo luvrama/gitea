@@ -1,0 +1,134 @@
+{
+  "total_endpoints_analyzed": 7,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-375",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/languages",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Single SELECT query, very lightweight"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "caching",
+          "description": "Language stats are computed by background indexer and rarely change - could cache response",
+          "estimated_impact": "Reduce DB load for frequently accessed repos",
+          "implementation": "Add HTTP cache headers or in-memory cache with TTL matching indexer frequency"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-376",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin",
+      "resource_load": {
+        "operations_per_request": 5,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Transaction with multiple queries: count, max, insert pin, insert comment"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-377",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Transaction: delete pin + insert comment"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-378",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/pin/{position}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Transaction: get pin, shift others, update target"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-379",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/pinned",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Get pins, get issues, load attributes (labels, milestones, assignees)"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "unbounded_queries",
+          "description": "No pagination - returns all pinned issues. However, max is limited by MaxPinned setting (default 3)",
+          "impact": "Minimal due to MaxPinned constraint limiting result set",
+          "file_path": "models/issues/issue_pin.go",
+          "line_number": 155,
+          "code_snippet": "db.GetEngine(ctx).Where(\"repo_id = ? AND is_pull = ?\", repoID, isPull).Find(&pins)",
+          "recommendation": "Acceptable given MaxPinned constraint"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-380",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/pulls/pinned",
+      "resource_load": {
+        "operations_per_request": 6,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Get pins, get issues, load attributes, load PRs, load base/head repos for each PR"
+      },
+      "performance_issues": [
+        {
+          "severity": "medium",
+          "type": "n_plus_1_queries",
+          "description": "For each pinned PR, LoadAttributes and LoadBaseRepo/LoadHeadRepo are called individually in a loop",
+          "impact": "Up to 3 * 3 = 9 extra queries for default MaxPinned=3, acceptable but not optimal",
+          "file_path": "routers/api/v1/repo/issue_pin.go",
+          "line_number": 195,
+          "code_snippet": "for i, currentIssue := range issues {\n\tpr := currentIssue.PullRequest\n\terr = pr.LoadAttributes(ctx)",
+          "recommendation": "Batch load PR attributes. Low priority since MaxPinned limits iteration count."
+        }
+      ],
+      "optimization_recommendations": [
+        {
+          "priority": "P3",
+          "type": "query_optimization",
+          "description": "Batch load PR attributes instead of per-item loading",
+          "estimated_impact": "Reduce queries from ~9 to ~3 for default MaxPinned=3",
+          "implementation": "Use batch loading similar to IssueList.LoadPullRequests pattern"
+        }
+      ]
+    },
+    {
+      "endpoint_id": "ep-381",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/new_pin_allowed",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "Two COUNT queries on issue_pin table"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    }
+  ]
+}

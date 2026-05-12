@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "All endpoints require site admin privilege (reqSiteAdmin middleware)",
+      "location": {"class": "api", "method": "reqSiteAdmin", "file_path": "routers/api/v1/api.go", "line_number": 1747},
+      "condition": "User must be site admin",
+      "action": "Return 403 if not admin",
+      "affected_endpoints": ["ep-106", "ep-107", "ep-108", "ep-109", "ep-110", "ep-111", "ep-112", "ep-113"],
+      "code_snippet": "tokenRequiresScopes(auth_model.AccessTokenScopeCategoryAdmin), reqToken(), reqSiteAdmin()"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "Status filter values must be valid workflow status strings",
+      "location": {"class": "shared", "method": "convertToInternal", "file_path": "routers/api/v1/shared/action.go", "line_number": 95},
+      "condition": "Status string not in allowed set",
+      "action": "Return 400 Bad Request",
+      "affected_endpoints": ["ep-106"],
+      "code_snippet": "default: return nil, fmt.Errorf(\"invalid status %s\", s)"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "Unadopted repos are git directories on disk that have no corresponding DB record",
+      "location": {"class": "repo_service", "method": "checkUnadoptedRepositories", "file_path": "services/repository/adopt.go", "line_number": 213},
+      "condition": "Repo exists on filesystem but not in repository table",
+      "action": "Include in unadopted list",
+      "affected_endpoints": ["ep-107"],
+      "code_snippet": "if !repoNames.Contains(repoName) { unadopted.add(path.Join(userName, repoName)) }"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Adopt requires repo NOT in DB but EXISTS on disk",
+      "location": {"class": "admin", "method": "AdoptRepository", "file_path": "routers/api/v1/admin/adopt.go", "line_number": 87},
+      "condition": "has (in DB) || !exist (on disk)",
+      "action": "Return 404 Not Found",
+      "affected_endpoints": ["ep-108"],
+      "code_snippet": "if has || !exist { ctx.APIErrorNotFound(); return }"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Adopted repos are always created as private",
+      "location": {"class": "admin", "method": "AdoptRepository", "file_path": "routers/api/v1/admin/adopt.go", "line_number": 91},
+      "condition": "Always when adopting",
+      "action": "Set IsPrivate: true",
+      "affected_endpoints": ["ep-108"],
+      "code_snippet": "repo_service.CreateRepoOptions{ Name: repoName, IsPrivate: true }"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "eligibility",
+      "description": "User must not have reached repo creation limit to adopt",
+      "location": {"class": "repo_service", "method": "AdoptRepository", "file_path": "services/repository/adopt.go", "line_number": 47},
+      "condition": "!doer.CanCreateRepoIn(owner)",
+      "action": "Return ErrReachLimitOfRepo error",
+      "affected_endpoints": ["ep-108"],
+      "code_snippet": "if !doer.CanCreateRepoIn(owner) { return nil, repo_model.ErrReachLimitOfRepo{} }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "validation",
+      "description": "Delete unadopted requires repo NOT in DB but EXISTS on disk",
+      "location": {"class": "admin", "method": "DeleteUnadoptedRepository", "file_path": "routers/api/v1/admin/adopt.go", "line_number": 131},
+      "condition": "has (in DB) || !exist (on disk)",
+      "action": "Return 404 Not Found",
+      "affected_endpoints": ["ep-109"],
+      "code_snippet": "if has || !exist { ctx.APIErrorNotFound(); return }"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Cron tasks are stored in-memory, not in database",
+      "location": {"class": "cron", "method": "ListTasks", "file_path": "services/cron/cron.go", "line_number": 82},
+      "condition": "Always",
+      "action": "Read from in-memory scheduler and tasks slice",
+      "affected_endpoints": ["ep-110"],
+      "code_snippet": "jobs := scheduler.Jobs()"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Cron task.Run() executes asynchronously with global lock",
+      "location": {"class": "cron", "method": "RunWithUser", "file_path": "services/cron/tasks.go", "line_number": 82},
+      "condition": "Task triggered",
+      "action": "Acquire global lock, run in goroutine via graceful manager",
+      "affected_endpoints": ["ep-111"],
+      "code_snippet": "locked, releaser, err := globallock.TryLock(graceful.GetManager().ShutdownContext(), getCronTaskLockKey(t.Name))"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "validation",
+      "description": "Readme template must exist when auto_init is true",
+      "location": {"class": "repo", "method": "CreateUserRepo", "file_path": "routers/api/v1/repo/repo.go", "line_number": 251},
+      "condition": "opt.AutoInit && len(opt.Readme) > 0 && !slices.Contains(repo_module.Readmes, opt.Readme)",
+      "action": "Return 400 Bad Request",
+      "affected_endpoints": ["ep-112"],
+      "code_snippet": "ctx.APIError(http.StatusBadRequest, fmt.Errorf(\"readme template does not exist\"))"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "business_logic",
+      "description": "Private flag is OR'd with setting.Repository.ForcePrivate",
+      "location": {"class": "repo", "method": "CreateUserRepo", "file_path": "routers/api/v1/repo/repo.go", "line_number": 263},
+      "condition": "Always during repo creation",
+      "action": "IsPrivate = opt.Private || setting.Repository.ForcePrivate",
+      "affected_endpoints": ["ep-112"],
+      "code_snippet": "IsPrivate: opt.Private || setting.Repository.ForcePrivate,"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "business_logic",
+      "description": "Registration token reuses existing active token or creates new one",
+      "location": {"class": "shared", "method": "GetRegistrationToken", "file_path": "routers/api/v1/shared/runners.go", "line_number": 28},
+      "condition": "No existing token or token is inactive",
+      "action": "Create new token (deactivates all old tokens in transaction)",
+      "affected_endpoints": ["ep-113"],
+      "code_snippet": "if errors.Is(err, util.ErrNotExist) || (token != nil && !token.IsActive) { token, err = actions_model.NewRunnerToken(ctx, ownerID, repoID) }"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "total_properties": 1,
+  "properties": [
+    {
+      "key": "actions.MAX_RERUN_ATTEMPTS",
+      "type": "Integer",
+      "default_value": "50",
+      "source_file": "modules/setting/actions.go",
+      "used_by": [{"class": "actions_service", "method": "validateRerun", "file_path": "services/actions/rerun.go", "usage": "Compare latest attempt number against cap", "impact": "Limits how many times a workflow run can be rerun"}],
+      "affected_endpoints": ["ep-287", "ep-288", "ep-289"]
+    }
+  ]
+}

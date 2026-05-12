@@ -1,0 +1,136 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL (configurable)",
+  "total_tables_or_collections": 3,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "reaction",
+      "entity_class": "issues_model.Reaction",
+      "file_path": "models/issues/reaction.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk", "autoincr"]},
+        {"name": "type", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL", "part of UNIQUE(s)"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL", "part of UNIQUE(s)"]},
+        {"name": "comment_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["part of UNIQUE(s)"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL", "part of UNIQUE(s)"]},
+        {"name": "original_author_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": "0", "constraints": ["NOT NULL DEFAULT(0)", "part of UNIQUE(s)"]},
+        {"name": "original_author", "type": "VARCHAR", "code_type": "string", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["part of UNIQUE(s)"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["auto-set on create"]}
+      ],
+      "indexes": [
+        {"name": "UNIQUE(s)", "columns": ["type", "issue_id", "comment_id", "user_id", "original_author_id", "original_author"], "unique": true},
+        {"name": "IDX_reaction_type", "columns": ["type"], "unique": false},
+        {"name": "IDX_reaction_issue_id", "columns": ["issue_id"], "unique": false},
+        {"name": "IDX_reaction_comment_id", "columns": ["comment_id"], "unique": false},
+        {"name": "IDX_reaction_user_id", "columns": ["user_id"], "unique": false},
+        {"name": "IDX_reaction_created_unix", "columns": ["created_unix"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"},
+        {"type": "many-to-one", "target_table": "comment", "join_column": "comment_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "user_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "comment",
+      "entity_class": "issues_model.Comment",
+      "file_path": "models/issues/comment.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "IDX_comment_issue_id", "columns": ["issue_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "user_blocking",
+      "entity_class": "user_model.Blocking",
+      "file_path": "models/user/block.go",
+      "columns": [
+        {"name": "blocker_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "blockee_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "blocker_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "blockee_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-299",
+      "path": "/api/v1/repos/{owner}/{repo}/git/notes/{sha}",
+      "operations": [
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "convert.ToCommit", "description": "lookup commit author/committer by email"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-300",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "operations": [
+        {"store_type": "database", "store_name": "comment", "operation": "SELECT", "method": "issues_model.GetCommentByID", "description": "get comment by ID"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "comment.LoadIssue", "description": "load issue for comment"},
+        {"store_type": "database", "store_name": "reaction", "operation": "SELECT", "method": "issues_model.FindCommentReactions", "description": "find reactions for comment"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "reactions.LoadUsers", "description": "load users for reactions"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-301",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "operations": [
+        {"store_type": "database", "store_name": "comment", "operation": "SELECT", "method": "issues_model.GetCommentByID", "description": "get comment by ID"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "comment.LoadIssue", "description": "load issue for comment"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.IsUserBlockedBy", "description": "check user blocking"},
+        {"store_type": "database", "store_name": "reaction", "operation": "SELECT", "method": "issues_model.CreateReaction", "description": "check existing reaction"},
+        {"store_type": "database", "store_name": "reaction", "operation": "INSERT", "method": "issues_model.CreateReaction", "description": "insert new reaction"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-302",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions",
+      "operations": [
+        {"store_type": "database", "store_name": "comment", "operation": "SELECT", "method": "issues_model.GetCommentByID", "description": "get comment by ID"},
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "comment.LoadIssue", "description": "load issue for comment"},
+        {"store_type": "database", "store_name": "reaction", "operation": "DELETE", "method": "issues_model.DeleteCommentReaction", "description": "delete reaction"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-303",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueWithAttrsByIndex", "description": "get issue with attributes"},
+        {"store_type": "database", "store_name": "reaction", "operation": "SELECT", "method": "issues_model.FindIssueReactions", "description": "find reactions for issue"},
+        {"store_type": "database", "store_name": "user", "operation": "SELECT", "method": "reactions.LoadUsers", "description": "load users for reactions"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-304",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueWithAttrsByIndex", "description": "get issue with attributes"},
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "issue.LoadRepo", "description": "load repo for issue"},
+        {"store_type": "database", "store_name": "user_blocking", "operation": "SELECT", "method": "user_model.IsUserBlockedBy", "description": "check user blocking"},
+        {"store_type": "database", "store_name": "reaction", "operation": "SELECT", "method": "issues_model.CreateReaction", "description": "check existing reaction"},
+        {"store_type": "database", "store_name": "reaction", "operation": "INSERT", "method": "issues_model.CreateReaction", "description": "insert new reaction"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-305",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/reactions",
+      "operations": [
+        {"store_type": "database", "store_name": "issue", "operation": "SELECT", "method": "issues_model.GetIssueWithAttrsByIndex", "description": "get issue with attributes"},
+        {"store_type": "database", "store_name": "reaction", "operation": "DELETE", "method": "issues_model.DeleteIssueReaction", "description": "delete reaction"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,472 @@
+{
+  "total_flows": 6,
+  "flows": [
+    {
+      "endpoint_id": "ep-023",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/notifications",
+      "description": "Mark repo notification threads as read/pinned/unread. Fetches all matching notifications without pagination, then updates each one individually in a loop.",
+      "steps": [
+        {
+          "step": 1,
+          "component": "notify.ReadRepoNotifications",
+          "type": "controller",
+          "file_path": "routers/api/v1/notify/repo.go",
+          "input": "APIContext with query params",
+          "output": "parsed lastRead timestamp, FindNotificationOptions",
+          "operations": ["Parse last_read_at as RFC3339", "Build FindNotificationOptions with UserID, RepoID, UpdatedBeforeUnix", "Parse status-types or default to [unread]"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "db.Find[activities_model.Notification]",
+          "type": "repository",
+          "file_path": "models/activities/notification_list.go",
+          "input": "FindNotificationOptions (no ListOptions = no pagination)",
+          "output": "[]*Notification",
+          "operations": ["Query notification table with user_id, repo_id, status, updated_unix conditions", "NO PAGINATION - loads all matching rows"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "notification", "description": "Find all notifications matching filters without limit"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "activities_model.SetNotificationStatus (loop)",
+          "type": "repository",
+          "file_path": "models/activities/notification.go",
+          "input": "notification ID, user, target status",
+          "output": "*Notification with updated status",
+          "operations": ["For each notification: GetNotificationByID (SELECT by id)", "Verify user ownership", "UPDATE notification SET status WHERE id"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "notification", "description": "GetNotificationByID per item"}, {"operation": "UPDATE", "table": "notification", "description": "Update status per item"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "Notification.LoadAttributes (loop)",
+          "type": "repository",
+          "file_path": "models/activities/notification.go",
+          "input": "*Notification",
+          "output": "Notification with loaded Repo, Issue, User, Comment",
+          "operations": ["loadRepo: GetRepositoryByID", "loadIssue: GetIssueByID + Issue.LoadAttributes", "loadUser: GetUserByID", "loadComment: GetCommentByID"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repository", "description": "Load repo per notification"}, {"operation": "SELECT", "table": "issue", "description": "Load issue per notification"}, {"operation": "SELECT", "table": "user", "description": "Load user per notification"}, {"operation": "SELECT", "table": "comment", "description": "Load comment per notification"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "convert.ToNotificationThread (loop)",
+          "type": "utility",
+          "file_path": "services/convert/notification.go",
+          "input": "*Notification with loaded attributes",
+          "output": "*NotificationThread",
+          "operations": ["GetIndividualUserRepoPermission per notification", "ToRepo conversion", "Issue.GetLastComment per notification", "Build NotificationSubject"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access/collaboration", "description": "GetIndividualUserRepoPermission per item"}, {"operation": "SELECT", "table": "comment", "description": "GetLastComment per item"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "activities_model.Notification",
+          "to": "structs.NotificationThread",
+          "component": "convert.ToNotificationThread",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Unread/Pinned", "transformation": "computed"},
+            {"source_field": "UpdatedUnix", "target_field": "UpdatedAt", "transformation": "computed"},
+            {"source_field": "Repository", "target_field": "Repository", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Invalid last_read_at format", "handler": "ReadRepoNotifications", "response_code": 400, "response": "error message"},
+        {"condition": "db.Find fails", "handler": "ReadRepoNotifications", "response_code": 500, "response": "internal error"},
+        {"condition": "SetNotificationStatus fails", "handler": "ReadRepoNotifications", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-024",
+      "http_method": "GET",
+      "path": "/api/v1/notifications/threads/{id}",
+      "description": "Get a single notification thread by ID with ownership check",
+      "steps": [
+        {
+          "step": 1,
+          "component": "notify.getThread",
+          "type": "controller",
+          "file_path": "routers/api/v1/notify/threads.go",
+          "input": "APIContext with path param id",
+          "output": "*Notification or nil",
+          "operations": ["Parse id from path", "GetNotificationByID", "Check ownership: n.UserID == ctx.Doer.ID || ctx.Doer.IsAdmin"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "notification", "description": "GetNotificationByID by primary key"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "Notification.LoadAttributes",
+          "type": "repository",
+          "file_path": "models/activities/notification.go",
+          "input": "*Notification",
+          "output": "Notification with loaded Repo, Issue, User, Comment",
+          "operations": ["loadRepo", "loadIssue (+ Issue.LoadAttributes)", "loadUser", "loadComment"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repository", "description": "Load repo"}, {"operation": "SELECT", "table": "issue", "description": "Load issue"}, {"operation": "SELECT", "table": "user", "description": "Load user"}, {"operation": "SELECT", "table": "comment", "description": "Load comment if exists"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToNotificationThread",
+          "type": "utility",
+          "file_path": "services/convert/notification.go",
+          "input": "*Notification",
+          "output": "*NotificationThread",
+          "operations": ["GetIndividualUserRepoPermission", "ToRepo", "Build subject based on source type", "GetLastComment for issue/PR subjects"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access/collaboration", "description": "Permission check"}, {"operation": "SELECT", "table": "comment", "description": "GetLastComment"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "activities_model.Notification",
+          "to": "structs.NotificationThread",
+          "component": "convert.ToNotificationThread",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Unread/Pinned", "transformation": "computed"},
+            {"source_field": "UpdatedUnix", "target_field": "UpdatedAt", "transformation": "computed"},
+            {"source_field": "Repository", "target_field": "Repository", "transformation": "enriched"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Notification not found", "handler": "getThread", "response_code": 404, "response": "not found"},
+        {"condition": "Not owner and not admin", "handler": "getThread", "response_code": 403, "response": "forbidden"},
+        {"condition": "LoadAttributes fails (non-comment error)", "handler": "GetThread", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-025",
+      "http_method": "PATCH",
+      "path": "/api/v1/notifications/threads/{id}",
+      "description": "Mark a single notification thread as read/pinned/unread by ID",
+      "steps": [
+        {
+          "step": 1,
+          "component": "notify.getThread",
+          "type": "controller",
+          "file_path": "routers/api/v1/notify/threads.go",
+          "input": "APIContext with path param id",
+          "output": "*Notification or nil",
+          "operations": ["Parse id from path", "GetNotificationByID", "Check ownership"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "notification", "description": "GetNotificationByID"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "activities_model.SetNotificationStatus",
+          "type": "repository",
+          "file_path": "models/activities/notification.go",
+          "input": "notification ID, user, target status",
+          "output": "*Notification with updated status",
+          "operations": ["GetNotificationByID again", "Verify user ownership", "UPDATE status"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "notification", "description": "Re-fetch notification"}, {"operation": "UPDATE", "table": "notification", "description": "Update status column"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "Notification.LoadAttributes",
+          "type": "repository",
+          "file_path": "models/activities/notification.go",
+          "input": "*Notification",
+          "output": "Notification with loaded attributes",
+          "operations": ["loadRepo", "loadIssue", "loadUser", "loadComment"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "repository", "description": "Load repo"}, {"operation": "SELECT", "table": "issue", "description": "Load issue"}, {"operation": "SELECT", "table": "user", "description": "Load user"}, {"operation": "SELECT", "table": "comment", "description": "Load comment"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToNotificationThread",
+          "type": "utility",
+          "file_path": "services/convert/notification.go",
+          "input": "*Notification",
+          "output": "*NotificationThread",
+          "operations": ["GetIndividualUserRepoPermission", "ToRepo", "Build subject", "GetLastComment"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "access/collaboration", "description": "Permission check"}, {"operation": "SELECT", "table": "comment", "description": "GetLastComment"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "activities_model.Notification",
+          "to": "structs.NotificationThread",
+          "component": "convert.ToNotificationThread",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Status", "target_field": "Unread/Pinned", "transformation": "computed"},
+            {"source_field": "UpdatedUnix", "target_field": "UpdatedAt", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Notification not found", "handler": "getThread", "response_code": 404, "response": "not found"},
+        {"condition": "Not owner and not admin", "handler": "getThread", "response_code": 403, "response": "forbidden"},
+        {"condition": "SetNotificationStatus fails", "handler": "ReadThread", "response_code": 500, "response": "internal error"},
+        {"condition": "LoadAttributes fails", "handler": "ReadThread", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-026",
+      "http_method": "GET",
+      "path": "/api/v1/user/orgs",
+      "description": "List the current user's organizations with pagination",
+      "steps": [
+        {
+          "step": 1,
+          "component": "org.ListMyOrgs",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "APIContext",
+          "output": "delegates to listUserOrgs(ctx, ctx.Doer)",
+          "operations": ["Call listUserOrgs with current user"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.listUserOrgs",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "APIContext, *User",
+          "output": "[]*api.Organization",
+          "operations": ["Build FindOrgOptions with pagination and visibility", "Call db.FindAndCount", "Convert each org to API format"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "FindAndCount organizations by user membership with visibility filter"}, {"operation": "COUNT", "table": "user", "description": "Count total matching orgs"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "convert.ToOrganization (loop)",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*Organization",
+          "output": "*api.Organization",
+          "operations": ["Map org fields to API struct", "Generate AvatarLink"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "organization.Organization",
+          "to": "structs.Organization",
+          "component": "convert.ToOrganization",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name/UserName", "transformation": "direct_copy"},
+            {"source_field": "FullName", "target_field": "FullName", "transformation": "direct_copy"},
+            {"source_field": "Visibility", "target_field": "Visibility", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "db.FindAndCount fails", "handler": "listUserOrgs", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-027",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/orgs",
+      "description": "List a user's organizations with pagination and visibility filtering",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.UserAssignmentAPI",
+          "type": "utility",
+          "file_path": "services/context/user.go",
+          "input": "path param username",
+          "output": "ctx.ContextUser set",
+          "operations": ["Resolve username to user (with redirect support)", "Set ctx.ContextUser"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetUserByName or LookupUserRedirect"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "org.ListUserOrgs",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "APIContext with ContextUser",
+          "output": "delegates to listUserOrgs(ctx, ctx.ContextUser)",
+          "operations": ["Call listUserOrgs with context user"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "org.listUserOrgs",
+          "type": "controller",
+          "file_path": "routers/api/v1/org/org.go",
+          "input": "APIContext, *User",
+          "output": "[]*api.Organization",
+          "operations": ["Determine visibility via DoerViewOtherVisibility", "Build FindOrgOptions with pagination", "Call db.FindAndCount", "Convert each org"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user (via org_user join)", "description": "Find orgs user belongs to with visibility <= allowed"}, {"operation": "COUNT", "table": "user", "description": "Count total"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "convert.ToOrganization (loop)",
+          "type": "utility",
+          "file_path": "services/convert/convert.go",
+          "input": "*Organization",
+          "output": "*api.Organization",
+          "operations": ["Map fields", "Generate AvatarLink"],
+          "calls_external": false,
+          "database_ops": [],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "organization.Organization",
+          "to": "structs.Organization",
+          "component": "convert.ToOrganization",
+          "mappings": [
+            {"source_field": "ID", "target_field": "ID", "transformation": "direct_copy"},
+            {"source_field": "Name", "target_field": "Name/UserName", "transformation": "direct_copy"},
+            {"source_field": "Visibility", "target_field": "Visibility", "transformation": "computed"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Username not found", "handler": "UserAssignmentAPI", "response_code": 404, "response": "not found"},
+        {"condition": "db.FindAndCount fails", "handler": "listUserOrgs", "response_code": 500, "response": "internal error"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-028",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/orgs/{org}/permissions",
+      "description": "Get user's permission level in an organization (read/write/admin/owner + can create repo)",
+      "steps": [
+        {
+          "step": 1,
+          "component": "context.UserAssignmentAPI",
+          "type": "utility",
+          "file_path": "services/context/user.go",
+          "input": "path param username",
+          "output": "ctx.ContextUser set",
+          "operations": ["Resolve username to user"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetUserByName"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 2,
+          "component": "user.GetUserByPathParam(ctx, \"org\")",
+          "type": "controller",
+          "file_path": "routers/api/v1/user/helper.go",
+          "input": "path param org",
+          "output": "*user_model.User (the org)",
+          "operations": ["Resolve org name to user record"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "user", "description": "GetUserByName for org"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 3,
+          "component": "organization.HasOrgOrUserVisible",
+          "type": "service",
+          "file_path": "models/organization/org.go",
+          "input": "org user, doer",
+          "output": "bool",
+          "operations": ["Check visibility rules: public/admin/self/member"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "org_user", "description": "IsOrganizationMember check if private org"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 4,
+          "component": "org.GetOrgUserMaxAuthorizeLevel",
+          "type": "repository",
+          "file_path": "models/organization/org.go",
+          "input": "org ID, user ID",
+          "output": "perm.AccessMode",
+          "operations": ["SELECT max(team.authorize) FROM team JOIN team_user WHERE uid=? AND org_id=?"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team JOIN team_user", "description": "Get max authorize level"}],
+          "cache_ops": [],
+          "async": false
+        },
+        {
+          "step": 5,
+          "component": "org.CanCreateOrgRepo",
+          "type": "repository",
+          "file_path": "models/organization/org_user.go",
+          "input": "org ID, user ID",
+          "output": "bool",
+          "operations": ["Check if user is in any team with can_create_org_repo=true"],
+          "calls_external": false,
+          "database_ops": [{"operation": "SELECT", "table": "team JOIN team_user", "description": "Check can_create_org_repo permission"}],
+          "cache_ops": [],
+          "async": false
+        }
+      ],
+      "data_transformations": [
+        {
+          "from": "perm.AccessMode + bool",
+          "to": "structs.OrganizationPermissions",
+          "component": "GetUserOrgsPermissions",
+          "mappings": [
+            {"source_field": "authorizeLevel > AccessModeNone", "target_field": "CanRead", "transformation": "computed"},
+            {"source_field": "authorizeLevel > AccessModeRead", "target_field": "CanWrite", "transformation": "computed"},
+            {"source_field": "authorizeLevel > AccessModeWrite", "target_field": "IsAdmin", "transformation": "computed"},
+            {"source_field": "authorizeLevel > AccessModeAdmin", "target_field": "IsOwner", "transformation": "computed"},
+            {"source_field": "CanCreateOrgRepo result", "target_field": "CanCreateRepository", "transformation": "direct_copy"}
+          ]
+        }
+      ],
+      "error_paths": [
+        {"condition": "Username not found", "handler": "UserAssignmentAPI", "response_code": 404, "response": "not found"},
+        {"condition": "Org user not found", "handler": "GetUserByPathParam", "response_code": 404, "response": "not found"},
+        {"condition": "Org not visible to doer", "handler": "GetUserOrgsPermissions", "response_code": 404, "response": "not found"},
+        {"condition": "GetOrgUserMaxAuthorizeLevel fails", "handler": "GetUserOrgsPermissions", "response_code": 500, "response": "internal error"},
+        {"condition": "CanCreateOrgRepo fails", "handler": "GetUserOrgsPermissions", "response_code": 500, "response": "internal error"}
+      ]
+    }
+  ]
+}

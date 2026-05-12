@@ -1,0 +1,159 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite (via XORM)",
+  "total_tables_or_collections": 3,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "action_variable",
+      "entity_class": "actions_model.ActionVariable",
+      "file_path": "models/actions/variable.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": ["pk autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(owner_repo_name)"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["INDEX", "UNIQUE(owner_repo_name)"]},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["NOT NULL", "UNIQUE(owner_repo_name)"]},
+        {"name": "data", "type": "LONGTEXT", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["NOT NULL", "max 65536 runes"]},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["max 4096 runes"]},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created NOT NULL"]},
+        {"name": "updated_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]}
+      ],
+      "indexes": [
+        {"name": "UQE_action_variable_owner_repo_name", "columns": ["owner_id", "repo_id", "name"], "unique": true},
+        {"name": "IDX_action_variable_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "action_runner",
+      "entity_class": "actions_model.ActionRunner",
+      "file_path": "models/actions/runner.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "uuid", "type": "CHAR(36)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "name", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "version", "type": "VARCHAR(64)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "description", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "base", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "repo_range", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "token_hash", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "token_salt", "type": "VARCHAR(255)", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "last_online", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "last_active", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "agent_labels", "type": "TEXT", "code_type": "[]string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "ephemeral", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "is_disabled", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "false", "constraints": ["NOT NULL DEFAULT false"]},
+        {"name": "created", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]},
+        {"name": "deleted", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["deleted (soft delete)"]}
+      ],
+      "indexes": [
+        {"name": "UQE_action_runner_uuid", "columns": ["uuid"], "unique": true},
+        {"name": "UQE_action_runner_token_hash", "columns": ["token_hash"], "unique": true},
+        {"name": "IDX_action_runner_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "IDX_action_runner_repo_id", "columns": ["repo_id"], "unique": false},
+        {"name": "IDX_action_runner_last_online", "columns": ["last_online"], "unique": false},
+        {"name": "IDX_action_runner_last_active", "columns": ["last_active"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "action_runner_token",
+      "entity_class": "actions_model.ActionRunnerToken",
+      "file_path": "models/actions/runner_token.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": "autoincr", "constraints": []},
+        {"name": "token", "type": "VARCHAR(255)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": true, "default": null, "constraints": ["UNIQUE"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["index"]},
+        {"name": "is_active", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["created"]},
+        {"name": "updated", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["updated"]},
+        {"name": "deleted", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["deleted (soft delete)"]}
+      ],
+      "indexes": [
+        {"name": "UQE_action_runner_token_token", "columns": ["token"], "unique": true},
+        {"name": "IDX_action_runner_token_owner_id", "columns": ["owner_id"], "unique": false},
+        {"name": "IDX_action_runner_token_repo_id", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}
+      ]
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-042",
+      "path": "/api/v1/orgs/{org}/actions/runners/registration-token",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner_token", "operation": "SELECT", "method": "GetLatestRunnerToken", "description": "Get latest token for owner/repo"},
+        {"store_type": "database", "store_name": "action_runner_token", "operation": "UPDATE", "method": "NewRunnerToken", "description": "Deactivate existing tokens"},
+        {"store_type": "database", "store_name": "action_runner_token", "operation": "INSERT", "method": "NewRunnerToken", "description": "Insert new active token"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-043",
+      "path": "/api/v1/orgs/{org}/actions/variables",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "db.FindAndCount", "description": "List variables with pagination"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-044",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "FindVariables", "description": "Find variable by owner_id and name"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-045",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "FindVariables", "description": "Find variable by name"},
+        {"store_type": "database", "store_name": "action_variable", "operation": "DELETE", "method": "DeleteVariable", "description": "Delete variable by ID"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-046",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "FindVariables", "description": "Check if variable exists"},
+        {"store_type": "database", "store_name": "action_variable", "operation": "INSERT", "method": "InsertVariable", "description": "Insert new variable"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-047",
+      "path": "/api/v1/orgs/{org}/actions/variables/{variablename}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_variable", "operation": "SELECT", "method": "FindVariables", "description": "Get existing variable"},
+        {"store_type": "database", "store_name": "action_variable", "operation": "UPDATE", "method": "UpdateVariableCols", "description": "Update name, data, description"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-048",
+      "path": "/api/v1/orgs/{org}/actions/runners",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "db.FindAndCount", "description": "List runners with pagination and optional disabled filter"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-049",
+      "path": "/api/v1/orgs/{org}/actions/runners/{runner_id}",
+      "operations": [
+        {"store_type": "database", "store_name": "action_runner", "operation": "SELECT", "method": "GetRunnerByID", "description": "Get runner by ID"}
+      ]
+    }
+  ]
+}

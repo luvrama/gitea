@@ -1,0 +1,232 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-318",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/merge-upstream",
+      "controller_class": "repo",
+      "controller_method": "MergeUpstream",
+      "description": "Merge a branch from the upstream (base) repository into the fork",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "MergeUpstreamRequest",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "branch", "type": "string", "required": true, "validation": [], "description": "Branch name to merge upstream into"},
+            {"name": "ff_only", "type": "bool", "required": false, "validation": [], "description": "If true, only fast-forward merges are allowed"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "MergeUpstreamResponse",
+          "fields": [
+            {"name": "merge_type", "type": "string", "description": "The merge style used: up-to-date, fast-forward, or merge"}
+          ]
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid argument (not a fork, archived, ff_only failed)"},
+          {"status_code": 404, "type": "notFound", "condition": "Repository or branch not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-319",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/lock",
+      "controller_class": "repo",
+      "controller_method": "LockIssue",
+      "description": "Lock an issue to restrict commenting to users with write access",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": {
+          "type": "LockIssueOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "lock_reason", "type": "string", "required": false, "validation": [], "description": "Reason for locking the issue"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User lacks write permission on issues/pulls"},
+          {"status_code": 404, "type": "notFound", "condition": "Issue not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-320",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/issues/{index}/lock",
+      "controller_class": "repo",
+      "controller_method": "UnlockIssue",
+      "description": "Unlock a previously locked issue",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "index", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 403, "type": "forbidden", "condition": "User lacks write permission on issues/pulls"},
+          {"status_code": 404, "type": "notFound", "condition": "Issue not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-321",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks",
+      "controller_class": "repo",
+      "controller_method": "ListHooks",
+      "description": "List all webhooks configured for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []}
+        ],
+        "query_params": [
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": []},
+          {"name": "limit", "type": "integer", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "HookList",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Webhook ID"},
+            {"name": "name", "type": "string", "description": "Human-readable name"},
+            {"name": "type", "type": "string", "description": "Webhook type (gitea, slack, etc.)"},
+            {"name": "active", "type": "bool", "description": "Whether webhook is active"},
+            {"name": "config", "type": "map[string]string", "description": "Webhook config (url, content_type)"},
+            {"name": "events", "type": "[]string", "description": "Events that trigger this webhook"},
+            {"name": "authorization_header", "type": "string", "description": "Auth header value"},
+            {"name": "updated_at", "type": "datetime", "description": "Last update time"},
+            {"name": "created_at", "type": "datetime", "description": "Creation time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-322",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}",
+      "controller_class": "repo",
+      "controller_method": "GetHook",
+      "description": "Get a specific webhook by ID for a repository",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "Hook",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Webhook ID"},
+            {"name": "name", "type": "string", "description": "Human-readable name"},
+            {"name": "type", "type": "string", "description": "Webhook type"},
+            {"name": "active", "type": "bool", "description": "Whether webhook is active"},
+            {"name": "config", "type": "map[string]string", "description": "Webhook config"},
+            {"name": "events", "type": "[]string", "description": "Events that trigger this webhook"},
+            {"name": "authorization_header", "type": "string", "description": "Auth header value"},
+            {"name": "updated_at", "type": "datetime", "description": "Last update time"},
+            {"name": "created_at", "type": "datetime", "description": "Creation time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Webhook or repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-323",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/hooks/{id}/tests",
+      "controller_class": "repo",
+      "controller_method": "TestHook",
+      "description": "Test a push webhook by sending a test push payload",
+      "request": {
+        "path_params": [
+          {"name": "owner", "type": "string", "required": true, "validation": []},
+          {"name": "repo", "type": "string", "required": true, "validation": []},
+          {"name": "id", "type": "integer", "required": true, "validation": ["format:int64"]}
+        ],
+        "query_params": [
+          {"name": "ref", "type": "string", "required": false, "default": null, "validation": []}
+        ],
+        "headers": [{"name": "Authorization", "required": true, "description": "Bearer token or basic auth"}],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "Webhook or repository not found"}
+        ]
+      },
+      "authentication": "bearer",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

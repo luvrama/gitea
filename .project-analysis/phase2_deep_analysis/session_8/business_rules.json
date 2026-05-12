@@ -1,0 +1,85 @@
+{
+  "total_rules": 8,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Runner must be editable in the org context - runner.OwnerID must match the org's ID",
+      "location": {"class": "ActionRunner", "method": "EditableInContext", "file_path": "models/actions/runner.go", "line_number": 126},
+      "condition": "ownerID > 0 && r.OwnerID == ownerID",
+      "action": "Allow edit/delete; otherwise return 404",
+      "affected_endpoints": ["ep-050", "ep-051"],
+      "code_snippet": "if ownerID > 0 && r.OwnerID == ownerID {\n\treturn true\n}"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "validation",
+      "description": "UpdateRunner requires the 'disabled' field to be non-nil",
+      "location": {"class": "shared", "method": "UpdateRunner", "file_path": "routers/api/v1/shared/runners.go", "line_number": 131},
+      "condition": "form.Disabled == nil",
+      "action": "Return 422 Unprocessable Entity with message '[Disabled]: Required'",
+      "affected_endpoints": ["ep-051"],
+      "code_snippet": "if form.Disabled == nil {\n\tctx.APIError(http.StatusUnprocessableEntity, \"[Disabled]: Required\")\n}"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "business_logic",
+      "description": "SetRunnerDisabled is a no-op if the runner already has the requested disabled state",
+      "location": {"class": "actions_model", "method": "SetRunnerDisabled", "file_path": "models/actions/runner.go", "line_number": 230},
+      "condition": "runner.IsDisabled == isDisabled",
+      "action": "Return nil immediately without DB transaction",
+      "affected_endpoints": ["ep-051"],
+      "code_snippet": "if runner.IsDisabled == isDisabled {\n\treturn nil\n}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "business_logic",
+      "description": "Disabling/enabling a runner increases the task version to notify runners of state changes",
+      "location": {"class": "actions_model", "method": "SetRunnerDisabled", "file_path": "models/actions/runner.go", "line_number": 236},
+      "condition": "runner disabled state changes",
+      "action": "Within transaction: update runner, then increase task version for global and owner scopes",
+      "affected_endpoints": ["ep-051"],
+      "code_snippet": "return db.WithTx(ctx, func(ctx context.Context) error {\n\t...\n\treturn IncreaseTaskVersion(ctx, runner.OwnerID, runner.RepoID)\n})"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "validation",
+      "description": "Status filter values are validated against a fixed set of allowed strings",
+      "location": {"class": "shared", "method": "convertToInternal", "file_path": "routers/api/v1/shared/action.go", "line_number": 87},
+      "condition": "status string not in allowed set",
+      "action": "Return error causing 400 Bad Request",
+      "affected_endpoints": ["ep-052", "ep-053"],
+      "code_snippet": "default:\n\treturn nil, fmt.Errorf(\"invalid status %s\", s)"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Org-level job/run queries use JOIN on repository table to filter by owner_id",
+      "location": {"class": "FindRunJobOptions", "method": "ToJoins", "file_path": "models/actions/run_job_list.go", "line_number": 113},
+      "condition": "opts.OwnerID > 0",
+      "action": "JOIN INNER repository ON repository.id = repo_id AND repository.owner_id = ?",
+      "affected_endpoints": ["ep-052", "ep-053"],
+      "code_snippet": "sess.Join(\"INNER\", \"repository\", \"repository.id = repo_id AND repository.owner_id = ?\", opts.OwnerID)"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Team listing orders by name with Owners team always first",
+      "location": {"class": "organization", "method": "SearchTeam", "file_path": "models/organization/team_list.go", "line_number": 93},
+      "condition": "always",
+      "action": "ORDER BY CASE WHEN name='Owners' THEN '' ELSE lower_name END",
+      "affected_endpoints": ["ep-054", "ep-055"],
+      "code_snippet": "sess.Where(cond).OrderBy(\"CASE WHEN name=? THEN '' ELSE lower_name END\", OwnerTeamName).FindAndCount(&teams)"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "ListUserTeams loads organization info for each team with in-memory caching by org ID",
+      "location": {"class": "convert", "method": "ToTeams", "file_path": "services/convert/convert.go", "line_number": 728},
+      "condition": "loadOrgs=true",
+      "action": "For each team, load org by ID using a map cache to avoid duplicate queries for same org",
+      "affected_endpoints": ["ep-055"],
+      "code_snippet": "apiOrg, ok := cache[t.OrgID]\nif !ok {\n\torg, err := organization.GetOrgByID(ctx, t.OrgID)"
+    }
+  ]
+}

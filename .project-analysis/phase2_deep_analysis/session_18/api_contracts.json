@@ -1,0 +1,237 @@
+{
+  "total_endpoints": 6,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-123",
+      "http_method": "GET",
+      "path": "/api/v1/users/search",
+      "controller_class": "user",
+      "controller_method": "Search",
+      "description": "Search for users by keyword, uid, with pagination",
+      "request": {
+        "path_params": [],
+        "query_params": [
+          {"name": "q", "type": "string", "required": false, "default": "", "validation": []},
+          {"name": "uid", "type": "integer (int64)", "required": false, "default": null, "validation": []},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": 30, "validation": ["max 50 (API.MaxResponseItems)"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "object",
+          "fields": [
+            {"name": "ok", "type": "boolean", "description": "Always true on success"},
+            {"name": "data", "type": "[]api.User", "description": "Array of user objects"}
+          ]
+        },
+        "errors": [
+          {"status_code": 500, "type": "object {ok: false, error: string}", "condition": "Database error during search"}
+        ]
+      },
+      "authentication": "none (public endpoint, but results vary by auth status)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-124",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}",
+      "controller_class": "user",
+      "controller_method": "GetInfo",
+      "description": "Get a user's public profile information",
+      "request": {
+        "path_params": [
+          {"name": "username", "type": "string", "required": true, "validation": ["must exist in user table"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "User ID"},
+            {"name": "login", "type": "string", "description": "Username"},
+            {"name": "full_name", "type": "string", "description": "Full name"},
+            {"name": "email", "type": "string", "description": "Email (placeholder if private)"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"},
+            {"name": "html_url", "type": "string", "description": "Profile URL"},
+            {"name": "created", "type": "datetime", "description": "Account creation time"},
+            {"name": "visibility", "type": "string", "description": "public|limited|private"},
+            {"name": "followers_count", "type": "int", "description": "Number of followers"},
+            {"name": "following_count", "type": "int", "description": "Number following"},
+            {"name": "starred_repos_count", "type": "int", "description": "Number of starred repos"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "User does not exist or is not visible to viewer"}
+        ]
+      },
+      "authentication": "none (optional, affects visibility)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-125",
+      "http_method": "GET",
+      "path": "/api/v1/user",
+      "controller_class": "user",
+      "controller_method": "GetAuthenticatedUser",
+      "description": "Get the currently authenticated user's full profile",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [
+          {"name": "Authorization", "required": true, "description": "Bearer token or Basic auth"}
+        ],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "api.User",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "User ID"},
+            {"name": "login", "type": "string", "description": "Username"},
+            {"name": "full_name", "type": "string", "description": "Full name"},
+            {"name": "email", "type": "string", "description": "Primary email (always shown for self)"},
+            {"name": "avatar_url", "type": "string", "description": "Avatar URL"},
+            {"name": "is_admin", "type": "boolean", "description": "Admin status (shown for self)"},
+            {"name": "login_name", "type": "string", "description": "External login name (shown for self)"},
+            {"name": "source_id", "type": "int64", "description": "Auth source ID (shown for self)"},
+            {"name": "last_login", "type": "datetime", "description": "Last login time (shown for self)"},
+            {"name": "language", "type": "string", "description": "User language (shown for self)"},
+            {"name": "active", "type": "boolean", "description": "Is active (shown for self)"},
+            {"name": "prohibit_login", "type": "boolean", "description": "Login prohibited (shown for self)"}
+          ]
+        },
+        "errors": []
+      },
+      "authentication": "bearer|basic (required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-126",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/heatmap",
+      "controller_class": "user",
+      "controller_method": "GetUserHeatmapData",
+      "description": "Get a user's contribution heatmap data for the past year",
+      "request": {
+        "path_params": [
+          {"name": "username", "type": "string", "required": true, "validation": ["must exist in user table"]}
+        ],
+        "query_params": [],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]UserHeatmapData",
+          "fields": [
+            {"name": "timestamp", "type": "int64 (unix timestamp)", "description": "15-minute interval timestamp"},
+            {"name": "contributions", "type": "int64", "description": "Number of contributions in interval"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "User does not exist"},
+          {"status_code": 500, "type": "internal error", "condition": "Database query failure"}
+        ]
+      },
+      "authentication": "none (optional, affects private activity visibility)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-127",
+      "http_method": "GET",
+      "path": "/api/v1/users/{username}/activities/feeds",
+      "controller_class": "user",
+      "controller_method": "ListUserActivityFeeds",
+      "description": "List a user's activity feeds with optional date and performer filters",
+      "request": {
+        "path_params": [
+          {"name": "username", "type": "string", "required": true, "validation": ["must exist in user table"]}
+        ],
+        "query_params": [
+          {"name": "only-performed-by", "type": "boolean", "required": false, "default": false, "validation": []},
+          {"name": "date", "type": "string (YYYY-MM-DD)", "required": false, "default": null, "validation": ["format: date"]},
+          {"name": "page", "type": "integer", "required": false, "default": 1, "validation": ["min 1"]},
+          {"name": "limit", "type": "integer", "required": false, "default": 30, "validation": ["max 50"]}
+        ],
+        "headers": [],
+        "body": null
+      },
+      "response": {
+        "success": {
+          "status_code": 200,
+          "type": "[]api.Activity",
+          "fields": [
+            {"name": "id", "type": "int64", "description": "Action ID"},
+            {"name": "user_id", "type": "int64", "description": "Receiver user ID"},
+            {"name": "op_type", "type": "string", "description": "Operation type (e.g. commit_repo)"},
+            {"name": "act_user_id", "type": "int64", "description": "Actor user ID"},
+            {"name": "act_user", "type": "api.User", "description": "Actor user object"},
+            {"name": "repo_id", "type": "int64", "description": "Repository ID"},
+            {"name": "repo", "type": "api.Repository", "description": "Repository object"},
+            {"name": "ref_name", "type": "string", "description": "Git ref name"},
+            {"name": "is_private", "type": "boolean", "description": "Whether action is private"},
+            {"name": "content", "type": "string", "description": "Action content/details"},
+            {"name": "created", "type": "datetime", "description": "Action creation time"}
+          ]
+        },
+        "errors": [
+          {"status_code": 404, "type": "notFound", "condition": "User does not exist"},
+          {"status_code": 500, "type": "internal error", "condition": "Database query failure"}
+        ]
+      },
+      "authentication": "none (optional, affects private feed visibility)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    },
+    {
+      "endpoint_id": "ep-128",
+      "http_method": "POST",
+      "path": "/api/v1/user/avatar",
+      "controller_class": "user",
+      "controller_method": "UpdateAvatar",
+      "description": "Update the authenticated user's avatar with a base64-encoded image",
+      "request": {
+        "path_params": [],
+        "query_params": [],
+        "headers": [
+          {"name": "Authorization", "required": true, "description": "Bearer token or Basic auth"}
+        ],
+        "body": {
+          "type": "UpdateUserAvatarOption",
+          "content_type": "application/json",
+          "fields": [
+            {"name": "image", "type": "string", "required": true, "validation": ["binding:Required", "must be valid base64-encoded image data"], "description": "Base64-encoded image data"}
+          ]
+        }
+      },
+      "response": {
+        "success": {
+          "status_code": 204,
+          "type": "empty",
+          "fields": []
+        },
+        "errors": [
+          {"status_code": 400, "type": "error", "condition": "Invalid base64 encoding"},
+          {"status_code": 500, "type": "internal error", "condition": "Image processing or storage failure"}
+        ]
+      },
+      "authentication": "bearer|basic (required)",
+      "rate_limiting": "none",
+      "caching": {"cache_control": null, "ttl_seconds": null}
+    }
+  ]
+}

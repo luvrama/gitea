@@ -1,0 +1,47 @@
+{
+  "total_patterns": 5,
+  "global_handlers": [
+    {
+      "class": "APIContext",
+      "file_path": "services/context/api.go",
+      "handles": [
+        {"exception_type": "internal error", "status_code": 500, "response_type": "APIError", "message_template": "Error message shown only in dev mode or to admin users"},
+        {"exception_type": "not found", "status_code": 404, "response_type": "map[message,url,errors]", "message_template": "not found"}
+      ]
+    }
+  ],
+  "endpoint_specific": [
+    {
+      "endpoint_id": "ep-009",
+      "path": "/api/v1/markdown",
+      "error_scenarios": [
+        {"exception": "binding error", "trigger": "Invalid JSON body or missing required fields", "status_code": 422, "response": "APIError with field name and error", "logged": false, "retryable": true},
+        {"exception": "unsupported mode", "trigger": "Mode not in [empty, markdown, gfm, comment, wiki, file]", "status_code": 422, "response": "HTTP error: unsupported render mode: X", "logged": false, "retryable": false},
+        {"exception": "util.ErrInvalidArgument", "trigger": "Unable to find renderer for content", "status_code": 422, "response": "HTTP error with error message", "logged": false, "retryable": false},
+        {"exception": "render error", "trigger": "Internal markdown rendering failure", "status_code": 500, "response": "HTTP error: failed to render markup", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-010",
+      "path": "/api/v1/markdown/raw",
+      "error_scenarios": [
+        {"exception": "render error", "trigger": "Internal markdown rendering failure", "status_code": 500, "response": "APIError via APIErrorInternal", "logged": true, "retryable": true}
+      ]
+    },
+    {
+      "endpoint_id": "ep-012",
+      "path": "/api/v1/gitignore/templates/{name}",
+      "error_scenarios": [
+        {"exception": "file not found", "trigger": "Gitignore template name doesn't exist in any layer", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+      ]
+    },
+    {
+      "endpoint_id": "ep-014",
+      "path": "/api/v1/licenses/{name}",
+      "error_scenarios": [
+        {"exception": "file not found", "trigger": "License template name doesn't exist in any layer", "status_code": 404, "response": "notFound", "logged": false, "retryable": false}
+      ]
+    }
+  ],
+  "custom_exceptions": []
+}

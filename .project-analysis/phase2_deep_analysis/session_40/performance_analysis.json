@@ -1,0 +1,142 @@
+{
+  "total_endpoints_analyzed": 8,
+  "endpoints": [
+    {
+      "endpoint_id": "ep-269",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT to check existence + 1 INSERT"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-270",
+      "http_method": "PUT",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "resource_load": {
+        "operations_per_request": 2,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT to find + 1 UPDATE"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-271",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/variables",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 paginated SELECT with count"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-272",
+      "http_method": "POST",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/registration-token",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT + 1 UPDATE (deactivate) + 1 INSERT (new token) in worst case"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-273",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 paginated SELECT with count"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "no_caching",
+          "description": "Runner list is queried from DB on every request with no caching",
+          "impact": "Minimal for typical usage patterns; runners list is small",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "line_number": 50,
+          "code_snippet": "runners, total, err := db.FindAndCount[actions_model.ActionRunner](ctx, opts)",
+          "recommendation": "Acceptable for current scale; consider caching if runner count grows significantly"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-274",
+      "http_method": "GET",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 1,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT by ID"
+      },
+      "performance_issues": [],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-275",
+      "http_method": "DELETE",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 3,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT (getRunnerByID) + 1 SELECT (DeleteRunner verifies existence) + 1 DELETE"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "DeleteRunner in model re-fetches runner by ID before deleting (redundant with getRunnerByID)",
+          "impact": "One extra SELECT per delete; negligible for infrequent operation",
+          "file_path": "models/actions/runner.go",
+          "line_number": 244,
+          "code_snippet": "if _, err := GetRunnerByID(ctx, id); err != nil { return err }",
+          "recommendation": "Could skip re-fetch since caller already verified existence, but impact is minimal"
+        }
+      ],
+      "optimization_recommendations": []
+    },
+    {
+      "endpoint_id": "ep-276",
+      "http_method": "PATCH",
+      "path": "/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}",
+      "resource_load": {
+        "operations_per_request": 4,
+        "total_operations_per_sec_target": null,
+        "resources_impacted": ["database"],
+        "note": "1 SELECT (get) + 1 UPDATE (disable) + 1 UPDATE (task version) + 1 SELECT (re-get for response)"
+      },
+      "performance_issues": [
+        {
+          "severity": "low",
+          "type": "n_plus_1_queries",
+          "description": "After updating, GetRunner is called again to return the updated runner (re-fetches from DB)",
+          "impact": "One extra SELECT; acceptable for infrequent operation",
+          "file_path": "routers/api/v1/shared/runners.go",
+          "line_number": 130,
+          "code_snippet": "GetRunner(ctx, ownerID, repoID, runnerID)",
+          "recommendation": "Could return the already-loaded runner with updated fields instead of re-querying"
+        }
+      ],
+      "optimization_recommendations": []
+    }
+  ]
+}

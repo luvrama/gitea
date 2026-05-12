@@ -1,0 +1,125 @@
+{
+  "total_rules": 12,
+  "rules": [
+    {
+      "rule_id": "br-001",
+      "category": "authorization",
+      "description": "Team endpoints require team membership or org ownership (reqTeamMembership middleware)",
+      "location": {"class": "api", "method": "reqTeamMembership", "file_path": "routers/api/v1/api.go", "line_number": 488},
+      "condition": "User is not site admin AND not org owner AND not team member",
+      "action": "Return 404 (if not org member) or 403 (if org member but not team member)",
+      "affected_endpoints": ["ep-056", "ep-060", "ep-061"],
+      "code_snippet": "if isTeamMember, err := organization.IsTeamMember(ctx, orgID, ctx.Org.Team.ID, ctx.Doer.ID); !isTeamMember {"
+    },
+    {
+      "rule_id": "br-002",
+      "category": "authorization",
+      "description": "Mutating team operations require org ownership (reqOrgOwnership middleware)",
+      "location": {"class": "api", "method": "reqOrgOwnership", "file_path": "routers/api/v1/api.go", "line_number": 455},
+      "condition": "User is not site admin AND not org owner",
+      "action": "Return 404 (for team-based routes) or 403 (for org-based routes)",
+      "affected_endpoints": ["ep-057", "ep-058", "ep-059", "ep-062", "ep-063"],
+      "code_snippet": "isOwner, err := organization.IsOrganizationOwner(ctx, orgID, ctx.Doer.ID)"
+    },
+    {
+      "rule_id": "br-003",
+      "category": "validation",
+      "description": "Team name 'new' is reserved and cannot be used",
+      "location": {"class": "organization", "method": "IsUsableTeamName", "file_path": "models/organization/team.go", "line_number": 192},
+      "condition": "name == 'new'",
+      "action": "Return ErrNameReserved error",
+      "affected_endpoints": ["ep-057", "ep-058"],
+      "code_snippet": "case \"new\": return db.ErrNameReserved{Name: name}"
+    },
+    {
+      "rule_id": "br-004",
+      "category": "validation",
+      "description": "Team name must be unique within organization (case-insensitive)",
+      "location": {"class": "org_service", "method": "NewTeam", "file_path": "services/org/team.go", "line_number": 47},
+      "condition": "Team with same lower_name exists in same org_id",
+      "action": "Return ErrTeamAlreadyExist",
+      "affected_endpoints": ["ep-057", "ep-058"],
+      "code_snippet": "has, err = db.Exist[organization.Team](ctx, builder.Eq{\"org_id\": t.OrgID, \"lower_name\": t.LowerName})"
+    },
+    {
+      "rule_id": "br-005",
+      "category": "business_logic",
+      "description": "Non-admin teams must have units specified (either UnitsMap or Units)",
+      "location": {"class": "org", "method": "CreateTeam", "file_path": "routers/api/v1/org/team.go", "line_number": 175},
+      "condition": "team.AccessMode < perm.AccessModeAdmin AND no units provided",
+      "action": "Return 500 internal error",
+      "affected_endpoints": ["ep-057"],
+      "code_snippet": "ctx.APIErrorInternal(errors.New(\"units permission should not be empty\"))"
+    },
+    {
+      "rule_id": "br-006",
+      "category": "business_logic",
+      "description": "Admin teams automatically get all unit types with admin access",
+      "location": {"class": "org", "method": "attachAdminTeamUnits", "file_path": "routers/api/v1/org/team.go", "line_number": 131},
+      "condition": "team.AccessMode >= perm.AccessModeAdmin",
+      "action": "Attach all repo unit types with admin access (external tracker/wiki get read)",
+      "affected_endpoints": ["ep-057", "ep-058"],
+      "code_snippet": "for _, ut := range unit_model.AllRepoUnitTypes { up := perm.AccessModeAdmin }"
+    },
+    {
+      "rule_id": "br-007",
+      "category": "business_logic",
+      "description": "Owner team cannot have CanCreateOrgRepo set to false",
+      "location": {"class": "org", "method": "EditTeam", "file_path": "routers/api/v1/org/team.go", "line_number": 207},
+      "condition": "team.IsOwnerTeam() AND form.CanCreateOrgRepo != nil",
+      "action": "Force CanCreateOrgRepo to true for owner team",
+      "affected_endpoints": ["ep-058"],
+      "code_snippet": "team.CanCreateOrgRepo = team.IsOwnerTeam() || *form.CanCreateOrgRepo"
+    },
+    {
+      "rule_id": "br-008",
+      "category": "business_logic",
+      "description": "Owner team permission and includes_all_repositories cannot be changed",
+      "location": {"class": "org", "method": "EditTeam", "file_path": "routers/api/v1/org/team.go", "line_number": 217},
+      "condition": "team.IsOwnerTeam()",
+      "action": "Skip permission and includes_all changes",
+      "affected_endpoints": ["ep-058"],
+      "code_snippet": "if !team.IsOwnerTeam() && len(form.Permission) != 0 {"
+    },
+    {
+      "rule_id": "br-009",
+      "category": "business_logic",
+      "description": "Adding team member also adds user to organization if not already a member",
+      "location": {"class": "org_service", "method": "AddTeamMember", "file_path": "services/org/team.go", "line_number": 155},
+      "condition": "User is not org member",
+      "action": "Insert into org_user table",
+      "affected_endpoints": ["ep-062"],
+      "code_snippet": "if err := organization.AddOrgUser(ctx, team.OrgID, user.ID); err != nil {"
+    },
+    {
+      "rule_id": "br-010",
+      "category": "validation",
+      "description": "Cannot add a user who is blocked by the organization",
+      "location": {"class": "org_service", "method": "AddTeamMember", "file_path": "services/org/team.go", "line_number": 148},
+      "condition": "user_model.IsUserBlockedBy(ctx, user, team.OrgID) returns true",
+      "action": "Return ErrBlockedUser (mapped to 403)",
+      "affected_endpoints": ["ep-062"],
+      "code_snippet": "if user_model.IsUserBlockedBy(ctx, user, team.OrgID) { return user_model.ErrBlockedUser }"
+    },
+    {
+      "rule_id": "br-011",
+      "category": "validation",
+      "description": "Cannot remove last member of owner team",
+      "location": {"class": "org_service", "method": "removeTeamMember", "file_path": "services/org/team.go", "line_number": 186},
+      "condition": "team.IsOwnerTeam() AND team.NumMembers == 1",
+      "action": "Return ErrLastOrgOwner",
+      "affected_endpoints": ["ep-063"],
+      "code_snippet": "if team.IsOwnerTeam() && team.NumMembers == 1 { return organization.ErrLastOrgOwner{UID: user.ID} }"
+    },
+    {
+      "rule_id": "br-012",
+      "category": "business_logic",
+      "description": "Removing team member removes user from org if they have no other team memberships",
+      "location": {"class": "org_service", "method": "removeInvalidOrgUser", "file_path": "services/org/team.go", "line_number": 222},
+      "condition": "User has no remaining team_user records for the org",
+      "action": "Call RemoveOrgUser to remove from org entirely",
+      "affected_endpoints": ["ep-063"],
+      "code_snippet": "if count, err := db.GetEngine(ctx).Count(&organization.TeamUser{UID: user.ID, OrgID: orgID}); count == 0 {"
+    }
+  ]
+}

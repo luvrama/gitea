@@ -1,0 +1,192 @@
+{
+  "database_type": "SQL",
+  "database_technology": "MySQL/PostgreSQL/SQLite3/MSSQL",
+  "total_tables_or_collections": 7,
+  "tables": [
+    {
+      "entity_id": "db-001",
+      "table_or_collection": "repository",
+      "entity_class": "repo_model.Repository",
+      "file_path": "models/repo/repo.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "owner_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "owner_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "lower_name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "name", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_private", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_archived", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "is_fork", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "is_mirror", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "default_branch", "type": "VARCHAR", "code_type": "string", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "size", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_repo_owner_lower", "columns": ["owner_id", "lower_name"], "unique": true}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "user", "join_column": "owner_id"},
+        {"type": "one-to-many", "target_table": "repo_unit", "join_column": "repo_id"},
+        {"type": "one-to-many", "target_table": "issue_pin", "join_column": "repo_id"}
+      ]
+    },
+    {
+      "entity_id": "db-002",
+      "table_or_collection": "repo_unit",
+      "entity_class": "repo_model.RepoUnit",
+      "file_path": "models/repo/repo_unit.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "type", "type": "INT", "code_type": "unit_model.Type", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "config", "type": "TEXT", "code_type": "string", "nullable": true, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [{"name": "idx_repo_unit_repo_type", "columns": ["repo_id", "type"], "unique": true}],
+      "relationships": [{"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}]
+    },
+    {
+      "entity_id": "db-003",
+      "table_or_collection": "language_stat",
+      "entity_class": "repo_model.LanguageStat",
+      "file_path": "models/repo/language_stats.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "language", "type": "VARCHAR(50)", "code_type": "string", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "size", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []},
+        {"name": "is_primary", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [{"name": "idx_lang_stat_repo_lang", "columns": ["repo_id", "language"], "unique": true}],
+      "relationships": [{"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"}]
+    },
+    {
+      "entity_id": "db-004",
+      "table_or_collection": "issue_pin",
+      "entity_class": "issues_model.IssuePin",
+      "file_path": "models/issues/issue_pin.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "issue_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": ["UNIQUE(s)"]},
+        {"name": "is_pull", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "pin_order", "type": "INT", "code_type": "int", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "0", "constraints": []}
+      ],
+      "indexes": [{"name": "UQE_issue_pin_s", "columns": ["repo_id", "issue_id"], "unique": true}],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "issue", "join_column": "issue_id"}
+      ]
+    },
+    {
+      "entity_id": "db-005",
+      "table_or_collection": "action",
+      "entity_class": "activities_model.Action",
+      "file_path": "models/activities/action.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "op_type", "type": "INT", "code_type": "ActionType", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "act_user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "created_unix", "type": "BIGINT", "code_type": "timeutil.TimeStamp", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [
+        {"name": "idx_action_user_created", "columns": ["user_id", "created_unix"], "unique": false},
+        {"name": "idx_action_repo", "columns": ["repo_id"], "unique": false}
+      ],
+      "relationships": [
+        {"type": "many-to-one", "target_table": "repository", "join_column": "repo_id"},
+        {"type": "many-to-one", "target_table": "user", "join_column": "act_user_id"}
+      ]
+    },
+    {
+      "entity_id": "db-006",
+      "table_or_collection": "mirror",
+      "entity_class": "repo_model.Mirror",
+      "file_path": "models/repo/mirror.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "interval", "type": "BIGINT", "code_type": "time.Duration", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []},
+        {"name": "enable_prune", "type": "BOOLEAN", "code_type": "bool", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": "true", "constraints": []}
+      ],
+      "indexes": [],
+      "relationships": [{"type": "one-to-one", "target_table": "repository", "join_column": "repo_id"}]
+    },
+    {
+      "entity_id": "db-007",
+      "table_or_collection": "access",
+      "entity_class": "access_model.Access",
+      "file_path": "models/perm/access/access.go",
+      "columns": [
+        {"name": "id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": true, "indexed": true, "unique": true, "default": null, "constraints": ["autoincr"]},
+        {"name": "user_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "repo_id", "type": "BIGINT", "code_type": "int64", "nullable": false, "primary_key": false, "indexed": true, "unique": false, "default": null, "constraints": []},
+        {"name": "mode", "type": "INT", "code_type": "perm.AccessMode", "nullable": false, "primary_key": false, "indexed": false, "unique": false, "default": null, "constraints": []}
+      ],
+      "indexes": [{"name": "UQE_access_user_repo", "columns": ["user_id", "repo_id"], "unique": true}],
+      "relationships": []
+    }
+  ],
+  "cache_stores": [],
+  "message_queues": [],
+  "operations_by_endpoint": [
+    {
+      "endpoint_id": "ep-367",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "Repository.LoadAttributes", "description": "Load owner and primary language"},
+        {"store_type": "database", "store_name": "repo_unit", "operation": "SELECT", "method": "convert.ToRepo", "description": "Load units for permission check"},
+        {"store_type": "database", "store_name": "release", "operation": "SELECT", "method": "convert.ToRepo", "description": "Count releases"},
+        {"store_type": "database", "store_name": "branch", "operation": "SELECT", "method": "convert.ToRepo", "description": "Count branches"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-368",
+      "path": "/api/v1/repositories/{id}",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "SELECT", "method": "repo_model.GetRepositoryByID", "description": "Get repo by ID"},
+        {"store_type": "database", "store_name": "access", "operation": "SELECT", "method": "access_model.GetDoerRepoPermission", "description": "Check permissions"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-369",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "UPDATE", "method": "repo_service.UpdateRepository", "description": "Update repo properties"},
+        {"store_type": "database", "store_name": "repo_unit", "operation": "INSERT", "method": "repo_service.UpdateRepositoryUnits", "description": "Add units"},
+        {"store_type": "database", "store_name": "repo_unit", "operation": "DELETE", "method": "repo_service.UpdateRepositoryUnits", "description": "Remove units"},
+        {"store_type": "database", "store_name": "mirror", "operation": "UPDATE", "method": "repo_model.UpdateMirror", "description": "Update mirror settings"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-370",
+      "path": "/api/v1/repos/{owner}/{repo}",
+      "operations": [
+        {"store_type": "database", "store_name": "repository", "operation": "DELETE", "method": "repo_service.DeleteRepository", "description": "Delete repo and all related data"}
+      ]
+    },
+    {
+      "endpoint_id": "ep-371",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_templates",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-372",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_config",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-373",
+      "path": "/api/v1/repos/{owner}/{repo}/issue_config/validate",
+      "operations": []
+    },
+    {
+      "endpoint_id": "ep-374",
+      "path": "/api/v1/repos/{owner}/{repo}/activities/feeds",
+      "operations": [
+        {"store_type": "database", "store_name": "action", "operation": "SELECT", "method": "activities_model.GetFeeds", "description": "Query activity feeds with pagination"}
+      ]
+    }
+  ]
+}

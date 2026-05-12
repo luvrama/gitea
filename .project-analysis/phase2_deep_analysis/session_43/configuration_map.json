@@ -1,0 +1,29 @@
+{
+  "total_properties": 3,
+  "properties": [
+    {
+      "key": "actions.artifact_storage.STORAGE_TYPE",
+      "type": "String",
+      "default_value": "local",
+      "source_file": "app.ini",
+      "used_by": [{"class": "storage", "method": "Init", "file_path": "modules/storage/storage.go", "usage": "Determines storage backend type", "impact": "Controls whether artifacts are stored locally or in object storage"}],
+      "affected_endpoints": ["ep-294", "ep-298"]
+    },
+    {
+      "key": "actions.artifact_storage.SERVE_DIRECT",
+      "type": "Boolean",
+      "default_value": "false",
+      "source_file": "app.ini",
+      "used_by": [{"class": "actions_service", "method": "DownloadArtifactV4ServeDirect", "file_path": "services/actions/artifacts.go", "usage": "Determines if presigned URLs are used for downloads", "impact": "If true and using minio/azure, redirects directly to storage; otherwise serves through app"}],
+      "affected_endpoints": ["ep-298"]
+    },
+    {
+      "key": "SECRET_KEY (general token signing)",
+      "type": "String",
+      "default_value": "generated",
+      "source_file": "app.ini",
+      "used_by": [{"class": "repo", "method": "buildSignature", "file_path": "routers/api/v1/repo/action.go", "usage": "HMAC key for signing artifact download URLs", "impact": "Used to create time-limited signed URLs for artifact downloads"}],
+      "affected_endpoints": ["ep-298"]
+    }
+  ]
+}
