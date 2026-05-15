@@ -1,0 +1,1 @@
+If I change the user table schema to add a "department" field, list every API endpoint, service, model, and DTO that references the user entity.

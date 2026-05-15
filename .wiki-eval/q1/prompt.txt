@@ -1,0 +1,1 @@
+List all API endpoints related to repository management. For each, provide: HTTP method, URL path, handler function, file location, and what authentication/permissions are required.

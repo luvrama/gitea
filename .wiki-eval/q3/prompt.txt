@@ -1,0 +1,1 @@
+What is the complete data flow when a user creates a pull request via the API? Trace from the HTTP handler through services, git operations, notifications, and database writes.

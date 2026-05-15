@@ -1,0 +1,1 @@
+Document the complete permission checking chain for the repository API. How does a request go from authentication through org membership, team permissions, collaborator checks, to the final allow/deny?

@@ -1,0 +1,74 @@
+{
+  "project": "gitea",
+  "wikiBranch": "int-analysis",
+  "defaultBranch": "main",
+  "totalQueries": 10,
+  "avgCreditsNoWiki": 1.14,
+  "avgCreditsWiki": 0.31,
+  "creditSavingsPercent": 73,
+  "avgTimeNoWikiMs": 201948,
+  "avgTimeWikiMs": 52611,
+  "timeSavingsPercent": 73.9,
+  "perQuery": [
+    {
+      "query": "List all API endpoints related to repository management. For each, provide: HTTP",
+      "creditsNoWiki": 2.7,
+      "creditsWiki": 0.35,
+      "savingsPercent": 87
+    },
+    {
+      "query": "If I need to add a new webhook event type, what files across routers, services, ",
+      "creditsNoWiki": 2.21,
+      "creditsWiki": 0.29,
+      "savingsPercent": 86.9
+    },
+    {
+      "query": "What is the complete data flow when a user creates a pull request via the API? T",
+      "creditsNoWiki": 2.45,
+      "creditsWiki": 0.24,
+      "savingsPercent": 90.2
+    },
+    {
+      "query": "What are all the external services called during a repository fork operation? Li",
+      "creditsNoWiki": 0,
+      "creditsWiki": 0.24,
+      "savingsPercent": 0
+    },
+    {
+      "query": "If I change the user table schema to add a \"department\" field, list every API en",
+      "creditsNoWiki": 0.44,
+      "creditsWiki": 0.37,
+      "savingsPercent": 15.9
+    },
+    {
+      "query": "Document the complete permission checking chain for the repository API. How does",
+      "creditsNoWiki": 0,
+      "creditsWiki": 0.35,
+      "savingsPercent": 0
+    },
+    {
+      "query": "What are all the API endpoints that trigger git operations? For each, list the g",
+      "creditsNoWiki": 0,
+      "creditsWiki": 0.31,
+      "savingsPercent": 0
+    },
+    {
+      "query": "Map the complete notification system: what events trigger notifications, how are",
+      "creditsNoWiki": 1.75,
+      "creditsWiki": 0.34,
+      "savingsPercent": 80.6
+    },
+    {
+      "query": "If the database connection pool is exhausted, which API endpoints are affected a",
+      "creditsNoWiki": 1.84,
+      "creditsWiki": 0.29,
+      "savingsPercent": 84.2
+    },
+    {
+      "query": "List every API endpoint that performs file I/O operations (reading/writing to di",
+      "creditsNoWiki": 0,
+      "creditsWiki": 0.3,
+      "savingsPercent": 0
+    }
+  ]
+}
