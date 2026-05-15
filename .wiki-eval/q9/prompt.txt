@@ -1,0 +1,1 @@
+If the database connection pool is exhausted, which API endpoints are affected and how do they handle it? Trace the error propagation path.

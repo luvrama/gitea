@@ -1,0 +1,1 @@
+If I need to add a new webhook event type, what files across routers, services, and models need to change? Trace the full webhook delivery pipeline.
