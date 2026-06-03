@@ -1,0 +1,370 @@
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[32mAll tools are now trusted ([0m[31m![0m[32m). Kiro will execute tools without asking for confirmation.[0m
+Agents can sometimes do unexpected things so understand the risks.
+
+Learn more at [38;5;141mhttps://kiro.dev/docs/cli/chat/security/#using-tools-trust-all-safely[0m
+
+
+[38;5;12m[1m📷 Checkpoints are enabled! (took 10.37s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The user wants to understand the full webhook delivery pipeline in Gitea and what files need to change to add a new webhook event type. I need to trace through models, services, and routers. Let me explore the codebase systematically.
+[38;5;244m - Completed in 0.610s[0m
+[38;5;12m[1m [1.1][0m[0m
+[?25l[0m[?25l[?25l[?25l[0m[0mSearching for: [38;5;141mHookEventType[0m in [38;5;141m/Users/relumalai/workshop/gitea/models/webhook[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0mSearching for files: [38;5;141mmodels/webhook/*.go[0m[38;5;244m (using tool: glob)[0mSearching for files: [38;5;141mservices/webhook/*.go[0m[38;5;244m (using tool: glob)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m2 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/models/webhook
+[38;5;244m - Completed in 0.624s[0m
+[38;5;12m[1m [1.2][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m6 files[0m under current directory
+[38;5;244m - Completed in 0.999s[0m
+[38;5;12m[1m [1.3][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m26 files[0m under current directory
+[38;5;244m - Completed in 0.556s[0m
+[38;5;12m[1m [1.4][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for files: [38;5;141mmodules/webhook/*.go[0m[38;5;244m (using tool: glob)[0mSearching for: [38;5;141mHookEventType[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/webhook[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m2 files[0m under current directory
+[38;5;244m - Completed in 0.593s[0m
+[38;5;12m[1m [1.5][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m38 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/modules/webhook (result is truncated)
+[38;5;244m - Completed in 0.565s[0m
+[38;5;12m[1m [1.6][0m[0m
+[?25l[0m[?25l[0m[0mBatch fs_read operation with [38;5;141m2[0m operations[38;5;244m (using tool: read)[0m
+
+↱ Operation 1: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/webhook/type.go[0m, all lines
+↱ Operation 2: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/webhook/events.go[0m, all lines
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m4865 bytes[0m from /Users/relumalai/workshop/gitea/modules/webhook/type.go
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m510 bytes[0m from /Users/relumalai/workshop/gitea/modules/webhook/events.go
+
+ ⋮ 
+
+[38;5;244m- [0mSummary: 2 operations processed, 2 successful, 0 failed
+[38;5;244m - Completed in 0.545s[0m
+[38;5;12m[1m [1.7][0m[0m
+[?25l[0m[?25l[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/webhook/notifier.go[0m, from line [38;5;141m1[0m to [38;5;141m80[0m[38;5;244m (using tool: read)[0mSearching for: [38;5;141mfunc.*Prepare.*Webhook\b|func.*prepareWebhook[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/webhook[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mfunc.*notify|func.*Notify[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/webhook[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m2624 bytes[0m from /Users/relumalai/workshop/gitea/services/webhook/notifier.go
+[38;5;244m - Completed in 0.651s[0m
+[38;5;12m[1m [1.8][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m3 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/services/webhook
+[38;5;244m - Completed in 0.612s[0m
+[38;5;12m[1m [1.9][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m2 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/services/webhook
+[38;5;244m - Completed in 0.698s[0m
+[38;5;12m[1m [1.10][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/webhook/webhook.go[0m, from line [38;5;141m1[0m to [38;5;141m230[0m[38;5;244m (using tool: read)[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/webhook/payloader.go[0m, from line [38;5;141m1[0m to [38;5;141m120[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m6392 bytes[0m from /Users/relumalai/workshop/gitea/services/webhook/webhook.go
+[38;5;244m - Completed in 1.95s[0m
+[38;5;12m[1m [1.11][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m5114 bytes[0m from /Users/relumalai/workshop/gitea/services/webhook/payloader.go
+[38;5;244m - Completed in 0.606s[0m
+[38;5;12m[1m [1.12][0m[0m
+[?25l[0m[?25l[?25l[?25l[0m[0mSearching for: [38;5;141mfunc.*deliver|func.*Deliver[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/webhook[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mwebhook.*event|HookEvent|hookEvent[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mPayload\b[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/structs[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m4 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/services/webhook
+[38;5;244m - Completed in 0.655s[0m
+[38;5;12m[1m [1.13][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m67 matches[0m in [38;5;244m4 files[0m under /Users/relumalai/workshop/gitea/routers (result is truncated)
+[38;5;244m - Completed in 0.631s[0m
+[38;5;12m[1m [1.14][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m95 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/modules/structs (result is truncated)
+[38;5;244m - Completed in 0.881s[0m
+[38;5;12m[1m [1.15][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/utils/hook.go[0m, from line [38;5;141m140[0m to [38;5;141m220[0m[38;5;244m (using tool: read)[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/web/repo/setting/webhook.go[0m, from line [38;5;141m155[0m to [38;5;141m270[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m4778 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/utils/hook.go
+[38;5;244m - Completed in 0.615s[0m
+[38;5;12m[1m [1.16][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m4260 bytes[0m from /Users/relumalai/workshop/gitea/routers/web/repo/setting/webhook.go
+[38;5;244m - Completed in 0.669s[0m
+[38;5;12m[1m [1.17][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for: [38;5;141mWebhookForm|type.*Webhook.*Form[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/forms[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mtype.*Payload struct[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/structs[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m19 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/services/forms (result is truncated)
+[38;5;244m - Completed in 0.809s[0m
+[38;5;12m[1m [1.18][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m18 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/modules/structs (result is truncated)
+[38;5;244m - Completed in 0.556s[0m
+[38;5;12m[1m [1.19][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/forms/repo_form.go[0m, from line [38;5;141m205[0m to [38;5;141m260[0m[38;5;244m (using tool: read)[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/structs/hook.go[0m, from line [38;5;141m1[0m to [38;5;141m100[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1705 bytes[0m from /Users/relumalai/workshop/gitea/services/forms/repo_form.go
+[38;5;244m - Completed in 0.564s[0m
+[38;5;12m[1m [1.20][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m3598 bytes[0m from /Users/relumalai/workshop/gitea/modules/structs/hook.go
+[38;5;244m - Completed in 0.578s[0m
+[38;5;12m[1m [1.21][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/webhook/deliver.go[0m, from line [38;5;141m140[0m to [38;5;141m200[0m[38;5;244m (using tool: read)[0mSearching for: [38;5;141mfunc.*general.*|func.*General[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/webhook[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1875 bytes[0m from /Users/relumalai/workshop/gitea/services/webhook/deliver.go
+[38;5;244m - Completed in 0.898s[0m
+[38;5;12m[1m [1.22][0m[0m
+
+[38;5;9m ❗ [0mNo matches found for pattern: [38;5;244mfunc.*general.*|func.*General[0m under /Users/relumalai/workshop/gitea/services/webhook
+[38;5;244m - Completed in 0.659s[0m
+[38;5;12m[1m [1.23][0m[0m
+[?25l[0m[?25l[0m[0mSearching for: [38;5;141mwebhook.*event|hook_event|HookEvent|pull_request_review_request|workflow_job[0m in [38;5;141m/Users/relumalai/workshop/gitea/templates[0m ([38;5;141m*.tmpl[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m30 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/templates (result is truncated)
+[38;5;244m - Completed in 0.671s[0m
+[38;5;12m[1m [1.24][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/templates/repo/settings/webhook/settings.tmpl[0m, from line [38;5;141m82[0m to [38;5;141m220[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m5248 bytes[0m from /Users/relumalai/workshop/gitea/templates/repo/settings/webhook/settings.tmpl
+[38;5;244m - Completed in 0.570s[0m
+[38;5;12m[1m [1.25][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for: [38;5;141mevent_status|event_package|event_workflow_job[0m in [38;5;141m/Users/relumalai/workshop/gitea/options/locale[0m ([38;5;141m*.ini[0m)[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mfunc.*HasEvent|UpdateEvent[0m in [38;5;141m/Users/relumalai/workshop/gitea/models/webhook[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;9m ❗ [0mNo matches found for pattern: [38;5;244mevent_status|event_package|event_workflow_job[0m under /Users/relumalai/workshop/gitea/options/locale
+[38;5;244m - Completed in 0.576s[0m
+[38;5;12m[1m [1.26][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m5 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/models/webhook
+[38;5;244m - Completed in 0.566s[0m
+[38;5;12m[1m [1.27][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/models/webhook/webhook.go[0m, from line [38;5;141m160[0m to [38;5;141m200[0m[38;5;244m (using tool: read)[0mSearching for: [38;5;141mevent_status|event_package|event_workflow_job[0m in [38;5;141m/Users/relumalai/workshop/gitea/options[0m ([38;5;141m*.ini[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1167 bytes[0m from /Users/relumalai/workshop/gitea/models/webhook/webhook.go
+[38;5;244m - Completed in 0.590s[0m
+[38;5;12m[1m [1.28][0m[0m
+
+[38;5;9m ❗ [0mNo matches found for pattern: [38;5;244mevent_status|event_package|event_workflow_job[0m under /Users/relumalai/workshop/gitea/options
+[38;5;244m - Completed in 0.576s[0m
+[38;5;12m[1m [1.29][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for files: [38;5;141moptions/locale/locale_en-US.ini[0m[38;5;244m (using tool: glob)[0mSearching for: [38;5;141mfunc.*newDefaultRequest[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/webhook[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;9m ❗ [0mNo files found matching pattern: [38;5;244moptions/locale/locale_en-US.ini[0m under current directory
+[38;5;244m - Completed in 0.732s[0m
+[38;5;12m[1m [1.30][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m1 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/services/webhook
+[38;5;244m - Completed in 0.576s[0m
+[38;5;12m[1m [1.31][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/webhook/deliver.go[0m, from line [38;5;141m37[0m to [38;5;141m80[0m[38;5;244m (using tool: read)[0mSearching for: [38;5;141mevent_workflow_job[0m in [38;5;141m/Users/relumalai/workshop/gitea[0m ([38;5;141m*.ini[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1397 bytes[0m from /Users/relumalai/workshop/gitea/services/webhook/deliver.go
+[38;5;244m - Completed in 0.606s[0m
+[38;5;12m[1m [1.32][0m[0m
+
+[38;5;9m ❗ [0mNo matches found for pattern: [38;5;244mevent_workflow_job[0m under /Users/relumalai/workshop/gitea
+[38;5;244m - Completed in 0.568s[0m
+[38;5;12m[1m [1.33][0m[0m
+[?25l[0m[?25l[0m[0mSearching for files: [38;5;141m**/locale_en*.ini[0m[38;5;244m (using tool: glob)[0m
+[38;5;9m ❗ [0mNo files found matching pattern: [38;5;244m**/locale_en*.ini[0m under current directory
+[38;5;244m - Completed in 0.638s[0m
+[38;5;12m[1m [1.34][0m[0m
+[?25l[0m[?25l[0m[0mSearching for files: [38;5;141moptions/locale/*[0m[38;5;244m (using tool: glob)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m29 files[0m under current directory
+[38;5;244m - Completed in 1.18s[0m
+[38;5;12m[1m [1.35][0m[0m
+[?25l[0m[?25l[0m[0mSearching for: [38;5;141mevent_workflow_job|event_status|event_package[0m in [38;5;141m/Users/relumalai/workshop/gitea/options/locale[0m ([38;5;141mlocale_en-US.json[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m6 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/options/locale
+[38;5;244m - Completed in 0.578s[0m
+[38;5;12m[1m [1.36][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me look at how the notifier connects to specific events:[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mtype Notifier interface|type NullNotifier[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/notify[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m2 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/services/notify
+[38;5;244m - Completed in 0.820s[0m
+[38;5;12m[1m [1.37][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/notify/notifier.go[0m, from line [38;5;141m20[0m to [38;5;141m90[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m5654 bytes[0m from /Users/relumalai/workshop/gitea/services/notify/notifier.go
+[38;5;244m - Completed in 0.597s[0m
+[38;5;12m[1m [1.38][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me check the Swagger/API structs for webhook event types:[0m[0m
+[?25l[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mCommitStatusPayload|WorkflowRunPayload|WorkflowJobPayload|PackagePayload[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/structs[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mfunc.*WorkflowJob|func.*Status\(|func.*Package\([0m in [38;5;141m/Users/relumalai/workshop/gitea/services/webhook[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m13 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/modules/structs (result is truncated)
+[38;5;244m - Completed in 1.164s[0m
+[38;5;12m[1m [1.39][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m32 matches[0m in [38;5;244m11 files[0m under /Users/relumalai/workshop/gitea/services/webhook
+[38;5;244m - Completed in 0.954s[0m
+[38;5;12m[1m [1.40][0m[0m
+[?25l[0m[38;5;141m> [0mNow I have a comprehensive picture. Let me verify the Actions workflow file that also consumes webhook events:[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mHookEvent|canGithubEventMatch[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/actions[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m106 matches[0m in [38;5;244m4 files[0m under /Users/relumalai/workshop/gitea/modules/actions (result is truncated)
+[38;5;244m - Completed in 1.115s[0m
+[38;5;12m[1m [1.41][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/actions/github.go[0m, from line [38;5;141m1[0m to [38;5;141m120[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m4290 bytes[0m from /Users/relumalai/workshop/gitea/modules/actions/github.go
+[38;5;244m - Completed in 1.644s[0m
+[38;5;12m[1m [1.42][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/actions/github.go[0m, from line [38;5;141m120[0m to [38;5;141m150[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m342 bytes[0m from /Users/relumalai/workshop/gitea/modules/actions/github.go
+[38;5;244m - Completed in 1.373s[0m
+[38;5;12m[1m [1.43][0m[0m
+[?25l[0m[38;5;141m> [0mNow I have a complete picture. Let me summarize the full pipeline:[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m# Full Webhook Event Delivery Pipeline[0m[0m
+[0m[0m
+Adding a new webhook event type requires changes across [1m7 layers[22m. Here's the complete trace:[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 1. Event Type Definition[0m[0m
+[0m[0m
+[1m[38;5;10mmodules/webhook/type.go[0m[22m[0m[0m
+- Add the new [38;5;10mHookEventType[0m constant (e.g., [38;5;10mHookEventMyEvent HookEventType = "my_event"[0m)[0m[0m
+- Add it to the [38;5;10mAllEvents()[0m function[0m[0m
+- If needed, update [38;5;10mEvent()[0m method for event grouping[0m[0m
+- If needed, update [38;5;10mIsPullRequest()[0m / [38;5;10mIsPullRequestReview()[0m helpers[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 2. API Payload Struct[0m[0m
+[0m[0m
+[1m[38;5;10mmodules/structs/hook.go[0m[22m[0m[0m
+- Define the payload struct (e.g., [38;5;10mtype MyEventPayload struct{...}[0m)[0m[0m
+- Implement the [38;5;10mPayloader[0m interface ([38;5;10mJSONPayload() ([]byte, error)[0m)[0m[0m
+- Add the type to the [38;5;10m_ Payloader = &MyEventPayload{}[0m compile-time check at the top[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 3. Notifier Interface & Implementation[0m[0m
+[0m[0m
+[1m[38;5;10mservices/notify/notifier.go[0m[22m[0m[0m
+- Add a new method to the [38;5;10mNotifier[0m interface (e.g., [38;5;10mMyEvent(ctx context.Context, ...)[0m)[0m[0m
+[0m[0m
+[1m[38;5;10mservices/notify/null.go[0m[22m[0m[0m
+- Add a no-op implementation to [38;5;10mNullNotifier[0m[0m[0m
+[0m[0m
+[1m[38;5;10mservices/webhook/notifier.go[0m[22m[0m[0m
+- Implement the new method on [38;5;10mwebhookNotifier[0m[0m[0m
+- Build the payload struct and call [38;5;10mPrepareWebhooks(ctx, source, webhook_module.HookEventMyEvent, payload)[0m[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 4. Payload Conversion (per webhook type)[0m[0m
+[0m[0m
+[1m[38;5;10mservices/webhook/payloader.go[0m[22m[0m[0m
+- Add a method to the [38;5;10mpayloadConvertor[T][0m interface (e.g., [38;5;10mMyEvent(*api.MyEventPayload) (T, error)[0m)[0m[0m
+- Add a [38;5;10mcase[0m in the [38;5;10mnewPayload()[0m switch for the new [38;5;10mHookEventType[0m[0m[0m
+[0m[0m
+[1mEach webhook convertor[22m (all must implement the new interface method):[0m[0m
+[0m[0m
+| File | Convertor |[0m[0m
+|------|-----------|[0m[0m
+| [38;5;10mservices/webhook/dingtalk.go[0m | [38;5;10mdingtalkConvertor[0m |[0m[0m
+| [38;5;10mservices/webhook/discord.go[0m | [38;5;10mdiscordConvertor[0m |[0m[0m
+| [38;5;10mservices/webhook/feishu.go[0m | [38;5;10mfeishuConvertor[0m |[0m[0m
+| [38;5;10mservices/webhook/matrix.go[0m | [38;5;10mmatrixConvertor[0m |[0m[0m
+| [38;5;10mservices/webhook/msteams.go[0m | [38;5;10mmsteamsConvertor[0m |[0m[0m
+| [38;5;10mservices/webhook/slack.go[0m | [38;5;10mslackConvertor[0m |[0m[0m
+| [38;5;10mservices/webhook/telegram.go[0m | [38;5;10mtelegramConvertor[0m |[0m[0m
+| [38;5;10mservices/webhook/wechatwork.go[0m | [38;5;10mwechatworkConvertor[0m |[0m[0m
+| [38;5;10mservices/webhook/packagist.go[0m | [38;5;10mpackagistConvertor[0m |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 5. Web UI (Form & Template)[0m[0m
+[0m[0m
+[1m[38;5;10mservices/forms/repo_form.go[0m[22m[0m[0m
+- Add a [38;5;10mbool[0m field to [38;5;10mWebhookForm[0m struct (e.g., [38;5;10mMyEvent bool[0m)[0m[0m
+[0m[0m
+[1m[38;5;10mrouters/web/repo/setting/webhook.go[0m[22m[0m[0m
+- Add the new event mapping in [38;5;10mParseHookEvent()[0m function[0m[0m
+[0m[0m
+[1m[38;5;10mtemplates/repo/settings/webhook/settings.tmpl[0m[22m[0m[0m
+- Add a checkbox for the new event in the "choose events" UI[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 6. API Router (REST API hook creation)[0m[0m
+[0m[0m
+[1m[38;5;10mrouters/api/v1/utils/hook.go[0m[22m[0m[0m
+- Add the event to [38;5;10mupdateHookEvents()[0m so the API accepts it in the [38;5;10mevents[0m array[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 7. Localization[0m[0m
+[0m[0m
+[1m[38;5;10moptions/locale/locale_en-US.json[0m[22m[0m[0m
+- Add translation keys like [38;5;10mrepo.settings.event_my_event[0m and [38;5;10mrepo.settings.event_my_event_desc[0m[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 8. (Optional) Gitea Actions Integration[0m[0m
+[0m[0m
+[1m[38;5;10mmodules/actions/github.go[0m[22m[0m[0m
+- Map the new Gitea event to a GitHub event name in [38;5;10mcanGithubEventMatch()[0m[0m[0m
+- Optionally add to [38;5;10mIsDefaultBranchWorkflow()[0m if it only triggers on default branch[0m[0m
+[0m[0m
+[1m[38;5;10mmodules/actions/workflows.go[0m[22m[0m[0m
+- Handle payload matching/filtering in [38;5;10mdetectMatched()[0m if the event has action subtypes[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## Pipeline Flow Summary[0m[0m
+[0m[0m
+[38;5;10mTrigger source (e.g., API call, git push)
+    │
+    ▼
+services/notify  ─── calls Notifier.MyEvent() on all registered notifiers
+    │
+    ▼
+services/webhook/notifier.go  ─── webhookNotifier.MyEvent() builds api.MyEventPayload
+    │
+    ▼
+services/webhook/webhook.go   ─── PrepareWebhooks() finds matching webhooks,
+                                   checks HasEvent(), branch filter
+    │
+    ▼
+models/webhook/hooktask.go    ─── CreateHookTask() persists to DB with event type + JSON payload
+    │
+    ▼
+queue (hookQueue)             ─── task ID enqueued
+    │
+    ▼
+services/webhook/webhook.go   ─── handler() dequeues, calls Deliver()
+    │
+    ▼
+services/webhook/deliver.go   ─── Deliver() gets webhook type, calls Requester
+    │
+    ▼
+services/webhook/payloader.go ─── newPayload() deserializes JSON → typed payload via convertor
+    │
+    ▼
+services/webhook/<type>.go    ─── type-specific convertor formats the payload
+    │
+    ▼
+HTTP request sent to webhook URL
+[0m[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## Minimal File Checklist[0m[0m
+[0m[0m
+| Layer | File | What to change |[0m[0m
+|-------|------|----------------|[0m[0m
+| Module | [38;5;10mmodules/webhook/type.go[0m | Add const + [38;5;10mAllEvents()[0m |[0m[0m
+| Module | [38;5;10mmodules/structs/hook.go[0m | Payload struct |[0m[0m
+| Service | [38;5;10mservices/notify/notifier.go[0m | Interface method |[0m[0m
+| Service | [38;5;10mservices/notify/null.go[0m | Null implementation |[0m[0m
+| Service | [38;5;10mservices/webhook/notifier.go[0m | Webhook notifier impl |[0m[0m
+| Service | [38;5;10mservices/webhook/payloader.go[0m | Interface method + switch case |[0m[0m
+| Service | [38;5;10mservices/webhook/{dingtalk,discord,feishu,matrix,msteams,slack,telegram,wechatwork,packagist}.go[0m | Convertor method (×9) |[0m[0m
+| Router | [38;5;10mrouters/web/repo/setting/webhook.go[0m | [38;5;10mParseHookEvent()[0m |[0m[0m
+| Router | [38;5;10mrouters/api/v1/utils/hook.go[0m | [38;5;10mupdateHookEvents()[0m |[0m[0m
+| Form | [38;5;10mservices/forms/repo_form.go[0m | Form field |[0m[0m
+| Template | [38;5;10mtemplates/repo/settings/webhook/settings.tmpl[0m | Checkbox |[0m[0m
+| Locale | [38;5;10moptions/locale/locale_en-US.json[0m | Event label + description |[0m[0m
+| Actions | [38;5;10mmodules/actions/github.go[0m | (optional) Event mapping |[0m[0m[38;5;12m[1m✓ Created checkpoint 1
+
+[0m[0m
+[38;5;8m
+ ▸ Credits: 3.23 • Time: 2m 50s
+
+[0m[1G[0m[0m[?25h

@@ -1,0 +1,1259 @@
+[
+  {
+    "path": "graph/Cache_Store-_Cache-_branch_divergence_cache.md",
+    "title": "[Graph] Cache Store: Cache: branch_divergence_cache",
+    "summary": "Cache: branch_divergence_cache (0 conn) Files: session_45/database_schema.json",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Config_Key-_actions.max_rerun_attempts.md",
+    "title": "[Graph] Config Key: actions.max_rerun_attempts",
+    "summary": "actions.max_rerun_attempts (0 conn) Files: modules/setting/actions.go",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Config_Key-_packages.LIMIT_TOTAL_OWNER_COUNT.md",
+    "title": "[Graph] Config Key: packages.LIMIT_TOTAL_OWNER_COUNT",
+    "summary": "packages.LIMIT_TOTAL_OWNER_COUNT (0 conn) Files: modules/setting/packages.go",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Config_Key-_ui.REACTION_MAX_USER_NUM.md",
+    "title": "[Graph] Config Key: ui.REACTION_MAX_USER_NUM",
+    "summary": "ui.REACTION_MAX_USER_NUM (0 conn) Files: modules/setting/ui.go",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_GET_-api-v1-gitignore-templates-{name}.md",
+    "title": "[Graph] Controller: GET /api/v1/gitignore/templates/{name}",
+    "summary": "GET /api/v1/gitignore/templates/{name} (11 conn), GET /api/v1/licenses/{name} (11 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_GET_-api-v1-packages-{owner}.md",
+    "title": "[Graph] Controller: GET /api/v1/packages/{owner}",
+    "summary": "GET /api/v1/packages/{owner} (17 conn), DELETE /api/v1/packages/{owner}/{type}/{name}/{version} (16 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_GET_-api-v1-repos-search.md",
+    "title": "[Graph] Controller: GET /api/v1/repos/search",
+    "summary": "GET /api/v1/repos/search (13 conn), repository (12 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_GET_-api-v1-repos-{owner}-{repo}-commits.md",
+    "title": "[Graph] Controller: GET /api/v1/repos/{owner}/{repo}/commits",
+    "summary": "GET /api/v1/repos/{owner}/{repo}/commits (19 conn), GET /api/v1/repos/{owner}/{repo}/git/commits/{sha} (12 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_GET_-api-v1-repos-{owner}-{repo}-git-refs-{ref}.md",
+    "title": "[Graph] Controller: GET /api/v1/repos/{owner}/{repo}/git/refs/{ref}",
+    "summary": "GET /api/v1/repos/{owner}/{repo}/git/refs/{ref} (8 conn), GET /api/v1/repos/{owner}/{repo}/git/refs (7 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_IsNewPinAllowed_compares_current_pin_count_against_MaxPinned_setting.md",
+    "title": "[Graph] Controller: IsNewPinAllowed compares current pin count against MaxPinned setting",
+    "summary": "IsNewPinAllowed compares current pin count against MaxPinned setting (76 conn), Language stats response is a custom JSON object mapping language name to byte co (70 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_Issue_templates_are_parsed_from_multiple_candidate_directories_in_priority_order.md",
+    "title": "[Graph] Controller: Issue templates are parsed from multiple candidate directories in priority order",
+    "summary": "Issue templates are parsed from multiple candidate directories in priority order (63 conn), context.UserAssignmentAPI (18 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_Maximum_pin_limit_check_-_cannot_pin_more_issues_than_setting.Repository.Issue.M.md",
+    "title": "[Graph] Controller: Maximum pin limit check - cannot pin more issues than setting.Repository.Issue.M",
+    "summary": "Maximum pin limit check - cannot pin more issues than setting.Repository.Issue.M (125 conn), Pin position must be >= 1 (86 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_Org_repo_creation_requires_user_to_have_create_permission_in_org.md",
+    "title": "[Graph] Controller: Org repo creation requires user to have create permission in org",
+    "summary": "Org repo creation requires user to have create permission in org (23 conn), PUT /api/v1/repos/{owner}/{repo}/topics/{topic} (13 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_POST_-api-v1-admin-unadopted-{owner}-{repo}.md",
+    "title": "[Graph] Controller: POST /api/v1/admin/unadopted/{owner}/{repo}",
+    "summary": "POST /api/v1/admin/unadopted/{owner}/{repo} (14 conn), GET /api/v1/admin/unadopted (10 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_POST_-api-v1-markdown.md",
+    "title": "[Graph] Controller: POST /api/v1/markdown",
+    "summary": "POST /api/v1/markdown (16 conn), POST /api/v1/markup (9 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_POST_-api-v1-orgs.md",
+    "title": "[Graph] Controller: POST /api/v1/orgs",
+    "summary": "POST /api/v1/orgs (24 conn), Generate repo requires at least one template option to be selected (21 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_POST_-api-v1-repos-{owner}-{repo}-actions-workflows-{workflow_id}-dispatches.md",
+    "title": "[Graph] Controller: POST /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+    "summary": "POST /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches (16 conn), PUT /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable (6 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_POST_-api-v1-repos-{owner}-{repo}-avatar.md",
+    "title": "[Graph] Controller: POST /api/v1/repos/{owner}/{repo}/avatar",
+    "summary": "POST /api/v1/repos/{owner}/{repo}/avatar (19 conn), POST /api/v1/orgs/{org}/avatar (18 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_POST_-api-v1-repos-{owner}-{repo}-branch_protections.md",
+    "title": "[Graph] Controller: POST /api/v1/repos/{owner}/{repo}/branch_protections",
+    "summary": "POST /api/v1/repos/{owner}/{repo}/branch_protections (19 conn), DELETE /api/v1/repos/{owner}/{repo}/branches/{branch} (17 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_POST_-api-v1-repos-{owner}-{repo}-issues-{index}-labels.md",
+    "title": "[Graph] Controller: POST /api/v1/repos/{owner}/{repo}/issues/{index}/labels",
+    "summary": "POST /api/v1/repos/{owner}/{repo}/issues/{index}/labels (20 conn), issues_model.GetIssueByIndex (20 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_POST_-api-v1-repos-{owner}-{repo}-pulls-{index}-merge.md",
+    "title": "[Graph] Controller: POST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge",
+    "summary": "POST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge (25 conn), POST /api/v1/repos/{owner}/{repo}/pulls (24 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_POST_-api-v1-repos-{owner}-{repo}-push_mirrors.md",
+    "title": "[Graph] Controller: POST /api/v1/repos/{owner}/{repo}/push_mirrors",
+    "summary": "POST /api/v1/repos/{owner}/{repo}/push_mirrors (18 conn), POST /api/v1/repos/{owner}/{repo}/push_mirrors-sync (14 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_POST_-api-v1-user-gpg_keys.md",
+    "title": "[Graph] Controller: POST /api/v1/user/gpg_keys",
+    "summary": "POST /api/v1/user/gpg_keys (25 conn), POST /api/v1/user/gpg_key_verify (16 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_POST_-api-v1-user-keys.md",
+    "title": "[Graph] Controller: POST /api/v1/user/keys",
+    "summary": "POST /api/v1/user/keys (18 conn), DELETE /api/v1/user/keys/{id} (18 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_PUT_-api-v1-user-starred-{owner}-{repo}.md",
+    "title": "[Graph] Controller: PUT /api/v1/user/starred/{owner}/{repo}",
+    "summary": "PUT /api/v1/user/starred/{owner}/{repo} (13 conn), GET /api/v1/users/{username}/starred (10 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_Pin_order_is_assigned_as_max_existing_order_+_1_when_pinning.md",
+    "title": "[Graph] Controller: Pin order is assigned as max existing order + 1 when pinning",
+    "summary": "Pin order is assigned as max existing order + 1 when pinning (91 conn), Unpinning creates a comment of type CommentTypeUnpin in issue history (90 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_Pinned_issues_are_separated_by_type_(issues_vs_pull_requests).md",
+    "title": "[Graph] Controller: Pinned issues are separated by type (issues vs pull requests)",
+    "summary": "Pinned issues are separated by type (issues vs pull requests) (88 conn), GET /api/v1/notifications (20 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_Unarchiving_a_repo_re-detects_action_schedules.md",
+    "title": "[Graph] Controller: Unarchiving a repo re-detects action schedules",
+    "summary": "Unarchiving a repo re-detects action schedules (62 conn), PUT /api/v1/user/blocks/{username} (20 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_convert.md",
+    "title": "[Graph] Controller: convert",
+    "summary": "convert (25 conn), POST /api/v1/repos/{owner}/{repo}/issues/{index}/assets (24 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_issues_model.Issue.md",
+    "title": "[Graph] Controller: issues_model.Issue",
+    "summary": "issues_model.Issue (20 conn), POST /api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions (19 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_reqOrgOwnership.md",
+    "title": "[Graph] Controller: reqOrgOwnership",
+    "summary": "reqOrgOwnership (27 conn), organization.Team (23 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_user_model.User.md",
+    "title": "[Graph] Controller: user_model.User",
+    "summary": "user_model.User (58 conn), convert.ToUser (28 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Controller-_webhook_service.ToHook.md",
+    "title": "[Graph] Controller: webhook_service.ToHook",
+    "summary": "webhook_service.ToHook (23 conn), POST /api/v1/orgs/{org}/hooks (20 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Endpoint-_routers.md",
+    "title": "[Graph] Endpoint: routers",
+    "summary": "routers (103 conn), repository (14 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Error_Scenario-_POST_-api-v1-admin-users.md",
+    "title": "[Graph] Error Scenario: POST /api/v1/admin/users",
+    "summary": "POST /api/v1/admin/users (26 conn), PATCH /api/v1/admin/users/{username} (22 conn)",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/IsNewPinAllowed_compares_current_pin_count_against_MaxPinned_setting.md",
+    "title": "[Graph] IsNewPinAllowed compares current pin count against MaxPinned setting",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/Issue_templates_are_parsed_from_multiple_candidate_directories_in_priority_order.md",
+    "title": "[Graph] Issue templates are parsed from multiple candidate directories in priority order",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/Language_stats_response_is_a_custom_JSON_object_mapping_language_name_to_byte_co.md",
+    "title": "[Graph] Language stats response is a custom JSON object mapping language name to byte co",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/Library-_code.gitea.io-actions-proto-go.md",
+    "title": "[Graph] Library: code.gitea.io/actions-proto-go",
+    "summary": "code.gitea.io/actions-proto-go (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_code.gitea.io-sdk-gitea.md",
+    "title": "[Graph] Library: code.gitea.io/sdk/gitea",
+    "summary": "code.gitea.io/sdk/gitea (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_connectrpc.com-connect.md",
+    "title": "[Graph] Library: connectrpc.com/connect",
+    "summary": "connectrpc.com/connect (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_gitea.com-go-chi-binding.md",
+    "title": "[Graph] Library: gitea.com/go-chi/binding",
+    "summary": "gitea.com/go-chi/binding (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_gitea.com-go-chi-cache.md",
+    "title": "[Graph] Library: gitea.com/go-chi/cache",
+    "summary": "gitea.com/go-chi/cache (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_gitea.com-go-chi-captcha.md",
+    "title": "[Graph] Library: gitea.com/go-chi/captcha",
+    "summary": "gitea.com/go-chi/captcha (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_gitea.com-go-chi-session.md",
+    "title": "[Graph] Library: gitea.com/go-chi/session",
+    "summary": "gitea.com/go-chi/session (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_gitea.com-lunny-levelqueue.md",
+    "title": "[Graph] Library: gitea.com/lunny/levelqueue",
+    "summary": "gitea.com/lunny/levelqueue (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-42wim-httpsig.md",
+    "title": "[Graph] Library: github.com/42wim/httpsig",
+    "summary": "github.com/42wim/httpsig (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-42wim-sshsig.md",
+    "title": "[Graph] Library: github.com/42wim/sshsig",
+    "summary": "github.com/42wim/sshsig (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-Azure-azure-sdk-for-go-sdk-storage-azblob.md",
+    "title": "[Graph] Library: github.com/Azure/azure-sdk-for-go/sdk/storage/azblob",
+    "summary": "github.com/Azure/azure-sdk-for-go/sdk/storage/azblob (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-ProtonMail-go-crypto.md",
+    "title": "[Graph] Library: github.com/ProtonMail/go-crypto",
+    "summary": "github.com/ProtonMail/go-crypto (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-PuerkitoBio-goquery.md",
+    "title": "[Graph] Library: github.com/PuerkitoBio/goquery",
+    "summary": "github.com/PuerkitoBio/goquery (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-alecthomas-chroma-v2.md",
+    "title": "[Graph] Library: github.com/alecthomas/chroma/v2",
+    "summary": "github.com/alecthomas/chroma/v2 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-aws-aws-sdk-go-v2-credentials.md",
+    "title": "[Graph] Library: github.com/aws/aws-sdk-go-v2/credentials",
+    "summary": "github.com/aws/aws-sdk-go-v2/credentials (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-aws-aws-sdk-go-v2-service-codecommit.md",
+    "title": "[Graph] Library: github.com/aws/aws-sdk-go-v2/service/codecommit",
+    "summary": "github.com/aws/aws-sdk-go-v2/service/codecommit (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-blevesearch-bleve-v2.md",
+    "title": "[Graph] Library: github.com/blevesearch/bleve/v2",
+    "summary": "github.com/blevesearch/bleve/v2 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-caddyserver-certmagic.md",
+    "title": "[Graph] Library: github.com/caddyserver/certmagic",
+    "summary": "github.com/caddyserver/certmagic (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-editorconfig-editorconfig-core-go-v2.md",
+    "title": "[Graph] Library: github.com/editorconfig/editorconfig-core-go/v2",
+    "summary": "github.com/editorconfig/editorconfig-core-go/v2 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-emersion-go-imap.md",
+    "title": "[Graph] Library: github.com/emersion/go-imap",
+    "summary": "github.com/emersion/go-imap (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-gliderlabs-ssh.md",
+    "title": "[Graph] Library: github.com/gliderlabs/ssh",
+    "summary": "github.com/gliderlabs/ssh (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-go-chi-chi-v5.md",
+    "title": "[Graph] Library: github.com/go-chi/chi/v5",
+    "summary": "github.com/go-chi/chi/v5 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-go-chi-cors.md",
+    "title": "[Graph] Library: github.com/go-chi/cors",
+    "summary": "github.com/go-chi/cors (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-go-co-op-gocron-v2.md",
+    "title": "[Graph] Library: github.com/go-co-op/gocron/v2",
+    "summary": "github.com/go-co-op/gocron/v2 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-go-enry-go-enry-v2.md",
+    "title": "[Graph] Library: github.com/go-enry/go-enry/v2",
+    "summary": "github.com/go-enry/go-enry/v2 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-go-git-go-git-v5.md",
+    "title": "[Graph] Library: github.com/go-git/go-git/v5",
+    "summary": "github.com/go-git/go-git/v5 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-go-ldap-ldap-v3.md",
+    "title": "[Graph] Library: github.com/go-ldap/ldap/v3",
+    "summary": "github.com/go-ldap/ldap/v3 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-go-redsync-redsync-v4.md",
+    "title": "[Graph] Library: github.com/go-redsync/redsync/v4",
+    "summary": "github.com/go-redsync/redsync/v4 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-go-sql-driver-mysql.md",
+    "title": "[Graph] Library: github.com/go-sql-driver/mysql",
+    "summary": "github.com/go-sql-driver/mysql (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-go-webauthn-webauthn.md",
+    "title": "[Graph] Library: github.com/go-webauthn/webauthn",
+    "summary": "github.com/go-webauthn/webauthn (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-golang-jwt-jwt-v5.md",
+    "title": "[Graph] Library: github.com/golang-jwt/jwt/v5",
+    "summary": "github.com/golang-jwt/jwt/v5 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-google-go-github-v85.md",
+    "title": "[Graph] Library: github.com/google/go-github/v85",
+    "summary": "github.com/google/go-github/v85 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-google-licenseclassifier-v2.md",
+    "title": "[Graph] Library: github.com/google/licenseclassifier/v2",
+    "summary": "github.com/google/licenseclassifier/v2 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-google-uuid.md",
+    "title": "[Graph] Library: github.com/google/uuid",
+    "summary": "github.com/google/uuid (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-gorilla-feeds.md",
+    "title": "[Graph] Library: github.com/gorilla/feeds",
+    "summary": "github.com/gorilla/feeds (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-gorilla-sessions.md",
+    "title": "[Graph] Library: github.com/gorilla/sessions",
+    "summary": "github.com/gorilla/sessions (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-hashicorp-golang-lru-v2.md",
+    "title": "[Graph] Library: github.com/hashicorp/golang-lru/v2",
+    "summary": "github.com/hashicorp/golang-lru/v2 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-klauspost-compress.md",
+    "title": "[Graph] Library: github.com/klauspost/compress",
+    "summary": "github.com/klauspost/compress (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-lib-pq.md",
+    "title": "[Graph] Library: github.com/lib/pq",
+    "summary": "github.com/lib/pq (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-markbates-goth.md",
+    "title": "[Graph] Library: github.com/markbates/goth",
+    "summary": "github.com/markbates/goth (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-mattn-go-sqlite3.md",
+    "title": "[Graph] Library: github.com/mattn/go-sqlite3",
+    "summary": "github.com/mattn/go-sqlite3 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-meilisearch-meilisearch-go.md",
+    "title": "[Graph] Library: github.com/meilisearch/meilisearch-go",
+    "summary": "github.com/meilisearch/meilisearch-go (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-microcosm-cc-bluemonday.md",
+    "title": "[Graph] Library: github.com/microcosm-cc/bluemonday",
+    "summary": "github.com/microcosm-cc/bluemonday (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-microsoft-go-mssqldb.md",
+    "title": "[Graph] Library: github.com/microsoft/go-mssqldb",
+    "summary": "github.com/microsoft/go-mssqldb (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-minio-minio-go-v7.md",
+    "title": "[Graph] Library: github.com/minio/minio-go/v7",
+    "summary": "github.com/minio/minio-go/v7 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-msteinert-pam-v2.md",
+    "title": "[Graph] Library: github.com/msteinert/pam/v2",
+    "summary": "github.com/msteinert/pam/v2 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-niklasfasching-go-org.md",
+    "title": "[Graph] Library: github.com/niklasfasching/go-org",
+    "summary": "github.com/niklasfasching/go-org (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-opencontainers-go-digest.md",
+    "title": "[Graph] Library: github.com/opencontainers/go-digest",
+    "summary": "github.com/opencontainers/go-digest (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-opencontainers-image-spec.md",
+    "title": "[Graph] Library: github.com/opencontainers/image-spec",
+    "summary": "github.com/opencontainers/image-spec (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-pquerna-otp.md",
+    "title": "[Graph] Library: github.com/pquerna/otp",
+    "summary": "github.com/pquerna/otp (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-prometheus-client_golang.md",
+    "title": "[Graph] Library: github.com/prometheus/client_golang",
+    "summary": "github.com/prometheus/client_golang (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-quasoft-websspi.md",
+    "title": "[Graph] Library: github.com/quasoft/websspi",
+    "summary": "github.com/quasoft/websspi (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-redis-go-redis-v9.md",
+    "title": "[Graph] Library: github.com/redis/go-redis/v9",
+    "summary": "github.com/redis/go-redis/v9 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-robfig-cron-v3.md",
+    "title": "[Graph] Library: github.com/robfig/cron/v3",
+    "summary": "github.com/robfig/cron/v3 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-sassoftware-go-rpmutils.md",
+    "title": "[Graph] Library: github.com/sassoftware/go-rpmutils",
+    "summary": "github.com/sassoftware/go-rpmutils (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-stretchr-testify.md",
+    "title": "[Graph] Library: github.com/stretchr/testify",
+    "summary": "github.com/stretchr/testify (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-syndtr-goleveldb.md",
+    "title": "[Graph] Library: github.com/syndtr/goleveldb",
+    "summary": "github.com/syndtr/goleveldb (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-urfave-cli-v3.md",
+    "title": "[Graph] Library: github.com/urfave/cli/v3",
+    "summary": "github.com/urfave/cli/v3 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-wneessen-go-mail.md",
+    "title": "[Graph] Library: github.com/wneessen/go-mail",
+    "summary": "github.com/wneessen/go-mail (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-yohcop-openid-go.md",
+    "title": "[Graph] Library: github.com/yohcop/openid-go",
+    "summary": "github.com/yohcop/openid-go (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_github.com-yuin-goldmark.md",
+    "title": "[Graph] Library: github.com/yuin/goldmark",
+    "summary": "github.com/yuin/goldmark (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_gitlab.com-gitlab-org-api-client-go-v2.md",
+    "title": "[Graph] Library: gitlab.com/gitlab-org/api/client-go/v2",
+    "summary": "gitlab.com/gitlab-org/api/client-go/v2 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_golang.org-x-crypto.md",
+    "title": "[Graph] Library: golang.org/x/crypto",
+    "summary": "golang.org/x/crypto (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_golang.org-x-net.md",
+    "title": "[Graph] Library: golang.org/x/net",
+    "summary": "golang.org/x/net (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_golang.org-x-oauth2.md",
+    "title": "[Graph] Library: golang.org/x/oauth2",
+    "summary": "golang.org/x/oauth2 (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_google.golang.org-grpc.md",
+    "title": "[Graph] Library: google.golang.org/grpc",
+    "summary": "google.golang.org/grpc (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_google.golang.org-protobuf.md",
+    "title": "[Graph] Library: google.golang.org/protobuf",
+    "summary": "google.golang.org/protobuf (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_modernc.org-sqlite.md",
+    "title": "[Graph] Library: modernc.org/sqlite",
+    "summary": "modernc.org/sqlite (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_xorm.io-builder.md",
+    "title": "[Graph] Library: xorm.io/builder",
+    "summary": "xorm.io/builder (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Library-_xorm.io-xorm.md",
+    "title": "[Graph] Library: xorm.io/xorm",
+    "summary": "xorm.io/xorm (0 conn) Files: build.sbt",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Maximum_pin_limit_check_-_cannot_pin_more_issues_than_setting.Repository.Issue.M.md",
+    "title": "[Graph] Maximum pin limit check - cannot pin more issues than setting.Repository.Issue.M",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/Model_Class-_MarkupOption.md",
+    "title": "[Graph] Model Class: MarkupOption",
+    "summary": "MarkupOption (0 conn) Files: session_2/impact_analysis_index.json",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Module-_cmd.md",
+    "title": "[Graph] Module: cmd",
+    "summary": "cmd (0 conn) Files: cmd/",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Module-_models.md",
+    "title": "[Graph] Module: models",
+    "summary": "models (0 conn) Files: models/",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Module-_modules.md",
+    "title": "[Graph] Module: modules",
+    "summary": "modules (0 conn) Files: modules/",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Module-_services.md",
+    "title": "[Graph] Module: services",
+    "summary": "services (0 conn) Files: services/",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Module-_web_src.md",
+    "title": "[Graph] Module: web_src",
+    "summary": "web_src (0 conn) Files: web_src/",
+    "sections": [
+      "Key Concepts",
+      "Relationships",
+      "Source Files"
+    ]
+  },
+  {
+    "path": "graph/Moving_pin_reorders_other_pins_-_shifts_up_or_down_depending_on_direction.md",
+    "title": "[Graph] Moving pin reorders other pins - shifts up or down depending on direction",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/Pin_order_is_assigned_as_max_existing_order_+_1_when_pinning.md",
+    "title": "[Graph] Pin order is assigned as max existing order + 1 when pinning",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/Pin_position_must_be_>=_1.md",
+    "title": "[Graph] Pin position must be >= 1",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/Pinned_issues_are_separated_by_type_(issues_vs_pull_requests).md",
+    "title": "[Graph] Pinned issues are separated by type (issues vs pull requests)",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/Unarchiving_a_repo_re-detects_action_schedules.md",
+    "title": "[Graph] Unarchiving a repo re-detects action schedules",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/Unpinning_creates_a_comment_of_type_CommentTypeUnpin_in_issue_history.md",
+    "title": "[Graph] Unpinning creates a comment of type CommentTypeUnpin in issue history",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/api_index.md",
+    "title": "[Graph] API Reference",
+    "summary": " Files: DELETE /api/v1/admin/actions/runners/{runner_id}, DELETE /api/v1/admin/h",
+    "sections": [
+      "[routers](api_routers.md) (475 endpoints)"
+    ]
+  },
+  {
+    "path": "graph/api_routers.md",
+    "title": "[Graph] routers",
+    "summary": "Delete a global action runner by ID",
+    "sections": [
+      "DELETE /api/v1/admin/actions/runners/{runner_id}",
+      "DELETE /api/v1/admin/hooks/{id}",
+      "DELETE /api/v1/admin/unadopted/{owner}/{repo}"
+    ]
+  },
+  {
+    "path": "graph/convert.ToUser.md",
+    "title": "[Graph] convert.ToUser",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/index.md",
+    "title": "[Graph] Knowledge Graph Index",
+    "summary": "(sorted by size, largest first)",
+    "sections": [
+      "Communities",
+      "God Nodes"
+    ]
+  },
+  {
+    "path": "graph/repo_model.Repository.md",
+    "title": "[Graph] repo_model.Repository",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/repository.md",
+    "title": "[Graph] repository",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/reqOrgOwnership.md",
+    "title": "[Graph] reqOrgOwnership",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  },
+  {
+    "path": "graph/user_model.User.md",
+    "title": "[Graph] user_model.User",
+    "summary": "",
+    "sections": [
+      "Connections by Relation"
+    ]
+  }
+]

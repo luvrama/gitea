@@ -1,0 +1,94 @@
+[38;5;11mWARNING: [0m--trust-tools arg for custom tool [38;5;141m[0m needs to be prepended with [38;5;10m@{MCPSERVERNAME}/[0m
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.19s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The user is asking about adding a new webhook event type and wants to trace the full webhook delivery pipeline. Let me answer based solely on the wiki pages provided.
+[38;5;244m - Completed in 0.21s[0m
+
+[?25l[0m[38;5;141m> [0m[38;5;252m[1m# Adding a New Webhook Event Type — Full Pipeline Trace[0m[0m
+[0m[0m
+Based on the wiki documentation, here's the full webhook delivery pipeline and the areas that need changes:[0m[0m
+[0m[0m
+[38;5;252m[1m## Webhook Delivery Pipeline (from wiki)[0m[0m
+[0m[0m
+The pipeline flows through these layers, as documented across endpoints ep-079, ep-093, ep-149, ep-324, and ep-323:[0m[0m
+[0m[0m
+[38;5;10mEvent Source → PrepareWebhook (service) → HookTask DB INSERT → hook_task Queue PUBLISH → Async Delivery
+[0m[0m[0m
+[0m[0m
+[38;5;252m[1m## Files/Components That Need Changes[0m[0m
+[0m[0m
+[38;5;252m[1m### 1. Routers Layer — Event Registration & Validation[0m[0m
+[0m[0m
+| Component | Role | Evidence |[0m[0m
+|-----------|------|----------|[0m[0m
+| [38;5;10mutils.addHook[0m | Serializes events list to JSON via [38;5;10mw.UpdateEvent()[0m | ep-079, ep-149, ep-324 |[0m[0m
+| [38;5;10mutils.editHook[0m | Updates events via [38;5;10mupdateHookEvents[0m | ep-080, ep-325 |[0m[0m
+| [38;5;10mutils.checkCreateHookOption[0m | Validates hook type | ep-324 |[0m[0m
+[0m[0m
+Key detail from ep-324/ep-079: Events are passed as [38;5;10m[]string[0m in [38;5;10mCreateHookOption.Events[0m and serialized into [38;5;10mHookEvent.HookEvents[0m via a computed transformation. If no events are specified, the business rule defaults to [38;5;10m['push'][0m.[0m[0m
+[0m[0m
+[38;5;252m[1m### 2. Services Layer — Webhook Preparation & Delivery[0m[0m
+[0m[0m
+| Component | Role | Evidence |[0m[0m
+|-----------|------|----------|[0m[0m
+| [38;5;10mwebhook_service.IsValidHookTaskType[0m | Validates registered webhook types | ep-079, ep-149, ep-324 (business rules) |[0m[0m
+| [38;5;10mwebhook_service.PrepareWebhook[0m | Checks event matches hook events, checks branch filter, serializes payload to JSON, creates HookTask in DB, enqueues task | ep-323 workflow step 3 |[0m[0m
+| [38;5;10mwebhook_service.ToHook[0m | Converts webhook DB model → API response, calls [38;5;10mEventsArray()[0m | ep-324, ep-325 |[0m[0m
+[0m[0m
+[38;5;252m[1m### 3. Models/Modules Layer — Event Type Definition[0m[0m
+[0m[0m
+| Component | Role | Evidence |[0m[0m
+|-----------|------|----------|[0m[0m
+| [38;5;10mwebhook.Webhook[0m struct | Stores [38;5;10mHookEvent.HookEvents[0m (JSON-serialized events) | ep-079, ep-324 data transformations |[0m[0m
+| [38;5;10mwebhook_module[0m | Defines hook type constants (e.g., [38;5;10mwebhook_module.SLACK[0m) | ep-079, ep-149 |[0m[0m
+| [38;5;10mwebhook.IsValidHookContentType[0m | Content type validation | ep-080 business rules |[0m[0m
+[0m[0m
+[38;5;252m[1m### 4. Database Layer[0m[0m
+[0m[0m
+| Table | Operation | Purpose |[0m[0m
+|-------|-----------|---------|[0m[0m
+| [38;5;10mwebhook[0m | INSERT/UPDATE | Stores event subscriptions (serialized JSON) | [0m[0m
+| [38;5;10mhook_task[0m | INSERT | Stores individual delivery tasks |[0m[0m
+[0m[0m
+[38;5;252m[1m### 5. Message Queue Layer[0m[0m
+[0m[0m
+| Queue | Operation | Purpose |[0m[0m
+|-------|-----------|---------|[0m[0m
+| [38;5;10mhook_task[0m | PUBLISH | Enqueues task for async delivery (ep-323) |[0m[0m
+[0m[0m
+[38;5;252m[1m## Step-by-Step Change Checklist[0m[0m
+[0m[0m
+Based on the documented pipeline:[0m[0m
+[0m[0m
+1. [1mDefine the new event constant[22m — in the webhook module (where [38;5;10mwebhook_module.SLACK[0m and other constants live)[0m[0m
+2. [1mRegister the event in [38;5;10mHookEvents[0m[22m — so it can be serialized/deserialized from the [38;5;10mwebhook[0m table's events JSON[0m[0m
+3. [1mAdd event matching in [38;5;10mPrepareWebhook[0m[22m — the service checks "event matches hook events" before creating a HookTask (ep-323, step 3)[0m[0m
+4. [1mEmit the event from the source[22m — call [38;5;10mwebhook_service.PrepareWebhook[0m with the new event type and appropriate payload from whatever action triggers it[0m[0m
+5. [1mUpdate API documentation/validation[22m — the [38;5;10mCreateHookOption.Events[0m field accepts the event string (ep-079, ep-149, ep-324)[0m[0m
+6. [1mUpdate [38;5;10mEventsArray()[0m / [38;5;10mUpdateEvent()[0m[22m — these computed transformations handle serialization between the API [38;5;10m[]string[0m and the stored JSON (ep-324, ep-325)[0m[0m
+[0m[0m
+[38;5;252m[1m## Key Business Rules Affecting New Events[0m[0m
+[0m[0m
+| Rule | Source |[0m[0m
+|------|--------|[0m[0m
+| Default events to [38;5;10m['push'][0m if no events specified | ep-079, ep-324, ep-325 |[0m[0m
+| Branch filter is checked before delivery | ep-323 (PrepareWebhook) |[0m[0m
+| If webhooks are disabled globally ([38;5;10msetting.DisableWebhooks[0m), PrepareWebhook silently returns nil | ep-323 resiliency |[0m[0m
+| Authorization header is encrypted with [38;5;10msetting.SecretKey[0m before storage | ep-079, ep-080 |[0m[0m
+[0m[0m
+[38;5;252m[1m## What's Missing from the Wiki[0m[0m
+[0m[0m
+The wiki does not document:[0m[0m
+- The exact file paths for the webhook module, service, or model definitions[0m[0m
+- The full list of currently supported event type strings (only the hook [3mtypes[23m like dingtalk, discord, etc. are enumerated)[0m[0m
+- The internal structure of the async delivery worker that dequeues from [38;5;10mhook_task[0m[0m[0m
+- How payload schemas are defined per event type[0m[0m
+[0m[0m
+Additional wiki pages that would be needed: the [38;5;10mservices[0m module page, the [38;5;10mmodules[0m module page, and potentially a dedicated webhook architecture page.[0m[0m
+[38;5;8m
+ ▸ Credits: 0.55 • Time: 36s
+
+[0m[1G[0m[0m[?25h

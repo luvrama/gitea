@@ -1,0 +1,816 @@
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[32mAll tools are now trusted ([0m[31m![0m[32m). Kiro will execute tools without asking for confirmation.[0m
+Agents can sometimes do unexpected things so understand the risks.
+
+Learn more at [38;5;141mhttps://kiro.dev/docs/cli/chat/security/#using-tools-trust-all-safely[0m
+
+
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.16s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "addActionsRoutes" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "addActionsRoutes",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.128s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "actions/runs" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "actions/runs",
+  "direct_matches": 13,
+  "total_nodes": 93,
+  "source_files_from_graph": [
+    "models/actions/run_attempt.go",
+    "models/actions/run_job.go",
+    "models/issues/issue_pin.go",
+    "modules/setting/actions.go",
+    "modules/setting/api.go",
+    "modules/setting/global.go",
+    "modules/storage/storage.go",
+    "routers/api/v1/admin/action.go",
+    "routers/api/v1/org/action.go",
+    "routers/api/v1/repo/action.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/user/action.go",
+    "services/issue/template.go"
+  ],
+  "source_files_from_analysis": [],
+  "all_source_files": [
+    "models/actions/run_attempt.go",
+    "models/actions/run_job.go",
+    "models/issues/issue_pin.go",
+    "modules/setting/actions.go",
+    "modules/setting/api.go",
+    "modules/setting/global.go",
+    "modules/storage/storage.go",
+    "routers/api/v1/admin/action.go",
+    "routers/api/v1/org/action.go",
+    "routers/api/v1/repo/action.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/user/action.go",
+    "services/issue/template.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-053",
+      "label": "GET /api/v1/orgs/{org}/actions/runs"
+    },
+    {
+      "id": "ep:ep-106",
+      "label": "GET /api/v1/admin/actions/runs"
+    },
+    {
+      "id": "ep:ep-137",
+      "label": "GET /api/v1/user/actions/runs"
+    },
+    {
+      "id": "ep:ep-278",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/runs"
+    },
+    {
+      "id": "ep:ep-285",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}"
+    },
+    {
+      "id": "ep:ep-286",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}"
+    },
+    {
+      "id": "ep:ep-287",
+      "label": "POST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun"
+    },
+    {
+      "id": "ep:ep-288",
+      "label": "POST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun-failed-jobs"
+    },
+    {
+      "id": "ep:ep-289",
+      "label": "POST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs/{job_id}/rerun"
+    },
+    {
+      "id": "ep:ep-290",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs"
+    },
+    {
+      "id": "ep:ep-291",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}/jobs"
+    },
+    {
+      "id": "ep:ep-293",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/artifacts"
+    },
+    {
+      "id": "ep:ep-294",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/actions/runs/{run}"
+    }
+  ],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.134s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "reqOwner" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "reqOwner",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.134s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "actions/jobs" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "actions/jobs",
+  "direct_matches": 6,
+  "total_nodes": 41,
+  "source_files_from_graph": [
+    "models/issues/issue_pin.go",
+    "modules/setting/api.go",
+    "modules/setting/global.go",
+    "routers/api/v1/admin/action.go",
+    "routers/api/v1/org/action.go",
+    "routers/api/v1/repo/action.go",
+    "routers/api/v1/repo/actions_run.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/action.go"
+  ],
+  "source_files_from_analysis": [],
+  "all_source_files": [
+    "models/issues/issue_pin.go",
+    "modules/setting/api.go",
+    "modules/setting/global.go",
+    "routers/api/v1/admin/action.go",
+    "routers/api/v1/org/action.go",
+    "routers/api/v1/repo/action.go",
+    "routers/api/v1/repo/actions_run.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/action.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-052",
+      "label": "GET /api/v1/orgs/{org}/actions/jobs"
+    },
+    {
+      "id": "ep:ep-105",
+      "label": "GET /api/v1/admin/actions/jobs"
+    },
+    {
+      "id": "ep:ep-138",
+      "label": "GET /api/v1/user/actions/jobs"
+    },
+    {
+      "id": "ep:ep-277",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/jobs"
+    },
+    {
+      "id": "ep:ep-292",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}"
+    },
+    {
+      "id": "ep:ep-403",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}/logs"
+    }
+  ],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.100s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "repo/action" 2[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "repo/action",
+  "direct_matches": 39,
+  "total_nodes": 395,
+  "source_files_from_graph": [
+    "models/actions/run_attempt.go",
+    "models/actions/run_job.go",
+    "models/actions/runner.go",
+    "models/issues/issue_pin.go",
+    "modules/actions/workflows.go",
+    "modules/setting/actions.go",
+    "modules/setting/api.go",
+    "modules/setting/global.go",
+    "modules/storage/storage.go",
+    "routers/api/v1/admin/action.go",
+    "routers/api/v1/admin/adopt.go",
+    "routers/api/v1/admin/cron.go",
+    "routers/api/v1/admin/email.go",
+    "routers/api/v1/admin/hooks.go",
+    "routers/api/v1/admin/org.go",
+    "routers/api/v1/admin/repo.go",
+    "routers/api/v1/admin/runners.go",
+    "routers/api/v1/admin/user.go",
+    "routers/api/v1/admin/user_badge.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/misc/gitignore.go",
+    "routers/api/v1/misc/label_templates.go",
+    "routers/api/v1/misc/licenses.go",
+    "routers/api/v1/misc/markup.go",
+    "routers/api/v1/misc/signing.go",
+    "routers/api/v1/misc/version.go",
+    "routers/api/v1/notify/notifications.go",
+    "routers/api/v1/notify/repo.go",
+    "routers/api/v1/notify/threads.go",
+    "routers/api/v1/notify/user.go",
+    "routers/api/v1/org/action.go",
+    "routers/api/v1/org/avatar.go",
+    "routers/api/v1/org/block.go",
+    "routers/api/v1/org/hook.go",
+    "routers/api/v1/org/label.go",
+    "routers/api/v1/org/member.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/packages/package.go",
+    "routers/api/v1/repo/action.go",
+    "routers/api/v1/repo/actions_run.go",
+    "routers/api/v1/repo/avatar.go",
+    "routers/api/v1/repo/blob.go",
+    "routers/api/v1/repo/branch.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/commits.go",
+    "routers/api/v1/repo/compare.go",
+    "routers/api/v1/repo/file.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/git_hook.go",
+    "routers/api/v1/repo/git_ref.go",
+    "routers/api/v1/repo/hook.go",
+    "routers/api/v1/repo/issue.go",
+    "routers/api/v1/repo/issue_attachment.go",
+    "routers/api/v1/repo/issue_comment.go",
+    "routers/api/v1/repo/issue_comment_attachment.go",
+    "routers/api/v1/repo/issue_dependency.go",
+    "routers/api/v1/repo/issue_label.go",
+    "routers/api/v1/repo/issue_lock.go",
+    "routers/api/v1/repo/issue_pin.go",
+    "routers/api/v1/repo/issue_reaction.go",
+    "routers/api/v1/repo/issue_stopwatch.go",
+    "routers/api/v1/repo/issue_subscription.go",
+    "routers/api/v1/repo/issue_tracked_time.go",
+    "routers/api/v1/repo/key.go",
+    "routers/api/v1/repo/label.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/license.go",
+    "routers/api/v1/repo/migrate.go",
+    "routers/api/v1/repo/milestone.go",
+    "routers/api/v1/repo/mirror.go",
+    "routers/api/v1/repo/notes.go",
+    "routers/api/v1/repo/patch.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/pull_review.go",
+    "routers/api/v1/repo/release.go",
+    "routers/api/v1/repo/release_attachment.go",
+    "routers/api/v1/repo/release_tags.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/repo/star.go",
+    "routers/api/v1/repo/status.go",
+    "routers/api/v1/repo/subscriber.go",
+    "routers/api/v1/repo/tag.go",
+    "routers/api/v1/repo/teams.go",
+    "routers/api/v1/repo/topic.go",
+    "routers/api/v1/repo/transfer.go",
+    "routers/api/v1/repo/tree.go",
+    "routers/api/v1/repo/wiki.go",
+    "routers/api/v1/settings/settings.go",
+    "routers/api/v1/shared/runners.go",
+    "routers/api/v1/user/action.go",
+    "routers/api/v1/user/app.go",
+    "routers/api/v1/user/avatar.go",
+    "routers/api/v1/user/block.go",
+    "routers/api/v1/user/email.go",
+    "routers/api/v1/user/follower.go",
+    "routers/api/v1/user/gpg_key.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/hook.go",
+    "routers/api/v1/user/key.go",
+    "routers/api/v1/user/repo.go",
+    "routers/api/v1/user/runners.go",
+    "routers/api/v1/user/settings.go",
+    "routers/api/v1/user/star.go",
+    "routers/api/v1/user/user.go",
+    "routers/api/v1/user/watch.go",
+    "services/actions/variables.go",
+    "services/issue/template.go",
+    "services/secrets/secrets.go",
+    "services/secrets/validation.go"
+  ],
+  "source_files_from_analysis": [
+    "routers/api/v1/repo/action.go"
+  ],
+  "all_source_files": [
+    "models/actions/run_attempt.go",
+    "models/actions/run_job.go",
+    "models/actions/runner.go",
+    "models/issues/issue_pin.go",
+    "modules/actions/workflows.go",
+    "modules/setting/actions.go",
+    "modules/setting/api.go",
+    "modules/setting/global.go",
+    "modules/storage/storage.go",
+    "routers/api/v1/admin/action.go",
+    "routers/api/v1/admin/adopt.go",
+    "routers/api/v1/admin/cron.go",
+    "routers/api/v1/admin/email.go",
+    "routers/api/v1/admin/hooks.go",
+    "routers/api/v1/admin/org.go",
+    "routers/api/v1/admin/repo.go",
+    "routers/api/v1/admin/runners.go",
+    "routers/api/v1/admin/user.go",
+    "routers/api/v1/admin/user_badge.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/misc/gitignore.go",
+    "routers/api/v1/misc/label_templates.go",
+    "routers/api/v1/misc/licenses.go",
+    "routers/api/v1/misc/markup.go",
+    "routers/api/v1/misc/signing.go",
+    "routers/api/v1/misc/version.go",
+    "routers/api/v1/notify/notifications.go",
+    "routers/api/v1/notify/repo.go",
+    "routers/api/v1/notify/threads.go",
+    "routers/api/v1/notify/user.go",
+    "routers/api/v1/org/action.go",
+    "routers/api/v1/org/avatar.go",
+    "routers/api/v1/org/block.go",
+    "routers/api/v1/org/hook.go",
+    "routers/api/v1/org/label.go",
+    "routers/api/v1/org/member.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/packages/package.go",
+    "routers/api/v1/repo/action.go",
+    "routers/api/v1/repo/actions_run.go",
+    "routers/api/v1/repo/avatar.go",
+    "routers/api/v1/repo/blob.go",
+    "routers/api/v1/repo/branch.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/commits.go",
+    "routers/api/v1/repo/compare.go",
+    "routers/api/v1/repo/file.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/git_hook.go",
+    "routers/api/v1/repo/git_ref.go",
+    "routers/api/v1/repo/hook.go",
+    "routers/api/v1/repo/issue.go",
+    "routers/api/v1/repo/issue_attachment.go",
+    "routers/api/v1/repo/issue_comment.go",
+    "routers/api/v1/repo/issue_comment_attachment.go",
+    "routers/api/v1/repo/issue_dependency.go",
+    "routers/api/v1/repo/issue_label.go",
+    "routers/api/v1/repo/issue_lock.go",
+    "routers/api/v1/repo/issue_pin.go",
+    "routers/api/v1/repo/issue_reaction.go",
+    "routers/api/v1/repo/issue_stopwatch.go",
+    "routers/api/v1/repo/issue_subscription.go",
+    "routers/api/v1/repo/issue_tracked_time.go",
+    "routers/api/v1/repo/key.go",
+    "routers/api/v1/repo/label.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/license.go",
+    "routers/api/v1/repo/migrate.go",
+    "routers/api/v1/repo/milestone.go",
+    "routers/api/v1/repo/mirror.go",
+    "routers/api/v1/repo/notes.go",
+    "routers/api/v1/repo/patch.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/pull_review.go",
+    "routers/api/v1/repo/release.go",
+    "routers/api/v1/repo/release_attachment.go",
+    "routers/api/v1/repo/release_tags.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/repo/star.go",
+    "routers/api/v1/repo/status.go",
+    "routers/api/v1/repo/subscriber.go",
+    "routers/api/v1/repo/tag.go",
+    "routers/api/v1/repo/teams.go",
+    "routers/api/v1/repo/topic.go",
+    "routers/api/v1/repo/transfer.go",
+    "routers/api/v1/repo/tree.go",
+    "routers/api/v1/repo/wiki.go",
+    "routers/api/v1/settings/settings.go",
+    "routers/api/v1/shared/runners.go",
+    "routers/api/v1/user/action.go",
+    "routers/api/v1/user/app.go",
+    "routers/api/v1/user/avatar.go",
+    "routers/api/v1/user/block.go",
+    "routers/api/v1/user/email.go",
+    "routers/api/v1/user/follower.go",
+    "routers/api/v1/user/gpg_key.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/hook.go",
+    "routers/api/v1/user/key.go",
+    "routers/api/v1/user/repo.go",
+    "routers/api/v1/user/runners.go",
+    "routers/api/v1/user/settings.go",
+    "routers/api/v1/user/star.go",
+    "routers/api/v1/user/user.go",
+    "routers/api/v1/user/watch.go",
+    "services/actions/variables.go",
+    "services/issue/template.go",
+    "services/secrets/secrets.go",
+    "services/secrets/validation.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-403",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}/logs"
+    },
+    {
+      "id": "ep:ep-043",
+      "label": "GET /api/v1/orgs/{org}/actions/variables"
+    },
+    {
+      "id": "ep:ep-046",
+      "label": "POST /api/v1/orgs/{org}/actions/variables/{variablename}"
+    },
+    {
+      "id": "ep:ep-047",
+      "label": "PUT /api/v1/orgs/{org}/actions/variables/{variablename}"
+    },
+    {
+      "id": "ep:ep-050",
+      "label": "DELETE /api/v1/orgs/{org}/actions/runners/{runner_id}"
+    },
+    {
+      "id": "ep:ep-051",
+      "label": "PATCH /api/v1/orgs/{org}/actions/runners/{runner_id}"
+    },
+    {
+      "id": "ep:ep-052",
+      "label": "GET /api/v1/orgs/{org}/actions/jobs"
+    },
+    {
+      "id": "ep:ep-053",
+      "label": "GET /api/v1/orgs/{org}/actions/runs"
+    },
+    {
+      "id": "ep:ep-264",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/secrets"
+    },
+    {
+      "id": "ep:ep-265",
+      "label": "PUT /api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}"
+    },
+    {
+      "id": "ep:ep-266",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}"
+    },
+    {
+      "id": "ep:ep-267",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/variables/{variablename}"
+    },
+    {
+      "id": "ep:ep-268",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/actions/variables/{variablename}"
+    },
+    {
+      "id": "ep:ep-269",
+      "label": "POST /api/v1/repos/{owner}/{repo}/actions/variables/{variablename}"
+    },
+    {
+      "id": "ep:ep-270",
+      "label": "PUT /api/v1/repos/{owner}/{repo}/actions/variables/{variablename}"
+    },
+    {
+      "id": "ep:ep-271",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/variables"
+    },
+    {
+      "id": "ep:ep-272",
+      "label": "POST /api/v1/repos/{owner}/{repo}/actions/runners/registration-token"
+    },
+    {
+      "id": "ep:ep-273",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/runners"
+    },
+    {
+      "id": "ep:ep-274",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}"
+    },
+    {
+      "id": "ep:ep-275",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-277 GET /api/v1/repos/{owner}/{repo}/actions/jobs",
+      "step": 1,
+      "component": "Action.ListWorkflowJobs",
+      "file_path": "routers/api/v1/repo/action.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-278 GET /api/v1/repos/{owner}/{repo}/actions/runs",
+      "step": 1,
+      "component": "Action.ListWorkflowRuns",
+      "file_path": "routers/api/v1/repo/action.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-279 GET /api/v1/repos/{owner}/{repo}/actions/tasks",
+      "step": 1,
+      "component": "ListActionTasks",
+      "file_path": "routers/api/v1/repo/action.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-280 GET /api/v1/repos/{owner}/{repo}/actions/workflows",
+      "step": 1,
+      "component": "ActionsListRepositoryWorkflows",
+      "file_path": "routers/api/v1/repo/action.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-281 GET /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}",
+      "step": 1,
+      "component": "ActionsGetWorkflow",
+      "file_path": "routers/api/v1/repo/action.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-282 PUT /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable",
+      "step": 1,
+      "component": "ActionsDisableWorkflow",
+      "file_path": "routers/api/v1/repo/action.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-283 POST /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches",
+      "step": 1,
+      "component": "ActionsDispatchWorkflow",
+      "file_path": "routers/api/v1/repo/action.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-284 PUT /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable",
+      "step": 1,
+      "component": "ActionsEnableWorkflow",
+      "file_path": "routers/api/v1/repo/action.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-269 POST /api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "step": 1,
+      "component": "Action.CreateVariable",
+      "file_path": "routers/api/v1/repo/action.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-270 PUT /api/v1/repos/{owner}/{repo}/actions/variables/{variablename}",
+      "step": 1,
+      "component": "Action.UpdateVariable",
+      "file_path": "routers/api/v1/repo/action.go",
+      "type": "controller"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.113s[0m
+
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The graph query shows that the routes are defined in `routers/api/v1/api.go` (the main API router file) and the handlers are in `routers/api/v1/repo/action.go`. The route declarations with middleware (like reqOwner) would be in `routers/api/v1/api.go`. Let me look at that file to find the `addActionsRoutes` function and the permission middleware.
+[38;5;244m - Completed in 0.29s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "api.go" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "api.go",
+  "direct_matches": 28,
+  "total_nodes": 154,
+  "source_files_from_graph": [
+    "modules/setting/api.go",
+    "modules/web/middleware/binding.go",
+    "routers/api/v1/admin/user_badge.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/misc/markup.go",
+    "routers/api/v1/org/action.go",
+    "routers/api/v1/org/avatar.go",
+    "routers/api/v1/org/member.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/action.go",
+    "routers/api/v1/shared/runners.go",
+    "routers/api/v1/user/app.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/user.go",
+    "services/actions/variables.go",
+    "services/context/api.go"
+  ],
+  "source_files_from_analysis": [
+    "routers/api/v1/api.go",
+    "services/context/api.go"
+  ],
+  "all_source_files": [
+    "modules/setting/api.go",
+    "modules/web/middleware/binding.go",
+    "routers/api/v1/admin/user_badge.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/misc/markup.go",
+    "routers/api/v1/org/action.go",
+    "routers/api/v1/org/avatar.go",
+    "routers/api/v1/org/member.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/action.go",
+    "routers/api/v1/shared/runners.go",
+    "routers/api/v1/user/app.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/user.go",
+    "services/actions/variables.go",
+    "services/context/api.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-009",
+      "label": "POST /api/v1/markdown"
+    },
+    {
+      "id": "ep:ep-016",
+      "label": "GET /api/v1/settings/api"
+    },
+    {
+      "id": "ep:ep-019",
+      "label": "GET /api/v1/notifications"
+    },
+    {
+      "id": "ep:ep-022",
+      "label": "GET /api/v1/repos/{owner}/{repo}/notifications"
+    },
+    {
+      "id": "ep:ep-027",
+      "label": "GET /api/v1/users/{username}/orgs"
+    },
+    {
+      "id": "ep:ep-028",
+      "label": "GET /api/v1/users/{username}/orgs/{org}/permissions"
+    },
+    {
+      "id": "ep:ep-029",
+      "label": "GET /api/v1/orgs"
+    },
+    {
+      "id": "ep:ep-030",
+      "label": "POST /api/v1/orgs"
+    },
+    {
+      "id": "ep:ep-031",
+      "label": "GET /api/v1/orgs/{org}"
+    },
+    {
+      "id": "ep:ep-032",
+      "label": "POST /api/v1/orgs/{org}/rename"
+    },
+    {
+      "id": "ep:ep-033",
+      "label": "PATCH /api/v1/orgs/{org}"
+    },
+    {
+      "id": "ep:ep-034",
+      "label": "DELETE /api/v1/orgs/{org}"
+    },
+    {
+      "id": "ep:ep-035",
+      "label": "GET /api/v1/orgs/{org}/activities/feeds"
+    },
+    {
+      "id": "ep:ep-036",
+      "label": "DELETE /api/v1/orgs/{org}/repos"
+    },
+    {
+      "id": "ep:ep-037",
+      "label": "POST /api/v1/orgs/{org}/avatar"
+    },
+    {
+      "id": "ep:ep-038",
+      "label": "DELETE /api/v1/orgs/{org}/avatar"
+    },
+    {
+      "id": "ep:ep-039",
+      "label": "GET /api/v1/orgs/{org}/actions/secrets"
+    },
+    {
+      "id": "ep:ep-040",
+      "label": "PUT /api/v1/orgs/{org}/actions/secrets/{secretname}"
+    },
+    {
+      "id": "ep:ep-041",
+      "label": "DELETE /api/v1/orgs/{org}/actions/secrets/{secretname}"
+    },
+    {
+      "id": "ep:ep-042",
+      "label": "POST /api/v1/orgs/{org}/actions/runners/registration-token"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-029 GET /api/v1/orgs",
+      "step": 1,
+      "component": "tokenRequiresScopes",
+      "file_path": "routers/api/v1/api.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-030 POST /api/v1/orgs",
+      "step": 1,
+      "component": "reqToken",
+      "file_path": "routers/api/v1/api.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-031 GET /api/v1/orgs/{org}",
+      "step": 1,
+      "component": "orgAssignment(true)",
+      "file_path": "routers/api/v1/api.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-031 GET /api/v1/orgs/{org}",
+      "step": 2,
+      "component": "checkTokenPublicOnly",
+      "file_path": "routers/api/v1/api.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-032 POST /api/v1/orgs/{org}/rename",
+      "step": 1,
+      "component": "orgAssignment(true) + reqToken + reqOrgOwnership",
+      "file_path": "routers/api/v1/api.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-033 PATCH /api/v1/orgs/{org}",
+      "step": 1,
+      "component": "orgAssignment(true) + reqToken + reqOrgOwnership",
+      "file_path": "routers/api/v1/api.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-034 DELETE /api/v1/orgs/{org}",
+      "step": 1,
+      "component": "orgAssignment(true) + reqToken + reqOrgOwnership",
+      "file_path": "routers/api/v1/api.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-009 POST /api/v1/markdown",
+      "step": 1,
+      "component": "bind[MarkdownOption]",
+      "file_path": "routers/api/v1/api.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-164 GET /api/v1/users/{username}/tokens",
+      "step": 1,
+      "component": "context.UserAssignmentAPI",
+      "file_path": "services/context/api.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-070 GET /api/v1/orgs/{org}/members",
+      "step": 1,
+      "component": "orgAssignment",
+      "file_path": "routers/api/v1/api.go",
+      "type": "middleware"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.127s[0m
+
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: Based on the graph queries, I can see that:
+
+1. The route declarations are in `routers/api/v1/api.go` - this is where middleware like `reqOwner()` and `reqOrgOwnership()` are applied to routes
+2. The handler implementations are in `routers/api/v1/repo/action.go` - this contains the controller functions like `Action.ListWorkflowJobs` and `Action.ListWorkflowRuns`
+
+The bug is about permissions - the routes use `reqOwner()` or `reqOrgOwnership()` middleware but should only require read access. The route declarations (where the middleware is applied) are in `routers/api/v1/api.go`. That's the file that needs to change - specifically the `addActionsRoutes` function or wherever the actions routes for repos are declared with the overly-restrictive permission middleware.
+
+Let me look at `routers/api/v1/api.go` to find the specific route group where these are declared.
+
+[38;5;244m - Completed in 0.28s[0m
+
+[?25l[0m[38;5;141m> [0mBased on the graph analysis, the file that needs to change is:[0m[0m
+[0m[0m
+[1m[38;5;10mrouters/api/v1/api.go[0m[22m[0m[0m
+[0m[0m
+This is the route declaration file where [38;5;10maddActionsRoutes[0m applies permission middleware ([38;5;10mreqOwner()[0m / [38;5;10mreqOrgOwnership()[0m) to the actions endpoints. The graph confirms:[0m[0m
+[0m[0m
+- The route middleware ([38;5;10mreqToken[0m, [38;5;10mreqOrgOwnership[0m, [38;5;10morgAssignment[0m) are all defined/applied in [38;5;10mrouters/api/v1/api.go[0m[0m[0m
+- The GET endpoints for [38;5;10m/repos/{owner}/{repo}/actions/runs[0m (ep-278) and [38;5;10m/repos/{owner}/{repo}/actions/jobs[0m (ep-277) have their handlers in [38;5;10mrouters/api/v1/repo/action.go[0m, but the [1mpermission middleware is wired up in [38;5;10mrouters/api/v1/api.go[0m[22m[0m[0m
+[0m[0m
+The fix would be to change the middleware on the read-only GET routes for [38;5;10mactions/runs[0m and [38;5;10mactions/jobs[0m from [38;5;10mreqOwner()[0m/[38;5;10mreqOrgOwnership()[0m to a reader-level permission check (e.g., [38;5;10mreqRepoReader(unit.TypeActions)[0m) within the route group in [38;5;10mrouters/api/v1/api.go[0m.[0m[0m
+[38;5;8m
+ ▸ Credits: 0.72 • Time: 48s
+
+[0m[1G[0m[0m[?25h

@@ -1,0 +1,1604 @@
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[32mAll tools are now trusted ([0m[31m![0m[32m). Kiro will execute tools without asking for confirmation.[0m
+Agents can sometimes do unexpected things so understand the risks.
+
+Learn more at [38;5;141mhttps://kiro.dev/docs/cli/chat/security/#using-tools-trust-all-safely[0m
+
+
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.17s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "smart HTTP git" 1[0m[38;5;244m (using tool: shell)[0m
+
+I will run the following command: [38;5;141mpython3 graph_query.py "git HTTP permission" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "smart HTTP git",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.122s[0m
+
+{
+  "query": "git HTTP permission",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.94s[0m
+
+[?25l[0m[?25l[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "serviceHTTP" 1[0m[38;5;244m (using tool: shell)[0m
+
+I will run the following command: [38;5;141mpython3 graph_query.py "reqRepoReader" 1[0m[38;5;244m (using tool: shell)[0m
+
+I will run the following command: [38;5;141mpython3 graph_query.py "HTTPGitEnabledError" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "serviceHTTP",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.109s[0m
+
+{
+  "query": "reqRepoReader",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.98s[0m
+
+{
+  "query": "HTTPGitEnabledError",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.95s[0m
+
+[?25l[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "HTTP" 1[0m[38;5;244m (using tool: shell)[0m
+
+I will run the following command: [38;5;141mpython3 graph_query.py "git" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "HTTP",
+  "direct_matches": 2,
+  "total_nodes": 3,
+  "source_files_from_graph": [
+    "modules/setting/repository.go"
+  ],
+  "source_files_from_analysis": [],
+  "all_source_files": [
+    "modules/setting/repository.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-017",
+      "label": "GET /api/v1/settings/repository"
+    }
+  ],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.105s[0m
+
+{
+  "query": "git",
+  "direct_matches": 148,
+  "total_nodes": 246,
+  "source_files_from_graph": [
+    "models/db/list.go",
+    "models/git/branch.go",
+    "models/git/protected_branch.go",
+    "models/git/protected_branch_list.go",
+    "models/issues/issue_pin.go",
+    "modules/assetfs/layered.go",
+    "modules/git/commit.go",
+    "modules/git/key.go",
+    "modules/git/notes_nogogit.go",
+    "modules/git/repo.go",
+    "modules/git/repo_branch.go",
+    "modules/git/repo_commit.go",
+    "modules/gitrepo/branch.go",
+    "modules/gitrepo/clone.go",
+    "modules/gitrepo/commit.go",
+    "modules/gitrepo/push.go",
+    "modules/repository/branch.go",
+    "modules/setting/api.go",
+    "modules/setting/git.go",
+    "modules/setting/repository.go",
+    "modules/setting/setting.go",
+    "routers/api/v1/misc/gitignore.go",
+    "routers/api/v1/repo/blob.go",
+    "routers/api/v1/repo/branch.go",
+    "routers/api/v1/repo/commits.go",
+    "routers/api/v1/repo/git_hook.go",
+    "routers/api/v1/repo/git_ref.go",
+    "routers/api/v1/repo/hook.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/notes.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/tag.go",
+    "routers/api/v1/repo/tree.go",
+    "routers/api/v1/utils/git.go",
+    "services/convert/convert.go",
+    "services/convert/git_commit.go",
+    "services/git/compare.go",
+    "services/gitdiff/gitdiff.go",
+    "services/mirror/mirror_push.go",
+    "services/notify/notify.go",
+    "services/pull/update.go",
+    "services/repository/branch.go",
+    "services/repository/files/tree.go",
+    "services/repository/merge_upstream.go"
+  ],
+  "source_files_from_analysis": [
+    "models/db/list.go",
+    "models/git/branch.go",
+    "models/git/protected_branch.go",
+    "models/git/protected_branch_list.go",
+    "modules/git/commit.go",
+    "modules/git/diff.go",
+    "modules/git/key.go",
+    "modules/git/notes_nogogit.go",
+    "modules/git/repo.go",
+    "modules/git/repo_branch.go",
+    "modules/git/repo_commit.go",
+    "modules/gitrepo/branch.go",
+    "modules/gitrepo/commit.go",
+    "modules/gitrepo/push.go",
+    "modules/options/base.go",
+    "routers/api/v1/misc/gitignore.go",
+    "routers/api/v1/repo/git_ref.go",
+    "routers/api/v1/utils/git.go",
+    "services/convert/git_commit.go",
+    "services/git/compare.go",
+    "services/gitdiff/gitdiff.go"
+  ],
+  "all_source_files": [
+    "models/db/list.go",
+    "models/git/branch.go",
+    "models/git/protected_branch.go",
+    "models/git/protected_branch_list.go",
+    "models/issues/issue_pin.go",
+    "modules/assetfs/layered.go",
+    "modules/git/commit.go",
+    "modules/git/diff.go",
+    "modules/git/key.go",
+    "modules/git/notes_nogogit.go",
+    "modules/git/repo.go",
+    "modules/git/repo_branch.go",
+    "modules/git/repo_commit.go",
+    "modules/gitrepo/branch.go",
+    "modules/gitrepo/clone.go",
+    "modules/gitrepo/commit.go",
+    "modules/gitrepo/push.go",
+    "modules/options/base.go",
+    "modules/repository/branch.go",
+    "modules/setting/api.go",
+    "modules/setting/git.go",
+    "modules/setting/repository.go",
+    "modules/setting/setting.go",
+    "routers/api/v1/misc/gitignore.go",
+    "routers/api/v1/repo/blob.go",
+    "routers/api/v1/repo/branch.go",
+    "routers/api/v1/repo/commits.go",
+    "routers/api/v1/repo/git_hook.go",
+    "routers/api/v1/repo/git_ref.go",
+    "routers/api/v1/repo/hook.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/notes.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/tag.go",
+    "routers/api/v1/repo/tree.go",
+    "routers/api/v1/utils/git.go",
+    "services/convert/convert.go",
+    "services/convert/git_commit.go",
+    "services/git/compare.go",
+    "services/gitdiff/gitdiff.go",
+    "services/mirror/mirror_push.go",
+    "services/notify/notify.go",
+    "services/pull/update.go",
+    "services/repository/branch.go",
+    "services/repository/files/tree.go",
+    "services/repository/merge_upstream.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-011",
+      "label": "GET /api/v1/gitignore/templates"
+    },
+    {
+      "id": "ep:ep-012",
+      "label": "GET /api/v1/gitignore/templates/{name}"
+    },
+    {
+      "id": "ep:ep-214",
+      "label": "GET /api/v1/repos/{owner}/{repo}/git/commits/{sha}"
+    },
+    {
+      "id": "ep:ep-216",
+      "label": "GET /api/v1/repos/{owner}/{repo}/git/commits/{sha}.{diffType}"
+    },
+    {
+      "id": "ep:ep-246",
+      "label": "GET /api/v1/repos/{owner}/{repo}/git/trees/{sha}"
+    },
+    {
+      "id": "ep:ep-247",
+      "label": "GET /api/v1/repos/{owner}/{repo}/git/refs"
+    },
+    {
+      "id": "ep:ep-248",
+      "label": "GET /api/v1/repos/{owner}/{repo}/git/refs/{ref}"
+    },
+    {
+      "id": "ep:ep-299",
+      "label": "GET /api/v1/repos/{owner}/{repo}/git/notes/{sha}"
+    },
+    {
+      "id": "ep:ep-386",
+      "label": "GET /api/v1/repos/{owner}/{repo}/hooks/git"
+    },
+    {
+      "id": "ep:ep-387",
+      "label": "GET /api/v1/repos/{owner}/{repo}/hooks/git/{id}"
+    },
+    {
+      "id": "ep:ep-388",
+      "label": "PATCH /api/v1/repos/{owner}/{repo}/hooks/git/{id}"
+    },
+    {
+      "id": "ep:ep-389",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/hooks/git/{id}"
+    },
+    {
+      "id": "ep:ep-415",
+      "label": "GET /api/v1/repos/{owner}/{repo}/git/tags/{sha}"
+    },
+    {
+      "id": "ep:ep-433",
+      "label": "GET /api/v1/repos/{owner}/{repo}/git/blobs/{sha}"
+    },
+    {
+      "id": "ep:ep-004",
+      "label": "GET /api/v1/signing-key.gpg"
+    },
+    {
+      "id": "ep:ep-005",
+      "label": "GET /api/v1/repos/{owner}/{repo}/signing-key.gpg"
+    },
+    {
+      "id": "ep:ep-006",
+      "label": "GET /api/v1/signing-key.pub"
+    },
+    {
+      "id": "ep:ep-007",
+      "label": "GET /api/v1/repos/{owner}/{repo}/signing-key.pub"
+    },
+    {
+      "id": "ep:ep-016",
+      "label": "GET /api/v1/settings/api"
+    },
+    {
+      "id": "ep:ep-017",
+      "label": "GET /api/v1/settings/repository"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-011 GET /api/v1/gitignore/templates",
+      "step": 1,
+      "component": "misc.ListGitignoresTemplates",
+      "file_path": "routers/api/v1/misc/gitignore.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-012 GET /api/v1/gitignore/templates/{name}",
+      "step": 1,
+      "component": "misc.GetGitignoreTemplateInfo",
+      "file_path": "routers/api/v1/misc/gitignore.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-012 GET /api/v1/gitignore/templates/{name}",
+      "step": 2,
+      "component": "options.Gitignore",
+      "file_path": "modules/options/base.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-312 GET /api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "step": 2,
+      "component": "git_model.GetProtectedBranchRuleByName",
+      "file_path": "models/git/protected_branch.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-313 GET /api/v1/repos/{owner}/{repo}/branch_protections",
+      "step": 2,
+      "component": "git_model.FindRepoProtectedBranchRules",
+      "file_path": "models/git/protected_branch_list.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-314 POST /api/v1/repos/{owner}/{repo}/branch_protections",
+      "step": 5,
+      "component": "git_model.UpdateProtectBranch",
+      "file_path": "models/git/protected_branch.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-315 PATCH /api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "step": 2,
+      "component": "git_model.UpdateProtectBranch",
+      "file_path": "models/git/protected_branch.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-316 DELETE /api/v1/repos/{owner}/{repo}/branch_protections/{name}",
+      "step": 2,
+      "component": "git_model.DeleteProtectedBranch",
+      "file_path": "models/git/protected_branch.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-317 POST /api/v1/repos/{owner}/{repo}/branch_protections/priority",
+      "step": 2,
+      "component": "git_model.UpdateProtectBranchPriorities",
+      "file_path": "models/git/protected_branch.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-318 POST /api/v1/repos/{owner}/{repo}/merge-upstream",
+      "step": 4,
+      "component": "gitrepo.Push",
+      "file_path": "modules/gitrepo/push.go",
+      "type": "utility"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.99s[0m
+
+[?25l[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "permission" 1[0m[38;5;244m (using tool: shell)[0m
+
+I will run the following command: [38;5;141mpython3 graph_query.py "context" 1 | python3 -c "import sys,json; d=json.load(sys.stdin); [print(f) for f in d['all_source_files'] if 'git' in f.lower() or 'http' in f.lower() or 'context' in f.lower()]"[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "permission",
+  "direct_matches": 21,
+  "total_nodes": 98,
+  "source_files_from_graph": [
+    "models/issues/assignees.go",
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/organization/org.go",
+    "models/organization/org_user.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/user.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/issue_dependency.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/repo.go",
+    "services/context/api.go",
+    "services/convert/issue.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/pull/pull.go"
+  ],
+  "source_files_from_analysis": [
+    "models/perm/access/repo_permission.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/issue_dependency.go",
+    "services/convert/user.go"
+  ],
+  "all_source_files": [
+    "models/issues/assignees.go",
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/organization/org.go",
+    "models/organization/org_user.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/user.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/issue_dependency.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/repo.go",
+    "services/context/api.go",
+    "services/convert/issue.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/pull/pull.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-028",
+      "label": "GET /api/v1/users/{username}/orgs/{org}/permissions"
+    },
+    {
+      "id": "ep:ep-254",
+      "label": "GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission"
+    },
+    {
+      "id": "ep:ep-034",
+      "label": "DELETE /api/v1/orgs/{org}"
+    },
+    {
+      "id": "ep:ep-040",
+      "label": "PUT /api/v1/orgs/{org}/actions/secrets/{secretname}"
+    },
+    {
+      "id": "ep:ep-048",
+      "label": "GET /api/v1/orgs/{org}/actions/runners"
+    },
+    {
+      "id": "ep:ep-049",
+      "label": "GET /api/v1/orgs/{org}/actions/runners/{runner_id}"
+    },
+    {
+      "id": "ep:ep-063",
+      "label": "DELETE /api/v1/teams/{id}/members/{username}"
+    },
+    {
+      "id": "ep:ep-064",
+      "label": "GET /api/v1/teams/{id}/repos"
+    },
+    {
+      "id": "ep:ep-078",
+      "label": "GET /api/v1/orgs/{org}/hooks/{id}"
+    },
+    {
+      "id": "ep:ep-080",
+      "label": "PATCH /api/v1/orgs/{org}/hooks/{id}"
+    },
+    {
+      "id": "ep:ep-081",
+      "label": "DELETE /api/v1/orgs/{org}/hooks/{id}"
+    },
+    {
+      "id": "ep:ep-085",
+      "label": "PATCH /api/v1/orgs/{org}/labels/{id}"
+    },
+    {
+      "id": "ep:ep-098",
+      "label": "POST /api/v1/admin/users"
+    },
+    {
+      "id": "ep:ep-102",
+      "label": "DELETE /api/v1/admin/users/{username}/keys/{id}"
+    },
+    {
+      "id": "ep:ep-104",
+      "label": "POST /api/v1/admin/users/{username}/rename"
+    },
+    {
+      "id": "ep:ep-113",
+      "label": "POST /api/v1/admin/actions/runners/registration-token"
+    },
+    {
+      "id": "ep:ep-128",
+      "label": "POST /api/v1/user/avatar"
+    },
+    {
+      "id": "ep:ep-172",
+      "label": "GET /api/v1/users/{username}/repos"
+    },
+    {
+      "id": "ep:ep-173",
+      "label": "GET /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-208",
+      "label": "GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-172 GET /api/v1/users/{username}/repos",
+      "step": 3,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-173 GET /api/v1/user/repos",
+      "step": 2,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-333 GET /api/v1/repos/{owner}/{repo}/forks",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-368 GET /api/v1/repositories/{id}",
+      "step": 2,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-362 GET /api/v1/repos/search",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission (loop)",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-208 GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "step": 5,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-209 POST /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "step": 4,
+      "component": "repo.getPermissionForRepo",
+      "file_path": "routers/api/v1/repo/issue_dependency.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-211 GET /api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-254 GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "step": 1,
+      "component": "repo.GetRepoPermissions",
+      "file_path": "routers/api/v1/repo/collaborators.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-254 GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "step": 3,
+      "component": "access_model.GetIndividualUserRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.331s[0m
+
+services/context/api.go
+services/context/package.go
+services/context/user.go
+[38;5;244m - Completed in 0.233s[0m
+
+[?25l[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "unit" 1[0m[38;5;244m (using tool: shell)[0m
+
+I will run the following command: [38;5;141mpython3 graph_query.py "repo_permission" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "unit",
+  "direct_matches": 5,
+  "total_nodes": 19,
+  "source_files_from_graph": [
+    "routers/api/v1/repo/repo.go"
+  ],
+  "source_files_from_analysis": [
+    "routers/api/v1/repo/repo.go"
+  ],
+  "all_source_files": [
+    "routers/api/v1/repo/repo.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-030",
+      "label": "POST /api/v1/orgs"
+    },
+    {
+      "id": "ep:ep-034",
+      "label": "DELETE /api/v1/orgs/{org}"
+    },
+    {
+      "id": "ep:ep-054",
+      "label": "GET /api/v1/orgs/{org}/teams"
+    },
+    {
+      "id": "ep:ep-055",
+      "label": "GET /api/v1/user/teams"
+    },
+    {
+      "id": "ep:ep-056",
+      "label": "GET /api/v1/teams/{id}"
+    },
+    {
+      "id": "ep:ep-057",
+      "label": "POST /api/v1/orgs/{org}/teams"
+    },
+    {
+      "id": "ep:ep-058",
+      "label": "PATCH /api/v1/teams/{id}"
+    },
+    {
+      "id": "ep:ep-059",
+      "label": "DELETE /api/v1/teams/{id}"
+    },
+    {
+      "id": "ep:ep-282",
+      "label": "PUT /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable"
+    },
+    {
+      "id": "ep:ep-283",
+      "label": "POST /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches"
+    },
+    {
+      "id": "ep:ep-284",
+      "label": "PUT /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable"
+    },
+    {
+      "id": "ep:ep-369",
+      "label": "PATCH /api/v1/repos/{owner}/{repo}"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-369 PATCH /api/v1/repos/{owner}/{repo}",
+      "step": 3,
+      "component": "repo.updateRepoUnits",
+      "file_path": "routers/api/v1/repo/repo.go",
+      "type": "controller"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.121s[0m
+
+{
+  "query": "repo_permission",
+  "direct_matches": 4,
+  "total_nodes": 31,
+  "source_files_from_graph": [
+    "models/issues/assignees.go",
+    "models/issues/issue.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/user.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/repo.go",
+    "services/convert/issue.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/pull/pull.go"
+  ],
+  "source_files_from_analysis": [
+    "models/perm/access/repo_permission.go"
+  ],
+  "all_source_files": [
+    "models/issues/assignees.go",
+    "models/issues/issue.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/user.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/repo.go",
+    "services/convert/issue.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/pull/pull.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-172",
+      "label": "GET /api/v1/users/{username}/repos"
+    },
+    {
+      "id": "ep:ep-173",
+      "label": "GET /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-208",
+      "label": "GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies"
+    },
+    {
+      "id": "ep:ep-209",
+      "label": "POST /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies"
+    },
+    {
+      "id": "ep:ep-210",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies"
+    },
+    {
+      "id": "ep:ep-211",
+      "label": "GET /api/v1/repos/{owner}/{repo}/issues/{index}/blocks"
+    },
+    {
+      "id": "ep:ep-212",
+      "label": "POST /api/v1/repos/{owner}/{repo}/issues/{index}/blocks"
+    },
+    {
+      "id": "ep:ep-213",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/blocks"
+    },
+    {
+      "id": "ep:ep-226",
+      "label": "POST /api/v1/repos/{owner}/{repo}/pulls"
+    },
+    {
+      "id": "ep:ep-254",
+      "label": "GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission"
+    },
+    {
+      "id": "ep:ep-333",
+      "label": "GET /api/v1/repos/{owner}/{repo}/forks"
+    },
+    {
+      "id": "ep:ep-362",
+      "label": "GET /api/v1/repos/search"
+    },
+    {
+      "id": "ep:ep-368",
+      "label": "GET /api/v1/repositories/{id}"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-172 GET /api/v1/users/{username}/repos",
+      "step": 3,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-173 GET /api/v1/user/repos",
+      "step": 2,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-333 GET /api/v1/repos/{owner}/{repo}/forks",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-368 GET /api/v1/repositories/{id}",
+      "step": 2,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-362 GET /api/v1/repos/search",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission (loop)",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-208 GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "step": 5,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-211 GET /api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-254 GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "step": 3,
+      "component": "access_model.GetIndividualUserRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-226 POST /api/v1/repos/{owner}/{repo}/pulls",
+      "step": 7,
+      "component": "access_model.CanBeAssigned",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.103s[0m
+
+[?25l[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "UnitType" 1[0m[38;5;244m (using tool: shell)[0m
+
+I will run the following command: [38;5;141mpython3 graph_query.py "HasAccess" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "UnitType",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.103s[0m
+
+{
+  "query": "HasAccess",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.466s[0m
+
+[?25l[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "CanUnitAccess" 1[0m[38;5;244m (using tool: shell)[0m
+
+I will run the following command: [38;5;141mpython3 graph_query.py "accessMode" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "CanUnitAccess",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.123s[0m
+
+{
+  "query": "accessMode",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.102s[0m
+
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The graph query results show that the permission context for the repository is primarily handled in `models/perm/access/repo_permission.go`. This file contains functions like `GetDoerRepoPermission`, `GetIndividualUserRepoPermission`, and `CanBeAssigned`.
+
+However, the question is specifically about Smart HTTP git requests and which file handles the permission context for git operations. In Gitea's architecture, the Smart HTTP git handler is typically in `routers/web/repo/http.go` or similar. But since this graph doesn't seem to have the web router files indexed, let me look for what's available.
+
+The key file from the graph is `models/perm/access/repo_permission.go` which handles the permission model. But for the HTTP git handler specifically, let me search more specifically.
+[38;5;244m - Completed in 0.32s[0m
+
+[?25l[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "getRepoPermission" 1[0m[38;5;244m (using tool: shell)[0m
+
+I will run the following command: [38;5;141mpython3 graph_query.py "context.APIContext" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "getRepoPermission",
+  "direct_matches": 2,
+  "total_nodes": 4,
+  "source_files_from_graph": [
+    "models/user/user.go",
+    "routers/api/v1/repo/collaborators.go"
+  ],
+  "source_files_from_analysis": [
+    "routers/api/v1/repo/collaborators.go"
+  ],
+  "all_source_files": [
+    "models/user/user.go",
+    "routers/api/v1/repo/collaborators.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-254",
+      "label": "GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-254 GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "step": 1,
+      "component": "repo.GetRepoPermissions",
+      "file_path": "routers/api/v1/repo/collaborators.go",
+      "type": "controller"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.134s[0m
+
+{
+  "query": "context.APIContext",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.113s[0m
+
+[?25l[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "RepoAssignment" 1[0m[38;5;244m (using tool: shell)[0m
+
+I will run the following command: [38;5;141mpython3 graph_query.py "Permission" 2[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "RepoAssignment",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.94s[0m
+
+{
+  "query": "Permission",
+  "direct_matches": 21,
+  "total_nodes": 653,
+  "source_files_from_graph": [
+    "models/db/find.go",
+    "models/git/branch.go",
+    "models/issues/assignees.go",
+    "models/issues/dependency.go",
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/issues/label.go",
+    "models/issues/milestone.go",
+    "models/issues/pull.go",
+    "models/issues/pull_list.go",
+    "models/organization/org.go",
+    "models/organization/org_user.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/attachment.go",
+    "models/repo/issue.go",
+    "models/repo/release.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/repo/topic.go",
+    "models/user/block.go",
+    "models/user/user.go",
+    "models/webhook/webhook.go",
+    "modules/auth/password/pwn/pwn.go",
+    "modules/avatar/avatar.go",
+    "modules/gitrepo/branch.go",
+    "modules/label/label.go",
+    "modules/setting/api.go",
+    "modules/setting/attachment.go",
+    "modules/setting/picture.go",
+    "modules/setting/repository.go",
+    "modules/setting/security.go",
+    "modules/setting/service.go",
+    "modules/setting/ssh.go",
+    "modules/storage/storage.go",
+    "routers/api/v1/admin/runners.go",
+    "routers/api/v1/admin/user.go",
+    "routers/api/v1/admin/user_badge.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/action.go",
+    "routers/api/v1/org/hook.go",
+    "routers/api/v1/org/label.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/branch.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/issue_attachment.go",
+    "routers/api/v1/repo/issue_dependency.go",
+    "routers/api/v1/repo/key.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/release_tags.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/repo/topic.go",
+    "routers/api/v1/shared/runners.go",
+    "routers/api/v1/user/app.go",
+    "routers/api/v1/user/avatar.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/repo.go",
+    "routers/api/v1/user/star.go",
+    "routers/api/v1/user/user.go",
+    "routers/api/v1/user/watch.go",
+    "routers/api/v1/utils/hook.go",
+    "services/asymkey/deploy_key.go",
+    "services/asymkey/ssh_key_authorized_keys.go",
+    "services/attachment/attachment.go",
+    "services/automerge/automerge.go",
+    "services/context/api.go",
+    "services/convert/attachment.go",
+    "services/convert/issue.go",
+    "services/convert/pull.go",
+    "services/convert/release.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/issue/content.go",
+    "services/issue/template.go",
+    "services/notify/notify.go",
+    "services/pull/check.go",
+    "services/pull/merge.go",
+    "services/pull/pull.go",
+    "services/pull/update.go",
+    "services/repository/branch.go",
+    "services/repository/generate.go",
+    "services/secrets/secrets.go"
+  ],
+  "source_files_from_analysis": [
+    "models/perm/access/repo_permission.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/issue_dependency.go",
+    "services/convert/user.go"
+  ],
+  "all_source_files": [
+    "models/db/find.go",
+    "models/git/branch.go",
+    "models/issues/assignees.go",
+    "models/issues/dependency.go",
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/issues/label.go",
+    "models/issues/milestone.go",
+    "models/issues/pull.go",
+    "models/issues/pull_list.go",
+    "models/organization/org.go",
+    "models/organization/org_user.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/attachment.go",
+    "models/repo/issue.go",
+    "models/repo/release.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/repo/topic.go",
+    "models/user/block.go",
+    "models/user/user.go",
+    "models/webhook/webhook.go",
+    "modules/auth/password/pwn/pwn.go",
+    "modules/avatar/avatar.go",
+    "modules/gitrepo/branch.go",
+    "modules/label/label.go",
+    "modules/setting/api.go",
+    "modules/setting/attachment.go",
+    "modules/setting/picture.go",
+    "modules/setting/repository.go",
+    "modules/setting/security.go",
+    "modules/setting/service.go",
+    "modules/setting/ssh.go",
+    "modules/storage/storage.go",
+    "routers/api/v1/admin/runners.go",
+    "routers/api/v1/admin/user.go",
+    "routers/api/v1/admin/user_badge.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/action.go",
+    "routers/api/v1/org/hook.go",
+    "routers/api/v1/org/label.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/branch.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/issue_attachment.go",
+    "routers/api/v1/repo/issue_dependency.go",
+    "routers/api/v1/repo/key.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/release_tags.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/repo/topic.go",
+    "routers/api/v1/shared/runners.go",
+    "routers/api/v1/user/app.go",
+    "routers/api/v1/user/avatar.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/repo.go",
+    "routers/api/v1/user/star.go",
+    "routers/api/v1/user/user.go",
+    "routers/api/v1/user/watch.go",
+    "routers/api/v1/utils/hook.go",
+    "services/asymkey/deploy_key.go",
+    "services/asymkey/ssh_key_authorized_keys.go",
+    "services/attachment/attachment.go",
+    "services/automerge/automerge.go",
+    "services/context/api.go",
+    "services/convert/attachment.go",
+    "services/convert/issue.go",
+    "services/convert/pull.go",
+    "services/convert/release.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/issue/content.go",
+    "services/issue/template.go",
+    "services/notify/notify.go",
+    "services/pull/check.go",
+    "services/pull/merge.go",
+    "services/pull/pull.go",
+    "services/pull/update.go",
+    "services/repository/branch.go",
+    "services/repository/generate.go",
+    "services/secrets/secrets.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-028",
+      "label": "GET /api/v1/users/{username}/orgs/{org}/permissions"
+    },
+    {
+      "id": "ep:ep-254",
+      "label": "GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission"
+    },
+    {
+      "id": "ep:ep-034",
+      "label": "DELETE /api/v1/orgs/{org}"
+    },
+    {
+      "id": "ep:ep-040",
+      "label": "PUT /api/v1/orgs/{org}/actions/secrets/{secretname}"
+    },
+    {
+      "id": "ep:ep-048",
+      "label": "GET /api/v1/orgs/{org}/actions/runners"
+    },
+    {
+      "id": "ep:ep-049",
+      "label": "GET /api/v1/orgs/{org}/actions/runners/{runner_id}"
+    },
+    {
+      "id": "ep:ep-063",
+      "label": "DELETE /api/v1/teams/{id}/members/{username}"
+    },
+    {
+      "id": "ep:ep-064",
+      "label": "GET /api/v1/teams/{id}/repos"
+    },
+    {
+      "id": "ep:ep-078",
+      "label": "GET /api/v1/orgs/{org}/hooks/{id}"
+    },
+    {
+      "id": "ep:ep-080",
+      "label": "PATCH /api/v1/orgs/{org}/hooks/{id}"
+    },
+    {
+      "id": "ep:ep-081",
+      "label": "DELETE /api/v1/orgs/{org}/hooks/{id}"
+    },
+    {
+      "id": "ep:ep-085",
+      "label": "PATCH /api/v1/orgs/{org}/labels/{id}"
+    },
+    {
+      "id": "ep:ep-098",
+      "label": "POST /api/v1/admin/users"
+    },
+    {
+      "id": "ep:ep-102",
+      "label": "DELETE /api/v1/admin/users/{username}/keys/{id}"
+    },
+    {
+      "id": "ep:ep-104",
+      "label": "POST /api/v1/admin/users/{username}/rename"
+    },
+    {
+      "id": "ep:ep-113",
+      "label": "POST /api/v1/admin/actions/runners/registration-token"
+    },
+    {
+      "id": "ep:ep-128",
+      "label": "POST /api/v1/user/avatar"
+    },
+    {
+      "id": "ep:ep-172",
+      "label": "GET /api/v1/users/{username}/repos"
+    },
+    {
+      "id": "ep:ep-173",
+      "label": "GET /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-208",
+      "label": "GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-172 GET /api/v1/users/{username}/repos",
+      "step": 3,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-173 GET /api/v1/user/repos",
+      "step": 2,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-333 GET /api/v1/repos/{owner}/{repo}/forks",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-368 GET /api/v1/repositories/{id}",
+      "step": 2,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-362 GET /api/v1/repos/search",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission (loop)",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-208 GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "step": 5,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-209 POST /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "step": 4,
+      "component": "repo.getPermissionForRepo",
+      "file_path": "routers/api/v1/repo/issue_dependency.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-211 GET /api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-254 GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "step": 1,
+      "component": "repo.GetRepoPermissions",
+      "file_path": "routers/api/v1/repo/collaborators.go",
+      "type": "controller"
+    },
+    {
+      "endpoint": "ep-254 GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "step": 3,
+      "component": "access_model.GetIndividualUserRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.121s[0m
+
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The knowledge graph is primarily focused on API v1 endpoints. The Smart HTTP git handler in Gitea is typically in `routers/web/repo/http.go` which isn't in the indexed graph. However, the permission model file that would be relevant is clearly `models/perm/access/repo_permission.go`.
+
+In Gitea's architecture, the permission checking for git operations (smart HTTP) is done through the `Permission` struct in `models/perm/access/repo_permission.go`. This file contains:
+- `GetDoerRepoPermission` - gets the overall repo permission
+- `GetIndividualUserRepoPermission` - gets individual user permission
+- The `Permission` struct which has methods to check unit-level access (like `CanRead(UnitType)`, `CanWrite(UnitType)`)
+
+The bug described says "they use repo-level scope when they should check specific unit scope." The permission context that should be checking unit-specific scopes lives in `models/perm/access/repo_permission.go`. This is where the `Permission` struct defines `UnitsMode` map and methods like `CanAccessAny`, `CanRead`, `CanWrite` that operate on specific unit types.
+
+But actually, the question is asking specifically about which file **handles the permission context for git operations** - meaning the file that sets up/evaluates permissions for the Smart HTTP git transport. In Gitea, the Smart HTTP handler is in `routers/web/repo/http.go` but since that's not in the graph, I should look at what IS in the graph related to git + permissions.
+
+Let me look at `services/context/api.go` which was found in both the "context" and "permission" queries - this is likely the middleware that sets up repository context including permissions for API requests. But for web/git HTTP requests specifically...
+
+Actually, looking again at the graph results: `services/context/api.go` shows up in the permission query's graph results. In Gitea, `services/context/` contains the context setup which includes permission loading. For the web routes (which include git HTTP), it would be `services/context/repo.go` or similar - but that's not in the graph.
+
+Given what's in the graph, the most relevant file for the permission context handling is `models/perm/access/repo_permission.go`. This is the file that defines how permissions are checked - it has the `Permission` struct with its `UnitsMode` field and access checking methods. If git operations are checking repo-level scope instead of unit-specific scope, the issue would be in how this permission model is being queried.
+
+Let me check if there's a `repo_permission` related file that shows unit-level access.
+[38;5;244m - Completed in 0.18s[0m
+
+[?25l[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "CanRead" 1[0m[38;5;244m (using tool: shell)[0m
+
+I will run the following command: [38;5;141mpython3 graph_query.py "context.Repo" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "CanRead",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.146s[0m
+
+{
+  "query": "context.Repo",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.142s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "repo_permission" 2[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "repo_permission",
+  "direct_matches": 4,
+  "total_nodes": 157,
+  "source_files_from_graph": [
+    "models/issues/assignees.go",
+    "models/issues/dependency.go",
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/issues/label.go",
+    "models/issues/milestone.go",
+    "models/issues/pull.go",
+    "models/issues/pull_list.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/issue.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/block.go",
+    "models/user/user.go",
+    "modules/setting/api.go",
+    "modules/setting/service.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/issue_dependency.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/repo.go",
+    "routers/api/v1/user/star.go",
+    "routers/api/v1/user/watch.go",
+    "services/convert/issue.go",
+    "services/convert/pull.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/issue/template.go",
+    "services/pull/pull.go"
+  ],
+  "source_files_from_analysis": [
+    "models/perm/access/repo_permission.go"
+  ],
+  "all_source_files": [
+    "models/issues/assignees.go",
+    "models/issues/dependency.go",
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/issues/label.go",
+    "models/issues/milestone.go",
+    "models/issues/pull.go",
+    "models/issues/pull_list.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/issue.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/block.go",
+    "models/user/user.go",
+    "modules/setting/api.go",
+    "modules/setting/service.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/issue_dependency.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/repo.go",
+    "routers/api/v1/user/star.go",
+    "routers/api/v1/user/watch.go",
+    "services/convert/issue.go",
+    "services/convert/pull.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/issue/template.go",
+    "services/pull/pull.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-172",
+      "label": "GET /api/v1/users/{username}/repos"
+    },
+    {
+      "id": "ep:ep-173",
+      "label": "GET /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-208",
+      "label": "GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies"
+    },
+    {
+      "id": "ep:ep-209",
+      "label": "POST /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies"
+    },
+    {
+      "id": "ep:ep-210",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies"
+    },
+    {
+      "id": "ep:ep-211",
+      "label": "GET /api/v1/repos/{owner}/{repo}/issues/{index}/blocks"
+    },
+    {
+      "id": "ep:ep-212",
+      "label": "POST /api/v1/repos/{owner}/{repo}/issues/{index}/blocks"
+    },
+    {
+      "id": "ep:ep-213",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/blocks"
+    },
+    {
+      "id": "ep:ep-226",
+      "label": "POST /api/v1/repos/{owner}/{repo}/pulls"
+    },
+    {
+      "id": "ep:ep-254",
+      "label": "GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission"
+    },
+    {
+      "id": "ep:ep-333",
+      "label": "GET /api/v1/repos/{owner}/{repo}/forks"
+    },
+    {
+      "id": "ep:ep-362",
+      "label": "GET /api/v1/repos/search"
+    },
+    {
+      "id": "ep:ep-368",
+      "label": "GET /api/v1/repositories/{id}"
+    },
+    {
+      "id": "ep:ep-064",
+      "label": "GET /api/v1/teams/{id}/repos"
+    },
+    {
+      "id": "ep:ep-065",
+      "label": "GET /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-088",
+      "label": "GET /api/v1/orgs/{org}/blocks/{username}"
+    },
+    {
+      "id": "ep:ep-089",
+      "label": "PUT /api/v1/orgs/{org}/blocks/{username}"
+    },
+    {
+      "id": "ep:ep-090",
+      "label": "DELETE /api/v1/orgs/{org}/blocks/{username}"
+    },
+    {
+      "id": "ep:ep-152",
+      "label": "GET /api/v1/users/{username}/starred"
+    },
+    {
+      "id": "ep:ep-153",
+      "label": "GET /api/v1/user/starred"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-172 GET /api/v1/users/{username}/repos",
+      "step": 3,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-173 GET /api/v1/user/repos",
+      "step": 2,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-333 GET /api/v1/repos/{owner}/{repo}/forks",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-368 GET /api/v1/repositories/{id}",
+      "step": 2,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-362 GET /api/v1/repos/search",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission (loop)",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-208 GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "step": 5,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-211 GET /api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-254 GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "step": 3,
+      "component": "access_model.GetIndividualUserRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-226 POST /api/v1/repos/{owner}/{repo}/pulls",
+      "step": 7,
+      "component": "access_model.CanBeAssigned",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.125s[0m
+
+[?25l[0m[38;5;141m> [0mBased on the graph query results, the file that handles the permission context for git operations is:[0m[0m
+[0m[0m
+[1m[38;5;10mmodels/perm/access/repo_permission.go[0m[22m[0m[0m
+[0m[0m
+This is the core permission model file that defines how repository access is evaluated. It contains:[0m[0m
+[0m[0m
+- [38;5;10mGetDoerRepoPermission[0m — the primary function used to compute a user's permission against a repository[0m[0m
+- [38;5;10mGetIndividualUserRepoPermission[0m — individual user permission lookup[0m[0m
+- [38;5;10mCanBeAssigned[0m — assignment capability checks[0m[0m
+- The [38;5;10mPermission[0m struct which holds both the overall [38;5;10mAccessMode[0m (repo-level scope) and [38;5;10mUnitsMode[0m map (unit-specific scope)[0m[0m
+[0m[0m
+The bug you're describing — checking repo-level scope instead of specific unit scope — would be in this file. The [38;5;10mPermission[0m struct has methods that distinguish between repo-wide access ([38;5;10mAccessMode[0m) and per-unit access ([38;5;10mUnitsMode[0m). If the Smart HTTP git handler is calling a method that only checks [38;5;10mAccessMode[0m rather than querying unit-level permissions (e.g., [38;5;10mCanRead(unit.TypeCode)[0m or [38;5;10mCanWrite(unit.TypeCode)[0m), it would be using the broad repo-level scope instead of the specific [38;5;10mTypeCode[0m unit scope that git operations should be gated on.[0m[0m
+[0m[0m
+The git HTTP handler itself (typically [38;5;10mrouters/web/repo/http.go[0m) invokes this permission model, but the permission evaluation logic lives in [38;5;10mmodels/perm/access/repo_permission.go[0m.[0m[0m
+[38;5;8m
+ ▸ Credits: 1.48 • Time: 1m 34s
+
+[0m[1G[0m[0m[?25h

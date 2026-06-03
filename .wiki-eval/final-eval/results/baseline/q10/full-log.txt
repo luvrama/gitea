@@ -1,0 +1,593 @@
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[32mAll tools are now trusted ([0m[31m![0m[32m). Kiro will execute tools without asking for confirmation.[0m
+Agents can sometimes do unexpected things so understand the risks.
+
+Learn more at [38;5;141mhttps://kiro.dev/docs/cli/chat/security/#using-tools-trust-all-safely[0m
+
+
+[38;5;12m[1m📷 Checkpoints are enabled! (took 13.80s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: This is a large question about a large codebase (Gitea). I need to find all API endpoints that perform file I/O operations. Let me start by understanding the structure of the API routes, then look for file I/O operations within those handlers.
+
+Let me first look at the API router structure to understand how endpoints are defined, then search for file I/O operations (os.Create, os.OpenFile, os.WriteFile, os.ReadFile, ioutil.ReadFile, ioutil.WriteFile, etc.) within the API handlers.
+[38;5;244m - Completed in 0.576s[0m
+[38;5;12m[1m [1.1][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearch codebase map[38;5;244m (using tool: code)[0mSearching for files: [38;5;141mrouters/api/v1/**/*.go[0m[38;5;244m (using tool: glob)[0m
+⠋ Loading...⠙ Loading...⠹ Loading...⠸ Loading...⠼ Loading...⠴ Loading...⠦ Loading...⠧ Loading...⠇ Loading...⠏ Loading...[2K[1G[1A[?25l
+[38;5;12m[CodebaseMap in /Users/relumalai/workshop/gitea/routers/api] 56 files, ~14856 tokens, truncated: false
+[0m[38;5;244m - Completed in 1.451s[0m
+[38;5;12m[1m [1.2][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m125 files[0m under current directory
+[38;5;244m - Completed in 0.857s[0m
+[38;5;12m[1m [1.3][0m[0m
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: This is a very large codebase. I need to focus on what "file I/O" means in this context. In Gitea, most endpoints interact with:
+1. Git repositories on disk (via the git library)
+2. Attachment/package file storage (which could be local filesystem or object storage like S3)
+3. Temporary files for operations like archive downloads, uploads, etc.
+
+Let me search for the main categories:
+1. Direct filesystem I/O (os.Create, os.WriteFile, os.ReadFile, os.Open, etc.)
+2. Git repository operations that touch disk
+3. Storage operations (local file storage for packages, attachments, avatars, etc.)
+
+The key services that perform actual disk I/O are:
+- Content store for packages
+- Attachment uploads
+- Repository operations (git operations)
+- Avatar operations
+- Archive generation
+- LFS operations
+
+Let me look at the storage layer and how it's used, then identify the API endpoints that trigger disk writes/reads.
+[38;5;244m - Completed in 0.663s[0m
+[38;5;12m[1m [1.4][0m[0m
+[?25l[0m[?25l[?25l[?25l[0m[0mSearching for: [38;5;141mos\.(Create|WriteFile|OpenFile|MkdirAll|Remove|Rename|Write)[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mstorage\.(ObjectStorage|Save|Open|Delete|Stat)[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mcontentStore|ContentStore[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api[0m[38;5;244m (using tool: grep)[0m
+[38;5;9m ❗ [0mNo matches found for pattern: [38;5;244mos\.(Create|WriteFile|OpenFile|MkdirAll|Remove|Rename|Write)[0m under /Users/relumalai/workshop/gitea/routers/api
+[38;5;244m - Completed in 0.766s[0m
+[38;5;12m[1m [1.5][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m11 matches[0m in [38;5;244m3 files[0m under /Users/relumalai/workshop/gitea/routers/api (result is truncated)
+[38;5;244m - Completed in 0.595s[0m
+[38;5;12m[1m [1.6][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m16 matches[0m in [38;5;244m3 files[0m under /Users/relumalai/workshop/gitea/routers/api (result is truncated)
+[38;5;244m - Completed in 0.595s[0m
+[38;5;12m[1m [1.7][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for: [38;5;141mupload\..*\.(Open|Read|Write|Save|Store)|uploader|CreateAttachment[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mgit\.OpenRepository|git\.InitRepository|git_model[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m30 matches[0m in [38;5;244m6 files[0m under /Users/relumalai/workshop/gitea/routers/api (result is truncated)
+[38;5;244m - Completed in 0.613s[0m
+[38;5;12m[1m [1.8][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m56 matches[0m in [38;5;244m6 files[0m under /Users/relumalai/workshop/gitea/routers/api (result is truncated)
+[38;5;244m - Completed in 0.658s[0m
+[38;5;12m[1m [1.9][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for: [38;5;141mgit\.OpenRepository|gitRepo\.|archiver[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mfiles_service\.|repo_service\.|wiki_service\.[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m51 matches[0m in [38;5;244m13 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/repo (result is truncated)
+[38;5;244m - Completed in 0.648s[0m
+[38;5;12m[1m [1.10][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m78 matches[0m in [38;5;244m13 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/repo (result is truncated)
+[38;5;244m - Completed in 0.616s[0m
+[38;5;12m[1m [1.11][0m[0m
+[?25l[0m[?25l[?25l[?25l[0m[0mSearching for: [38;5;141marchiver|archive[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mlfs|LFS[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo[0m[38;5;244m (using tool: grep)[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo/file.go[0m, from line [38;5;141m1[0m to [38;5;141m60[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m78 matches[0m in [38;5;244m15 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/repo (result is truncated)
+[38;5;244m - Completed in 0.550s[0m
+[38;5;12m[1m [1.12][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m32 matches[0m in [38;5;244m3 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/repo (result is truncated)
+[38;5;244m - Completed in 0.527s[0m
+[38;5;12m[1m [1.13][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1724 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/repo/file.go
+[38;5;244m - Completed in 0.528s[0m
+[38;5;12m[1m [1.14][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo/download.go[0m, from line [38;5;141m1[0m to [38;5;141m80[0m[38;5;244m (using tool: read)[0mSearching for: [38;5;141mos\.|storage\.|Save|Write|Create[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/repository/archiver[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1630 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/repo/download.go
+[38;5;244m - Completed in 0.582s[0m
+[38;5;12m[1m [1.15][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m18 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/services/repository/archiver (result is truncated)
+[38;5;244m - Completed in 0.565s[0m
+[38;5;12m[1m [1.16][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for: [38;5;141mfunc.*\(ctx \*context\.APIContext\)[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo[0m ([38;5;141mgit_hook.go[0m)[38;5;244m (using tool: grep)[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo/git_hook.go[0m, from line [38;5;141m1[0m to [38;5;141m60[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m4 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/repo
+[38;5;244m - Completed in 0.594s[0m
+[38;5;12m[1m [1.17][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1465 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/repo/git_hook.go
+[38;5;244m - Completed in 0.560s[0m
+[38;5;12m[1m [1.18][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo/git_hook.go[0m, from line [38;5;141m97[0m to [38;5;141m200[0m[38;5;244m (using tool: read)[0mSearching for: [38;5;141mrepo_service|git|file|disk|storage[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/admin[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m2319 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/repo/git_hook.go
+[38;5;244m - Completed in 0.908s[0m
+[38;5;12m[1m [1.19][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m87 matches[0m in [38;5;244m10 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/admin (result is truncated)
+[38;5;244m - Completed in 0.534s[0m
+[38;5;12m[1m [1.20][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/admin/adopt.go[0m, from line [38;5;141m1[0m to [38;5;141m130[0m[38;5;244m (using tool: read)[0mSearching for: [38;5;141mfunc.*Patch\(ctx|func.*Mirror\(ctx|func PushMirror|func CreatePushMirror[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m3420 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/admin/adopt.go
+[38;5;244m - Completed in 0.555s[0m
+[38;5;12m[1m [1.21][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m7 matches[0m in [38;5;244m5 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/repo
+[38;5;244m - Completed in 0.577s[0m
+[38;5;12m[1m [1.22][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for: [38;5;141mtype ObjectStorage interface|func.*Save|func.*Open|func.*Delete[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/storage[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mstorage\.[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m16 matches[0m in [38;5;244m6 files[0m under /Users/relumalai/workshop/gitea/modules/storage
+[38;5;244m - Completed in 0.555s[0m
+[38;5;12m[1m [1.23][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m2 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/repo
+[38;5;244m - Completed in 0.558s[0m
+[38;5;12m[1m [1.24][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/storage/storage.go[0m, from line [38;5;141m70[0m to [38;5;141m100[0m[38;5;244m (using tool: read)[0mSearching for: [38;5;141m^var.*ObjectStorage|Attachments|LFS|Packages|Avatars|RepoAvatars|Actions[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/storage[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1852 bytes[0m from /Users/relumalai/workshop/gitea/modules/storage/storage.go
+[38;5;244m - Completed in 0.710s[0m
+[38;5;12m[1m [1.25][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m49 matches[0m in [38;5;244m4 files[0m under /Users/relumalai/workshop/gitea/modules/storage (result is truncated)
+[38;5;244m - Completed in 0.630s[0m
+[38;5;12m[1m [1.26][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/storage/storage.go[0m, from line [38;5;141m140[0m to [38;5;141m175[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m978 bytes[0m from /Users/relumalai/workshop/gitea/modules/storage/storage.go
+[38;5;244m - Completed in 0.666s[0m
+[38;5;12m[1m [1.27][0m[0m
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: Now I have a good understanding of the architecture. Let me summarize the key points:
+
+1. Gitea uses an `ObjectStorage` interface that can be backed by:
+   - LocalStorage (filesystem)
+   - MinioStorage (S3-compatible)
+   - AzureBlobStorage
+
+2. There are several storage categories:
+   - Attachments (issue/comment/release attachments)
+   - LFS (large file storage)
+   - Avatars (user avatars)
+   - RepoAvatars (repository avatars)
+   - RepoArchives (repository archives)
+   - Packages (package registry)
+   - Actions (action logs)
+   - ActionsArtifacts (action artifacts)
+
+3. Git repository operations interact directly with the filesystem (git repos are stored on disk)
+
+4. The API endpoints that perform file I/O can be categorized as:
+   - **Git repository operations** (read/write to git repos on disk): file CRUD, branches, tags, wiki, merges, patches, diffs, etc.
+   - **Attachment uploads** (issue, comment, release attachments): write to Attachments storage
+   - **Avatar operations**: write to Avatars/RepoAvatars storage
+   - **Archive downloads**: read from git repo + write/read RepoArchives storage
+   - **LFS operations**: read from LFS storage
+   - **Package registry**: read/write to Packages storage
+   - **Actions artifacts**: read/write to Actions/ActionsArtifacts storage
+   - **Git hooks**: read/write hook files directly in the git repo on disk
+
+Now let me categorize the endpoints and think about what happens when the filesystem becomes read-only. The key distinction is:
+- If using LocalStorage, read-only filesystem breaks all write operations
+- If using MinIO/Azure, the object storage is remote so filesystem read-only only affects git repo operations and temp files
+- Git repositories are ALWAYS on local disk, so any git write operation fails
+
+Let me look for the specific API routes to give a complete picture.
+[38;5;244m - Completed in 0.592s[0m
+[38;5;12m[1m [1.28][0m[0m
+[?25l[0m[?25l[?25l[?25l[0m[0mSearching for: [38;5;141mfunc.*Avatar\(ctx[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mfunc.*Avatar\(ctx[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/user[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mfunc.*Avatar\(ctx[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/org[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m2 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/repo
+[38;5;244m - Completed in 1.242s[0m
+[38;5;12m[1m [1.29][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m2 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/user
+[38;5;244m - Completed in 0.685s[0m
+[38;5;12m[1m [1.30][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m2 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/org
+[38;5;244m - Completed in 0.690s[0m
+[38;5;12m[1m [1.31][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for: [38;5;141mfunc ServeRepoArchive|func.*Stream|storage\.[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/repository/archiver[0m[38;5;244m (using tool: grep)[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/repository/archiver/archiver.go[0m, from line [38;5;141m100[0m to [38;5;141m160[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m9 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/services/repository/archiver (result is truncated)
+[38;5;244m - Completed in 0.690s[0m
+[38;5;12m[1m [1.32][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m2033 bytes[0m from /Users/relumalai/workshop/gitea/services/repository/archiver/archiver.go
+[38;5;244m - Completed in 0.776s[0m
+[38;5;12m[1m [1.33][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/repository/archiver/archiver.go[0m, from line [38;5;141m160[0m to [38;5;141m230[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1683 bytes[0m from /Users/relumalai/workshop/gitea/services/repository/archiver/archiver.go
+[38;5;244m - Completed in 0.688s[0m
+[38;5;12m[1m [1.34][0m[0m
+[?25l[0m[?25l[0m[0mSearching for: [38;5;141mfunc ServeRepoArchive[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/repository/archiver[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m1 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/services/repository/archiver
+[38;5;244m - Completed in 0.659s[0m
+[38;5;12m[1m [1.35][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/repository/archiver/archiver.go[0m, from line [38;5;141m317[0m to [38;5;141m360[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1858 bytes[0m from /Users/relumalai/workshop/gitea/services/repository/archiver/archiver.go
+[38;5;244m - Completed in 0.601s[0m
+[38;5;12m[1m [1.36][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me look at how the LFS file serving works and the actions runner log upload:[0m[0m
+[?25l[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mfunc GetRawFileOrLFS|func GetRawFile|LFS\.Open|storage\.LFS[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo/file.go[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mstorage\.Actions|ActionsArtifacts[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/actions[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m3 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/repo/file.go
+[38;5;244m - Completed in 0.551s[0m
+[38;5;12m[1m [1.37][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m6 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/routers/api/actions
+[38;5;244m - Completed in 0.515s[0m
+[38;5;12m[1m [1.38][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo/file.go[0m, from line [38;5;141m155[0m to [38;5;141m210[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1682 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/repo/file.go
+[38;5;244m - Completed in 0.607s[0m
+[38;5;12m[1m [1.39][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me check the package upload flows and the runner log upload:[0m[0m
+[?25l[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mstorage\.|logStorage|actionLog|LogAppend[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/actions/runner[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mstorage\.Actions|logStorage|func.*UpdateLog[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/actions[0m[38;5;244m (using tool: grep)[0m
+[38;5;9m ❗ [0mNo matches found for pattern: [38;5;244mstorage\.|logStorage|actionLog|LogAppend[0m under /Users/relumalai/workshop/gitea/routers/api/actions/runner
+[38;5;244m - Completed in 0.728s[0m
+[38;5;12m[1m [1.40][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m5 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/services/actions
+[38;5;244m - Completed in 0.632s[0m
+[38;5;12m[1m [1.41][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for: [38;5;141mfunc.*uploadArtifact|func.*downloadArtifact|func.*upload[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/actions[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mstorage\.Packages|ContentStore|func.*Upload[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/packages[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m12 matches[0m in [38;5;244m5 files[0m under /Users/relumalai/workshop/gitea/routers/api/actions
+[38;5;244m - Completed in 0.764s[0m
+[38;5;12m[1m [1.42][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m28 matches[0m in [38;5;244m6 files[0m under /Users/relumalai/workshop/gitea/services/packages (result is truncated)
+[38;5;244m - Completed in 0.571s[0m
+[38;5;12m[1m [1.43][0m[0m
+[?25l[0m[?25l[0m[0mSearching for: [38;5;141mfunc.*ContentStore|func.*Save|func.*Open|storage\.Packages[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/packages[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m8 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/modules/packages (result is truncated)
+[38;5;244m - Completed in 0.578s[0m
+[38;5;12m[1m [1.44][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/packages/content_store.go[0m, from line [38;5;141m1[0m to [38;5;141m65[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1826 bytes[0m from /Users/relumalai/workshop/gitea/modules/packages/content_store.go
+[38;5;244m - Completed in 0.626s[0m
+[38;5;12m[1m [1.45][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me look at the container blob uploader which uses temp files:[0m[0m
+[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/packages/container/blob_uploader.go[0m, from line [38;5;141m1[0m to [38;5;141m100[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m2386 bytes[0m from /Users/relumalai/workshop/gitea/services/packages/container/blob_uploader.go
+[38;5;244m - Completed in 0.614s[0m
+[38;5;12m[1m [1.46][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me look at the patch/file creation flow to understand how it writes to git repos:[0m[0m
+[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo/patch.go[0m, from line [38;5;141m1[0m to [38;5;141m90[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1833 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/repo/patch.go
+[38;5;244m - Completed in 0.579s[0m
+[38;5;12m[1m [1.47][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me check the migrate endpoint, which clones repositories from remote:[0m[0m
+[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/repo/migrate.go[0m, from line [38;5;141m120[0m to [38;5;141m200[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m2639 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/repo/migrate.go
+[38;5;244m - Completed in 0.619s[0m
+[38;5;12m[1m [1.48][0m[0m
+[?25l[0m[38;5;141m> [0mNow I have enough information to write a comprehensive answer. Let me also check what the LFS file serving reads from:[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mfunc ReadMetaObject|func.*Open|storage\.LFS[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/lfs[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m2 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/modules/lfs
+[38;5;244m - Completed in 0.680s[0m
+[38;5;12m[1m [1.49][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/lfs/content_store.go[0m, from line [38;5;141m100[0m to [38;5;141m120[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m413 bytes[0m from /Users/relumalai/workshop/gitea/modules/lfs/content_store.go
+[38;5;244m - Completed in 0.985s[0m
+[38;5;12m[1m [1.50][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me check the git hook mechanism — [38;5;10mhook.Update()[0m writes to the filesystem:[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mfunc.*Hook.*Update|func.*Hook.*Save|WriteFile|hook.*Update[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/git[0m ([38;5;141mhook*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m2 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/modules/git
+[38;5;244m - Completed in 0.572s[0m
+[38;5;12m[1m [1.51][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/git/hook.go[0m, from line [38;5;141m65[0m to [38;5;141m100[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m764 bytes[0m from /Users/relumalai/workshop/gitea/modules/git/hook.go
+[38;5;244m - Completed in 0.555s[0m
+[38;5;12m[1m [1.52][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me also check what the files_service.ChangeRepoFiles does (it definitely writes to git):[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mfunc ChangeRepoFiles|func.*TemporaryUpload|func ApplyDiffPatch[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/repository/files[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m26 matches[0m in [38;5;244m4 files[0m under /Users/relumalai/workshop/gitea/services/repository/files (result is truncated)
+[38;5;244m - Completed in 0.604s[0m
+[38;5;12m[1m [1.53][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/repository/files/temp_repo.go[0m, from line [38;5;141m39[0m to [38;5;141m60[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m750 bytes[0m from /Users/relumalai/workshop/gitea/services/repository/files/temp_repo.go
+[38;5;244m - Completed in 0.548s[0m
+[38;5;12m[1m [1.54][0m[0m
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: Now I have a comprehensive understanding. Let me compile the complete answer.
+
+The key file I/O operations in Gitea API endpoints fall into these categories:
+
+1. **Git repository operations** (always on local disk):
+   - Reading: GetRawFile, GetRawFileOrLFS, GetArchive, DownloadArchive, GetTree, GetBlob, GetContents, ListBranches, ListTags, GetCommits, DownloadCommitDiffOrPatch, DownloadPullDiffOrPatch, ListGitHooks, GetGitHook, ListWikiPages, GetWikiPage
+   - Writing: CreateFile, UpdateFile, DeleteFile, ChangeFiles, ApplyDiffPatch, CreateBranch, DeleteBranch, UpdateBranch, RenameBranch, CreateTag, DeleteTag, EditGitHook, DeleteGitHook, NewWikiPage, EditWikiPage, DeleteWikiPage, MergePullRequest, CreatePullRequest, CreateRepository, Migrate, Fork, Generate, AdoptRepository, DeleteRepository
+
+2. **Attachment/Avatar Storage operations** (ObjectStorage - may be local or remote):
+   - Write: CreateIssueAttachment, CreateIssueCommentAttachment, CreateReleaseAttachment, UpdateAvatar (user/org/repo)
+   - Delete: DeleteIssueAttachment, DeleteIssueCommentAttachment, DeleteReleaseAttachment, DeleteAvatar (user/org/repo)
+   - Read: (attachments are served via download URLs)
+
+3. **LFS operations** (ObjectStorage):
+   - Read: GetRawFileOrLFS (serves LFS file content)
+
+4. **Archive operations** (ObjectStorage + git on disk):
+   - Read/Write: GetArchive, DownloadArchive (streams from git, may cache to storage)
+
+5. **Package Registry** (ObjectStorage + temp files):
+   - Upload/Write: UploadPackageFile (npm, nuget, maven, pypi, rubygems, cargo, container, etc.)
+   - Download/Read: DownloadPackageFile
+   - Delete: DeletePackage, DeletePackageVersion
+   - Container blob uploads use temp files on local disk (os.OpenFile)
+
+6. **Actions Artifacts** (ObjectStorage):
+   - Upload: uploadArtifact, createArtifact, finalizeArtifact
+   - Download: downloadArtifact, getSignedArtifactURL
+   - Delete: deleteArtifact
+
+7. **Actions Logs** (ObjectStorage):
+   - Write: UpdateLog (runner sends log data)
+
+Now for "what happens if filesystem becomes read-only":
+
+The impact depends on the storage backend configuration:
+- **LocalStorage** (default for all storage types): ALL write operations fail
+- **S3/MinIO/Azure**: Object storage writes still work, but git operations and temp files fail
+
+Since git repositories are ALWAYS stored on local filesystem, regardless of storage backend configuration, all git write operations will fail on a read-only filesystem.
+[38;5;244m - Completed in 0.735s[0m
+[38;5;12m[1m [1.55][0m[0m
+[?25l[0m[38;5;141m> [0mLet me verify the actions log storage to confirm:[0m[0m
+[?25l[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mfunc.*UpdateLog|storage\.Actions|log.*storage[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/actions/runner[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mfunc.*TransferLogs|func.*AppendLog|func.*SaveLog|storage\.Actions[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/actions[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m4 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/api/actions/runner
+[38;5;244m - Completed in 0.788s[0m
+[38;5;12m[1m [1.56][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m5 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/services/actions
+[38;5;244m - Completed in 0.647s[0m
+[38;5;12m[1m [1.57][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/actions/runner/runner.go[0m, from line [38;5;141m248[0m to [38;5;141m310[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1662 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/actions/runner/runner.go
+[38;5;244m - Completed in 0.980s[0m
+[38;5;12m[1m [1.58][0m[0m
+[?25l[0m[?25l[0m[0mSearching for: [38;5;141mfunc WriteLogs|func TransferLogs|dbfs|storage\.Actions[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/actions[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m5 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/services/actions
+[38;5;244m - Completed in 0.920s[0m
+[38;5;12m[1m [1.59][0m[0m
+[?25l[0m[?25l[0m[0mSearching for: [38;5;141mfunc WriteLogs|func TransferLogs[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/actions[0m[38;5;244m (using tool: grep)[0m
+[38;5;9m ❗ [0mNo matches found for pattern: [38;5;244mfunc WriteLogs|func TransferLogs[0m under /Users/relumalai/workshop/gitea/services/actions
+[38;5;244m - Completed in 1.226s[0m
+[38;5;12m[1m [1.60][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for symbols matching: [38;5;141m"WriteLogs"[0m[38;5;244m (using tool: code)[0mSearching for symbols matching: [38;5;141m"TransferLogs"[0m[38;5;244m (using tool: code)[0m
+⠋ Loading...⠙ Loading...⠹ Loading...⠸ Loading...⠼ Loading...⠴ Loading...⠦ Loading...⠧ Loading...⠇ Loading...⠏ Loading...⠋ Loading...⠙ Loading...⠹ Loading...⠸ Loading...⠼ Loading...⠴ Loading...⠦ Loading...⠧ Loading...⠇ Loading...⠏ Loading...⠋ Loading...⠙ Loading...⠹ Loading...⠸ Loading...⠼ Loading...⠴ Loading...⠦ Loading...⠧ Loading...⠇ Loading...⠏ Loading...⠋ Loading...⠙ Loading...⠹ Loading...⠸ Loading...⠼ Loading...⠴ Loading...⠦ Loading...⠧ Loading...⠇ Loading...⠏ Loading...⠋ Loading...⠙ Loading...[2K[1G[1A[?25l
+  1. [38;5;12mFunction[0m [38;5;141mWriteLogs[0m at [38;5;141mmodules/actions/log.go[0m:[38;5;244m35:1
+[0m  2. [38;5;12mMethod[0m [38;5;141mWrite[0m at [38;5;141mmodules/markup/internal/finalprocessor.go[0m:[38;5;244m20:1
+[0m  3. [38;5;12mMethod[0m [38;5;141mWrite[0m at [38;5;141mmodules/util/rotatingfilewriter/writer.go[0m:[38;5;244m71:1
+[0m  4. [38;5;12mMethod[0m [38;5;141mWrite[0m at [38;5;141mmodules/emoji/emoji.go[0m:[38;5;244m143:1
+[0m  5. [38;5;12mMethod[0m [38;5;141mWrite[0m at [38;5;141mmodules/zstd/zstd.go[0m:[38;5;244m30:1
+[0m  [38;5;244m(15 more items found)
+[0m[38;5;244m - Completed in 4.130s[0m
+[38;5;12m[1m [1.61][0m[0m
+
+⠋ Loading...⠙ Loading...⠹ Loading...⠸ Loading...⠼ Loading...[2K[1G[1A[?25l
+  1. [38;5;12mFunction[0m [38;5;141mTransferLogs[0m at [38;5;141mmodules/actions/log.go[0m:[38;5;244m126:1
+[0m  2. [38;5;12mFunction[0m [38;5;141mtransfer[0m at [38;5;141mtests/integration/api_repo_test.go[0m:[38;5;244m568:1
+[0m  3. [38;5;12mFunction[0m [38;5;141mTransfer[0m at [38;5;141mrouters/api/v1/repo/transfer.go[0m:[38;5;244m26:1
+[0m  4. [38;5;12mMethod[0m [38;5;141mtransformList[0m at [38;5;141mmodules/markup/markdown/transform_list.go[0m:[38;5;244m52:1
+[0m  5. [38;5;12mType[0m [38;5;141mtransformer[0m at [38;5;141mservices/repository/generate.go[0m:[38;5;244m34:1
+[0m  [38;5;244m(15 more items found)
+[0m[38;5;244m - Completed in 1.166s[0m
+[38;5;12m[1m [1.62][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/actions/log.go[0m, from line [38;5;141m1[0m to [38;5;141m165[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m5066 bytes[0m from /Users/relumalai/workshop/gitea/modules/actions/log.go
+[38;5;244m - Completed in 0.673s[0m
+[38;5;12m[1m [1.63][0m[0m
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: So the actions logs use DBFS (database filesystem) for temporary storage, then transfer to ObjectStorage (storage.Actions). DBFS stores data in the database, not on the actual filesystem. So WriteLogs writes to the database, and TransferLogs saves to storage.Actions (which could be local filesystem or object storage).
+
+Now let me also check if there are any tempfile operations that matter. The key question is about tempdir usage:
+- Container blob uploads use os.OpenFile to a temp directory
+- TemporaryUploadRepository uses CreateTemporaryPath (local filesystem)
+- Archive generation uses pipes + storage
+
+Let me also check what `setting.AppDataTempDir` resolves to for temp file operations.
+[38;5;244m - Completed in 0.603s[0m
+[38;5;12m[1m [1.64][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for: [38;5;141mfunc AppDataTempDir|AppDataPath[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/setting[0m[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mfunc CreateTemporaryPath[0m in [38;5;141m/Users/relumalai/workshop/gitea/modules/repository[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m37 matches[0m in [38;5;244m14 files[0m under /Users/relumalai/workshop/gitea/modules/setting (result is truncated)
+[38;5;244m - Completed in 0.580s[0m
+[38;5;12m[1m [1.65][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m1 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/modules/repository
+[38;5;244m - Completed in 0.525s[0m
+[38;5;12m[1m [1.66][0m[0m
+[?25l[0m[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/repository/temp.go[0m, from line [38;5;141m1[0m to [38;5;141m35[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m650 bytes[0m from /Users/relumalai/workshop/gitea/modules/repository/temp.go
+[38;5;244m - Completed in 0.580s[0m
+[38;5;12m[1m [1.67][0m[0m
+[?25l[0m[38;5;141m> [0mNow I have all the information needed for a comprehensive answer. Let me also quickly verify one more area - the [38;5;10mrepo_service.CreateRepository[0m and how it initializes repos on disk:[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mfunc CreateRepository\b|func.*InitRepository|func.*ForkRepository[0m in [38;5;141m/Users/relumalai/workshop/gitea/services/repository[0m[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m5 matches[0m in [38;5;244m4 files[0m under /Users/relumalai/workshop/gitea/services/repository
+[38;5;244m - Completed in 0.565s[0m
+[38;5;12m[1m [1.68][0m[0m
+[?25l[0m[38;5;141m> [0mI now have enough data. Let me compile a comprehensive, well-structured answer.[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m# API Endpoints Performing File I/O in Gitea[0m[0m
+[0m[0m
+Gitea's file I/O is routed through three main layers:[0m[0m
+[0m[0m
+1. [1mGit repository operations[22m — always on local filesystem (bare git repos under [38;5;10mREPO_ROOT_PATH[0m)[0m[0m
+2. [1mObjectStorage[22m abstraction — can be LocalStorage (default, filesystem) or remote (MinIO/S3, Azure Blob)[0m[0m
+3. [1mTemp files[22m — always on local filesystem ([38;5;10mAPP_DATA_PATH/tmp/[0m)[0m[0m
+[0m[0m
+[38;5;252m[1m## Category 1: Git Repository Read Operations[0m[0m
+[0m[0m
+These read directly from git repos on local disk.[0m[0m
+[0m[0m
+| Endpoint | Method | Handler | I/O Type |[0m[0m
+|----------|--------|---------|----------|[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/raw/{filepath}[0m | GET | [38;5;10mGetRawFile[0m | Read git object |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/media/{filepath}[0m | GET | [38;5;10mGetRawFileOrLFS[0m | Read git object + LFS storage |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/contents/{filepath}[0m | GET | [38;5;10mGetContents[0m | Read git tree/blob |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/git/blobs/{sha}[0m | GET | [38;5;10mGetBlob[0m | Read git blob |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/git/trees/{sha}[0m | GET | [38;5;10mGetTree[0m | Read git tree |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/git/commits/{sha}[0m | GET | [38;5;10mGetSingleCommit[0m | Read git commit |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/git/commits[0m | GET | [38;5;10mGetAllCommits[0m | Read git log |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/branches[0m | GET | [38;5;10mListBranches[0m | Read git refs |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/branches/{branch}[0m | GET | [38;5;10mGetBranch[0m | Read git ref + commit |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/tags[0m | GET | [38;5;10mListTags[0m | Read git tags |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/tags/{tag}[0m | GET | [38;5;10mGetTag[0m | Read git tag |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/git/notes/{sha}[0m | GET | [38;5;10mGetNote[0m | Read git notes |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/hooks/git[0m | GET | [38;5;10mListGitHooks[0m | Read hook files from repo dir |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/hooks/git/{id}[0m | GET | [38;5;10mGetGitHook[0m | Read hook file |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/commits/{sha}.{diffType}[0m | GET | [38;5;10mDownloadCommitDiffOrPatch[0m | Read/generate diff from git |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/pulls/{index}.{diffType}[0m | GET | [38;5;10mDownloadPullDiffOrPatch[0m | Read/generate diff from git |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/wiki/*[0m | GET | [38;5;10mGetWikiPage[0m/[38;5;10mListWikiPages[0m | Read wiki git repo |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/compare/*[0m | GET | [38;5;10mCompare[0m | Read git objects |[0m[0m
+[0m[0m
+[1mRead-only filesystem impact:[22m ✅ These [1mcontinue to work[22m — git repos are read normally.[0m[0m
+[0m[0m
+[38;5;252m[1m## Category 2: Git Repository Write Operations[0m[0m
+[0m[0m
+These create temp directories, clone repos, make changes, and push to the bare repo.[0m[0m
+[0m[0m
+| Endpoint | Method | Handler | I/O Type |[0m[0m
+|----------|--------|---------|----------|[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/contents/{filepath}[0m | POST | [38;5;10mCreateFile[0m | Temp clone + git push |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/contents/{filepath}[0m | PUT | [38;5;10mUpdateFile[0m | Temp clone + git push |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/contents/{filepath}[0m | DELETE | [38;5;10mDeleteFile[0m | Temp clone + git push |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/contents[0m | POST | [38;5;10mChangeFiles[0m | Temp clone + git push |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/diffpatch[0m | POST | [38;5;10mApplyDiffPatch[0m | Temp clone + git push |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/branches[0m | POST | [38;5;10mCreateBranch[0m | Git ref creation |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/branches/{branch}[0m | DELETE | [38;5;10mDeleteBranch[0m | Git ref deletion |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/branches/{branch}[0m | PATCH | [38;5;10mUpdateBranch[0m | Git ref update |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/branches/{branch}/rename[0m | POST | [38;5;10mRenameBranch[0m | Git ref rename |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/tags[0m | POST | [38;5;10mCreateTag[0m | Git tag creation |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/tags/{tag}[0m | DELETE | [38;5;10mDeleteTag[0m | Git tag/ref deletion |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/hooks/git/{id}[0m | PATCH | [38;5;10mEditGitHook[0m | Write hook file to disk ([38;5;10mos.WriteFile[0m) |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/hooks/git/{id}[0m | DELETE | [38;5;10mDeleteGitHook[0m | Remove hook file ([38;5;10mos.Remove[0m) |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/wiki/new[0m | POST | [38;5;10mNewWikiPage[0m | Write to wiki git repo |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/wiki/page/{pageName}[0m | PATCH | [38;5;10mEditWikiPage[0m | Write to wiki git repo |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/wiki/page/{pageName}[0m | DELETE | [38;5;10mDeleteWikiPage[0m | Write to wiki git repo |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/pulls/{index}/merge[0m | POST | [38;5;10mMergePullRequest[0m | Temp clone + merge + push |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/pulls/{index}/update[0m | POST | [38;5;10mUpdatePullRequest[0m | Temp clone + merge/rebase |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/merge-upstream[0m | POST | [38;5;10mMergeUpstream[0m | Git fetch + merge |[0m[0m
+| [38;5;10m/user/repos[0m | POST | [38;5;10mCreate[0m | [38;5;10mgit init[0m bare repo |[0m[0m
+| [38;5;10m/orgs/{org}/repos[0m | POST | [38;5;10mCreateOrgRepo[0m | [38;5;10mgit init[0m bare repo |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/generate[0m | POST | [38;5;10mGenerate[0m | Clone template repo |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/forks[0m | POST | [38;5;10mForkRepository[0m | [38;5;10mgit clone --bare[0m |[0m[0m
+| [38;5;10m/repos/migrate[0m | POST | [38;5;10mMigrate[0m | [38;5;10mgit clone[0m from remote |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}[0m | DELETE | [38;5;10mDelete[0m | Remove repo dir from disk |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/transfer[0m | POST | [38;5;10mTransfer[0m | Move repo dir on disk |[0m[0m
+| [38;5;10m/admin/unadopted/{owner}/{repo}[0m | POST | [38;5;10mAdoptRepository[0m | Adopt existing dir as repo |[0m[0m
+| [38;5;10m/admin/unadopted/{owner}/{repo}[0m | DELETE | [38;5;10mDeleteUnadoptedRepository[0m | Remove dir from disk |[0m[0m
+[0m[0m
+[1mRead-only filesystem impact:[22m ❌ [1mAll fail[22m with I/O errors. Operations that create temporary directories ([38;5;10mAPP_DATA_PATH/tmp/local-repo/[0m) will fail at [38;5;10mos.MkdirAll[0m. Operations that write to the bare repo will fail at git push. Hook edits fail at [38;5;10mos.WriteFile[0m.[0m[0m
+[0m[0m
+[38;5;252m[1m## Category 3: Archive/Download (Git Read + Storage Write)[0m[0m
+[0m[0m
+| Endpoint | Method | Handler | I/O Type |[0m[0m
+|----------|--------|---------|----------|[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/archive/{archive}[0m | GET | [38;5;10mGetArchive[0m | Stream from git or read/write storage.RepoArchives |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/{ball_type}/{ref}[0m | GET | [38;5;10mDownloadArchive[0m | Same as above |[0m[0m
+[0m[0m
+[1mRead-only filesystem impact:[22m[0m[0m
+- If [38;5;10mStreamArchives=true[0m: ✅ Works (streams directly from git to response, no disk write)[0m[0m
+- If cached archive exists in storage: ✅ Works for reads[0m[0m
+- If archive needs to be generated and stored:[0m[0m
+  - With remote ObjectStorage: ❌ Fails if temp files needed; otherwise works[0m[0m
+  - With LocalStorage: ❌ Fails ([38;5;10mstorage.RepoArchives.Save[0m writes to disk)[0m[0m
+[0m[0m
+[38;5;252m[1m## Category 4: Attachment Uploads (ObjectStorage)[0m[0m
+[0m[0m
+| Endpoint | Method | Handler | I/O Type |[0m[0m
+|----------|--------|---------|----------|[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/issues/{index}/assets[0m | POST | [38;5;10mCreateIssueAttachment[0m | Write to storage.Attachments |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/issues/comments/{id}/assets[0m | POST | [38;5;10mCreateIssueCommentAttachment[0m | Write to storage.Attachments |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/releases/{id}/assets[0m | POST | [38;5;10mCreateReleaseAttachment[0m | Write to storage.Attachments |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/issues/{index}/assets/{id}[0m | DELETE | [38;5;10mDeleteIssueAttachment[0m | Delete from storage.Attachments |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/issues/comments/{id}/assets/{id}[0m | DELETE | [38;5;10mDeleteIssueCommentAttachment[0m | Delete from storage.Attachments |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/releases/{id}/assets/{id}[0m | DELETE | [38;5;10mDeleteReleaseAttachment[0m | Delete from storage.Attachments |[0m[0m
+[0m[0m
+[1mRead-only filesystem impact:[22m[0m[0m
+- With LocalStorage (default): ❌ Uploads fail; deletes fail[0m[0m
+- With remote ObjectStorage (S3/MinIO/Azure): ✅ Works (no local disk involved for the storage itself, but may still use temp files internally from multipart form parsing)[0m[0m
+[0m[0m
+[38;5;252m[1m## Category 5: Avatar Operations (ObjectStorage)[0m[0m
+[0m[0m
+| Endpoint | Method | Handler | I/O Type |[0m[0m
+|----------|--------|---------|----------|[0m[0m
+| [38;5;10m/user/avatar[0m | POST | [38;5;10mUpdateAvatar[0m (user) | Write to storage.Avatars |[0m[0m
+| [38;5;10m/user/avatar[0m | DELETE | [38;5;10mDeleteAvatar[0m (user) | Delete from storage.Avatars |[0m[0m
+| [38;5;10m/orgs/{org}/avatar[0m | POST | [38;5;10mUpdateAvatar[0m (org) | Write to storage.Avatars |[0m[0m
+| [38;5;10m/orgs/{org}/avatar[0m | DELETE | [38;5;10mDeleteAvatar[0m (org) | Delete from storage.Avatars |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/avatar[0m | POST | [38;5;10mUpdateAvatar[0m (repo) | Write to storage.RepoAvatars |[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/avatar[0m | DELETE | [38;5;10mDeleteAvatar[0m (repo) | Delete from storage.RepoAvatars |[0m[0m
+[0m[0m
+[1mRead-only filesystem impact:[22m Same as Category 4 — depends on storage backend.[0m[0m
+[0m[0m
+[38;5;252m[1m## Category 6: Package Registry (ObjectStorage + Temp Files)[0m[0m
+[0m[0m
+All endpoints under [38;5;10m/api/packages/[0m and [38;5;10m/v2/[0m (container registry):[0m[0m
+[0m[0m
+| Endpoint Pattern | Operations | I/O Type |[0m[0m
+|-----------------|------------|----------|[0m[0m
+| [38;5;10mPOST /.../upload[0m (npm, nuget, maven, pypi, cargo, rubygems, etc.) | Package upload | Write to storage.Packages |[0m[0m
+| [38;5;10mGET /.../download[0m | Package download | Read from storage.Packages |[0m[0m
+| [38;5;10mDELETE /...[0m | Package delete | Delete from storage.Packages |[0m[0m
+| [38;5;10mPOST/PATCH /v2/.../blobs/uploads/[0m | Container blob upload | [1mTemp file on disk[22m ([38;5;10mos.OpenFile[0m) + storage.Packages |[0m[0m
+| [38;5;10mPUT /v2/.../manifests/[0m | Container manifest push | Write to storage.Packages |[0m[0m
+[0m[0m
+[1mRead-only filesystem impact:[22m[0m[0m
+- Package downloads (GET): ✅ Work with any storage backend[0m[0m
+- Package uploads/deletes with remote ObjectStorage: ⚠️ [1mContainer uploads fail[22m (they use [38;5;10mos.OpenFile[0m for chunked uploads to [38;5;10mAPP_DATA_PATH/tmp/package-upload/[0m)[0m[0m
+- Package uploads with LocalStorage: ❌ Fail completely[0m[0m
+- All other package operations (non-container) with remote storage: ✅ May work if no temp files are used for buffering[0m[0m
+[0m[0m
+[38;5;252m[1m## Category 7: Actions Artifacts (ObjectStorage)[0m[0m
+[0m[0m
+Endpoints under [38;5;10m/api/actions/[0m (used by runners):[0m[0m
+[0m[0m
+| Endpoint | Handler | I/O Type |[0m[0m
+|----------|---------|----------|[0m[0m
+| Artifact upload (v3) | [38;5;10muploadArtifact[0m | Write chunks to storage.ActionsArtifacts |[0m[0m
+| Artifact upload (v4) | [38;5;10muploadArtifact[0m | Write to storage.ActionsArtifacts |[0m[0m
+| Artifact finalize | [38;5;10mfinalizeArtifact[0m | Merge chunks in storage.ActionsArtifacts |[0m[0m
+| Artifact download | [38;5;10mdownloadArtifact[0m | Read from storage.ActionsArtifacts |[0m[0m
+| Artifact delete | [38;5;10mdeleteArtifact[0m | Delete from storage.ActionsArtifacts |[0m[0m
+[0m[0m
+[1mRead-only filesystem impact:[22m[0m[0m
+- With LocalStorage: ❌ Uploads/finalize/deletes fail[0m[0m
+- With remote ObjectStorage: ✅ Works (chunk operations use storage interface directly, not local temp files)[0m[0m
+[0m[0m
+[38;5;252m[1m## Category 8: Actions Logs (DBFS → ObjectStorage)[0m[0m
+[0m[0m
+| Endpoint | Handler | I/O Type |[0m[0m
+|----------|---------|----------|[0m[0m
+| Runner [38;5;10mUpdateLog[0m | [38;5;10mService.UpdateLog[0m | Write to DBFS (database), then transfer to storage.Actions |[0m[0m
+[0m[0m
+[1mRead-only filesystem impact:[22m ✅ [1mWorks[22m — DBFS writes to the database, not the filesystem. [38;5;10mTransferLogs[0m saves to [38;5;10mstorage.Actions[0m which is fine with remote ObjectStorage.[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## Summary: Read-Only Filesystem Impact[0m[0m
+[0m[0m
+| Category | Read Operations | Write Operations |[0m[0m
+|----------|:-:|:-:|[0m[0m
+| Git repo (bare repos on disk) | ✅ Work | ❌ All fail |[0m[0m
+| Git hooks (files in repo dir) | ✅ Work | ❌ Fail ([38;5;10mos.WriteFile[0m) |[0m[0m
+| Temp directories for git ops | N/A | ❌ Fail ([38;5;10mos.MkdirAll[0m) |[0m[0m
+| ObjectStorage (LocalStorage) | ✅ Work | ❌ Fail |[0m[0m
+| ObjectStorage (S3/MinIO/Azure) | ✅ Work | ✅ Work |[0m[0m
+| Container blob temp files | N/A | ❌ Fail (always uses local temp) |[0m[0m
+| DBFS (actions logs) | ✅ Work | ✅ Work (stored in DB) |[0m[0m
+| Archive streaming | ✅ Work | N/A |[0m[0m
+[0m[0m
+[1mKey takeaway:[22m On a read-only filesystem:[0m[0m
+[0m[0m
+1. [1mAll git write operations fail[22m regardless of ObjectStorage backend, because git repos are always on local disk and temporary clone directories can't be created.[0m[0m
+2. [1mAll read-only API endpoints continue to work[22m (file downloads, branch/tag listing, commit history, etc.).[0m[0m
+3. [1mObjectStorage-backed writes[22m (attachments, packages, artifacts, avatars) survive only if configured with a [1mremote backend[22m (S3/MinIO/Azure), but container registry chunked uploads still fail due to local temp file usage.[0m[0m
+4. [1mActions log ingestion[22m continues to work because it uses DBFS (database-backed storage) for buffering.[0m[0m[38;5;12m[1m✓ Created checkpoint 1
+
+[0m[0m
+[38;5;8m
+ ▸ Credits: 7.85 • Time: 5m 18s
+
+[0m[1G[0m[0m[?25h

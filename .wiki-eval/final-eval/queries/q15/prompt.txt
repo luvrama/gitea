@@ -1,0 +1,1 @@
+What are the top 5 most connected components (god nodes) in the codebase and which API endpoints depend on each?

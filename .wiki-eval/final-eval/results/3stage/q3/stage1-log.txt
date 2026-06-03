@@ -1,0 +1,16 @@
+[38;5;11mWARNING: [0m--trust-tools arg for custom tool [38;5;141m[0m needs to be prepended with [38;5;10m@{MCPSERVERNAME}/[0m
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.19s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The user wants to understand the complete data flow when creating a pull request via the API. I need to select the most relevant wiki pages. The key endpoint is ep-226 (POST /api/v1/repos/{owner}/{repo}/pulls - Create a new pull request). I should also include pages about git operations, notifications, and database context.
+[38;5;244m - Completed in 0.23s[0m
+
+[?25l[0m[38;5;141m> [0m[1mjson
+[0m[38;5;10m["README.md", "endpoints/ep-226.md", "endpoints/ep-229.md", "datastores/databases.md", "external/Git_Repository__local_filesystem_.md", "external/overview.md", "modules/routers.md", "datastores/queues.md", "endpoints/ep-222.md", "endpoints/ep-227.md"]
+[0m[0m[0m
+[38;5;8m
+ ▸ Credits: 0.28 • Time: 9s
+
+[0m[1G[0m[0m[?25h

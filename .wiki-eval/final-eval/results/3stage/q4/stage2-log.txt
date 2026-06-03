@@ -1,0 +1,75 @@
+[38;5;11mWARNING: [0m--trust-tools arg for custom tool [38;5;141m[0m needs to be prepended with [38;5;10m@{MCPSERVERNAME}/[0m
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.19s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The user wants to know all external services called during a repository fork operation. Let me look at the ep-334 wiki page which documents the fork endpoint.
+[38;5;244m - Completed in 0.251s[0m
+
+[?25l[0m[38;5;141m> [0m[38;5;252m[1m# External Services Called During Repository Fork (ep-334)[0m[0m
+[0m[0m
+[1mEndpoint:[22m [38;5;10mPOST /api/v1/repos/{owner}/{repo}/forks[0m[0m[0m
+[0m[0m
+[38;5;252m[1m## External Services[0m[0m
+[0m[0m
+Based on the wiki documentation, the fork operation calls [1m2 external services[22m:[0m[0m
+[0m[0m
+[38;5;252m[1m### 1. Git CLI (fork clone)[0m[0m
+[0m[0m
+| Property | Value |[0m[0m
+|----------|-------|[0m[0m
+| [1mClient[22m | [38;5;10mgitrepo[0m |[0m[0m
+| [1mPurpose[22m | Bare clone of the source repository to create the fork |[0m[0m
+| [1mAuth[22m | None (local filesystem) |[0m[0m
+| [1mTimeout[22m | [38;5;10msetting.Git.Timeout.Mirror * 1000ms[0m (configured) |[0m[0m
+| [1mRetry[22m | ❌ None |[0m[0m
+| [1mCircuit Breaker[22m | ❌ Disabled |[0m[0m
+| [1mBulkhead[22m | ❌ None — no limit on concurrent fork operations |[0m[0m
+| [1mFallback[22m | ✅ Cleanup on failure removes partial DB state |[0m[0m
+[0m[0m
+[1mError handling:[22m If the git clone fails after the DB insert, a deferred cleanup runs to remove partial state. However, if the cleanup itself fails, partial state can remain (non-atomic risk).[0m[0m
+[0m[0m
+[38;5;252m[1m### 2. Git Remote (Push Mirror Target)[0m[0m
+[0m[0m
+| Property | Value |[0m[0m
+|----------|-------|[0m[0m
+| [1mClient[22m | [38;5;10mgitrepo[0m |[0m[0m
+| [1mAuth[22m | bearer |[0m[0m
+| [1mBase URL[22m | [38;5;10mconfigured per push mirror (remote_address)[0m |[0m[0m
+| [1mTimeout[22m | [38;5;10msetting.Git.Timeout.Mirror * 1000ms[0m |[0m[0m
+| [1mRetry[22m | ❌ None |[0m[0m
+| [1mCircuit Breaker[22m | ❌ Disabled |[0m[0m
+[0m[0m
+[1mNetwork calls made:[22m[0m[0m
+[0m[0m
+| Method | Path | Request | Response | Purpose |[0m[0m
+|--------|------|---------|----------|---------|[0m[0m
+| POST | [38;5;10mgit push --mirror[0m | git protocol | git protocol | Push all refs to remote mirror |[0m[0m
+| POST | [38;5;10mLFS batch API[0m | lfs.Pointer[] | lfs batch response | Upload LFS objects to remote |[0m[0m
+[0m[0m
+[1mError handling:[22m No retry or circuit breaker. Failure propagates up.[0m[0m
+[0m[0m
+[38;5;252m[1m## Summary of Resilience Gaps[0m[0m
+[0m[0m
+| Pattern | Git CLI (clone) | Git Remote (mirror) |[0m[0m
+|---------|----------------|---------------------|[0m[0m
+| Timeout | ✅ configured (very long — 10 min) | ✅ configured |[0m[0m
+| Retry | ❌ | ❌ |[0m[0m
+| Circuit Breaker | ❌ | ❌ |[0m[0m
+| Bulkhead | ❌ | ❌ |[0m[0m
+| Fallback | ✅ (cleanup) | ❌ |[0m[0m
+[0m[0m
+[38;5;252m[1m## Key Risk[0m[0m
+[0m[0m
+The resiliency assessment flags this endpoint as [1mhigh risk[22m with 3 findings:[0m[0m
+[0m[0m
+1. [1mNon-atomic operation[22m — Multi-step (DB insert → git clone → sync branches). If clone fails after DB insert, cleanup runs but could leave partial state if cleanup fails.[0m[0m
+2. [1mLong timeout[22m — Git clone has a 10-minute timeout, extremely long for an HTTP request handler.[0m[0m
+3. [1mNo bulkhead[22m — No limit on concurrent fork operations; many simultaneous forks could exhaust disk I/O and slow all git operations system-wide.[0m[0m
+[0m[0m
+[1mCascading failure path:[22m Many concurrent fork requests → disk I/O saturation → all git operations slow down.[0m[0m
+[38;5;8m
+ ▸ Credits: 0.29 • Time: 23s
+
+[0m[1G[0m[0m[?25h

@@ -1,0 +1,350 @@
+[38;5;11mWARNING: [0m--trust-tools arg for custom tool [38;5;141m[0m needs to be prepended with [38;5;10m@{MCPSERVERNAME}/[0m
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.17s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The user wants all API endpoints related to repository management from the wiki pages. I have the routers.md file which lists all endpoints grouped by category. The "repository" section is the main one, but I should also consider endpoints from other sections that relate to repos (like org repo creation, user repo creation, etc.). Let me compile the full list from the wiki pages provided.
+[38;5;244m - Completed in 0.25s[0m
+
+[?25l[0m[38;5;141m> [0m[38;5;252m[1m# Repository Management API Endpoints[0m[0m
+[0m[0m
+Based on the wiki documentation, here are all repository management endpoints. These come primarily from the [1mrepository[22m section in [38;5;10mmodules/routers.md[0m, plus repo-related endpoints from other sections.[0m[0m
+[0m[0m
+[38;5;252m[1m## Core Repository CRUD[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/search[0m | [38;5;10mrepo.Search[0m — Search for repositories | none (public, filtered by auth) | ep-362 |[0m[0m
+| POST | [38;5;10m/api/v1/user/repos[0m | [38;5;10mrepo.Create[0m → [38;5;10mrepo.CreateUserRepo[0m — Create repo for authenticated user | bearer | ep-363 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{template_owner}/{template_repo}/generate[0m | [38;5;10mrepo.Generate[0m — Create repo from template | bearer | ep-364 |[0m[0m
+| POST | [38;5;10m/api/v1/org/{org}/repos[0m | Create repo in org (deprecated) | bearer | ep-365 |[0m[0m
+| POST | [38;5;10m/api/v1/orgs/{org}/repos[0m | [38;5;10mrepo.CreateOrgRepo[0m → [38;5;10mprepareDoerCreateRepoInOrg[0m — Create repo in org | bearer | ep-366 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}[0m | [38;5;10mrepo.Get[0m → [38;5;10mconvert.ToRepo[0m — Get repo by owner/name | bearer | ep-367 |[0m[0m
+| GET | [38;5;10m/api/v1/repositories/{id}[0m | Get repo by numeric ID | bearer | ep-368 |[0m[0m
+| PATCH | [38;5;10m/api/v1/repos/{owner}/{repo}[0m | [38;5;10mrepo.Edit[0m → [38;5;10mupdateBasicProperties[0m, [38;5;10mupdateRepoUnits[0m, [38;5;10mupdateRepoArchivedState[0m, [38;5;10mupdateMirror[0m — Edit repo properties | bearer (admin permission) | ep-369 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}[0m | [38;5;10mrepo.Delete[0m → [38;5;10mrepo_service.DeleteRepository[0m — Delete repo | bearer (owner/org admin) | ep-370 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/migrate[0m | Migrate a repository | — | ep-444 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Forks[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/forks[0m | List a repository's forks | bearer | ep-333 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/forks[0m | [38;5;10mrepo.CreateFork[0m → [38;5;10mrepo_service.ForkRepository[0m — Fork a repository | bearer | ep-334 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Transfer[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/transfer[0m | Transfer repo | — | ep-404 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/transfer/accept[0m | Accept transfer | — | ep-405 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/transfer/reject[0m | Reject transfer | — | ep-406 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Branches[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/branches[0m | List branches | bearer | ep-309 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/branches[0m | Create branch | bearer | ep-308 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/branches/{branch}[0m | Get specific branch | bearer | ep-306 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/branches/{branch}[0m | Delete branch | bearer | ep-307 |[0m[0m
+| PUT | [38;5;10m/api/v1/repos/{owner}/{repo}/branches/{branch}[0m | Update branch ref | bearer | ep-310 |[0m[0m
+| PATCH | [38;5;10m/api/v1/repos/{owner}/{repo}/branches/{branch}[0m | Rename branch | bearer | ep-311 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Branch Protections[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/branch_protections[0m | List branch protection rules | bearer | ep-313 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/branch_protections[0m | Create branch protection | bearer | ep-314 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/branch_protections/priority[0m | Update priorities | bearer | ep-317 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/branch_protections/{name}[0m | Get specific rule | bearer | ep-312 |[0m[0m
+| PATCH | [38;5;10m/api/v1/repos/{owner}/{repo}/branch_protections/{name}[0m | Edit rule | bearer | ep-315 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/branch_protections/{name}[0m | Delete rule | bearer | ep-316 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Collaborators[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/collaborators[0m | List collaborators | bearer | ep-250 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}[0m | Check if collaborator | bearer | ep-251 |[0m[0m
+| PUT | [38;5;10m/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}[0m | Add/update collaborator | bearer | ep-252 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}[0m | Remove collaborator | bearer | ep-253 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission[0m | Get permissions | bearer | ep-254 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Releases[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/releases[0m | List releases | bearer | ep-242 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/releases[0m | Create release | bearer | ep-243 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/releases/latest[0m | Get latest release | bearer | ep-241 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/releases/tags/{tag}[0m | Get release by tag | bearer | ep-344 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/releases/tags/{tag}[0m | Delete release by tag | bearer | ep-345 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/releases/{id}[0m | Get release by ID | bearer | ep-240 |[0m[0m
+| PATCH | [38;5;10m/api/v1/repos/{owner}/{repo}/releases/{id}[0m | Update release | bearer | ep-244 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/releases/{id}[0m | Delete release | bearer | ep-245 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/releases/{id}/assets[0m | List release assets | bearer | ep-353 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/releases/{id}/assets[0m | Upload release asset | bearer | ep-354 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}[0m | Get asset | bearer | ep-352 |[0m[0m
+| PATCH | [38;5;10m/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}[0m | Update asset | bearer | ep-355 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}[0m | Delete asset | bearer | ep-356 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Tags & Tag Protections[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/tags[0m | List tags | bearer | ep-414 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/tags[0m | Create tag | bearer | ep-417 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/tags/{tag}[0m | Get tag | bearer | ep-416 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/tags/{tag}[0m | Delete tag | bearer | ep-418 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/tag_protections[0m | List tag protections | bearer | ep-419 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/tag_protections[0m | Create tag protection | bearer | ep-421 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/tag_protections/{id}[0m | Get tag protection | bearer | ep-420 |[0m[0m
+| PATCH | [38;5;10m/api/v1/repos/{owner}/{repo}/tag_protections/{id}[0m | Update tag protection | bearer | ep-422 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/tag_protections/{id}[0m | Delete tag protection | bearer | ep-423 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Pull Requests[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls[0m | List PRs | bearer | ep-222 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls[0m | Create PR | bearer | ep-226 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}[0m | Get PR | bearer | ep-223 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{base}/{head}[0m | Get PR by base/head | bearer | ep-224 |[0m[0m
+| PATCH | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}[0m | Update PR | bearer | ep-227 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}.{diffType}[0m | Get diff/patch | bearer | ep-225 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/merge[0m | Check if merged | bearer | ep-228 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/merge[0m | Merge PR | bearer | ep-229 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/merge[0m | Cancel auto-merge | bearer | ep-231 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/update[0m | Update PR branch | bearer | ep-230 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/commits[0m | Get PR commits | bearer | ep-232 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/files[0m | Get changed files | bearer | ep-233 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Pull Request Reviews[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/reviews[0m | List reviews | bearer | ep-451 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/reviews[0m | Create review | bearer | ep-458 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id}[0m | Get review | bearer | ep-452 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id}[0m | Delete review | bearer | ep-457 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id}[0m | Submit review | bearer | ep-459 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id}/comments[0m | Get review comments | bearer | ep-453 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id}/dismissals[0m | Dismiss review | bearer | ep-462 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/reviews/{id}/undismissals[0m | Undismiss review | bearer | ep-463 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/comments/{id}/replies[0m | Reply to comment | bearer | ep-454 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/comments/{id}/resolve[0m | Resolve comment | bearer | ep-455 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/comments/{id}/unresolve[0m | Unresolve comment | bearer | ep-456 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/requested_reviewers[0m | Request reviewers | bearer | ep-460 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/{index}/requested_reviewers[0m | Remove reviewers | bearer | ep-461 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Webhooks[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/hooks[0m | List webhooks | bearer | ep-321 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/hooks[0m | Create webhook | bearer | ep-324 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/hooks/{id}[0m | Get webhook | bearer | ep-322 |[0m[0m
+| PATCH | [38;5;10m/api/v1/repos/{owner}/{repo}/hooks/{id}[0m | Edit webhook | bearer | ep-325 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/hooks/{id}[0m | Delete webhook | bearer | ep-326 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/hooks/{id}/tests[0m | Test webhook | bearer | ep-323 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/hooks/git[0m | List git hooks | bearer | ep-386 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/hooks/git/{id}[0m | Get git hook | bearer | ep-387 |[0m[0m
+| PATCH | [38;5;10m/api/v1/repos/{owner}/{repo}/hooks/git/{id}[0m | Edit git hook | bearer | ep-388 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/hooks/git/{id}[0m | Delete git hook | bearer | ep-389 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Deploy Keys[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/keys[0m | List deploy keys | bearer | ep-340 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/keys[0m | Add deploy key | bearer | ep-342 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/keys/{id}[0m | Get deploy key | bearer | ep-341 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/keys/{id}[0m | Delete deploy key | bearer | ep-343 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Contents & Git Objects[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/contents[0m | Create file(s) | bearer | ep-394 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/contents[0m | Get root contents | bearer | ep-400 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/contents/{filepath}[0m | Create file | bearer | ep-395 |[0m[0m
+| PUT | [38;5;10m/api/v1/repos/{owner}/{repo}/contents/{filepath}[0m | Update file | bearer | ep-396 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/contents/{filepath}[0m | Delete file | bearer | ep-397 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/contents/{filepath}[0m | Get file contents | bearer | ep-399 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/contents-ext/{filepath}[0m | Get extended contents | bearer | ep-398 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/file-contents[0m | Get file contents | bearer | ep-401 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/file-contents[0m | Create file contents | bearer | ep-402 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/raw/{filepath}[0m | Get raw file | bearer | ep-390 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/media/{filepath}[0m | Get media file | bearer | ep-391 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/archive/{archive}[0m | Download archive | bearer | ep-392 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/editorconfig/{filepath}[0m | Get editorconfig | bearer | ep-393 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/diffpatch[0m | Apply diff patch | bearer | ep-249 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/git/blobs/{sha}[0m | Get blob | bearer | ep-433 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/git/commits/{sha}[0m | Get commit | bearer | ep-214 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/git/commits/{sha}.{diffType}[0m | Get commit diff | bearer | ep-216 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/git/notes/{sha}[0m | Get git note | bearer | ep-299 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/git/refs[0m | List refs | bearer | ep-247 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/git/refs/{ref}[0m | Get ref | bearer | ep-248 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/git/tags/{sha}[0m | Get tag object | bearer | ep-415 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/git/trees/{sha}[0m | Get tree | bearer | ep-246 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/commits[0m | List commits | bearer | ep-215 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/commits/{sha}/pull[0m | Get commit's PR | bearer | ep-217 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/compare/{basehead}[0m | Compare commits | bearer | ep-434 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Commit Statuses[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/statuses/{sha}[0m | Create status | bearer | ep-429 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/statuses/{sha}[0m | List statuses | bearer | ep-430 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/commits/{ref}/statuses[0m | List commit statuses | bearer | ep-431 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/commits/{ref}/status[0m | Get combined status | bearer | ep-432 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Mirrors[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/mirror-sync[0m | Sync pull mirror | bearer | ep-234 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/push_mirrors-sync[0m | Sync all push mirrors | bearer | ep-235 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/push_mirrors[0m | List push mirrors | bearer | ep-236 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/push_mirrors[0m | Create push mirror | bearer | ep-238 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/push_mirrors/{name}[0m | Get push mirror | bearer | ep-237 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/push_mirrors/{name}[0m | Delete push mirror | bearer | ep-239 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Actions (CI/CD)[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runners[0m | List runners | bearer | ep-273 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runners/registration-token[0m | Get registration token | bearer | ep-272 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}[0m | Get runner | bearer | ep-274 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}[0m | Delete runner | bearer | ep-275 |[0m[0m
+| PATCH | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}[0m | Update runner | bearer | ep-276 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runs[0m | List runs | bearer | ep-278 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runs/{run}[0m | Get run | bearer | ep-285 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runs/{run}[0m | Delete run | bearer | ep-294 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun[0m | Rerun workflow | bearer | ep-287 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runs/{run}/rerun-failed-jobs[0m | Rerun failed jobs | bearer | ep-288 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs[0m | List run jobs | bearer | ep-290 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs/{job_id}/rerun[0m | Rerun job | bearer | ep-289 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}[0m | Get attempt | bearer | ep-286 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}/jobs[0m | List attempt jobs | bearer | ep-291 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/runs/{run}/artifacts[0m | List run artifacts | bearer | ep-293 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/artifacts[0m | List all artifacts | bearer | ep-295 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}[0m | Get artifact | bearer | ep-296 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}[0m | Delete artifact | bearer | ep-297 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip[0m | Download artifact | bearer | ep-298 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/jobs[0m | List all jobs | bearer | ep-277 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}[0m | Get job | bearer | ep-292 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}/logs[0m | Get job logs | bearer | ep-403 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/tasks[0m | List tasks | bearer | ep-279 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/secrets[0m | List secrets | bearer | ep-264 |[0m[0m
+| PUT | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}[0m | Create/update secret | bearer | ep-265 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}[0m | Delete secret | bearer | ep-266 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/variables[0m | List variables | bearer | ep-271 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}[0m | Get variable | bearer | ep-267 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}[0m | Create variable | bearer | ep-269 |[0m[0m
+| PUT | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}[0m | Update variable | bearer | ep-270 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/variables/{variablename}[0m | Delete variable | bearer | ep-268 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/workflows[0m | List workflows | bearer | ep-280 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}[0m | Get workflow | bearer | ep-281 |[0m[0m
+| PUT | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/disable[0m | Disable workflow | bearer | ep-282 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches[0m | Dispatch workflow | bearer | ep-283 |[0m[0m
+| PUT | [38;5;10m/api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/enable[0m | Enable workflow | bearer | ep-284 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Topics[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/topics[0m | List repo topics | bearer | ep-347 |[0m[0m
+| PUT | [38;5;10m/api/v1/repos/{owner}/{repo}/topics[0m | Replace all topics | bearer | ep-348 |[0m[0m
+| PUT | [38;5;10m/api/v1/repos/{owner}/{repo}/topics/{topic}[0m | Add topic | bearer | ep-349 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/topics/{topic}[0m | Delete topic | bearer | ep-350 |[0m[0m
+| GET | [38;5;10m/api/v1/topics/search[0m | Search topics | bearer | ep-351 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Teams (Org Repos)[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/teams[0m | List teams with access | bearer | ep-329 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/teams/{team}[0m | Check team assignment | bearer | ep-330 |[0m[0m
+| PUT | [38;5;10m/api/v1/repos/{owner}/{repo}/teams/{team}[0m | Add team | bearer | ep-331 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/teams/{team}[0m | Remove team | bearer | ep-332 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Subscription / Stars[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/stargazers[0m | List stargazers | bearer | ep-327 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/subscribers[0m | List watchers | bearer | ep-328 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/subscription[0m | Check watch status | bearer | ep-196 |[0m[0m
+| PUT | [38;5;10m/api/v1/repos/{owner}/{repo}/subscription[0m | Watch repo | bearer | ep-197 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/subscription[0m | Unwatch repo | bearer | ep-198 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/merge-upstream[0m | Merge from upstream | bearer | ep-318 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Wiki[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/wiki/new[0m | Create wiki page | bearer | ep-445 |[0m[0m
+| PATCH | [38;5;10m/api/v1/repos/{owner}/{repo}/wiki/page/{pageName}[0m | Edit wiki page | bearer | ep-446 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/wiki/page/{pageName}[0m | Delete wiki page | bearer | ep-447 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/wiki/page/{pageName}[0m | Get wiki page | bearer | ep-449 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/wiki/pages[0m | List wiki pages | bearer | ep-448 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/wiki/revisions/{pageName}[0m | Get page revisions | bearer | ep-450 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Miscellaneous Repo Endpoints[0m[0m
+[0m[0m
+| Method | Path | Handler/Description | Auth | ID |[0m[0m
+|--------|------|---------------------|------|----|[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/activities/feeds[0m | List activity feeds | bearer | ep-374 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/assignees[0m | List assignable users | bearer | ep-256 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/reviewers[0m | List reviewable users | bearer | ep-255 |[0m[0m
+| POST | [38;5;10m/api/v1/repos/{owner}/{repo}/avatar[0m | Update repo avatar | bearer | ep-262 |[0m[0m
+| DELETE | [38;5;10m/api/v1/repos/{owner}/{repo}/avatar[0m | Delete repo avatar | bearer | ep-263 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/issue_templates[0m | Get issue templates | bearer | ep-371 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/issue_config[0m | Get issue config | bearer | ep-372 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/issue_config/validate[0m | Validate issue config | bearer | ep-373 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/issues/pinned[0m | List pinned issues | bearer | ep-379 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls/pinned[0m | List pinned PRs | bearer | ep-380 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/new_pin_allowed[0m | Check pin allowed | bearer | ep-381 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/languages[0m | Get language stats | bearer | ep-375 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/licenses[0m | Get licenses | bearer | ep-346 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/times[0m | Get time tracking | bearer | ep-412 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/times/{user}[0m | Get user time tracking | bearer | ep-411 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/signing-key.gpg[0m | Get GPG signing key | bearer | ep-005 |[0m[0m
+| GET | [38;5;10m/api/v1/repos/{owner}/{repo}/signing-key.pub[0m | Get SSH signing key | bearer | ep-007 |[0m[0m
+| GET | [38;5;10m/api/v1/orgs/{org}/repos[0m | List org repos | bearer | ep-174 |[0m[0m
+| GET | [38;5;10m/api/v1/user/repos[0m | List authenticated user's repos | bearer | ep-173 |[0m[0m
+| GET | [38;5;10m/api/v1/users/{username}/repos[0m | List user's repos | bearer | ep-172 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Authentication & Permissions Summary[0m[0m
+[0m[0m
+| Permission Level | Usage |[0m[0m
+|-----------------|-------|[0m[0m
+| [1mnone (public)[22m | [38;5;10mGET /repos/search[0m — results filtered by auth level |[0m[0m
+| [1mbearer (read)[22m | Most GET endpoints — requires authenticated user, results filtered by access |[0m[0m
+| [1mbearer (write)[22m | Create/update operations on content, branches, PRs |[0m[0m
+| [1mbearer (admin)[22m | [38;5;10mPATCH /repos/{owner}/{repo}[0m (edit), [38;5;10mDELETE /repos/{owner}/{repo}[0m, branch protections, webhooks, deploy keys, mirrors |[0m[0m
+| [1mbearer (owner/org admin)[22m | Delete repo requires [38;5;10muser.IsAdmin || user.ID == repo.OwnerID || org.IsOrgAdmin(user.ID)[0m |[0m[0m
+[0m[0m
+[38;5;252m[1m## Key Configuration[0m[0m
+[0m[0m
+| Key | Effect |[0m[0m
+|-----|--------|[0m[0m
+| [38;5;10mrepository.FORCE_PRIVATE[0m (default: [38;5;10mfalse[0m) | When true, forces all new repos to private; prevents non-admins from changing private→public |[0m[0m
+| [38;5;10mmirror.MinInterval[0m (default: [38;5;10m10m0s[0m) | Minimum allowed mirror sync interval |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[1mTotal repository-related endpoints found: ~175[22m out of 475 total endpoints in the project. The remaining endpoints cover admin, issues, notifications, organizations, packages, settings, and user management.[0m[0m
+[0m[0m
+[1mNote:[22m Endpoints ep-404 (transfer) and ep-444 (migrate) have minimal documentation in the wiki — their auth and handler details are not fully documented in the provided pages.[0m[0m
+[38;5;8m
+ ▸ Credits: 1.25 • Time: 1m 26s
+
+[0m[1G[0m[0m[?25h

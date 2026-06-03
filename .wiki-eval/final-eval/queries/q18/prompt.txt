@@ -1,0 +1,1 @@
+Bug: When merging a pull request with an invalid commit ID, the API returns an empty JSON response instead of a proper 409 error. Which file handles the pull request merge API endpoint?

@@ -1,0 +1,926 @@
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[32mAll tools are now trusted ([0m[31m![0m[32m). Kiro will execute tools without asking for confirmation.[0m
+Agents can sometimes do unexpected things so understand the risks.
+
+Learn more at [38;5;141mhttps://kiro.dev/docs/cli/chat/security/#using-tools-trust-all-safely[0m
+
+
+[38;5;12m[1m📷 Checkpoints are enabled! (took 9.87s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The user wants to know the top 5 most connected components (god nodes) in the Gitea codebase and which API endpoints depend on each. "God nodes" typically refer to packages/modules that are imported by the most other packages, making them central dependencies.
+
+Let me explore the codebase structure to understand the architecture, then identify which packages are most heavily imported, and finally map those to API endpoints.
+[38;5;244m - Completed in 0.644s[0m
+[38;5;12m[1m [1.1][0m[0m
+[?25l[0m[?25l[0m[0mReading directory: [38;5;141m/Users/relumalai/workshop/gitea[0m[38;5;244m (using tool: read, max depth: 1, max entries: 1000, excluding: defaults)[0m
+[38;5;10m ✓ [0mSuccessfully read directory [38;5;141m/Users/relumalai/workshop/gitea[0m [38;5;244m(434 entries)[0m
+[38;5;244m - Completed in 0.570s[0m
+[38;5;12m[1m [1.2][0m[0m
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: To find "god nodes" (most connected/imported components), I need to analyze which packages are imported most frequently across the codebase. In Go, this means finding which import paths appear in the most files. Let me run a script to count imports across the Go source files. The key directories are:
+- models/ (data layer)
+- modules/ (shared utilities/libraries)
+- services/ (business logic)
+- routers/ (HTTP handlers / API endpoints)
+
+Let me count which packages are imported most frequently.
+[38;5;244m - Completed in 0.557s[0m
+[38;5;12m[1m [1.3][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && grep -rh '"code.gitea.io/gitea/' --include="*.go" | sed 's/.*"code.gitea.io\/gitea\///' | sed 's/".*//' | sort | uniq -c | sort -rn | head -20[0m[38;5;244m (using tool: shell)[0m
+Purpose: Count the most imported internal packages across all Go files
+
+ 800 modules/setting
+ 648 models/user
+ 583 modules/log
+ 554 modules/util
+ 535 models/repo
+ 531 models/db
+ 427 models/unittest
+ 390 modules/structs
+ 376 services/context
+ 260 modules/git
+ 234 models/issues
+ 234 models/auth
+ 218 modules/timeutil
+ 194 modules/json
+ 187 tests
+ 152 modules/optional
+ 143 modules/web
+ 141 models/unit
+ 140 modules/gitrepo
+ 137 modules/test
+[38;5;244m - Completed in 1.508s[0m
+[38;5;12m[1m [1.4][0m[0m
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: Now I have the top imported packages. Let me exclude test-related packages (models/unittest, modules/test, tests) and focus on the production packages. The top 5 are:
+1. modules/setting (800 imports)
+2. models/user (648 imports)
+3. modules/log (583 imports)
+4. modules/util (554 imports)
+5. models/repo (535 imports)
+
+Now I need to find which API endpoints depend on each. The API routes are in routers/api/. Let me look at the API router structure and then find which API handler files import each of these top packages.
+[38;5;244m - Completed in 0.533s[0m
+[38;5;12m[1m [1.5][0m[0m
+[?25l[0m[?25l[0m[0mReading directory: [38;5;141m/Users/relumalai/workshop/gitea/routers/api[0m[38;5;244m (using tool: read, max depth: 1, max entries: 1000, excluding: defaults)[0m
+[38;5;10m ✓ [0mSuccessfully read directory [38;5;141m/Users/relumalai/workshop/gitea/routers/api[0m [38;5;244m(52 entries)[0m
+[38;5;244m - Completed in 0.548s[0m
+[38;5;12m[1m [1.6][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me find which API handler files directly or transitively depend on each of the top 5 packages. Let me check which files in [38;5;10mrouters/api/[0m import each top package:[0m[0m
+[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== modules/setting ===" && grep -rl '"code.gitea.io/gitea/modules/setting"' routers/api/ --include="*.go" | wc -l && echo "=== models/user ===" && grep -rl '"code.gitea.io/gitea/models/user"' routers/api/ --include="*.go" | wc -l && echo "=== modules/log ===" && grep -rl '"code.gitea.io/gitea/modules/log"' routers/api/ --include="*.go" | wc -l && echo "=== modules/util ===" && grep -rl '"code.gitea.io/gitea/modules/util"' routers/api/ --include="*.go" | wc -l && echo "=== models/repo ===" && grep -rl '"code.gitea.io/gitea/models/repo"' routers/api/ --include="*.go" | wc -l[0m[38;5;244m (using tool: shell)[0m
+Purpose: Count how many API router files import each of the top 5 packages
+
+=== modules/setting ===
+      49
+=== models/user ===
+      45
+=== modules/log ===
+      33
+=== modules/util ===
+      58
+=== models/repo ===
+      41
+[38;5;244m - Completed in 0.845s[0m
+[38;5;12m[1m [1.7][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== models/db ===" && grep -rl '"code.gitea.io/gitea/models/db"' routers/api/ --include="*.go" | wc -l && echo "=== services/context ===" && grep -rl '"code.gitea.io/gitea/services/context"' routers/api/ --include="*.go" | wc -l && echo "=== modules/structs ===" && grep -rl '"code.gitea.io/gitea/modules/structs"' routers/api/ --include="*.go" | wc -l[0m[38;5;244m (using tool: shell)[0m
+Purpose: Check additional highly-imported packages in the API layer
+
+=== models/db ===
+      43
+=== services/context ===
+     134
+=== modules/structs ===
+     102
+[38;5;244m - Completed in 0.626s[0m
+[38;5;12m[1m [1.8][0m[0m
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: Interesting! `services/context` is imported by 134 API router files and `modules/structs` by 102. These are actually the most connected to the API layer specifically. Let me reframe this analysis:
+
+For "god nodes" (most connected components in the entire codebase), the top 5 by total imports are:
+1. modules/setting (800 total imports)
+2. models/user (648 total imports)
+3. modules/log (583 total imports)
+4. modules/util (554 total imports)
+5. models/repo (535 total imports)
+
+But for API endpoint dependencies specifically, I should also consider services/context (376 total / 134 API) and modules/structs (390 total / 102 API) since they are heavily used in the API layer.
+
+Let me stick with the top 5 by total import count (which reflects "most connected" across the entire codebase) and show which API endpoints depend on each. Let me get the specific API files that import each package.
+[38;5;244m - Completed in 0.570s[0m
+[38;5;12m[1m [1.9][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== modules/setting - API files ===" && grep -rl '"code.gitea.io/gitea/modules/setting"' routers/api/v1/ --include="*.go" | grep -v swagger | grep -v utils | sort[0m[38;5;244m (using tool: shell)[0m
+Purpose: List API v1 handler files that import modules/setting
+
+=== modules/setting - API files ===
+routers/api/v1/admin/hooks.go
+routers/api/v1/admin/user.go
+routers/api/v1/api.go
+routers/api/v1/misc/licenses.go
+routers/api/v1/misc/markup_test.go
+routers/api/v1/misc/version.go
+routers/api/v1/org/member.go
+routers/api/v1/repo/action.go
+routers/api/v1/repo/commits.go
+routers/api/v1/repo/file.go
+routers/api/v1/repo/hook.go
+routers/api/v1/repo/issue_attachment.go
+routers/api/v1/repo/issue_comment_attachment.go
+routers/api/v1/repo/issue_dependency.go
+routers/api/v1/repo/issue.go
+routers/api/v1/repo/key.go
+routers/api/v1/repo/main_test.go
+routers/api/v1/repo/migrate.go
+routers/api/v1/repo/mirror.go
+routers/api/v1/repo/pull.go
+routers/api/v1/repo/release_attachment.go
+routers/api/v1/repo/repo.go
+routers/api/v1/repo/wiki.go
+routers/api/v1/settings/settings.go
+routers/api/v1/shared/action.go
+routers/api/v1/shared/runners.go
+routers/api/v1/user/gpg_key.go
+routers/api/v1/user/key.go
+[38;5;244m - Completed in 0.656s[0m
+[38;5;12m[1m [1.10][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== models/user - API files ===" && grep -rl '"code.gitea.io/gitea/models/user"' routers/api/v1/ --include="*.go" | grep -v swagger | grep -v _test | sort[0m[38;5;244m (using tool: shell)[0m
+Purpose: List API v1 handler files that import models/user
+
+=== models/user - API files ===
+routers/api/v1/admin/adopt.go
+routers/api/v1/admin/email.go
+routers/api/v1/admin/org.go
+routers/api/v1/admin/user_badge.go
+routers/api/v1/admin/user.go
+routers/api/v1/api.go
+routers/api/v1/org/member.go
+routers/api/v1/org/org.go
+routers/api/v1/org/team.go
+routers/api/v1/repo/branch.go
+routers/api/v1/repo/collaborators.go
+routers/api/v1/repo/commits.go
+routers/api/v1/repo/compare.go
+routers/api/v1/repo/fork.go
+routers/api/v1/repo/issue_comment_attachment.go
+routers/api/v1/repo/issue_comment.go
+routers/api/v1/repo/issue_reaction.go
+routers/api/v1/repo/issue_subscription.go
+routers/api/v1/repo/issue_tracked_time.go
+routers/api/v1/repo/issue.go
+routers/api/v1/repo/migrate.go
+routers/api/v1/repo/pull_review.go
+routers/api/v1/repo/pull.go
+routers/api/v1/repo/repo.go
+routers/api/v1/repo/tag.go
+routers/api/v1/repo/transfer.go
+routers/api/v1/shared/action.go
+routers/api/v1/shared/block.go
+routers/api/v1/user/email.go
+routers/api/v1/user/follower.go
+routers/api/v1/user/gpg_key.go
+routers/api/v1/user/helper.go
+routers/api/v1/user/key.go
+routers/api/v1/user/repo.go
+routers/api/v1/user/star.go
+routers/api/v1/user/user.go
+routers/api/v1/user/watch.go
+routers/api/v1/utils/hook.go
+[38;5;244m - Completed in 0.662s[0m
+[38;5;12m[1m [1.11][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== modules/log - API files ===" && grep -rl '"code.gitea.io/gitea/modules/log"' routers/api/v1/ --include="*.go" | grep -v swagger | grep -v _test | sort[0m[38;5;244m (using tool: shell)[0m
+Purpose: List API v1 handler files that import modules/log
+
+=== modules/log - API files ===
+routers/api/v1/admin/cron.go
+routers/api/v1/admin/user.go
+routers/api/v1/api.go
+routers/api/v1/org/org.go
+routers/api/v1/org/team.go
+routers/api/v1/repo/issue_attachment.go
+routers/api/v1/repo/issue_comment_attachment.go
+routers/api/v1/repo/language.go
+routers/api/v1/repo/license.go
+routers/api/v1/repo/migrate.go
+routers/api/v1/repo/pull.go
+routers/api/v1/repo/release_attachment.go
+routers/api/v1/repo/repo.go
+routers/api/v1/repo/topic.go
+routers/api/v1/repo/transfer.go
+[38;5;244m - Completed in 0.633s[0m
+[38;5;12m[1m [1.12][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== modules/util - API files ===" && grep -rl '"code.gitea.io/gitea/modules/util"' routers/api/v1/ --include="*.go" | grep -v swagger | grep -v _test | sort[0m[38;5;244m (using tool: shell)[0m
+Purpose: List API v1 handler files that import modules/util
+
+=== modules/util - API files ===
+routers/api/v1/admin/cron.go
+routers/api/v1/admin/hooks.go
+routers/api/v1/api.go
+routers/api/v1/misc/gitignore.go
+routers/api/v1/misc/label_templates.go
+routers/api/v1/misc/licenses.go
+routers/api/v1/misc/markup.go
+routers/api/v1/org/action.go
+routers/api/v1/org/org.go
+routers/api/v1/packages/package.go
+routers/api/v1/repo/action.go
+routers/api/v1/repo/actions_run.go
+routers/api/v1/repo/branch.go
+routers/api/v1/repo/download.go
+routers/api/v1/repo/file.go
+routers/api/v1/repo/fork.go
+routers/api/v1/repo/git_ref.go
+routers/api/v1/repo/issue_attachment.go
+routers/api/v1/repo/issue_comment_attachment.go
+routers/api/v1/repo/issue.go
+routers/api/v1/repo/migrate.go
+routers/api/v1/repo/mirror.go
+routers/api/v1/repo/patch.go
+routers/api/v1/repo/pull.go
+routers/api/v1/repo/release_attachment.go
+routers/api/v1/repo/repo.go
+routers/api/v1/repo/transfer.go
+routers/api/v1/repo/wiki.go
+routers/api/v1/shared/block.go
+routers/api/v1/shared/runners.go
+routers/api/v1/user/action.go
+routers/api/v1/utils/hook.go
+[38;5;244m - Completed in 0.613s[0m
+[38;5;12m[1m [1.13][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== models/repo - API files ===" && grep -rl '"code.gitea.io/gitea/models/repo"' routers/api/v1/ --include="*.go" | grep -v swagger | grep -v _test | sort[0m[38;5;244m (using tool: shell)[0m
+Purpose: List API v1 handler files that import models/repo
+
+=== models/repo - API files ===
+routers/api/v1/admin/adopt.go
+routers/api/v1/admin/user.go
+routers/api/v1/api.go
+routers/api/v1/org/org.go
+routers/api/v1/org/team.go
+routers/api/v1/packages/package.go
+routers/api/v1/repo/action.go
+routers/api/v1/repo/branch.go
+routers/api/v1/repo/collaborators.go
+routers/api/v1/repo/download.go
+routers/api/v1/repo/fork.go
+routers/api/v1/repo/issue_attachment.go
+routers/api/v1/repo/issue_comment_attachment.go
+routers/api/v1/repo/issue_comment.go
+routers/api/v1/repo/issue_dependency.go
+routers/api/v1/repo/issue.go
+routers/api/v1/repo/key.go
+routers/api/v1/repo/language.go
+routers/api/v1/repo/license.go
+routers/api/v1/repo/migrate.go
+routers/api/v1/repo/mirror.go
+routers/api/v1/repo/pull.go
+routers/api/v1/repo/release_attachment.go
+routers/api/v1/repo/release_tags.go
+routers/api/v1/repo/release.go
+routers/api/v1/repo/repo.go
+routers/api/v1/repo/star.go
+routers/api/v1/repo/subscriber.go
+routers/api/v1/repo/tag.go
+routers/api/v1/repo/topic.go
+routers/api/v1/repo/transfer.go
+routers/api/v1/repo/wiki.go
+routers/api/v1/shared/action.go
+routers/api/v1/user/repo.go
+routers/api/v1/user/star.go
+routers/api/v1/user/watch.go
+routers/api/v1/utils/git.go
+[38;5;244m - Completed in 0.580s[0m
+[38;5;12m[1m [1.14][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me also understand the total impact - how many unique packages import each of these, and get the numbers for the broader codebase (not just API routers):[0m[0m
+[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== Unique importing packages per god node ===" && for pkg in "modules/setting" "models/user" "modules/log" "modules/util" "models/repo"; do count=$(grep -rl "\"code.gitea.io/gitea/$pkg\"" --include="*.go" | sed 's|/[^/]*$||' | sort -u | wc -l); echo "$pkg: imported by $count unique packages"; done[0m[38;5;244m (using tool: shell)[0m
+Purpose: Count unique packages (directories) that import each god node
+
+=== Unique importing packages per god node ===
+modules/setting: imported by      200 unique packages
+models/user: imported by      110 unique packages
+modules/log: imported by      169 unique packages
+modules/util: imported by      202 unique packages
+models/repo: imported by       94 unique packages
+[38;5;244m - Completed in 2.771s[0m
+[38;5;12m[1m [1.15][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== Also check models/db and services/context ===" && for pkg in "models/db" "services/context"; do total=$(grep -rl "\"code.gitea.io/gitea/$pkg\"" --include="*.go" | wc -l); unique=$(grep -rl "\"code.gitea.io/gitea/$pkg\"" --include="*.go" | sed 's|/[^/]*$||' | sort -u | wc -l); echo "$pkg: $total total imports, $unique unique packages"; done[0m[38;5;244m (using tool: shell)[0m
+Purpose: Check models/db and services/context for comparison
+
+=== Also check models/db and services/context ===
+models/db:      531 total imports,      120 unique packages
+services/context:      376 total imports,       74 unique packages
+[38;5;244m - Completed in 2.426s[0m
+[38;5;12m[1m [1.16][0m[0m
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: Now I have a clear picture. Let me also look at what's inside these key packages to understand their role, and then identify which specific API endpoint groups depend on them. Let me also get a sense of what specific API routes map to each handler file. The API route registration is in routers/api/v1/api.go. Let me look at that to map files to endpoints.
+[38;5;244m - Completed in 0.978s[0m
+[38;5;12m[1m [1.17][0m[0m
+[?25l[0m[38;5;141m> [0mLet me look at the API route structure to map handler files to endpoint paths:[0m[0m
+[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && grep -n 'm\.\(Get\|Post\|Put\|Delete\|Patch\|Group\|Combo\)(' routers/api/v1/api.go | head -80[0m[38;5;244m (using tool: shell)[0m
+Purpose: Extract route registrations from api.go to map handlers to endpoints
+
+894:		m.Group("/actions", func() {
+895:			m.Group("/secrets", func() {
+896:				m.Get("", reqToken(), reqOwnerCheck, act.ListActionsSecrets)
+897:				m.Combo("/{secretname}").
+902:			m.Group("/variables", func() {
+903:				m.Get("", reqToken(), reqOwnerCheck, act.ListVariables)
+904:				m.Combo("/{variablename}").
+911:			m.Group("/runners", func() {
+912:				m.Get("", reqToken(), reqOwnerCheck, act.ListRunners)
+913:				m.Post("/registration-token", reqToken(), reqOwnerCheck, act.CreateRegistrationToken)
+914:				m.Get("/{runner_id}", reqToken(), reqOwnerCheck, act.GetRunner)
+915:				m.Delete("/{runner_id}", reqToken(), reqOwnerCheck, act.DeleteRunner)
+916:				m.Patch("/{runner_id}", reqToken(), reqOwnerCheck, bind(api.EditActionRunnerOption{}), act.UpdateRunner)
+918:			m.Get("/runs", reqToken(), reqReaderCheck, act.ListWorkflowRuns)
+919:			m.Get("/jobs", reqToken(), reqReaderCheck, act.ListWorkflowJobs)
+923:	m.Group("", func() {
+926:			m.Get("/swagger", func(ctx *context.APIContext) {
+932:			m.Get("/nodeinfo", activitypub.NotImplemented)
+937:		m.Group("", func() {
+938:			m.Get("/version", misc.Version)
+939:			m.Get("/signing-key.gpg", misc.SigningKeyGPG)
+940:			m.Get("/signing-key.pub", misc.SigningKeySSH)
+941:			m.Post("/markup", reqToken(), bind(api.MarkupOption{}), misc.Markup)
+942:			m.Post("/markdown", reqToken(), bind(api.MarkdownOption{}), misc.Markdown)
+943:			m.Post("/markdown/raw", reqToken(), misc.MarkdownRaw)
+944:			m.Get("/gitignore/templates", misc.ListGitignoresTemplates)
+945:			m.Get("/gitignore/templates/{name}", misc.GetGitignoreTemplateInfo)
+946:			m.Get("/licenses", misc.ListLicenseTemplates)
+947:			m.Get("/licenses/{name}", misc.GetLicenseTemplateInfo)
+948:			m.Get("/label/templates", misc.ListLabelTemplates)
+949:			m.Get("/label/templates/{name}", misc.GetLabelTemplate)
+951:			m.Group("/settings", func() {
+952:				m.Get("/ui", settings.GetGeneralUISettings)
+953:				m.Get("/api", settings.GetGeneralAPISettings)
+954:				m.Get("/attachment", settings.GetGeneralAttachmentSettings)
+955:				m.Get("/repository", settings.GetGeneralRepoSettings)
+960:		m.Group("/notifications", func() {
+961:			m.Combo("").
+964:			m.Get("/new", reqToken(), notify.NewAvailable)
+965:			m.Combo("/threads/{id}").
+971:		m.Group("/users", func() {
+972:			m.Get("/search", reqExploreSignIn(), reqUsersExploreEnabled(), user.Search)
+974:			m.Group("/{username}", func() {
+975:				m.Get("", reqExploreSignIn(), user.GetInfo)
+978:					m.Get("/heatmap", user.GetUserHeatmapData)
+981:				m.Get("/repos", tokenRequiresScopes(auth_model.AccessTokenScopeCategoryRepository), reqExploreSignIn(), user.ListUserRepos)
+982:				m.Group("/tokens", func() {
+983:					m.Combo("").Get(user.ListAccessTokens).
+985:					m.Combo("/{id}").Delete(reqToken(), user.DeleteAccessToken)
+988:				m.Get("/activities/feeds", user.ListUserActivityFeeds)
+993:		m.Group("/users", func() {
+994:			m.Group("/{username}", func() {
+995:				m.Get("/keys", user.ListPublicKeys)
+996:				m.Get("/gpg_keys", user.ListGPGKeys)
+998:				m.Get("/followers", user.ListFollowers)
+999:				m.Group("/following", func() {
+1000:					m.Get("", user.ListFollowing)
+1001:					m.Get("/{target}", user.CheckFollowing)
+1004:				m.Get("/starred", reqStarsEnabled(), user.GetStarredRepos)
+1006:				m.Get("/subscriptions", user.GetWatchedRepos)
+1011:		m.Group("/user", func() {
+1012:			m.Get("", user.GetAuthenticatedUser)
+1013:			m.Group("/settings", func() {
+1014:				m.Get("", user.GetUserSettings)
+1015:				m.Patch("", bind(api.UserSettingsOptions{}), user.UpdateUserSettings)
+1017:			m.Combo("/emails").
+1023:			m.Group("/actions", func() {
+1024:				m.Group("/secrets", func() {
+1025:					m.Combo("/{secretname}").
+1030:				m.Group("/variables", func() {
+1031:					m.Get("", user.ListVariables)
+1032:					m.Combo("/{variablename}").
+1039:				m.Group("/runners", func() {
+1040:					m.Get("", reqToken(), user.ListRunners)
+1041:					m.Post("/registration-token", reqToken(), user.CreateRegistrationToken)
+1042:					m.Get("/{runner_id}", reqToken(), user.GetRunner)
+1043:					m.Delete("/{runner_id}", reqToken(), user.DeleteRunner)
+1044:					m.Patch("/{runner_id}", reqToken(), bind(api.EditActionRunnerOption{}), user.UpdateRunner)
+1047:				m.Get("/runs", reqToken(), user.ListWorkflowRuns)
+1048:				m.Get("/jobs", reqToken(), user.ListWorkflowJobs)
+[38;5;244m - Completed in 0.883s[0m
+[38;5;12m[1m [1.18][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && grep -n 'm\.Group(' routers/api/v1/api.go | head -40[0m[38;5;244m (using tool: shell)[0m
+Purpose: Get top-level route groups from api.go
+
+894:		m.Group("/actions", func() {
+895:			m.Group("/secrets", func() {
+902:			m.Group("/variables", func() {
+911:			m.Group("/runners", func() {
+923:	m.Group("", func() {
+937:		m.Group("", func() {
+951:			m.Group("/settings", func() {
+960:		m.Group("/notifications", func() {
+971:		m.Group("/users", func() {
+974:			m.Group("/{username}", func() {
+982:				m.Group("/tokens", func() {
+993:		m.Group("/users", func() {
+994:			m.Group("/{username}", func() {
+999:				m.Group("/following", func() {
+1011:		m.Group("/user", func() {
+1013:			m.Group("/settings", func() {
+1023:			m.Group("/actions", func() {
+1024:				m.Group("/secrets", func() {
+1030:				m.Group("/variables", func() {
+1039:				m.Group("/runners", func() {
+1052:			m.Group("/following", func() {
+1054:				m.Group("/{username}", func() {
+1062:			m.Group("/keys", func() {
+1070:			m.Group("/applications", func() {
+1081:			m.Group("/gpg_keys", func() {
+1095:			m.Group("/starred", func() {
+1097:				m.Group("/{username}/{reponame}", func() {
+1107:			m.Group("/hooks", func() {
+1115:			m.Group("/avatar", func() {
+1120:			m.Group("/blocks", func() {
+1122:				m.Group("/{username}", func() {
+1143:		m.Group("/repos", func() {
+1149:			m.Group("/{username}/{reponame}", func() {
+1156:				m.Group("/transfer", func() {
+1165:				m.Group("/actions/workflows", func() {
+1173:				m.Group("/actions/jobs", func() {
+1178:				m.Group("/hooks/git", func() {
+1180:					m.Group("/{id}", func() {
+1186:				m.Group("/hooks", func() {
+1189:					m.Group("/{id}", func() {
+[38;5;244m - Completed in 0.829s[0m
+[38;5;12m[1m [1.19][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && grep -n 'm\.Group(' routers/api/v1/api.go | tail -60[0m[38;5;244m (using tool: shell)[0m
+Purpose: Get remaining route groups from api.go
+
+1354:						m.Group("/reviews", func() {
+1358:							m.Group("/{id}", func() {
+1376:				m.Group("/statuses", func() { // "/statuses/{sha}" only accepts commit ID
+1380:				m.Group("/commits", func() {
+1390:				m.Group("/git", func() {
+1391:					m.Group("/commits", func() {
+1403:				m.Group("/contents", func() {
+1406:					m.Group("", func() {
+1409:						m.Group("/*", func() {
+1416:				m.Group("/contents-ext", func() {
+1425:				m.Group("/topics", func() {
+1428:					m.Group("/{topic}", func() {
+1440:				m.Group("/avatar", func() {
+1454:		m.Group("/repos", func() {
+1455:			m.Group("/{username}/{reponame}", func() {
+1463:		m.Group("/repos", func() {
+1466:			m.Group("/{username}/{reponame}", func() {
+1467:				m.Group("/issues", func() {
+1471:					m.Group("/comments", func() {
+1473:						m.Group("/{id}", func() {
+1482:							m.Group("/assets", func() {
+1493:					m.Group("/{index}", func() {
+1497:						m.Group("/comments", func() {
+1504:						m.Group("/labels", func() {
+1511:						m.Group("/times", func() {
+1519:						m.Group("/stopwatch", func() {
+1524:						m.Group("/subscriptions", func() {
+1534:						m.Group("/assets", func() {
+1551:						m.Group("/pin", func() {
+1557:						m.Group("/lock", func() {
+1564:				m.Group("/labels", func() {
+1571:				m.Group("/milestones", func() {
+1582:		m.Group("/packages/{username}", func() {
+1583:			m.Group("/{type}/{name}", func() {
+1587:				m.Group("/{version}", func() {
+1593:				m.Group("/-", func() {
+1605:		m.Group("/users/{username}/orgs", func() {
+1611:		m.Group("/orgs/{org}", func() {
+1619:			m.Group("/members", func() {
+1630:			m.Group("/public_members", func() {
+1636:			m.Group("/teams", func() {
+1641:			m.Group("/labels", func() {
+1648:			m.Group("/hooks", func() {
+1655:			m.Group("/avatar", func() {
+1661:			m.Group("/blocks", func() {
+1663:				m.Group("/{username}", func() {
+1670:		m.Group("/teams/{teamid}", func() {
+1674:			m.Group("/members", func() {
+1681:			m.Group("/repos", func() {
+1691:		m.Group("/admin", func() {
+1692:			m.Group("/cron", func() {
+1697:			m.Group("/users", func() {
+1700:				m.Group("/{username}", func() {
+1703:					m.Group("/keys", func() {
+1716:			m.Group("/emails", func() {
+1720:			m.Group("/unadopted", func() {
+1725:			m.Group("/hooks", func() {
+1732:			m.Group("/actions", func() {
+1733:				m.Group("/runners", func() {
+1745:		m.Group("/topics", func() {
+[38;5;244m - Completed in 0.909s[0m
+[38;5;12m[1m [1.20][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me get a count of how many Go source files (excluding tests) exist across the whole project to give context to the numbers:[0m[0m
+[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && find . -name "*.go" -not -name "*_test.go" -not -path "./vendor/*" -not -path "./.project-analysis/*" -not -path "./.wiki-eval/*" | wc -l[0m[38;5;244m (using tool: shell)[0m
+Purpose: Count total non-test Go files in the project
+
+    1996
+[38;5;244m - Completed in 1.160s[0m
+[38;5;12m[1m [1.21][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && find . -name "*.go" -not -name "*_test.go" -not -path "./vendor/*" -not -path "./.project-analysis/*" -not -path "./.wiki-eval/*" | sed 's|/[^/]*$||' | sort -u | wc -l[0m[38;5;244m (using tool: shell)[0m
+Purpose: Count total unique packages in the project
+
+     371
+[38;5;244m - Completed in 0.924s[0m
+[38;5;12m[1m [1.22][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me understand what each god node package actually provides:[0m[0m
+[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && head -30 modules/setting/setting.go[0m[38;5;244m (using tool: shell)[0m
+Purpose: See what modules/setting provides
+
+// Copyright 2014 The Gogs Authors. All rights reserved.
+// Copyright 2017 The Gitea Authors. All rights reserved.
+// SPDX-License-Identifier: MIT
+
+package setting
+
+import (
+	"fmt"
+	"os"
+	"runtime"
+	"strings"
+	"time"
+
+	"code.gitea.io/gitea/modules/log"
+	"code.gitea.io/gitea/modules/optional"
+	"code.gitea.io/gitea/modules/user"
+	"code.gitea.io/gitea/modules/util"
+)
+
+// settings
+var (
+	// AppVer is the version of the current build of Gitea. It is set in main.go from main.Version.
+	AppVer string
+	// AppBuiltWith represents a human-readable version go runtime build version and build tags. (See main.go formatBuiltWith().)
+	AppBuiltWith string
+	// AppStartTime store time gitea has started
+	AppStartTime time.Time
+
+	CfgProvider ConfigProvider
+	IsWindows   bool
+[38;5;244m - Completed in 0.875s[0m
+[38;5;12m[1m [1.23][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && ls modules/setting/*.go | grep -v _test | head -20[0m[38;5;244m (using tool: shell)[0m
+Purpose: List setting package files
+
+modules/setting/actions.go
+modules/setting/admin.go
+modules/setting/api.go
+modules/setting/asset_dynamic.go
+modules/setting/asset_static.go
+modules/setting/attachment.go
+modules/setting/cache.go
+modules/setting/camo.go
+modules/setting/config_env.go
+modules/setting/config_option_instance.go
+modules/setting/config_provider.go
+modules/setting/config.go
+modules/setting/cors.go
+modules/setting/cron.go
+modules/setting/database.go
+modules/setting/federation.go
+modules/setting/git.go
+modules/setting/gloabl_lock.go
+modules/setting/glob.go
+modules/setting/global.go
+[38;5;244m - Completed in 0.547s[0m
+[38;5;12m[1m [1.24][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && ls modules/setting/*.go | grep -v _test | wc -l[0m[38;5;244m (using tool: shell)[0m
+Purpose: Count files in modules/setting
+
+      54
+[38;5;244m - Completed in 0.560s[0m
+[38;5;12m[1m [1.25][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me get the specific API endpoint groups that depend on each god node, mapped to their route prefixes:[0m[0m
+[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== modules/setting - endpoint categories ===" && grep -rl '"code.gitea.io/gitea/modules/setting"' routers/api/v1/ --include="*.go" | grep -v _test | grep -v swagger | sed 's|routers/api/v1/||;s|/[^/]*\.go||' | sort | uniq -c | sort -rn[0m[38;5;244m (using tool: shell)[0m
+Purpose: Count API endpoint categories depending on modules/setting
+
+=== modules/setting - endpoint categories ===
+  15 repo
+   2 user
+   2 shared
+   2 misc
+   2 admin
+   1 utils
+   1 settings
+   1 org
+   1 api.go
+[38;5;244m - Completed in 0.616s[0m
+[38;5;12m[1m [1.26][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== models/user - endpoint categories ===" && grep -rl '"code.gitea.io/gitea/models/user"' routers/api/v1/ --include="*.go" | grep -v _test | grep -v swagger | sed 's|routers/api/v1/||;s|/[^/]*\.go||' | sort | uniq -c | sort -rn[0m[38;5;244m (using tool: shell)[0m
+Purpose: Count API endpoint categories depending on models/user
+
+=== models/user - endpoint categories ===
+  17 repo
+   9 user
+   5 admin
+   3 org
+   2 shared
+   1 utils
+   1 api.go
+[38;5;244m - Completed in 0.612s[0m
+[38;5;12m[1m [1.27][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== modules/log - endpoint categories ===" && grep -rl '"code.gitea.io/gitea/modules/log"' routers/api/v1/ --include="*.go" | grep -v _test | grep -v swagger | sed 's|routers/api/v1/||;s|/[^/]*\.go||' | sort | uniq -c | sort -rn && echo "" && echo "=== modules/util - endpoint categories ===" && grep -rl '"code.gitea.io/gitea/modules/util"' routers/api/v1/ --include="*.go" | grep -v _test | grep -v swagger | sed 's|routers/api/v1/||;s|/[^/]*\.go||' | sort | uniq -c | sort -rn && echo "" && echo "=== models/repo - endpoint categories ===" && grep -rl '"code.gitea.io/gitea/models/repo"' routers/api/v1/ --include="*.go" | grep -v _test | grep -v swagger | sed 's|routers/api/v1/||;s|/[^/]*\.go||' | sort | uniq -c | sort -rn[0m[38;5;244m (using tool: shell)[0m
+Purpose: Count API endpoint categories for remaining god nodes
+
+=== modules/log - endpoint categories ===
+  10 repo
+   2 org
+   2 admin
+   1 api.go
+
+=== modules/util - endpoint categories ===
+  18 repo
+   4 misc
+   2 shared
+   2 org
+   2 admin
+   1 utils
+   1 user
+   1 packages
+   1 api.go
+
+=== models/repo - endpoint categories ===
+  26 repo
+   3 user
+   2 org
+   2 admin
+   1 utils
+   1 shared
+   1 packages
+   1 api.go
+[38;5;244m - Completed in 0.715s[0m
+[38;5;12m[1m [1.28][0m[0m
+[?25l[0m[38;5;141m> [0mLet me also get the specific key exported types/functions from each god node to understand what makes them so coupled:[0m[0m
+[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== Key exports from models/user ===" && grep -n '^type\|^func\|^var' models/user/user.go | head -20 && echo "" && echo "=== Key exports from models/repo ===" && grep -n '^type\|^func\|^var' models/repo/repo.go | head -20[0m[38;5;244m (using tool: shell)[0m
+Purpose: Check key exported symbols from the god node packages
+
+=== Key exports from models/user ===
+50:type UserType int //revive:disable-line:exported
+84:type User struct {
+160:type Meta struct {
+167:func init() {
+172:type SearchOrganizationsOptions struct {
+177:func (u *User) LogString() string {
+185:func (u *User) BeforeUpdate() {
+206:func (u *User) AfterLoad() {
+213:func (u *User) SetLastLogin() {
+218:func (u *User) GetPlaceholderEmail() string {
+224:func (u *User) GetEmail() string {
+232:func GetAllUsers(ctx context.Context) ([]*User, error) {
+238:func (u *User) IsLocal() bool {
+243:func (u *User) IsOAuth2() bool {
+248:func (u *User) MaxCreationLimit() int {
+259:func (u *User) CanCreateRepoIn(owner *User) bool {
+277:func (u *User) CanCreateOrganization() bool {
+282:func (u *User) CanEditGitHook() bool {
+287:func (u *User) CanForkRepoIn(owner *User) bool {
+295:func (u *User) CanImportLocal() bool {
+
+=== Key exports from models/repo ===
+39:type ErrUserDoesNotHaveAccessToRepo struct {
+45:func IsErrUserDoesNotHaveAccessToRepo(err error) bool {
+50:func (err ErrUserDoesNotHaveAccessToRepo) Error() string {
+54:func (err ErrUserDoesNotHaveAccessToRepo) Unwrap() error {
+58:type ErrRepoIsArchived struct {
+62:func (err ErrRepoIsArchived) Error() string {
+66:type globalVarsStruct struct {
+73:var globalVars = sync.OnceValue(func() *globalVarsStruct {
+83:func IsUsableRepoName(name string) error {
+93:func IsValidSSHAccessRepoName(name string) bool {
+102:type TrustModelType int
+113:func (t TrustModelType) String() string {
+128:func ToTrustModel(model string) TrustModelType {
+143:type RepositoryStatus int
+154:type Repository struct {
+224:func init() {
+228:func RelativePath(ownerName, repoName string) string {
+233:func (repo *Repository) RelativePath() string {
+237:type StorageRepo string
+240:func (sr StorageRepo) RelativePath() string {
+[38;5;244m - Completed in 0.598s[0m
+[38;5;12m[1m [1.29][0m[0m
+[?25l[0m[38;5;141m> [0mNow I have all the data needed. Let me compile the final answer:[0m[0m
+[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== Outgoing dependencies of each god node (what they import) ===" && for pkg in "modules/setting" "models/user" "modules/log" "modules/util" "models/repo"; do echo "--- $pkg ---"; grep -rh '"code.gitea.io/gitea/' $pkg/ --include="*.go" 2>/dev/null | grep -v _test | sed 's/.*"code.gitea.io\/gitea\///' | sed 's/".*//' | sort -u | head -10; echo ""; done[0m[38;5;244m (using tool: shell)[0m
+Purpose: Check outgoing dependencies of each god node
+
+=== Outgoing dependencies of each god node (what they import) ===
+--- modules/setting ---
+modules/auth/password/hash
+modules/container
+modules/generate
+modules/glob
+modules/json
+modules/log
+modules/nosql
+modules/optional
+modules/setting/config
+modules/structs
+
+--- models/user ---
+models
+models/actions
+models/activities
+models/auth
+models/avatars
+models/db
+models/unittest
+models/user
+modules/auth/openid
+modules/auth/password/hash
+
+--- modules/log ---
+modules/foo/bar.MyFunc.func1.2()
+modules/json
+modules/process
+modules/util
+modules/util/rotatingfilewriter
+
+--- modules/util ---
+modules/container
+modules/graceful/releasereopen
+modules/util
+modules/util.TestCallerFuncName
+
+--- models/repo ---
+models
+models/actions
+models/activities
+models/db
+models/organization
+models/perm
+models/perm/access
+models/repo
+models/unit
+models/unittest
+
+[38;5;244m - Completed in 0.728s[0m
+[38;5;12m[1m [1.30][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== Specific API endpoint files importing models/repo ===" && grep -rl '"code.gitea.io/gitea/models/repo"' routers/api/v1/repo/ --include="*.go" | grep -v _test | sed 's|routers/api/v1/repo/||' | sort[0m[38;5;244m (using tool: shell)[0m
+Purpose: List specific repo endpoint files importing models/repo
+
+=== Specific API endpoint files importing models/repo ===
+action.go
+branch.go
+collaborators.go
+download.go
+fork.go
+issue_attachment.go
+issue_comment_attachment.go
+issue_comment.go
+issue_dependency.go
+issue.go
+key.go
+language.go
+license.go
+migrate.go
+mirror.go
+pull.go
+release_attachment.go
+release_tags.go
+release.go
+repo.go
+star.go
+subscriber.go
+tag.go
+topic.go
+transfer.go
+wiki.go
+[38;5;244m - Completed in 0.595s[0m
+[38;5;12m[1m [1.31][0m[0m
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea && echo "=== Also checking services/context imports in API layer ===" && grep -rl '"code.gitea.io/gitea/services/context"' routers/api/v1/ --include="*.go" | grep -v _test | grep -v swagger | sed 's|routers/api/v1/||;s|/[^/]*\.go||' | sort | uniq -c | sort -rn[0m[38;5;244m (using tool: shell)[0m
+Purpose: Count services/context usage in API for reference
+
+=== Also checking services/context imports in API layer ===
+  50 repo
+  16 user
+  10 admin
+   8 org
+   6 misc
+   4 notify
+   3 utils
+   3 shared
+   1 settings
+   1 packages
+   1 api.go
+   1 activitypub
+[38;5;244m - Completed in 0.610s[0m
+[38;5;12m[1m [1.32][0m[0m
+[?25l[0m[38;5;141m> [0mHere's the complete analysis of the top 5 most connected components (god nodes) in the Gitea codebase:[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m# Top 5 God Nodes in the Gitea Codebase[0m[0m
+[0m[0m
+[38;5;252m[1m## Summary Table[0m[0m
+[0m[0m
+| Rank | Package | Total Imports | Unique Importing Packages | API Router Files |[0m[0m
+|------|---------|:------------:|:------------------------:|:----------------:|[0m[0m
+| 1 | [38;5;10mmodules/setting[0m | 800 | 200 / 371 (54%) | 27 |[0m[0m
+| 2 | [38;5;10mmodels/user[0m | 648 | 110 / 371 (30%) | 38 |[0m[0m
+| 3 | [38;5;10mmodules/log[0m | 583 | 169 / 371 (46%) | 15 |[0m[0m
+| 4 | [38;5;10mmodules/util[0m | 554 | 202 / 371 (54%) | 32 |[0m[0m
+| 5 | [38;5;10mmodels/repo[0m | 535 | 94 / 371 (25%) | 37 |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 1. [38;5;10mmodules/setting[0m — Global Configuration (800 imports, 54 files, 200 dependent packages)[0m[0m
+[0m[0m
+[1mRole:[22m Central configuration singleton holding all app settings (database, git, server, security, repository limits, API settings, attachment sizes, etc.). Nearly every component reads config values from here.[0m[0m
+[0m[0m
+[1mDependent API endpoint groups:[22m[0m[0m
+[0m[0m
+| Endpoint Category | Files | Example Endpoints |[0m[0m
+|---|---|---|[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/...[0m | 15 | issues, pulls, files, mirrors, hooks, commits, wiki, keys, releases |[0m[0m
+| [38;5;10m/user/...[0m | 2 | gpg_keys, keys |[0m[0m
+| [38;5;10m/admin/...[0m | 2 | hooks, users |[0m[0m
+| [38;5;10m/settings/...[0m | 1 | [38;5;10m/settings/ui[0m, [38;5;10m/settings/api[0m, [38;5;10m/settings/attachment[0m, [38;5;10m/settings/repository[0m |[0m[0m
+| [38;5;10m/orgs/{org}/...[0m | 1 | members |[0m[0m
+| Misc ([38;5;10m/[0m) | 2 | [38;5;10m/version[0m, [38;5;10m/licenses[0m |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 2. [38;5;10mmodels/user[0m — User Domain Model (648 imports, 110 dependent packages)[0m[0m
+[0m[0m
+[1mRole:[22m Defines the [38;5;10mUser[0m struct and all user-related database operations (authentication, permissions, org membership, email handling, avatar, etc.). Any endpoint that needs user context or ownership checks imports this.[0m[0m
+[0m[0m
+[1mDependent API endpoint groups:[22m[0m[0m
+[0m[0m
+| Endpoint Category | Files | Example Endpoints |[0m[0m
+|---|---|---|[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/...[0m | 17 | issues, pull_reviews, collaborators, commits, fork, transfer, migrate, branches, tags |[0m[0m
+| [38;5;10m/user/...[0m & [38;5;10m/users/{username}/...[0m | 9 | profile, emails, followers, starred, repos, keys, gpg_keys, watch |[0m[0m
+| [38;5;10m/admin/...[0m | 5 | users, orgs, badges, emails, adopt |[0m[0m
+| [38;5;10m/orgs/{org}/...[0m | 3 | members, orgs, teams |[0m[0m
+| Shared/internal | 2 | actions, blocks |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 3. [38;5;10mmodules/log[0m — Logging Framework (583 imports, 169 dependent packages)[0m[0m
+[0m[0m
+[1mRole:[22m Structured logging system used for error/warning/info/debug logging throughout the codebase. Imported by any component that needs to log.[0m[0m
+[0m[0m
+[1mDependent API endpoint groups:[22m[0m[0m
+[0m[0m
+| Endpoint Category | Files | Example Endpoints |[0m[0m
+|---|---|---|[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/...[0m | 10 | issues (attachments), language, license, migrate, pulls, releases, repos, topics, transfers |[0m[0m
+| [38;5;10m/orgs/{org}/...[0m | 2 | orgs, teams |[0m[0m
+| [38;5;10m/admin/...[0m | 2 | cron, users |[0m[0m
+| Core API router | 1 | [38;5;10mapi.go[0m (middleware/error handling) |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 4. [38;5;10mmodules/util[0m — General Utilities (554 imports, 202 dependent packages)[0m[0m
+[0m[0m
+[1mRole:[22m Generic utility functions — string manipulation, error wrapping, slice helpers, path utils, optional types, pagination. The most broadly imported package by unique package count.[0m[0m
+[0m[0m
+[1mDependent API endpoint groups:[22m[0m[0m
+[0m[0m
+| Endpoint Category | Files | Example Endpoints |[0m[0m
+|---|---|---|[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/...[0m | 18 | actions, branches, downloads, files, forks, git_refs, issues, mirrors, patches, pulls, releases, repos, transfers, wiki |[0m[0m
+| Misc ([38;5;10m/[0m) | 4 | gitignore, label_templates, licenses, markup |[0m[0m
+| [38;5;10m/orgs/{org}/...[0m | 2 | actions, orgs |[0m[0m
+| [38;5;10m/admin/...[0m | 2 | cron, hooks |[0m[0m
+| [38;5;10m/user/...[0m | 1 | actions |[0m[0m
+| [38;5;10m/packages/...[0m | 1 | packages |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 5. [38;5;10mmodels/repo[0m — Repository Domain Model (535 imports, 94 dependent packages)[0m[0m
+[0m[0m
+[1mRole:[22m Defines the [38;5;10mRepository[0m struct and all repository-related DB operations (creation, deletion, forks, stars, topics, languages, collaborators, units, trust model). The most heavily coupled to the [38;5;10m/repo/[0m API surface.[0m[0m
+[0m[0m
+[1mDependent API endpoint groups:[22m[0m[0m
+[0m[0m
+| Endpoint Category | Files | Example Endpoints |[0m[0m
+|---|---|---|[0m[0m
+| [38;5;10m/repos/{owner}/{repo}/...[0m | 26 | [1mNearly all repo endpoints[22m — actions, branches, collaborators, downloads, forks, issues, keys, languages, licenses, migrate, mirrors, pulls, releases, repos, stars, subscribers, tags, topics, transfers, wiki |[0m[0m
+| [38;5;10m/user/...[0m | 3 | repos, starred, watched |[0m[0m
+| [38;5;10m/admin/...[0m | 2 | adopt, users |[0m[0m
+| [38;5;10m/orgs/{org}/...[0m | 2 | orgs, teams |[0m[0m
+| [38;5;10m/packages/...[0m | 1 | packages |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## Key Observations[0m[0m
+[0m[0m
+1. [1m[38;5;10mmodules/util[0m and [38;5;10mmodules/setting[0m[22m tie for broadest reach at 54% of all packages. [38;5;10mmodules/setting[0m wins by raw import count (800) because many files reference multiple setting variables.[0m[0m
+[0m[0m
+2. [1m[38;5;10mmodels/repo[0m[22m has the deepest coupling to the API surface — 26 out of ~53 repo handler files import it directly, making changes to the Repository struct extremely high-impact.[0m[0m
+[0m[0m
+3. [1m[38;5;10mmodels/user[0m[22m is the most cross-cutting domain model — it's needed by admin, org, user, and repo endpoints because ownership and permission checks are pervasive.[0m[0m
+[0m[0m
+4. [1m[38;5;10mmodules/log[0m[22m is highly imported but low-risk since it has minimal outgoing dependencies (only [38;5;10mmodules/json[0m, [38;5;10mmodules/process[0m, [38;5;10mmodules/util[0m) — it's a leaf-like node despite its high fan-in.[0m[0m
+[0m[0m
+5. [1mTransitive amplification:[22m [38;5;10mservices/context[0m (376 imports, 134 API files) and [38;5;10mmodules/structs[0m (390 imports, 102 API files) are also significant "god nodes" that act as bridges — [38;5;10mservices/context[0m imports both [38;5;10mmodels/user[0m and [38;5;10mmodels/repo[0m, so any API handler using context transitively depends on both domain models.[0m[0m[38;5;12m[1m✓ Created checkpoint 1
+
+[0m[0m
+[38;5;8m
+ ▸ Credits: 4.12 • Time: 3m 5s
+
+[0m[1G[0m[0m[?25h

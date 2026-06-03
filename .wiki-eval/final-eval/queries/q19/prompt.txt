@@ -1,0 +1,1 @@
+Bug: Smart HTTP git requests are not checking the correct permission scope - they use repo-level scope when they should check specific unit scope. Which file handles the permission context for git operations?

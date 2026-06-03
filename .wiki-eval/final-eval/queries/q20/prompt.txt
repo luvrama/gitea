@@ -1,0 +1,1 @@
+Bug: The API for listing packages does not correctly filter by private/internal visibility - it shows private packages to users who should not see them. Which file handles package source permission checks?

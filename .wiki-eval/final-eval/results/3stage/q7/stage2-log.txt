@@ -1,0 +1,189 @@
+[38;5;11mWARNING: [0m--trust-tools arg for custom tool [38;5;141m[0m needs to be prepended with [38;5;10m@{MCPSERVERNAME}/[0m
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.18s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: Let me analyze the wiki pages to find all API endpoints that trigger git operations. I need to look at:
+
+1. External services that involve git: "Git Repository (local filesystem)" and "Git Remote (Push Mirror Target)"
+2. Endpoints that reference git commands in their workflow steps
+3. The resiliency overview for git-related dependencies
+
+Let me go through the wiki pages systematically:
+
+**From external/Git_Repository__local_filesystem_.md:**
+- Methods: `git tag`, `git tag -d`, `git rev-parse / cat-file`
+- Used by: ep-243, ep-244, ep-245
+
+**From external/Git_Remote__Push_Mirror_Target_.md:**
+- Methods: `git push --mirror`, LFS batch API
+- Used by: ep-235, ep-334
+
+**From resiliency/overview.md:**
+- Git Repository (local filesystem): Timeout ✅, ep-243, ep-244, ep-245
+- Git Remote (Push Mirror Target): Timeout ✅, ep-235
+- Git CLI (fork clone): Timeout ✅, ep-334
+
+Now let me look at individual endpoint pages:
+
+**ep-229 (POST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge):**
+- Git merge operation (synchronous, holds global lock)
+- No explicit timeout mentioned beyond the lock
+- On failure: returns 409 (merge conflict), various 405 errors
+
+**ep-230 (POST /api/v1/repos/{owner}/{repo}/pulls/{index}/update):**
+- Merge or rebase base into head
+- Uses global lock
+- On failure: returns 409 (conflict), 403, 422
+
+**ep-234 (POST /api/v1/repos/{owner}/{repo}/mirror-sync):**
+- Adds to mirror queue (async) - not a direct git operation in the request itself
+- But it triggers a sync which involves git
+
+**ep-235 (POST /api/v1/repos/{owner}/{repo}/push_mirrors-sync):**
+- `git push --mirror` to each remote
+- Timeout: setting.Git.Timeout.Mirror * 1000ms (default 300s)
+- On failure: returns 500, partial sync state, remaining mirrors unsynced
+
+**ep-249 (POST /api/v1/repos/{owner}/{repo}/diffpatch):**
+- `git apply` (apply patch)
+- Clone + apply + commit + push
+- No explicit timeout on git apply or push
+- On failure: 500 internal error, temp repo cleaned up
+
+**ep-308 (POST /api/v1/repos/{owner}/{repo}/branches):**
+- `git push` to create branch
+- checkBranchName walks all refs
+- No explicit timeout mentioned
+- On failure: 409 (conflict), relies on git push failure for race conditions
+
+**ep-318 (POST /api/v1/repos/{owner}/{repo}/merge-upstream):**
+- `git push` from base repo to fork (fast-forward attempt)
+- Falls back to merge via fake PR (pull.Update)
+- No explicit timeout on merge operation
+- On failure: 400, 404, 500
+
+**ep-243 (POST /api/v1/repos/{owner}/{repo}/releases):**
+- From the Git Repository external service: `git tag`, `git rev-parse / cat-file`
+- Risk level medium, 2 dependencies
+
+**ep-244 (PATCH /api/v1/repos/{owner}/{repo}/releases/{id}):**
+- From the Git Repository external service: git tag operations
+- Used for updating release (tag name changes)
+
+**ep-245 (DELETE /api/v1/repos/{owner}/{repo}/releases/{id}):**
+- From the Git Repository external service: `git tag -d`
+- Delete git tag on release delete
+
+**ep-334 (POST /api/v1/repos/{owner}/{repo}/forks):**
+- Git CLI fork clone
+- Git Remote push mirror (from resiliency)
+- Timeout ✅
+
+**ep-417 (POST /api/v1/repos/{owner}/{repo}/tags):**
+- Listed but no details in wiki
+
+Let me also check for other endpoints from the cascading failure paths:
+- ep-222 (GET pulls): "Git storage slow → ep-222 list timeout"
+- ep-215 (GET commits): git operations implied
+- ep-216 (GET commits diff): git operations
+- ep-225 (GET pulls diff): git operations
+
+From the resiliency overview cascading failures:
+- "Git storage down → all PR create/merge/update/commits/files endpoints fail"
+- "Git repository filesystem unavailable → create/edit/delete fail"
+- "Git repo unavailability blocks all merges"
+- "Git repo unavailability blocks updates"
+
+Let me compile the complete list from what's documented in the wiki pages provided. I should focus on endpoints where the wiki explicitly documents git commands/operations.
+[38;5;244m - Completed in 0.31s[0m
+
+[?25l[0m[38;5;141m> [0m[38;5;252m[1m# API Endpoints That Trigger Git Operations[0m[0m
+[0m[0m
+Based on the wiki documentation, here are all endpoints with explicitly documented git operations:[0m[0m
+[0m[0m
+[38;5;252m[1m## Endpoints with Direct Git Commands[0m[0m
+[0m[0m
+| Endpoint | Path | Git Command(s) | Timeout | Failure Behavior |[0m[0m
+|----------|------|----------------|---------|------------------|[0m[0m
+| ep-235 | [38;5;10mPOST /api/v1/repos/{owner}/{repo}/push_mirrors-sync[0m | [38;5;10mgit push --mirror[0m, LFS batch API | [38;5;10msetting.Git.Timeout.Mirror * 1000ms[0m (default 300s) | Returns 500 on first mirror failure; remaining mirrors unsynced (partial sync state) |[0m[0m
+| ep-243 | [38;5;10mPOST /api/v1/repos/{owner}/{repo}/releases[0m | [38;5;10mgit tag[0m, [38;5;10mgit rev-parse / cat-file[0m | ✅ configured (value not specified) | Release creation fails |[0m[0m
+| ep-244 | [38;5;10mPATCH /api/v1/repos/{owner}/{repo}/releases/{id}[0m | [38;5;10mgit tag[0m (rename/update) | ✅ configured | Release update fails |[0m[0m
+| ep-245 | [38;5;10mDELETE /api/v1/repos/{owner}/{repo}/releases/{id}[0m | [38;5;10mgit tag -d[0m | ✅ configured | Release deletion fails; attachments may be orphaned |[0m[0m
+| ep-249 | [38;5;10mPOST /api/v1/repos/{owner}/{repo}/diffpatch[0m | [38;5;10mgit apply[0m, [38;5;10mgit push[0m (clone → apply → commit → push) | ❌ missing | Returns 500; temp repo cleaned up via defer |[0m[0m
+| ep-308 | [38;5;10mPOST /api/v1/repos/{owner}/{repo}/branches[0m | [38;5;10mgit push[0m (create branch), walks all refs for conflict check | Not documented | Returns 409 on conflict; relies on git push failure for race handling |[0m[0m
+| ep-318 | [38;5;10mPOST /api/v1/repos/{owner}/{repo}/merge-upstream[0m | [38;5;10mgit push[0m (fast-forward), fallback to merge via [38;5;10mpull.Update[0m | Not documented (uses context cancellation) | Returns 400 if ff_only fails; 500 on merge failure |[0m[0m
+| ep-229 | [38;5;10mPOST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge[0m | Git merge + push (style: merge/rebase/rebase-merge/squash/fast-forward-only) | Not documented | Returns 409 (conflict), 405 (not allowed); holds global lock |[0m[0m
+| ep-230 | [38;5;10mPOST /api/v1/repos/{owner}/{repo}/pulls/{index}/update[0m | Git merge or rebase (base into head) + push | Not documented | Returns 409 (conflict), 422 (already merged/closed) |[0m[0m
+| ep-334 | [38;5;10mPOST /api/v1/repos/{owner}/{repo}/forks[0m | [38;5;10mgit clone[0m (fork), [38;5;10mgit push --mirror[0m (if push mirrors configured) | ✅ configured | Disk I/O saturation possible with concurrent forks; has fallback |[0m[0m
+| ep-234 | [38;5;10mPOST /api/v1/repos/{owner}/{repo}/mirror-sync[0m | Queues [38;5;10mgit pull[0m (async, not in request thread) | N/A (async queue) | Queue handles backpressure; fire-and-forget |[0m[0m
+[0m[0m
+[38;5;252m[1m## Detailed Breakdown by Risk[0m[0m
+[0m[0m
+[38;5;252m[1m### High Risk[0m[0m
+[0m[0m
+[1mep-235 — Push Mirror Sync[22m[0m[0m
+- **Commands:** [38;5;10mgit push --mirror[0m per mirror, LFS batch upload[0m[0m
+- **Timeout:** [38;5;10mgit.TIMEOUT.MIRROR[0m (default 300s per mirror)[0m[0m
+- **Failure:** Synchronous loop — total time = N mirrors × timeout. Fails on first error, leaving remaining mirrors unsynced. No retry, no circuit breaker.[0m[0m
+- **Cascading risk:** One slow remote blocks all subsequent mirrors[0m[0m
+[0m[0m
+[38;5;252m[1m### Medium Risk[0m[0m
+[0m[0m
+[1mep-249 — Diff Patch[22m[0m[0m
+- **Commands:** temp repo clone → [38;5;10mgit apply[0m → commit → [38;5;10mgit push[0m[0m[0m
+- **Timeout:** ❌ None on git apply or push[0m[0m
+- **Failure:** Large patches could block indefinitely. Disk space exhaustion with concurrent operations. Temp repo cleanup via [38;5;10mdefer[0m.[0m[0m
+[0m[0m
+[1mep-229 — Merge PR[22m[0m[0m
+- **Commands:** Git merge/rebase/squash/fast-forward + push[0m[0m
+- **Timeout:** Not documented (global lock held during operation)[0m[0m
+- **Failure:** Returns 409 on conflict. Idempotent via HasMerged check + global lock.[0m[0m
+[0m[0m
+[1mep-308 — Create Branch[22m[0m[0m
+- **Commands:** Walks all refs ([38;5;10mcheckBranchName[0m), then [38;5;10mgit push[0m[0m[0m
+- **Timeout:** Not documented[0m[0m
+- **Failure:** Race condition between name check and push (non-atomic). Git push failure returns conflict error.[0m[0m
+[0m[0m
+[1mep-318 — Merge Upstream[22m[0m[0m
+- **Commands:** [38;5;10mgit push[0m (fast-forward attempt), fallback [38;5;10mpull.Update[0m (merge)[0m[0m
+- **Timeout:** Context cancellation only, no explicit timeout[0m[0m
+- **Failure:** Non-atomic: push attempt + fallback merge. State may be inconsistent if merge fails after push attempt.[0m[0m
+[0m[0m
+[38;5;252m[1m### Low Risk[0m[0m
+[0m[0m
+[1mep-243/244/245 — Release CRUD[22m[0m[0m
+- **Commands:** [38;5;10mgit tag[0m, [38;5;10mgit tag -d[0m, [38;5;10mgit rev-parse / cat-file[0m[0m[0m
+- **Timeout:** ✅ Configured[0m[0m
+- **Failure:** No retry. Operations are relatively fast (local filesystem).[0m[0m
+[0m[0m
+[1mep-234 — Mirror Sync (Pull)[22m[0m[0m
+- **Commands:** Async queue push only (actual git pull happens in background worker)[0m[0m
+- **Timeout:** N/A[0m[0m
+- **Failure:** Resilient fire-and-forget pattern with queue deduplication.[0m[0m
+[0m[0m
+[38;5;252m[1m## Summary of Timeout Coverage[0m[0m
+[0m[0m
+| Timeout Status | Endpoints |[0m[0m
+|---------------|-----------|[0m[0m
+| ✅ Configured | ep-235, ep-243, ep-244, ep-245, ep-334 |[0m[0m
+| ❌ Missing | ep-249 |[0m[0m
+| Not documented / context-only | ep-229, ep-230, ep-308, ep-318 |[0m[0m
+| N/A (async) | ep-234 |[0m[0m
+[0m[0m
+[38;5;252m[1m## Additional Endpoints (Implied but Not Fully Documented)[0m[0m
+[0m[0m
+The resiliency overview notes "Git storage down → all PR create/merge/update/commits/files endpoints fail" which implies git operations in:[0m[0m
+- ep-222 ([38;5;10mGET /pulls[0m) — git storage for diff computation[0m[0m
+- ep-215 ([38;5;10mGET /commits[0m) — git log[0m[0m
+- ep-216 ([38;5;10mGET /commits/{sha}.{diffType}[0m) — git diff/patch output[0m[0m
+- ep-225 ([38;5;10mGET /pulls/{index}.{diffType}[0m) — PR diff[0m[0m
+- ep-396 ([38;5;10mPUT /contents/{filepath}[0m) — file update (commit + push)[0m[0m
+- ep-417 ([38;5;10mPOST /tags[0m) — tag creation[0m[0m
+[0m[0m
+These endpoints lack detailed documentation in the provided wiki pages, so their exact git commands, timeouts, and failure behaviors cannot be confirmed.[0m[0m
+[38;5;8m
+ ▸ Credits: 0.65 • Time: 53s
+
+[0m[1G[0m[0m[?25h

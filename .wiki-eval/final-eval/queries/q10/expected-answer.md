@@ -1,0 +1,62 @@
+# Q10 Expected Answer: Endpoints with File I/O
+
+Source: endpoints with file/disk/filesystem/storage in Workflow section
+
+Total: 56 endpoints
+
+- ep-002.md: GET /api/v1/label/templates
+- ep-003.md: GET /api/v1/label/templates/{name}
+- ep-004.md: GET /api/v1/signing-key.gpg
+- ep-006.md: GET /api/v1/signing-key.pub
+- ep-007.md: GET /api/v1/repos/{owner}/{repo}/signing-key.pub
+- ep-009.md: POST /api/v1/markdown
+- ep-012.md: GET /api/v1/gitignore/templates/{name}
+- ep-014.md: GET /api/v1/licenses/{name}
+- ep-018.md: GET /api/v1/settings/attachment
+- ep-032.md: POST /api/v1/orgs/{org}/rename
+- ep-034.md: DELETE /api/v1/orgs/{org}
+- ep-037.md: POST /api/v1/orgs/{org}/avatar
+- ep-038.md: DELETE /api/v1/orgs/{org}/avatar
+- ep-099.md: PATCH /api/v1/admin/users/{username}
+- ep-100.md: DELETE /api/v1/admin/users/{username}
+- ep-102.md: DELETE /api/v1/admin/users/{username}/keys/{id}
+- ep-104.md: POST /api/v1/admin/users/{username}/rename
+- ep-107.md: GET /api/v1/admin/unadopted
+- ep-108.md: POST /api/v1/admin/unadopted/{owner}/{repo}
+- ep-109.md: DELETE /api/v1/admin/unadopted/{owner}/{repo}
+- ep-112.md: POST /api/v1/admin/users/{username}/repos
+- ep-128.md: POST /api/v1/user/avatar
+- ep-129.md: DELETE /api/v1/user/avatar
+- ep-152.md: GET /api/v1/users/{username}/starred
+- ep-160.md: POST /api/v1/user/keys
+- ep-161.md: DELETE /api/v1/user/keys/{id}
+- ep-194.md: GET /api/v1/users/{username}/subscriptions
+- ep-199.md: GET /api/v1/packages/{owner}
+- ep-200.md: GET /api/v1/packages/{owner}/{type}/{name}/{version}
+- ep-201.md: DELETE /api/v1/packages/{owner}/{type}/{name}
+- ep-202.md: DELETE /api/v1/packages/{owner}/{type}/{name}/{version}
+- ep-203.md: GET /api/v1/packages/{owner}/{type}/{name}/{version}/files
+- ep-214.md: GET /api/v1/repos/{owner}/{repo}/git/commits/{sha}
+- ep-215.md: GET /api/v1/repos/{owner}/{repo}/commits
+- ep-232.md: GET /api/v1/repos/{owner}/{repo}/pulls/{index}/commits
+- ep-233.md: GET /api/v1/repos/{owner}/{repo}/pulls/{index}/files
+- ep-243.md: POST /api/v1/repos/{owner}/{repo}/releases
+- ep-245.md: DELETE /api/v1/repos/{owner}/{repo}/releases/{id}
+- ep-246.md: GET /api/v1/repos/{owner}/{repo}/git/trees/{sha}
+- ep-249.md: POST /api/v1/repos/{owner}/{repo}/diffpatch
+- ep-259.md: POST /api/v1/repos/{owner}/{repo}/issues/{index}/assets
+- ep-261.md: DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}
+- ep-262.md: POST /api/v1/repos/{owner}/{repo}/avatar
+- ep-263.md: DELETE /api/v1/repos/{owner}/{repo}/avatar
+- ep-280.md: GET /api/v1/repos/{owner}/{repo}/actions/workflows
+- ep-293.md: GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/artifacts
+- ep-294.md: DELETE /api/v1/repos/{owner}/{repo}/actions/runs/{run}
+- ep-295.md: GET /api/v1/repos/{owner}/{repo}/actions/artifacts
+- ep-298.md: GET /api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip
+- ep-299.md: GET /api/v1/repos/{owner}/{repo}/git/notes/{sha}
+- ep-343.md: DELETE /api/v1/repos/{owner}/{repo}/keys/{id}
+- ep-345.md: DELETE /api/v1/repos/{owner}/{repo}/releases/tags/{tag}
+- ep-354.md: POST /api/v1/repos/{owner}/{repo}/releases/{id}/assets
+- ep-356.md: DELETE /api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}
+- ep-370.md: DELETE /api/v1/repos/{owner}/{repo}
+- ep-371.md: GET /api/v1/repos/{owner}/{repo}/issue_templates

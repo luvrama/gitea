@@ -1,0 +1,1 @@
+Bug: GET /repos/{owner}/{repo}/actions/runs and GET /repos/{owner}/{repo}/actions/jobs require owner permissions but should only require read access. The routes are declared via addActionsRoutes which uses reqOwner() or reqOrgOwnership(). Which file(s) need to change to fix this permissions issue?

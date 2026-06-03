@@ -1,0 +1,1680 @@
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[32mAll tools are now trusted ([0m[31m![0m[32m). Kiro will execute tools without asking for confirmation.[0m
+Agents can sometimes do unexpected things so understand the risks.
+
+Learn more at [38;5;141mhttps://kiro.dev/docs/cli/chat/security/#using-tools-trust-all-safely[0m
+
+
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.18s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The user wants me to find the top 5 most connected components ("god nodes") in the codebase and which API endpoints depend on each. I need to use the graph_query.py tool to explore the codebase. Let me start by querying some common highly-connected components that tend to be "god nodes" in Go web applications like Gitea - things like context objects, database models, user models, repository models, etc.
+
+Let me first check what's available in the graph_query tool and try some broad queries.
+[38;5;244m - Completed in 0.25s[0m
+
+[?25l[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && python3 graph_query.py "god_nodes" 2 2>&1 | head -100[0m[38;5;244m (using tool: shell)[0m
+Purpose: Query for god nodes in the graph
+
+I will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && cat graph_query.py 2>&1 | head -80[0m[38;5;244m (using tool: shell)[0m
+Purpose: Read the graph_query.py script to understand its capabilities
+
+{
+  "query": "god_nodes",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.196s[0m
+
+#!/usr/bin/env python3
+"""Graph query tool — queries the pre-compiled knowledge graph AND analysis data.
+Usage: python3 graph_query.py <keyword> [depth]
+Returns: connected nodes, source files, and relationships.
+"""
+import json, sys, os, glob
+
+BASE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..')
+GRAPH_FILE = os.path.join(BASE_DIR, '.project-analysis', 'graphify-out', 'graph.json')
+ANALYSIS_DIR = os.path.join(BASE_DIR, '.project-analysis', 'phase2_deep_analysis')
+
+def load_graph():
+    return json.load(open(GRAPH_FILE))
+
+def search_data_flows(keyword):
+    """Search all data_flows.json files for file paths matching keyword."""
+    results = []
+    keyword_lower = keyword.lower()
+    for df_file in glob.glob(f'{ANALYSIS_DIR}/session_*/data_flows.json'):
+        try:
+            df = json.load(open(df_file))
+            for flow in df.get('flows', []):
+                for step in flow.get('steps', []):
+                    component = step.get('component', '')
+                    file_path = step.get('file_path', '')
+                    if keyword_lower in component.lower() or keyword_lower in file_path.lower():
+                        results.append({
+                            'endpoint': f"{flow['endpoint_id']} {flow.get('http_method', '')} {flow.get('path', '')}",
+                            'step': step['step'],
+                            'component': component,
+                            'file_path': file_path,
+                            'type': step.get('type', '')
+                        })
+        except:
+            pass
+    return results
+
+def query(keyword, depth=2):
+    g = load_graph()
+    keyword_lower = keyword.lower()
+    
+    # Search graph nodes
+    matches = []
+    for node in g['nodes']:
+        label = node.get('label', '').lower()
+        source = node.get('source_file', '').lower()
+        if keyword_lower in label or keyword_lower in source:
+            matches.append(node)
+    
+    # Traverse edges
+    visited = set()
+    current_ids = {n['id'] for n in matches}
+    all_nodes = {n['id']: n for n in matches}
+    all_edges = []
+    
+    for d in range(depth):
+        next_ids = set()
+        for edge in g['links']:
+            src, tgt = edge['_src'], edge['_tgt']
+            if src in current_ids and tgt not in visited:
+                next_ids.add(tgt)
+                all_edges.append(edge)
+            elif tgt in current_ids and src not in visited:
+                next_ids.add(src)
+                all_edges.append(edge)
+        visited.update(current_ids)
+        current_ids = next_ids - visited
+        for node in g['nodes']:
+            if node['id'] in current_ids:
+                all_nodes[node['id']] = node
+    
+    # Source files from graph
+    graph_files = set()
+    for n in all_nodes.values():
+        sf = n.get('source_file', '')
+        if sf and sf.endswith('.go') and 'session_' not in sf:
+            graph_files.add(sf)
+    
+    # Source files from data flows analysis
+    flow_results = search_data_flows(keyword)
+[38;5;244m - Completed in 0.66s[0m
+
+[?25l[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && cat graph_query.py 2>&1 | tail -50[0m[38;5;244m (using tool: shell)[0m
+Purpose: Read the rest of graph_query.py
+
+I will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts/../../.project-analysis/graphify-out && python3 -c "
+import json
+g = json.load(open('graph.json'))
+print(f'Nodes: {len(g[\"nodes\"])}')
+print(f'Edges: {len(g[\"links\"])}')
+# Count connections per node
+from collections import Counter
+conn = Counter()
+for edge in g['links']:
+    conn[edge['_src']] += 1
+    conn[edge['_tgt']] += 1
+# Top 20 most connected
+top = conn.most_common(20)
+node_map = {n['id']: n for n in g['nodes']}
+for nid, count in top:
+    node = node_map.get(nid, {})
+    print(f'{count:4d} connections | {node.get(\"label\", \"?\")} | {node.get(\"source_file\", \"?\")}')
+" 2>&1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Analyze the graph to find the most connected nodes (god nodes)
+
+            if src in current_ids and tgt not in visited:
+                next_ids.add(tgt)
+                all_edges.append(edge)
+            elif tgt in current_ids and src not in visited:
+                next_ids.add(src)
+                all_edges.append(edge)
+        visited.update(current_ids)
+        current_ids = next_ids - visited
+        for node in g['nodes']:
+            if node['id'] in current_ids:
+                all_nodes[node['id']] = node
+    
+    # Source files from graph
+    graph_files = set()
+    for n in all_nodes.values():
+        sf = n.get('source_file', '')
+        if sf and sf.endswith('.go') and 'session_' not in sf:
+            graph_files.add(sf)
+    
+    # Source files from data flows analysis
+    flow_results = search_data_flows(keyword)
+    flow_files = {r['file_path'] for r in flow_results if r['file_path']}
+    
+    # Combine
+    all_files = sorted(graph_files | flow_files)
+    
+    # Endpoints
+    endpoints = [n for n in all_nodes.values() if '/api/v1/' in n.get('label', '')]
+    
+    return {
+        "query": keyword,
+        "direct_matches": len(matches),
+        "total_nodes": len(all_nodes),
+        "source_files_from_graph": sorted(graph_files),
+        "source_files_from_analysis": sorted(flow_files),
+        "all_source_files": all_files,
+        "endpoints": [{"id": n["id"], "label": n["label"]} for n in endpoints[:20]],
+        "data_flow_hits": flow_results[:10]
+    }
+
+if __name__ == "__main__":
+    keyword = sys.argv[1] if len(sys.argv) > 1 else ""
+    depth = int(sys.argv[2]) if len(sys.argv) > 2 else 2
+    
+    if not keyword:
+        print("Usage: python3 graph_query.py <keyword> [depth]")
+        sys.exit(1)
+    
+    result = query(keyword, depth)
+    print(json.dumps(result, indent=2))
+[38;5;244m - Completed in 0.62s[0m
+
+Nodes: 2553
+Edges: 5233
+ 125 connections | Maximum pin limit check - cannot pin more issues than setting.Repository.Issue.M | models/issues/issue_pin.go
+ 103 connections | routers | routers/
+  91 connections | Pin order is assigned as max existing order + 1 when pinning | models/issues/issue_pin.go
+  90 connections | Unpinning creates a comment of type CommentTypeUnpin in issue history | models/issues/issue_pin.go
+  88 connections | Pinned issues are separated by type (issues vs pull requests) | models/issues/issue_pin.go
+  86 connections | Pin position must be >= 1 | models/issues/issue_pin.go
+  78 connections | Moving pin reorders other pins - shifts up or down depending on direction | models/issues/issue_pin.go
+  76 connections | IsNewPinAllowed compares current pin count against MaxPinned setting | models/issues/issue_pin.go
+  70 connections | Language stats response is a custom JSON object mapping language name to byte co | routers/api/v1/repo/language.go
+  63 connections | Issue templates are parsed from multiple candidate directories in priority order | services/issue/template.go
+  62 connections | Unarchiving a repo re-detects action schedules | routers/api/v1/repo/repo.go
+  58 connections | user_model.User | session_53/impact_analysis_index.json
+  36 connections | repository | routers/api/v1/repo/action.go
+  28 connections | convert.ToUser | session_48/impact_analysis_index.json
+  27 connections | repo_model.Repository | session_54/impact_analysis_index.json
+  27 connections | reqOrgOwnership | routers/api/v1/api.go
+  26 connections | POST /api/v1/admin/users | session_14/api_contracts.json
+  25 connections | POST /api/v1/user/gpg_keys | session_27/api_contracts.json
+  25 connections | POST /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies | session_31/api_contracts.json
+  25 connections | convert | session_55/impact_analysis_index.json
+[38;5;244m - Completed in 0.115s[0m
+
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: Now I have the top connected nodes. Let me identify the real "god nodes" - the ones that are actual code components rather than documentation/analysis nodes. Let me filter for meaningful code components and then use graph_query to find which API endpoints depend on each.
+
+The top candidates that are actual code components (not issue_pin documentation nodes):
+1. `routers` (103 connections) - routers/
+2. `user_model.User` (58 connections) - from analysis
+3. `repository` (36 connections) - routers/api/v1/repo/action.go
+4. `convert.ToUser` (28 connections) - from analysis
+5. `repo_model.Repository` (27 connections) - from analysis
+6. `convert` (25 connections) - from analysis
+
+But many of the top connections are from `issue_pin.go` which seem to be documentation/behavior nodes. Let me look deeper to find the actual code component god nodes and their API endpoint dependencies.
+
+Let me query for these top components to find their endpoint dependencies.
+[38;5;244m - Completed in 0.34s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts/../../.project-analysis/graphify-out && python3 -c "
+import json
+g = json.load(open('graph.json'))
+from collections import Counter
+conn = Counter()
+for edge in g['links']:
+    conn[edge['_src']] += 1
+    conn[edge['_tgt']] += 1
+
+node_map = {n['id']: n for n in g['nodes']}
+
+# Filter for actual code components (not documentation/behavior descriptions)
+# Look for nodes whose labels look like code identifiers or short component names
+code_nodes = []
+for nid, count in conn.most_common(100):
+    node = node_map.get(nid, {})
+    label = node.get('label', '')
+    source = node.get('source_file', '')
+    # Filter: code components have short labels, contain dots/underscores, or are in session files
+    if (len(label) < 80 and 
+        ('.' in label or '_' in label or label == 'routers' or label == 'repository' or label == 'convert' or 'model' in label.lower() or '/api/' in label)):
+        code_nodes.append((nid, count, label, source))
+    
+for nid, count, label, source in code_nodes[:15]:
+    print(f'{count:4d} | {label} | {source}')
+" 2>&1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Find actual code component god nodes
+
+ 103 | routers | routers/
+  58 | user_model.User | session_53/impact_analysis_index.json
+  36 | repository | routers/api/v1/repo/action.go
+  28 | convert.ToUser | session_48/impact_analysis_index.json
+  27 | repo_model.Repository | session_54/impact_analysis_index.json
+  26 | POST /api/v1/admin/users | session_14/api_contracts.json
+  25 | POST /api/v1/user/gpg_keys | session_27/api_contracts.json
+  25 | POST /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies | session_31/api_contracts.json
+  25 | convert | session_55/impact_analysis_index.json
+  25 | POST /api/v1/repos/{owner}/{repo}/pulls/{index}/merge | session_34/api_contracts.json
+  24 | POST /api/v1/orgs | session_5/api_contracts.json
+  24 | POST /api/v1/repos/{owner}/{repo}/pulls | session_34/api_contracts.json
+  24 | POST /api/v1/repos/{owner}/{repo}/issues/{index}/assets | session_38/api_contracts.json
+  24 | POST /api/v1/repos/{owner}/{repo}/releases/{id}/assets | session_52/api_contracts.json
+  23 | organization.Team | session_49/impact_analysis_index.json
+[38;5;244m - Completed in 0.167s[0m
+
+[?25l[0m[38;5;141m> [0mNow let me query the graph for each of the top 5 code components to find their dependent API endpoints:[0m[0m
+[?25l[0m[0m
+[?25l[0m[0m
+[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && python3 graph_query.py "user_model.User" 2 2>&1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Query endpoints depending on user_model.User
+
+I will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && python3 graph_query.py "convert.ToUser" 2 2>&1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Query endpoints depending on convert.ToUser
+
+I will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && python3 graph_query.py "repo_model.Repository" 2 2>&1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Query endpoints depending on repo_model.Repository
+
+{
+  "query": "user_model.User",
+  "direct_matches": 1,
+  "total_nodes": 398,
+  "source_files_from_graph": [
+    "models/activities/action_list.go",
+    "models/issues/issue_pin.go",
+    "models/organization/org.go",
+    "models/organization/team_user.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/star.go",
+    "models/repo/user_repo.go",
+    "models/repo/watch.go",
+    "models/user/block.go",
+    "models/user/follow.go",
+    "models/user/user.go",
+    "modules/auth/password/pwn/pwn.go",
+    "modules/avatar/avatar.go",
+    "modules/setting/api.go",
+    "modules/setting/picture.go",
+    "modules/setting/repository.go",
+    "modules/setting/security.go",
+    "modules/setting/service.go",
+    "modules/storage/storage.go",
+    "modules/web/middleware/binding.go",
+    "routers/api/v1/admin/org.go",
+    "routers/api/v1/admin/user.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/avatar.go",
+    "routers/api/v1/org/block.go",
+    "routers/api/v1/org/member.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/repo/star.go",
+    "routers/api/v1/repo/subscriber.go",
+    "routers/api/v1/user/avatar.go",
+    "routers/api/v1/user/block.go",
+    "routers/api/v1/user/follower.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/settings.go",
+    "routers/api/v1/user/user.go",
+    "routers/api/v1/user/watch.go",
+    "routers/api/v1/utils/page.go",
+    "services/context/api.go",
+    "services/convert/activity.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/issue/review_request.go",
+    "services/issue/template.go",
+    "services/pull/pull.go",
+    "services/pull/reviewer.go",
+    "services/repository/generate.go",
+    "services/user/avatar.go",
+    "services/user/delete.go"
+  ],
+  "source_files_from_analysis": [],
+  "all_source_files": [
+    "models/activities/action_list.go",
+    "models/issues/issue_pin.go",
+    "models/organization/org.go",
+    "models/organization/team_user.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/star.go",
+    "models/repo/user_repo.go",
+    "models/repo/watch.go",
+    "models/user/block.go",
+    "models/user/follow.go",
+    "models/user/user.go",
+    "modules/auth/password/pwn/pwn.go",
+    "modules/avatar/avatar.go",
+    "modules/setting/api.go",
+    "modules/setting/picture.go",
+    "modules/setting/repository.go",
+    "modules/setting/security.go",
+    "modules/setting/service.go",
+    "modules/storage/storage.go",
+    "modules/web/middleware/binding.go",
+    "routers/api/v1/admin/org.go",
+    "routers/api/v1/admin/user.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/avatar.go",
+    "routers/api/v1/org/block.go",
+    "routers/api/v1/org/member.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/repo/star.go",
+    "routers/api/v1/repo/subscriber.go",
+    "routers/api/v1/user/avatar.go",
+    "routers/api/v1/user/block.go",
+    "routers/api/v1/user/follower.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/settings.go",
+    "routers/api/v1/user/user.go",
+    "routers/api/v1/user/watch.go",
+    "routers/api/v1/utils/page.go",
+    "services/context/api.go",
+    "services/convert/activity.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/issue/review_request.go",
+    "services/issue/template.go",
+    "services/pull/pull.go",
+    "services/pull/reviewer.go",
+    "services/repository/generate.go",
+    "services/user/avatar.go",
+    "services/user/delete.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-029",
+      "label": "GET /api/v1/orgs"
+    },
+    {
+      "id": "ep:ep-030",
+      "label": "POST /api/v1/orgs"
+    },
+    {
+      "id": "ep:ep-031",
+      "label": "GET /api/v1/orgs/{org}"
+    },
+    {
+      "id": "ep:ep-032",
+      "label": "POST /api/v1/orgs/{org}/rename"
+    },
+    {
+      "id": "ep:ep-033",
+      "label": "PATCH /api/v1/orgs/{org}"
+    },
+    {
+      "id": "ep:ep-034",
+      "label": "DELETE /api/v1/orgs/{org}"
+    },
+    {
+      "id": "ep:ep-037",
+      "label": "POST /api/v1/orgs/{org}/avatar"
+    },
+    {
+      "id": "ep:ep-038",
+      "label": "DELETE /api/v1/orgs/{org}/avatar"
+    },
+    {
+      "id": "ep:ep-060",
+      "label": "GET /api/v1/teams/{id}/members"
+    },
+    {
+      "id": "ep:ep-061",
+      "label": "GET /api/v1/teams/{id}/members/{username}"
+    },
+    {
+      "id": "ep:ep-062",
+      "label": "PUT /api/v1/teams/{id}/members/{username}"
+    },
+    {
+      "id": "ep:ep-063",
+      "label": "DELETE /api/v1/teams/{id}/members/{username}"
+    },
+    {
+      "id": "ep:ep-070",
+      "label": "GET /api/v1/orgs/{org}/members"
+    },
+    {
+      "id": "ep:ep-071",
+      "label": "GET /api/v1/orgs/{org}/public_members"
+    },
+    {
+      "id": "ep:ep-072",
+      "label": "GET /api/v1/orgs/{org}/members/{username}"
+    },
+    {
+      "id": "ep:ep-073",
+      "label": "GET /api/v1/orgs/{org}/public_members/{username}"
+    },
+    {
+      "id": "ep:ep-074",
+      "label": "PUT /api/v1/orgs/{org}/public_members/{username}"
+    },
+    {
+      "id": "ep:ep-075",
+      "label": "DELETE /api/v1/orgs/{org}/public_members/{username}"
+    },
+    {
+      "id": "ep:ep-076",
+      "label": "DELETE /api/v1/orgs/{org}/members/{username}"
+    },
+    {
+      "id": "ep:ep-087",
+      "label": "GET /api/v1/orgs/{org}/blocks"
+    }
+  ],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.103s[0m
+
+{
+  "query": "convert.ToUser",
+  "direct_matches": 3,
+  "total_nodes": 181,
+  "source_files_from_graph": [
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/issues/issue_watch.go",
+    "models/organization/team_user.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/star.go",
+    "models/repo/user_repo.go",
+    "models/repo/watch.go",
+    "models/user/block.go",
+    "models/user/user.go",
+    "modules/auth/password/pwn/pwn.go",
+    "modules/setting/api.go",
+    "modules/setting/security.go",
+    "routers/api/v1/admin/org.go",
+    "routers/api/v1/admin/user.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/block.go",
+    "routers/api/v1/org/member.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/issue_subscription.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/repo/star.go",
+    "routers/api/v1/repo/subscriber.go",
+    "routers/api/v1/user/block.go",
+    "routers/api/v1/user/follower.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/settings.go",
+    "routers/api/v1/user/user.go",
+    "routers/api/v1/utils/page.go",
+    "services/context/api.go",
+    "services/convert/user.go",
+    "services/issue/review_request.go",
+    "services/issue/template.go",
+    "services/pull/pull.go",
+    "services/pull/reviewer.go",
+    "services/repository/generate.go"
+  ],
+  "source_files_from_analysis": [
+    "services/convert/user.go"
+  ],
+  "all_source_files": [
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/issues/issue_watch.go",
+    "models/organization/team_user.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/star.go",
+    "models/repo/user_repo.go",
+    "models/repo/watch.go",
+    "models/user/block.go",
+    "models/user/user.go",
+    "modules/auth/password/pwn/pwn.go",
+    "modules/setting/api.go",
+    "modules/setting/security.go",
+    "routers/api/v1/admin/org.go",
+    "routers/api/v1/admin/user.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/block.go",
+    "routers/api/v1/org/member.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/collaborators.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/issue_subscription.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/pull.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/repo/star.go",
+    "routers/api/v1/repo/subscriber.go",
+    "routers/api/v1/user/block.go",
+    "routers/api/v1/user/follower.go",
+    "routers/api/v1/user/helper.go",
+    "routers/api/v1/user/settings.go",
+    "routers/api/v1/user/user.go",
+    "routers/api/v1/utils/page.go",
+    "services/context/api.go",
+    "services/convert/user.go",
+    "services/issue/review_request.go",
+    "services/issue/template.go",
+    "services/pull/pull.go",
+    "services/pull/reviewer.go",
+    "services/repository/generate.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-060",
+      "label": "GET /api/v1/teams/{id}/members"
+    },
+    {
+      "id": "ep:ep-061",
+      "label": "GET /api/v1/teams/{id}/members/{username}"
+    },
+    {
+      "id": "ep:ep-070",
+      "label": "GET /api/v1/orgs/{org}/members"
+    },
+    {
+      "id": "ep:ep-071",
+      "label": "GET /api/v1/orgs/{org}/public_members"
+    },
+    {
+      "id": "ep:ep-087",
+      "label": "GET /api/v1/orgs/{org}/blocks"
+    },
+    {
+      "id": "ep:ep-098",
+      "label": "POST /api/v1/admin/users"
+    },
+    {
+      "id": "ep:ep-099",
+      "label": "PATCH /api/v1/admin/users/{username}"
+    },
+    {
+      "id": "ep:ep-103",
+      "label": "GET /api/v1/admin/users"
+    },
+    {
+      "id": "ep:ep-123",
+      "label": "GET /api/v1/users/search"
+    },
+    {
+      "id": "ep:ep-124",
+      "label": "GET /api/v1/users/{username}"
+    },
+    {
+      "id": "ep:ep-125",
+      "label": "GET /api/v1/user"
+    },
+    {
+      "id": "ep:ep-139",
+      "label": "GET /api/v1/user/followers"
+    },
+    {
+      "id": "ep:ep-140",
+      "label": "GET /api/v1/users/{username}/followers"
+    },
+    {
+      "id": "ep:ep-141",
+      "label": "GET /api/v1/user/following"
+    },
+    {
+      "id": "ep:ep-190",
+      "label": "GET /api/v1/user/blocks"
+    },
+    {
+      "id": "ep:ep-221",
+      "label": "GET /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions"
+    },
+    {
+      "id": "ep:ep-254",
+      "label": "GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission"
+    },
+    {
+      "id": "ep:ep-255",
+      "label": "GET /api/v1/repos/{owner}/{repo}/reviewers"
+    },
+    {
+      "id": "ep:ep-256",
+      "label": "GET /api/v1/repos/{owner}/{repo}/assignees"
+    },
+    {
+      "id": "ep:ep-327",
+      "label": "GET /api/v1/repos/{owner}/{repo}/stargazers"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-099 PATCH /api/v1/admin/users/{username}",
+      "step": 5,
+      "component": "convert.ToUser",
+      "file_path": "services/convert/user.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-103 GET /api/v1/admin/users",
+      "step": 3,
+      "component": "convert.ToUser",
+      "file_path": "services/convert/user.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-327 GET /api/v1/repos/{owner}/{repo}/stargazers",
+      "step": 3,
+      "component": "convert.ToUser",
+      "file_path": "services/convert/user.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-328 GET /api/v1/repos/{owner}/{repo}/subscribers",
+      "step": 3,
+      "component": "convert.ToUser",
+      "file_path": "services/convert/user.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-087 GET /api/v1/orgs/{org}/blocks",
+      "step": 5,
+      "component": "convert.ToUser",
+      "file_path": "services/convert/user.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-098 POST /api/v1/admin/users",
+      "step": 6,
+      "component": "convert.ToUser",
+      "file_path": "services/convert/user.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-254 GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "step": 4,
+      "component": "convert.ToUserAndPermission",
+      "file_path": "services/convert/user.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-255 GET /api/v1/repos/{owner}/{repo}/reviewers",
+      "step": 4,
+      "component": "convert.ToUsers",
+      "file_path": "services/convert/user.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-256 GET /api/v1/repos/{owner}/{repo}/assignees",
+      "step": 3,
+      "component": "convert.ToUsers",
+      "file_path": "services/convert/user.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-123 GET /api/v1/users/search",
+      "step": 4,
+      "component": "convert.ToUsers",
+      "file_path": "services/convert/user.go",
+      "type": "utility"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.111s[0m
+
+{
+  "query": "repo_model.Repository",
+  "direct_matches": 2,
+  "total_nodes": 193,
+  "source_files_from_graph": [
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/user.go",
+    "modules/avatar/avatar.go",
+    "modules/avatar/hash.go",
+    "modules/gitrepo/clone.go",
+    "modules/repository/delete.go",
+    "modules/setting/api.go",
+    "modules/setting/mirror.go",
+    "modules/setting/picture.go",
+    "modules/setting/repository.go",
+    "modules/setting/service.go",
+    "modules/storage/storage.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/avatar.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/repo.go",
+    "routers/api/v1/user/watch.go",
+    "services/convert/activity.go",
+    "services/convert/issue.go",
+    "services/convert/repository.go",
+    "services/issue/template.go",
+    "services/repository/avatar.go",
+    "services/repository/create.go",
+    "services/repository/generate.go"
+  ],
+  "source_files_from_analysis": [
+    "models/repo/repo_list.go"
+  ],
+  "all_source_files": [
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/user.go",
+    "modules/avatar/avatar.go",
+    "modules/avatar/hash.go",
+    "modules/gitrepo/clone.go",
+    "modules/repository/delete.go",
+    "modules/setting/api.go",
+    "modules/setting/mirror.go",
+    "modules/setting/picture.go",
+    "modules/setting/repository.go",
+    "modules/setting/service.go",
+    "modules/storage/storage.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/avatar.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/repo.go",
+    "routers/api/v1/user/watch.go",
+    "services/convert/activity.go",
+    "services/convert/issue.go",
+    "services/convert/repository.go",
+    "services/issue/template.go",
+    "services/repository/avatar.go",
+    "services/repository/create.go",
+    "services/repository/generate.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-036",
+      "label": "DELETE /api/v1/orgs/{org}/repos"
+    },
+    {
+      "id": "ep:ep-064",
+      "label": "GET /api/v1/teams/{id}/repos"
+    },
+    {
+      "id": "ep:ep-065",
+      "label": "GET /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-066",
+      "label": "PUT /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-067",
+      "label": "DELETE /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-172",
+      "label": "GET /api/v1/users/{username}/repos"
+    },
+    {
+      "id": "ep:ep-173",
+      "label": "GET /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-174",
+      "label": "GET /api/v1/orgs/{org}/repos"
+    },
+    {
+      "id": "ep:ep-194",
+      "label": "GET /api/v1/users/{username}/subscriptions"
+    },
+    {
+      "id": "ep:ep-195",
+      "label": "GET /api/v1/user/subscriptions"
+    },
+    {
+      "id": "ep:ep-262",
+      "label": "POST /api/v1/repos/{owner}/{repo}/avatar"
+    },
+    {
+      "id": "ep:ep-263",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/avatar"
+    },
+    {
+      "id": "ep:ep-333",
+      "label": "GET /api/v1/repos/{owner}/{repo}/forks"
+    },
+    {
+      "id": "ep:ep-334",
+      "label": "POST /api/v1/repos/{owner}/{repo}/forks"
+    },
+    {
+      "id": "ep:ep-362",
+      "label": "GET /api/v1/repos/search"
+    },
+    {
+      "id": "ep:ep-363",
+      "label": "POST /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-364",
+      "label": "POST /api/v1/repos/{template_owner}/{template_repo}/generate"
+    },
+    {
+      "id": "ep:ep-365",
+      "label": "POST /api/v1/org/{org}/repos"
+    },
+    {
+      "id": "ep:ep-366",
+      "label": "POST /api/v1/orgs/{org}/repos"
+    },
+    {
+      "id": "ep:ep-367",
+      "label": "GET /api/v1/repos/{owner}/{repo}"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-333 GET /api/v1/repos/{owner}/{repo}/forks",
+      "step": 3,
+      "component": "repo_model.RepositoryList.LoadOwners",
+      "file_path": "models/repo/repo_list.go",
+      "type": "repository"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.103s[0m
+
+[?25l[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && python3 graph_query.py "organization.Team" 2 2>&1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Query endpoints depending on organization.Team
+
+I will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && python3 graph_query.py "convert" 2 2>&1 | python3 -c "
+import json, sys
+data = json.load(sys.stdin)
+print(f'Direct matches: {data[\"direct_matches\"]}')
+print(f'Total nodes: {data[\"total_nodes\"]}')
+print(f'Source files: {len(data[\"all_source_files\"])}')
+print(f'Endpoints: {len(data[\"endpoints\"])}')
+print()
+print('Endpoints:')
+for ep in data['endpoints']:
+    print(f'  {ep[\"label\"]}')
+print()
+print('Data flow hits:')
+for h in data['data_flow_hits']:
+    print(f'  {h[\"endpoint\"]} -> {h[\"component\"]}')
+" 2>&1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Query endpoints depending on the convert package
+
+{
+  "query": "organization.Team",
+  "direct_matches": 4,
+  "total_nodes": 176,
+  "source_files_from_graph": [
+    "models/issues/issue_pin.go",
+    "models/organization/org.go",
+    "models/organization/org_user.go",
+    "models/organization/team_list.go",
+    "models/organization/team_user.go",
+    "modules/setting/service.go",
+    "modules/web/middleware/binding.go",
+    "routers/api/v1/admin/org.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/member.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/repo/teams.go",
+    "routers/api/v1/user/helper.go",
+    "services/context/api.go",
+    "services/convert/activity.go",
+    "services/issue/template.go",
+    "services/repository/generate.go"
+  ],
+  "source_files_from_analysis": [],
+  "all_source_files": [
+    "models/issues/issue_pin.go",
+    "models/organization/org.go",
+    "models/organization/org_user.go",
+    "models/organization/team_list.go",
+    "models/organization/team_user.go",
+    "modules/setting/service.go",
+    "modules/web/middleware/binding.go",
+    "routers/api/v1/admin/org.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/member.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/repo/teams.go",
+    "routers/api/v1/user/helper.go",
+    "services/context/api.go",
+    "services/convert/activity.go",
+    "services/issue/template.go",
+    "services/repository/generate.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-028",
+      "label": "GET /api/v1/users/{username}/orgs/{org}/permissions"
+    },
+    {
+      "id": "ep:ep-030",
+      "label": "POST /api/v1/orgs"
+    },
+    {
+      "id": "ep:ep-032",
+      "label": "POST /api/v1/orgs/{org}/rename"
+    },
+    {
+      "id": "ep:ep-033",
+      "label": "PATCH /api/v1/orgs/{org}"
+    },
+    {
+      "id": "ep:ep-034",
+      "label": "DELETE /api/v1/orgs/{org}"
+    },
+    {
+      "id": "ep:ep-056",
+      "label": "GET /api/v1/teams/{id}"
+    },
+    {
+      "id": "ep:ep-057",
+      "label": "POST /api/v1/orgs/{org}/teams"
+    },
+    {
+      "id": "ep:ep-058",
+      "label": "PATCH /api/v1/teams/{id}"
+    },
+    {
+      "id": "ep:ep-059",
+      "label": "DELETE /api/v1/teams/{id}"
+    },
+    {
+      "id": "ep:ep-060",
+      "label": "GET /api/v1/teams/{id}/members"
+    },
+    {
+      "id": "ep:ep-061",
+      "label": "GET /api/v1/teams/{id}/members/{username}"
+    },
+    {
+      "id": "ep:ep-062",
+      "label": "PUT /api/v1/teams/{id}/members/{username}"
+    },
+    {
+      "id": "ep:ep-063",
+      "label": "DELETE /api/v1/teams/{id}/members/{username}"
+    },
+    {
+      "id": "ep:ep-064",
+      "label": "GET /api/v1/teams/{id}/repos"
+    },
+    {
+      "id": "ep:ep-065",
+      "label": "GET /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-066",
+      "label": "PUT /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-067",
+      "label": "DELETE /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-068",
+      "label": "GET /api/v1/orgs/{org}/teams/search"
+    },
+    {
+      "id": "ep:ep-069",
+      "label": "GET /api/v1/teams/{id}/activities/feeds"
+    },
+    {
+      "id": "ep:ep-076",
+      "label": "DELETE /api/v1/orgs/{org}/members/{username}"
+    }
+  ],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.118s[0m
+
+Direct matches: 51
+Total nodes: 1163
+Source files: 161
+Endpoints: 20
+
+Endpoints:
+  GET /api/v1/label/templates/{name}
+  GET /api/v1/notifications
+  PUT /api/v1/notifications
+  GET /api/v1/repos/{owner}/{repo}/notifications
+  PUT /api/v1/repos/{owner}/{repo}/notifications
+  GET /api/v1/notifications/threads/{id}
+  PATCH /api/v1/notifications/threads/{id}
+  GET /api/v1/user/orgs
+  GET /api/v1/users/{username}/orgs
+  GET /api/v1/orgs
+  POST /api/v1/orgs
+  GET /api/v1/orgs/{org}
+  PATCH /api/v1/orgs/{org}
+  GET /api/v1/orgs/{org}/activities/feeds
+  GET /api/v1/orgs/{org}/actions/jobs
+  GET /api/v1/orgs/{org}/actions/runs
+  GET /api/v1/orgs/{org}/teams
+  GET /api/v1/user/teams
+  GET /api/v1/teams/{id}
+  POST /api/v1/orgs/{org}/teams
+
+Data flow hits:
+  ep-029 GET /api/v1/orgs -> convert.ToOrganization
+  ep-030 POST /api/v1/orgs -> convert.ToOrganization
+  ep-031 GET /api/v1/orgs/{org} -> convert.ToOrganization
+  ep-033 PATCH /api/v1/orgs/{org} -> convert.ToOrganization
+  ep-099 PATCH /api/v1/admin/users/{username} -> convert.ToUser
+  ep-101 POST /api/v1/admin/users/{username}/keys -> convert.ToPublicKey
+  ep-103 GET /api/v1/admin/users -> convert.ToUser
+  ep-105 GET /api/v1/admin/actions/jobs -> convert.ToActionWorkflowJob
+  ep-082 GET /api/v1/orgs/{org}/labels -> convert.ToLabelList
+  ep-162 GET /api/v1/user/settings -> convert.User2UserSettings
+[38;5;244m - Completed in 0.104s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts/../../.project-analysis/graphify-out && python3 -c "
+import json
+g = json.load(open('graph.json'))
+from collections import Counter
+conn = Counter()
+for edge in g['links']:
+    conn[edge['_src']] += 1
+    conn[edge['_tgt']] += 1
+
+node_map = {n['id']: n for n in g['nodes']}
+
+# Get the actual top node for 'routers' - the 103-connection one
+for nid, count in conn.most_common(5):
+    node = node_map.get(nid, {})
+    print(f'ID: {nid}')
+    print(f'Label: {node.get(\"label\", \"?\")}')
+    print(f'Source: {node.get(\"source_file\", \"?\")}')
+    print(f'Connections: {count}')
+    # Find connected endpoints
+    connected_eps = set()
+    for edge in g['links']:
+        if edge['_src'] == nid or edge['_tgt'] == nid:
+            other = edge['_tgt'] if edge['_src'] == nid else edge['_src']
+            other_node = node_map.get(other, {})
+            label = other_node.get('label', '')
+            if '/api/v1/' in label:
+                connected_eps.add(label)
+    if connected_eps:
+        print(f'  Direct API endpoints ({len(connected_eps)}):')
+        for ep in sorted(connected_eps)[:10]:
+            print(f'    {ep}')
+    print()
+" 2>&1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Get direct endpoint connections for the top 5 nodes
+
+ID: rule:br-001
+Label: Maximum pin limit check - cannot pin more issues than setting.Repository.Issue.M
+Source: models/issues/issue_pin.go
+Connections: 125
+  Direct API endpoints (125):
+    DELETE /api/v1/admin/actions/runners/{runner_id}
+    DELETE /api/v1/admin/hooks/{id}
+    DELETE /api/v1/admin/unadopted/{owner}/{repo}
+    DELETE /api/v1/admin/users/{username}/badges
+    DELETE /api/v1/orgs/{org}/actions/runners/{runner_id}
+    DELETE /api/v1/orgs/{org}/actions/variables/{variablename}
+    DELETE /api/v1/packages/{owner}/{type}/{name}/{version}
+    DELETE /api/v1/repos/{owner}/{repo}
+    DELETE /api/v1/repos/{owner}/{repo}/push_mirrors/{name}
+    DELETE /api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}
+
+ID: mod:routers
+Label: routers
+Source: routers/
+Connections: 103
+
+ID: rule:br-003
+Label: Pin order is assigned as max existing order + 1 when pinning
+Source: models/issues/issue_pin.go
+Connections: 91
+  Direct API endpoints (91):
+    DELETE /api/v1/orgs/{org}/repos
+    DELETE /api/v1/packages/{owner}/{type}/{name}/{version}
+    DELETE /api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}
+    DELETE /api/v1/repos/{owner}/{repo}/branches/{branch}
+    DELETE /api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions
+    DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/labels
+    DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/labels/{id}
+    DELETE /api/v1/repos/{owner}/{repo}/labels/{id}
+    DELETE /api/v1/repos/{owner}/{repo}/releases/tags/{tag}
+    DELETE /api/v1/repos/{owner}/{repo}/releases/{id}/assets/{attachment_id}
+
+ID: rule:br-004
+Label: Unpinning creates a comment of type CommentTypeUnpin in issue history
+Source: models/issues/issue_pin.go
+Connections: 90
+  Direct API endpoints (90):
+    DELETE /api/v1/orgs/{org}/labels/{id}
+    DELETE /api/v1/orgs/{org}/repos
+    DELETE /api/v1/repos/{owner}/{repo}/actions/runs/{run}
+    DELETE /api/v1/repos/{owner}/{repo}/branches/{branch}
+    DELETE /api/v1/repos/{owner}/{repo}/issues/comments/{id}/reactions
+    DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/blocks
+    DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies
+    DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/pin
+    DELETE /api/v1/repos/{owner}/{repo}/labels/{id}
+    DELETE /api/v1/repos/{owner}/{repo}/push_mirrors/{name}
+
+ID: rule:br-006
+Label: Pinned issues are separated by type (issues vs pull requests)
+Source: models/issues/issue_pin.go
+Connections: 88
+  Direct API endpoints (88):
+    DELETE /api/v1/admin/users/{username}
+    DELETE /api/v1/orgs/{org}/public_members/{username}
+    DELETE /api/v1/packages/{owner}/{type}/{name}
+    DELETE /api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}
+    DELETE /api/v1/repos/{owner}/{repo}/hooks/{id}
+    DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}
+    DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/blocks
+    DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies
+    DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions/{user}
+    DELETE /api/v1/repos/{owner}/{repo}/teams/{team}
+
+[38;5;244m - Completed in 0.109s[0m
+
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The raw graph shows that the most connected nodes by edge count are actually business rule nodes from issue_pin.go (which are documentation nodes connected to many endpoints) and the routers module. These aren't really "code components" in the traditional sense of god nodes.
+
+Let me focus on actual code components - structs, functions, packages that other code depends on. The meaningful god nodes are:
+1. `user_model.User` - 58 connections, 398 reachable nodes - the core user model
+2. `routers` module - 103 connections - the routing layer
+3. `repo_model.Repository` - 27 connections, 193 reachable nodes
+4. `convert.ToUser` - 28 connections, 181 reachable nodes  
+5. `organization.Team` - 23 connections, 176 reachable nodes
+6. `convert` package - 25 connections, 1163 reachable nodes (!)
+
+The `convert` package with 1163 reachable nodes and 161 source files is actually the biggest "god node" by reach. But by direct connections, `user_model.User` at 58 direct connections reaching 398 nodes is the top code component.
+
+Let me reframe this properly. The real "god nodes" in terms of code components that many other things depend on:
+1. `user_model.User` - 58 connections, touches 398 nodes, 54 source files
+2. `convert.ToUser` - 28 connections, touches 181 nodes, the core user serializer
+3. `repo_model.Repository` - 27 connections, touches 193 nodes
+4. `convert` (package) - 25 connections but reaches 1163 nodes (!) and 161 files
+5. `organization.Team` - 23 connections, touches 176 nodes
+
+Let me also check the routers node more closely to get its endpoint connections.
+
+[38;5;244m - Completed in 0.25s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts/../../.project-analysis/graphify-out && python3 -c "
+import json
+g = json.load(open('graph.json'))
+from collections import Counter
+conn = Counter()
+for edge in g['links']:
+    conn[edge['_src']] += 1
+    conn[edge['_tgt']] += 1
+
+node_map = {n['id']: n for n in g['nodes']}
+
+# Find the routers node and its connections
+routers_id = None
+for nid, count in conn.most_common(200):
+    node = node_map.get(nid, {})
+    if node.get('label') == 'routers':
+        routers_id = nid
+        break
+
+print(f'Routers node ID: {routers_id}, connections: {conn[routers_id]}')
+connected = set()
+for edge in g['links']:
+    if edge['_src'] == routers_id:
+        other = node_map.get(edge['_tgt'], {})
+        connected.add(other.get('label', '?'))
+    elif edge['_tgt'] == routers_id:
+        other = node_map.get(edge['_src'], {})
+        connected.add(other.get('label', '?'))
+
+# Show all connected labels
+api_eps = sorted([c for c in connected if '/api/v1/' in c])
+non_api = sorted([c for c in connected if '/api/v1/' not in c])
+print(f'\\nConnected API endpoints ({len(api_eps)}):')
+for ep in api_eps[:20]:
+    print(f'  {ep}')
+print(f'\\nOther connected nodes ({len(non_api)}):')
+for n in non_api[:20]:
+    print(f'  {n[:80]}')
+" 2>&1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Examine what the routers module node connects to
+
+Routers node ID: mod:routers, connections: 103
+
+Connected API endpoints (0):
+
+Other connected nodes (9):
+  admin
+  issue
+  miscellaneous
+  notification
+  organization
+  package
+  repository
+  settings
+  user
+[38;5;244m - Completed in 0.103s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts/../../.project-analysis/graphify-out && python3 -c "
+import json
+g = json.load(open('graph.json'))
+from collections import Counter
+
+# Count connections only for nodes that look like real code components
+# (models, services, utility functions - not business rules or endpoints)
+conn = Counter()
+for edge in g['links']:
+    conn[edge['_src']] += 1
+    conn[edge['_tgt']] += 1
+
+node_map = {n['id']: n for n in g['nodes']}
+
+# Categorize nodes: find actual code components (functions, types, packages)
+code_components = []
+for nid, count in conn.most_common(500):
+    node = node_map.get(nid, {})
+    label = node.get('label', '')
+    source = node.get('source_file', '')
+    node_id = nid
+    
+    # Skip business rules, endpoints, and generic modules
+    if node_id.startswith('rule:'):
+        continue
+    if node_id.startswith('ep:'):
+        continue
+    if label.startswith('GET ') or label.startswith('POST ') or label.startswith('PUT ') or label.startswith('PATCH ') or label.startswith('DELETE '):
+        continue
+    if len(label) > 60:  # Long descriptions are business rules
+        continue
+        
+    code_components.append((nid, count, label, source))
+
+print('Top 10 code component god nodes:')
+print('=' * 80)
+for i, (nid, count, label, source) in enumerate(code_components[:10], 1):
+    print(f'{i}. {label} ({count} connections)')
+    print(f'   Source: {source}')
+    print(f'   Node ID: {nid}')
+    
+    # Find directly connected API endpoints
+    direct_eps = set()
+    for edge in g['links']:
+        if edge['_src'] == nid or edge['_tgt'] == nid:
+            other_id = edge['_tgt'] if edge['_src'] == nid else edge['_src']
+            other = node_map.get(other_id, {})
+            other_label = other.get('label', '')
+            if '/api/v1/' in other_label and (other_label.startswith('GET ') or other_label.startswith('POST ') or other_label.startswith('PUT ') or other_label.startswith('PATCH ') or other_label.startswith('DELETE ')):
+                direct_eps.add(other_label)
+    
+    if direct_eps:
+        print(f'   Directly connected endpoints ({len(direct_eps)}):')
+        for ep in sorted(direct_eps)[:8]:
+            print(f'     - {ep}')
+        if len(direct_eps) > 8:
+            print(f'     ... and {len(direct_eps) - 8} more')
+    print()
+" 2>&1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Get the top code component god nodes with their API endpoint dependencies
+
+Top 10 code component god nodes:
+================================================================================
+1. routers (103 connections)
+   Source: routers/
+   Node ID: mod:routers
+
+2. user_model.User (58 connections)
+   Source: session_53/impact_analysis_index.json
+   Node ID: model:user_model.User
+   Directly connected endpoints (58):
+     - DELETE /api/v1/admin/users/{username}
+     - DELETE /api/v1/orgs/{org}
+     - DELETE /api/v1/orgs/{org}/avatar
+     - DELETE /api/v1/orgs/{org}/blocks/{username}
+     - DELETE /api/v1/orgs/{org}/members/{username}
+     - DELETE /api/v1/orgs/{org}/public_members/{username}
+     - DELETE /api/v1/teams/{id}/members/{username}
+     - DELETE /api/v1/user/blocks/{username}
+     ... and 50 more
+
+3. repository (36 connections)
+   Source: routers/api/v1/repo/action.go
+   Node ID: ctrl:repository:routers/api/v1/repo/action.go
+   Directly connected endpoints (35):
+     - DELETE /api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}
+     - DELETE /api/v1/repos/{owner}/{repo}/actions/runners/{runner_id}
+     - DELETE /api/v1/repos/{owner}/{repo}/actions/runs/{run}
+     - DELETE /api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}
+     - DELETE /api/v1/repos/{owner}/{repo}/actions/variables/{variablename}
+     - GET /api/v1/repos/{owner}/{repo}/actions/artifacts
+     - GET /api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}
+     - GET /api/v1/repos/{owner}/{repo}/actions/artifacts/{artifact_id}/zip
+     ... and 27 more
+
+4. convert.ToUser (28 connections)
+   Source: session_48/impact_analysis_index.json
+   Node ID: svc:convert.ToUser
+   Directly connected endpoints (18):
+     - GET /api/v1/admin/users
+     - GET /api/v1/orgs/{org}/blocks
+     - GET /api/v1/orgs/{org}/members
+     - GET /api/v1/orgs/{org}/public_members
+     - GET /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions
+     - GET /api/v1/repos/{owner}/{repo}/stargazers
+     - GET /api/v1/repos/{owner}/{repo}/subscribers
+     - GET /api/v1/teams/{id}/members
+     ... and 10 more
+
+5. repo_model.Repository (27 connections)
+   Source: session_54/impact_analysis_index.json
+   Node ID: model:repo_model.Repository
+   Directly connected endpoints (27):
+     - DELETE /api/v1/orgs/{org}/repos
+     - DELETE /api/v1/repos/{owner}/{repo}
+     - DELETE /api/v1/repos/{owner}/{repo}/avatar
+     - DELETE /api/v1/teams/{id}/repos/{org}/{repo}
+     - GET /api/v1/orgs/{org}/repos
+     - GET /api/v1/repos/search
+     - GET /api/v1/repos/{owner}/{repo}
+     - GET /api/v1/repos/{owner}/{repo}/activities/feeds
+     ... and 19 more
+
+6. reqOrgOwnership (27 connections)
+   Source: routers/api/v1/api.go
+   Node ID: svc:reqOrgOwnership
+   Directly connected endpoints (12):
+     - DELETE /api/v1/orgs/{org}/actions/variables/{variablename}
+     - DELETE /api/v1/orgs/{org}/members/{username}
+     - DELETE /api/v1/teams/{id}
+     - GET /api/v1/orgs/{org}/actions/runners
+     - GET /api/v1/orgs/{org}/actions/runners/{runner_id}
+     - GET /api/v1/orgs/{org}/actions/variables
+     - GET /api/v1/orgs/{org}/actions/variables/{variablename}
+     - PATCH /api/v1/teams/{id}
+     ... and 4 more
+
+7. convert (25 connections)
+   Source: session_55/impact_analysis_index.json
+   Node ID: svc:convert
+   Directly connected endpoints (25):
+     - GET /api/v1/repos/{owner}/{repo}/assignees
+     - GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission
+     - GET /api/v1/repos/{owner}/{repo}/issues/pinned
+     - GET /api/v1/repos/{owner}/{repo}/issues/{index}/assets
+     - GET /api/v1/repos/{owner}/{repo}/issues/{index}/assets/{attachment_id}
+     - GET /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions
+     - GET /api/v1/repos/{owner}/{repo}/labels
+     - GET /api/v1/repos/{owner}/{repo}/labels/{id}
+     ... and 17 more
+
+8. organization.Team (23 connections)
+   Source: session_49/impact_analysis_index.json
+   Node ID: model:organization.Team
+   Directly connected endpoints (23):
+     - DELETE /api/v1/orgs/{org}
+     - DELETE /api/v1/orgs/{org}/members/{username}
+     - DELETE /api/v1/repos/{owner}/{repo}/teams/{team}
+     - DELETE /api/v1/teams/{id}
+     - DELETE /api/v1/teams/{id}/members/{username}
+     - DELETE /api/v1/teams/{id}/repos/{org}/{repo}
+     - GET /api/v1/orgs/{org}/teams/search
+     - GET /api/v1/repos/{owner}/{repo}/teams
+     ... and 15 more
+
+9. webhook_service.ToHook (23 connections)
+   Source: session_48/impact_analysis_index.json
+   Node ID: svc:webhook_service.ToHook
+   Directly connected endpoints (15):
+     - GET /api/v1/admin/hooks
+     - GET /api/v1/admin/hooks/{id}
+     - GET /api/v1/orgs/{org}/hooks
+     - GET /api/v1/orgs/{org}/hooks/{id}
+     - GET /api/v1/repos/{owner}/{repo}/hooks
+     - GET /api/v1/repos/{owner}/{repo}/hooks/{id}
+     - GET /api/v1/user/hooks
+     - GET /api/v1/user/hooks/{id}
+     ... and 7 more
+
+10. orgAssignment (20 connections)
+   Source: routers/api/v1/api.go
+   Node ID: svc:orgAssignment
+   Directly connected endpoints (15):
+     - DELETE /api/v1/orgs/{org}/actions/variables/{variablename}
+     - DELETE /api/v1/orgs/{org}/members/{username}
+     - DELETE /api/v1/orgs/{org}/public_members/{username}
+     - GET /api/v1/orgs/{org}/actions/runners
+     - GET /api/v1/orgs/{org}/actions/runners/{runner_id}
+     - GET /api/v1/orgs/{org}/actions/variables
+     - GET /api/v1/orgs/{org}/actions/variables/{variablename}
+     - GET /api/v1/orgs/{org}/members
+     ... and 7 more
+
+[38;5;244m - Completed in 0.146s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts/../../.project-analysis/graphify-out && python3 -c "
+import json
+g = json.load(open('graph.json'))
+from collections import Counter
+conn = Counter()
+for edge in g['links']:
+    conn[edge['_src']] += 1
+    conn[edge['_tgt']] += 1
+node_map = {n['id']: n for n in g['nodes']}
+
+# Get ALL endpoints for user_model.User
+nid = 'model:user_model.User'
+direct_eps = set()
+for edge in g['links']:
+    if edge['_src'] == nid or edge['_tgt'] == nid:
+        other_id = edge['_tgt'] if edge['_src'] == nid else edge['_src']
+        other = node_map.get(other_id, {})
+        other_label = other.get('label', '')
+        if '/api/v1/' in other_label:
+            direct_eps.add(other_label)
+print('user_model.User - ALL dependent endpoints:')
+for ep in sorted(direct_eps):
+    print(f'  {ep}')
+print(f'Total: {len(direct_eps)}')
+" 2>&1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Get all endpoints for user_model.User
+
+user_model.User - ALL dependent endpoints:
+  DELETE /api/v1/admin/users/{username}
+  DELETE /api/v1/orgs/{org}
+  DELETE /api/v1/orgs/{org}/avatar
+  DELETE /api/v1/orgs/{org}/blocks/{username}
+  DELETE /api/v1/orgs/{org}/members/{username}
+  DELETE /api/v1/orgs/{org}/public_members/{username}
+  DELETE /api/v1/teams/{id}/members/{username}
+  DELETE /api/v1/user/blocks/{username}
+  DELETE /api/v1/user/following/{username}
+  GET /api/v1/admin/orgs
+  GET /api/v1/admin/users
+  GET /api/v1/orgs
+  GET /api/v1/orgs/{org}
+  GET /api/v1/orgs/{org}/blocks
+  GET /api/v1/orgs/{org}/blocks/{username}
+  GET /api/v1/orgs/{org}/members
+  GET /api/v1/orgs/{org}/members/{username}
+  GET /api/v1/orgs/{org}/public_members
+  GET /api/v1/orgs/{org}/public_members/{username}
+  GET /api/v1/repos/search
+  GET /api/v1/repos/{owner}/{repo}/assignees
+  GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission
+  GET /api/v1/repos/{owner}/{repo}/reviewers
+  GET /api/v1/repos/{owner}/{repo}/stargazers
+  GET /api/v1/repos/{owner}/{repo}/subscribers
+  GET /api/v1/teams/{id}/members
+  GET /api/v1/teams/{id}/members/{username}
+  GET /api/v1/user
+  GET /api/v1/user/blocks
+  GET /api/v1/user/blocks/{username}
+  GET /api/v1/user/following/{username}
+  GET /api/v1/user/settings
+  GET /api/v1/user/subscriptions
+  GET /api/v1/users/search
+  GET /api/v1/users/{username}
+  GET /api/v1/users/{username}/activities/feeds
+  GET /api/v1/users/{username}/following
+  GET /api/v1/users/{username}/following/{target}
+  GET /api/v1/users/{username}/heatmap
+  GET /api/v1/users/{username}/subscriptions
+  PATCH /api/v1/admin/users/{username}
+  PATCH /api/v1/orgs/{org}
+  PATCH /api/v1/user/settings
+  POST /api/v1/admin/users
+  POST /api/v1/admin/users/{username}/orgs
+  POST /api/v1/admin/users/{username}/rename
+  POST /api/v1/org/{org}/repos
+  POST /api/v1/orgs
+  POST /api/v1/orgs/{org}/avatar
+  POST /api/v1/orgs/{org}/rename
+  POST /api/v1/orgs/{org}/repos
+  POST /api/v1/repos/{template_owner}/{template_repo}/generate
+  POST /api/v1/user/avatar
+  PUT /api/v1/orgs/{org}/blocks/{username}
+  PUT /api/v1/orgs/{org}/public_members/{username}
+  PUT /api/v1/teams/{id}/members/{username}
+  PUT /api/v1/user/blocks/{username}
+  PUT /api/v1/user/following/{username}
+Total: 58
+[38;5;244m - Completed in 0.153s[0m
+
+[?25l[0m[38;5;141m> [0mNow I have a complete picture. Here are the results:[0m[0m
+[0m[0m
+[38;5;252m[1m## Top 5 Most Connected Components (God Nodes)[0m[0m
+[0m[0m
+[38;5;252m[1m### 1. [38;5;10muser_model.User[0m — 58 connections[0m[0m
+[1mFile:[22m [38;5;10mmodels/user/user.go[0m  [0m[0m
+[1mRole:[22m Core user domain model — virtually every user-facing operation depends on it.[0m[0m
+[0m[0m
+[1mDependent API Endpoints (58 total):[22m[0m[0m
+| Category | Endpoints |[0m[0m
+|----------|-----------|[0m[0m
+| Admin | [38;5;10mPOST/PATCH/DELETE /api/v1/admin/users/{username}[0m, [38;5;10mGET /api/v1/admin/users[0m, [38;5;10mGET /api/v1/admin/orgs[0m |[0m[0m
+| User | [38;5;10mGET /api/v1/user[0m, [38;5;10mGET /api/v1/users/search[0m, [38;5;10mGET /api/v1/users/{username}[0m, [38;5;10mPATCH /api/v1/user/settings[0m |[0m[0m
+| Orgs | [38;5;10mGET/POST/PATCH/DELETE /api/v1/orgs/{org}[0m, members, blocks, avatars |[0m[0m
+| Teams | [38;5;10mGET/PUT/DELETE /api/v1/teams/{id}/members/{username}[0m |[0m[0m
+| Repos | [38;5;10mGET /api/v1/repos/{owner}/{repo}/collaborators/*/permission[0m, [38;5;10m/reviewers[0m, [38;5;10m/assignees[0m, [38;5;10m/stargazers[0m, [38;5;10m/subscribers[0m |[0m[0m
+| Social | followers, following, blocks, heatmap, activity feeds |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m### 2. [38;5;10mrepository[0m (controller group) — 36 connections[0m[0m
+[1mFile:[22m [38;5;10mrouters/api/v1/repo/action.go[0m (+ related repo routers)  [0m[0m
+[1mRole:[22m Controller hub for all repository-scoped actions (CI/CD, secrets, runners, variables).[0m[0m
+[0m[0m
+[1mDependent API Endpoints (35 total):[22m[0m[0m
+- [38;5;10mGET/DELETE /api/v1/repos/{owner}/{repo}/actions/artifacts/{id}[0m[0m[0m
+- [38;5;10mGET/DELETE /api/v1/repos/{owner}/{repo}/actions/runners/{id}[0m[0m[0m
+- [38;5;10mGET/POST/DELETE /api/v1/repos/{owner}/{repo}/actions/secrets/{name}[0m[0m[0m
+- [38;5;10mGET/POST/PATCH/DELETE /api/v1/repos/{owner}/{repo}/actions/variables/{name}[0m[0m[0m
+- [38;5;10mGET /api/v1/repos/{owner}/{repo}/actions/runs[0m, jobs[0m[0m
+- [38;5;10mPOST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/approve[0m[0m[0m
+- ... and 20+ more action-related endpoints[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m### 3. [38;5;10mconvert.ToUser[0m — 28 connections[0m[0m
+[1mFile:[22m [38;5;10mservices/convert/user.go[0m  [0m[0m
+[1mRole:[22m Serialization function converting internal [38;5;10mUser[0m model → API response struct. Every endpoint returning user data flows through it.[0m[0m
+[0m[0m
+[1mDependent API Endpoints (18 direct, 10+ via data flows):[22m[0m[0m
+- [38;5;10mGET /api/v1/admin/users[0m[0m[0m
+- [38;5;10mPOST /api/v1/admin/users[0m, [38;5;10mPATCH /api/v1/admin/users/{username}[0m[0m[0m
+- [38;5;10mGET /api/v1/users/search[0m[0m[0m
+- [38;5;10mGET /api/v1/orgs/{org}/members[0m, [38;5;10m/public_members[0m, [38;5;10m/blocks[0m[0m[0m
+- [38;5;10mGET /api/v1/teams/{id}/members[0m[0m[0m
+- [38;5;10mGET /api/v1/repos/{owner}/{repo}/stargazers[0m, [38;5;10m/subscribers[0m, [38;5;10m/assignees[0m, [38;5;10m/reviewers[0m[0m[0m
+- [38;5;10mGET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission[0m[0m[0m
+- [38;5;10mGET /api/v1/repos/{owner}/{repo}/issues/{index}/subscriptions[0m[0m[0m
+- [38;5;10mGET /api/v1/user/followers[0m, [38;5;10m/following[0m, [38;5;10m/blocks[0m[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m### 4. [38;5;10mrepo_model.Repository[0m — 27 connections[0m[0m
+[1mFile:[22m [38;5;10mmodels/repo/repo.go[0m  [0m[0m
+[1mRole:[22m Core repository domain model — the backbone of all repo operations.[0m[0m
+[0m[0m
+[1mDependent API Endpoints (27 total):[22m[0m[0m
+- [38;5;10mGET /api/v1/repos/search[0m, [38;5;10mGET /api/v1/repos/{owner}/{repo}[0m[0m[0m
+- [38;5;10mDELETE /api/v1/repos/{owner}/{repo}[0m[0m[0m
+- [38;5;10mPOST /api/v1/user/repos[0m, [38;5;10mPOST /api/v1/org/{org}/repos[0m[0m[0m
+- [38;5;10mPOST /api/v1/repos/{template_owner}/{template_repo}/generate[0m[0m[0m
+- [38;5;10mGET /api/v1/orgs/{org}/repos[0m, [38;5;10mGET /api/v1/users/{username}/repos[0m[0m[0m
+- [38;5;10mGET /api/v1/repos/{owner}/{repo}/forks[0m, [38;5;10mPOST .../forks[0m[0m[0m
+- [38;5;10mGET/PUT/DELETE /api/v1/teams/{id}/repos/{org}/{repo}[0m[0m[0m
+- [38;5;10mPOST/DELETE /api/v1/repos/{owner}/{repo}/avatar[0m[0m[0m
+- [38;5;10mGET /api/v1/repos/{owner}/{repo}/activities/feeds[0m[0m[0m
+- [38;5;10mGET /api/v1/user/subscriptions[0m, [38;5;10mGET /api/v1/users/{username}/subscriptions[0m[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m### 5. [38;5;10mconvert[0m (package) — 25 direct connections, [1m1163 reachable nodes[22m[0m[0m
+[1mFile:[22m [38;5;10mservices/convert/[0m (entire package)  [0m[0m
+[1mRole:[22m The serialization layer — converts all internal models to API-facing structs. Has the largest blast radius in the codebase (161 source files reachable).[0m[0m
+[0m[0m
+[1mDependent API Endpoints (25+ direct):[22m[0m[0m
+- [38;5;10mGET /api/v1/repos/{owner}/{repo}/issues/pinned[0m, [38;5;10m/labels[0m, [38;5;10m/assets[0m[0m[0m
+- [38;5;10mGET /api/v1/repos/{owner}/{repo}/collaborators/*/permission[0m[0m[0m
+- [38;5;10mGET /api/v1/repos/{owner}/{repo}/reviewers[0m, [38;5;10m/assignees[0m[0m[0m
+- [38;5;10mGET /api/v1/repos/{owner}/{repo}/releases/{id}/assets[0m[0m[0m
+- Via data flows: [38;5;10mToOrganization[0m, [38;5;10mToPublicKey[0m, [38;5;10mToActionWorkflowJob[0m, [38;5;10mToLabelList[0m, [38;5;10mUser2UserSettings[0m, [38;5;10mToHook[0m, etc.[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## Summary[0m[0m
+[0m[0m
+| Rank | Component | Connections | Reach | Risk Profile |[0m[0m
+|------|-----------|-------------|-------|--------------|[0m[0m
+| 1 | [38;5;10muser_model.User[0m | 58 | 398 nodes, 54 files | Any schema change breaks 58 endpoints |[0m[0m
+| 2 | [38;5;10mrepository[0m controller | 36 | 35 endpoints | All CI/CD actions route through here |[0m[0m
+| 3 | [38;5;10mconvert.ToUser[0m | 28 | 181 nodes, 40 files | User serialization bottleneck |[0m[0m
+| 4 | [38;5;10mrepo_model.Repository[0m | 27 | 193 nodes, 32 files | Repo schema changes cascade widely |[0m[0m
+| 5 | [38;5;10mconvert[0m (package) | 25 | [1m1163 nodes, 161 files[22m | Largest blast radius — touches everything |[0m[0m
+[0m[0m
+The [38;5;10mconvert[0m package is particularly interesting: while it has fewer direct connections than [38;5;10muser_model.User[0m, its transitive reach of 1163 nodes makes it the single highest-risk component for cascading changes across the codebase.[0m[0m
+[38;5;8m
+ ▸ Credits: 1.74 • Time: 1m 43s
+
+[0m[1G[0m[0m[?25h

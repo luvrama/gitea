@@ -1,0 +1,379 @@
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[32mAll tools are now trusted ([0m[31m![0m[32m). Kiro will execute tools without asking for confirmation.[0m
+Agents can sometimes do unexpected things so understand the risks.
+
+Learn more at [38;5;141mhttps://kiro.dev/docs/cli/chat/security/#using-tools-trust-all-safely[0m
+
+
+[38;5;12m[1m📷 Checkpoints are enabled! (took 10.07s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The user wants a complete map of the notification system in Gitea. I need to find:
+1. What events trigger notifications
+2. How notifications are stored (models/database)
+3. Which API endpoints serve them
+4. Every file involved
+
+Let me start by exploring the notification-related code.
+[38;5;244m - Completed in 0.561s[0m
+[38;5;12m[1m [1.1][0m[0m
+[?25l[0m[?25l[?25l[?25l[0m[0mSearching for files: [38;5;141m**/notification*[0m[38;5;244m (using tool: glob)[0mSearching for: [38;5;141mnotification[0m in [38;5;141m/Users/relumalai/workshop/gitea/models/activities[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0mSearching for files: [38;5;141m**/routers/api/**/notification*[0m[38;5;244m (using tool: glob)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m15 files[0m under current directory
+[38;5;244m - Completed in 0.734s[0m
+[38;5;12m[1m [1.2][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m235 matches[0m in [38;5;244m3 files[0m under /Users/relumalai/workshop/gitea/models/activities
+[38;5;244m - Completed in 0.566s[0m
+[38;5;12m[1m [1.3][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m1 files[0m under current directory
+[38;5;244m - Completed in 0.699s[0m
+[38;5;12m[1m [1.4][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for files: [38;5;141mrouters/api/v1/notify/*.go[0m[38;5;244m (using tool: glob)[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/models/activities/notification.go[0m, all lines[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m4 files[0m under current directory
+[38;5;244m - Completed in 0.548s[0m
+[38;5;12m[1m [1.5][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m13025 bytes[0m from /Users/relumalai/workshop/gitea/models/activities/notification.go
+[38;5;244m - Completed in 0.538s[0m
+[38;5;12m[1m [1.6][0m[0m
+[?25l[0m[?25l[0m[0mBatch fs_read operation with [38;5;141m4[0m operations[38;5;244m (using tool: read)[0m
+
+↱ Operation 1: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/notify/notifications.go[0m, all lines
+↱ Operation 2: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/notify/user.go[0m, all lines
+↱ Operation 3: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/notify/repo.go[0m, all lines
+↱ Operation 4: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/notify/threads.go[0m, all lines
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m2312 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/notify/notifications.go
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m5062 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/notify/user.go
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m6536 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/notify/repo.go
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m3055 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/notify/threads.go
+
+ ⋮ 
+
+[38;5;244m- [0mSummary: 4 operations processed, 4 successful, 0 failed
+[38;5;244m - Completed in 0.532s[0m
+[38;5;12m[1m [1.7][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me find the notification service layer that triggers notifications from events:[0m[0m
+[?25l[0m[0m
+[?25l[0m[0mSearching for files: [38;5;141mservices/notify/*.go[0m[38;5;244m (using tool: glob)[0mSearching for: [38;5;141mnotify\.[0m in [38;5;141m/Users/relumalai/workshop/gitea/services[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m3 files[0m under current directory
+[38;5;244m - Completed in 0.538s[0m
+[38;5;12m[1m [1.8][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m7 matches[0m in [38;5;244m4 files[0m under /Users/relumalai/workshop/gitea/services
+[38;5;244m - Completed in 1.31s[0m
+[38;5;12m[1m [1.9][0m[0m
+[?25l[0m[?25l[0m[0mBatch fs_read operation with [38;5;141m2[0m operations[38;5;244m (using tool: read)[0m
+
+↱ Operation 1: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/services/notify/notifier.go[0m, all lines
+↱ Operation 2: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/services/notify/notify.go[0m, all lines
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m6206 bytes[0m from /Users/relumalai/workshop/gitea/services/notify/notifier.go
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m15867 bytes[0m from /Users/relumalai/workshop/gitea/services/notify/notify.go
+
+ ⋮ 
+
+[38;5;244m- [0mSummary: 2 operations processed, 2 successful, 0 failed
+[38;5;244m - Completed in 0.555s[0m
+[38;5;12m[1m [1.10][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/services/uinotification/notify.go[0m, all lines[38;5;244m (using tool: read)[0mSearching for files: [38;5;141mservices/mailer/mail_*notif*[0m[38;5;244m (using tool: glob)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m8359 bytes[0m from /Users/relumalai/workshop/gitea/services/uinotification/notify.go
+[38;5;244m - Completed in 0.806s[0m
+[38;5;12m[1m [1.11][0m[0m
+
+[38;5;9m ❗ [0mNo files found matching pattern: [38;5;244mservices/mailer/mail_*notif*[0m under current directory
+[38;5;244m - Completed in 0.614s[0m
+[38;5;12m[1m [1.12][0m[0m
+[?25l[0m[?25l[?25l[0m[0mBatch fs_read operation with [38;5;141m3[0m operations[38;5;244m (using tool: read)[0m
+
+↱ Operation 1: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/models/activities/notification_list.go[0m, all lines
+↱ Operation 2: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/services/convert/notification.go[0m, all lines
+↱ Operation 3: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/structs/notifications.go[0m, all linesReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/web/user/notification.go[0m, all lines[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m12296 bytes[0m from /Users/relumalai/workshop/gitea/models/activities/notification_list.go
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m3836 bytes[0m from /Users/relumalai/workshop/gitea/services/convert/notification.go
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m2939 bytes[0m from /Users/relumalai/workshop/gitea/modules/structs/notifications.go
+
+ ⋮ 
+
+[38;5;244m- [0mSummary: 3 operations processed, 3 successful, 0 failed
+[38;5;244m - Completed in 0.558s[0m
+[38;5;12m[1m [1.13][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m12060 bytes[0m from /Users/relumalai/workshop/gitea/routers/web/user/notification.go
+[38;5;244m - Completed in 0.574s[0m
+[38;5;12m[1m [1.14][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me find the API route registration and the web route registration for notifications:[0m[0m
+[?25l[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mnotify\.[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mNotification|notification[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/web[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m7 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1
+[38;5;244m - Completed in 0.561s[0m
+[38;5;12m[1m [1.15][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m98 matches[0m in [38;5;244m5 files[0m under /Users/relumalai/workshop/gitea/routers/web (result is truncated)
+[38;5;244m - Completed in 0.571s[0m
+[38;5;12m[1m [1.16][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for: [38;5;141mnotification[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/web[0m ([38;5;141mweb.go[0m)[38;5;244m (using tool: grep)[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/web_src/js/features/notification.ts[0m, from line [38;5;141m1[0m to [38;5;141m50[0m[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m10 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/web
+[38;5;244m - Completed in 0.572s[0m
+[38;5;12m[1m [1.17][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m1847 bytes[0m from /Users/relumalai/workshop/gitea/web_src/js/features/notification.ts
+[38;5;244m - Completed in 0.583s[0m
+[38;5;12m[1m [1.18][0m[0m
+[?25l[0m[?25l[?25l[0m[0mSearching for: [38;5;141mnotification|notify[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1[0m ([38;5;141mapi.go[0m)[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mnotificationNew|NewAvailable[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/web[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m16 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1 (result is truncated)
+[38;5;244m - Completed in 0.789s[0m
+[38;5;12m[1m [1.19][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m3 matches[0m in [38;5;244m2 files[0m under /Users/relumalai/workshop/gitea/routers/web
+[38;5;244m - Completed in 0.799s[0m
+[38;5;12m[1m [1.20][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/api.go[0m, from line [38;5;141m959[0m to [38;5;141m970[0m[38;5;244m (using tool: read)[0mSearching for: [38;5;141mnotify\.(ListRepo|ReadRepo)[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/api.go[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m465 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/api.go
+[38;5;244m - Completed in 0.599s[0m
+[38;5;12m[1m [1.21][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m2 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1/api.go
+[38;5;244m - Completed in 0.782s[0m
+[38;5;12m[1m [1.22][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1/api.go[0m, from line [38;5;141m1454[0m to [38;5;141m1462[0m[38;5;244m (using tool: read)[0mSearching for: [38;5;141mnotification[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/web/user/setting[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m354 bytes[0m from /Users/relumalai/workshop/gitea/routers/api/v1/api.go
+[38;5;244m - Completed in 0.610s[0m
+[38;5;12m[1m [1.23][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m26 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/web/user/setting
+[38;5;244m - Completed in 0.706s[0m
+[38;5;12m[1m [1.24][0m[0m
+[?25l[0m[?25l[?25l[0m[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/web/user/setting/notifications.go[0m, all lines[38;5;244m (using tool: read)[0mSearching for: [38;5;141mRegisterNotifier[0m in [38;5;141m/Users/relumalai/workshop/gitea/services[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m3139 bytes[0m from /Users/relumalai/workshop/gitea/routers/web/user/setting/notifications.go
+[38;5;244m - Completed in 0.785s[0m
+[38;5;12m[1m [1.25][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m13 matches[0m in [38;5;244m10 files[0m under /Users/relumalai/workshop/gitea/services
+[38;5;244m - Completed in 0.999s[0m
+[38;5;12m[1m [1.26][0m[0m
+[?25l[0m[38;5;141m> [0mNow let me look at the eventsource for real-time notification delivery and the frontend worker:[0m[0m
+[?25l[0m[0m
+[?25l[0m[0mSearching for: [38;5;141meventsource|event.source|EventSource[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0mSearching for files: [38;5;141m**/eventsource*[0m[38;5;244m (using tool: glob)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m13 matches[0m in [38;5;244m4 files[0m under /Users/relumalai/workshop/gitea/routers
+[38;5;244m - Completed in 0.988s[0m
+[38;5;12m[1m [1.27][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m7 files[0m under current directory
+[38;5;244m - Completed in 0.849s[0m
+[38;5;12m[1m [1.28][0m[0m
+[?25l[0m[?25l[0m[0mBatch fs_read operation with [38;5;141m2[0m operations[38;5;244m (using tool: read)[0m
+
+↱ Operation 1: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/routers/web/events/events.go[0m, all lines
+↱ Operation 2: Reading file: [38;5;141m/Users/relumalai/workshop/gitea/modules/eventsource/manager_run.go[0m, all lines
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m2731 bytes[0m from /Users/relumalai/workshop/gitea/routers/web/events/events.go
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m3282 bytes[0m from /Users/relumalai/workshop/gitea/modules/eventsource/manager_run.go
+
+ ⋮ 
+
+[38;5;244m- [0mSummary: 2 operations processed, 2 successful, 0 failed
+[38;5;244m - Completed in 0.735s[0m
+[38;5;12m[1m [1.29][0m[0m
+[?25l[0m[38;5;141m> [0mNow I have a comprehensive picture. Let me check the web route for the events endpoint:[0m[0m
+[?25l[0m[0m
+[?25l[0m[0mSearching for: [38;5;141mevents\.Events[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/web[0m ([38;5;141mweb.go[0m)[38;5;244m (using tool: grep)[0mReading file: [38;5;141m/Users/relumalai/workshop/gitea/web_src/js/eventsource.sharedworker.ts[0m, all lines[38;5;244m (using tool: read)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m1 matches[0m in [38;5;244m1 files[0m under /Users/relumalai/workshop/gitea/routers/web
+[38;5;244m - Completed in 0.575s[0m
+[38;5;12m[1m [1.30][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully read [38;5;244m4183 bytes[0m from /Users/relumalai/workshop/gitea/web_src/js/eventsource.sharedworker.ts
+[38;5;244m - Completed in 0.568s[0m
+[38;5;12m[1m [1.31][0m[0m
+[?25l[0m[38;5;141m> [0mNow I have all the information needed. Let me compile the complete map.[0m[0m
+[0m[0m
+[38;5;252m[1m# Gitea Notification System — Complete Map[0m[0m
+[0m[0m
+[38;5;252m[1m## Architecture Overview[0m[0m
+[0m[0m
+The notification system uses a [1mmulti-notifier dispatcher[22m pattern. Events flow from service actions → [38;5;10mservices/notify[0m dispatcher → registered notifier implementations (UI notifications, webhooks, mailer, feed, actions, indexer, mirror).[0m[0m
+[0m[0m
+The [1mUI notification[22m path specifically writes to the database and pushes real-time counts via Server-Sent Events (SSE).[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 1. Events That Trigger Notifications[0m[0m
+[0m[0m
+The [38;5;10mNotifier[0m interface ([38;5;10mservices/notify/notifier.go[0m) defines all events. The [1mUI notification service[22m ([38;5;10mservices/uinotification/notify.go[0m) only handles a subset that writes to the [38;5;10mnotification[0m table:[0m[0m
+[0m[0m
+| Event | Method | Condition |[0m[0m
+|-------|--------|-----------|[0m[0m
+| New issue created | [38;5;10mNewIssue[0m | Always |[0m[0m
+| Issue comment created | [38;5;10mCreateIssueComment[0m | Always |[0m[0m
+| Issue status changed (close/reopen) | [38;5;10mIssueChangeStatus[0m | Always |[0m[0m
+| Issue title changed (WIP → non-WIP) | [38;5;10mIssueChangeTitle[0m | Only when PR leaves WIP state |[0m[0m
+| New pull request | [38;5;10mNewPullRequest[0m | Always |[0m[0m
+| Pull request merged | [38;5;10mMergePullRequest[0m | Always |[0m[0m
+| Pull request auto-merged | [38;5;10mAutoMergePullRequest[0m | Always |[0m[0m
+| Pull request review submitted | [38;5;10mPullRequestReview[0m | Always |[0m[0m
+| Pull request code comment | [38;5;10mPullRequestCodeComment[0m | Mentions only |[0m[0m
+| Pull request push commits | [38;5;10mPullRequestPushCommits[0m | Always |[0m[0m
+| Pull review dismissed | [38;5;10mPullReviewDismiss[0m | Always |[0m[0m
+| Issue assignee changed | [38;5;10mIssueChangeAssignee[0m | Only when adding (not removing), and not self-assign |[0m[0m
+| Pull request review request | [38;5;10mPullRequestReviewRequest[0m | Only when requesting (not removing) |[0m[0m
+| Repo pending transfer | [38;5;10mRepoPendingTransfer[0m | Direct DB insert (not queued) |[0m[0m
+[0m[0m
+[38;5;252m[1m### Recipient Determination[0m[0m
+[0m[0m
+Handled in [38;5;10mmodels/activities/notification_list.go[0m → [38;5;10mCreateOrUpdateIssueNotifications[0m:[0m[0m
+- **Issue watchers** (explicit watch)[0m[0m
+- **Repo watchers** (unless issue is a WIP PR)[0m[0m
+- **Issue participants**[0m[0m
+- **Mentioned users** (passed as explicit receivers)[0m[0m
+- Excludes: notification author, explicit unwatchers, users without repo unit access[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 2. Storage[0m[0m
+[0m[0m
+[38;5;252m[1m### Database Table: [38;5;10mnotification[0m[0m[0m
+[0m[0m
+Defined in [38;5;10mmodels/activities/notification.go[0m:[0m[0m
+[0m[0m
+| Column | Type | Description |[0m[0m
+|--------|------|-------------|[0m[0m
+| [38;5;10mid[0m | int64 PK | Auto-increment |[0m[0m
+| [38;5;10muser_id[0m | int64 | Notification recipient |[0m[0m
+| [38;5;10mrepo_id[0m | int64 | Associated repository |[0m[0m
+| [38;5;10mstatus[0m | smallint | 1=Unread, 2=Read, 3=Pinned |[0m[0m
+| [38;5;10msource[0m | smallint | 1=Issue, 2=PullRequest, 3=Commit, 4=Repository |[0m[0m
+| [38;5;10missue_id[0m | int64 | Associated issue/PR |[0m[0m
+| [38;5;10mcommit_id[0m | string | For commit notifications |[0m[0m
+| [38;5;10mcomment_id[0m | int64 | Latest relevant comment |[0m[0m
+| [38;5;10mupdated_by[0m | int64 | User who triggered update |[0m[0m
+| [38;5;10mcreated_unix[0m | timestamp | Creation time |[0m[0m
+| [38;5;10mupdated_unix[0m | timestamp | Last update time |[0m[0m
+[0m[0m
+[38;5;252m[1m### Processing Queue[0m[0m
+[0m[0m
+A worker pool queue ([38;5;10mqueue.CreateSimpleQueue("notification-service", handler)[0m) in [38;5;10mservices/uinotification/notify.go[0m processes [38;5;10missueNotificationOpts[0m asynchronously. The handler calls [38;5;10mCreateOrUpdateIssueNotifications[0m which either creates a new row or updates an existing one (re-marking as unread if previously read).[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 3. Real-Time Delivery (Server-Sent Events)[0m[0m
+[0m[0m
+The eventsource manager ([38;5;10mmodules/eventsource/manager_run.go[0m) polls [38;5;10mGetUIDsAndNotificationCounts()[0m at a configurable interval ([38;5;10msetting.UI.Notification.EventSourceUpdateTime[0m) and pushes [38;5;10mnotification-count[0m events to connected users.[0m[0m
+[0m[0m
+[1mSSE endpoint:[22m [38;5;10mGET /user/events[0m (registered in [38;5;10mrouters/web/web.go:592[0m)[0m[0m
+[0m[0m
+Frontend SharedWorker ([38;5;10mweb_src/js/eventsource.sharedworker.ts[0m) listens for [38;5;10mnotification-count[0m events and updates badge counts via [38;5;10mweb_src/js/features/notification.ts[0m.[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 4. API Endpoints[0m[0m
+[0m[0m
+[38;5;252m[1m### REST API ([38;5;10m/api/v1[0m)[0m[0m
+[0m[0m
+| Method | Path | Handler | Description |[0m[0m
+|--------|------|---------|-------------|[0m[0m
+| GET | [38;5;10m/notifications[0m | [38;5;10mnotify.ListNotifications[0m | List user's notifications |[0m[0m
+| PUT | [38;5;10m/notifications[0m | [38;5;10mnotify.ReadNotifications[0m | Mark notifications as read/pinned/unread |[0m[0m
+| GET | [38;5;10m/notifications/new[0m | [38;5;10mnotify.NewAvailable[0m | Get unread notification count |[0m[0m
+| GET | [38;5;10m/notifications/threads/{id}[0m | [38;5;10mnotify.GetThread[0m | Get single notification by ID |[0m[0m
+| PATCH | [38;5;10m/notifications/threads/{id}[0m | [38;5;10mnotify.ReadThread[0m | Mark single notification as read |[0m[0m
+| GET | [38;5;10m/repos/{owner}/{repo}/notifications[0m | [38;5;10mnotify.ListRepoNotifications[0m | List repo notifications |[0m[0m
+| PUT | [38;5;10m/repos/{owner}/{repo}/notifications[0m | [38;5;10mnotify.ReadRepoNotifications[0m | Mark repo notifications as read |[0m[0m
+[0m[0m
+All require [38;5;10mAccessTokenScopeCategoryNotification[0m token scope.[0m[0m
+[0m[0m
+[38;5;252m[1m### Web Routes[0m[0m
+[0m[0m
+| Method | Path | Handler | Description |[0m[0m
+|--------|------|---------|-------------|[0m[0m
+| GET | [38;5;10m/notifications[0m | [38;5;10muser.Notifications[0m | Notification list page |[0m[0m
+| GET | [38;5;10m/notifications/subscriptions[0m | [38;5;10muser.NotificationSubscriptions[0m | Subscribed issues list |[0m[0m
+| GET | [38;5;10m/notifications/watching[0m | [38;5;10muser.NotificationWatching[0m | Watched repos list |[0m[0m
+| POST | [38;5;10m/notifications/status[0m | [38;5;10muser.NotificationStatusPost[0m | Change notification status |[0m[0m
+| POST | [38;5;10m/notifications/purge[0m | [38;5;10muser.NotificationPurgePost[0m | Mark all as read |[0m[0m
+| GET | [38;5;10m/notifications/new[0m | [38;5;10muser.NewAvailable[0m | JSON count endpoint (polled by frontend) |[0m[0m
+| GET | [38;5;10m/user/events[0m | [38;5;10mevents.Events[0m | SSE endpoint |[0m[0m
+| GET | [38;5;10m/user/settings/notifications[0m | [38;5;10muser_setting.Notifications[0m | Email notification preferences |[0m[0m
+| POST | [38;5;10m/user/settings/notifications/email[0m | [38;5;10muser_setting.NotificationsEmailPost[0m | Set email notification preference |[0m[0m
+| POST | [38;5;10m/user/settings/notifications/actions[0m | [38;5;10muser_setting.NotificationsActionsEmailPost[0m | Set Actions email preference |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 5. Complete File List[0m[0m
+[0m[0m
+[38;5;252m[1m### Core Model & Storage[0m[0m
+- [38;5;10mmodels/activities/notification.go[0m — Notification struct, DB operations, table definition[0m[0m
+- [38;5;10mmodels/activities/notification_list.go[0m — NotificationList, FindNotificationOptions, CreateOrUpdateIssueNotifications, batch loaders[0m[0m
+- [38;5;10mmodels/activities/notification_test.go[0m — Tests[0m[0m
+- [38;5;10mmodels/fixtures/notification.yml[0m — Test fixtures[0m[0m
+[0m[0m
+[38;5;252m[1m### Notifier Framework[0m[0m
+- [38;5;10mservices/notify/notifier.go[0m — [38;5;10mNotifier[0m interface (all event definitions)[0m[0m
+- [38;5;10mservices/notify/notify.go[0m — Dispatcher (RegisterNotifier, broadcasts to all notifiers)[0m[0m
+- [38;5;10mservices/notify/null.go[0m — NullNotifier (no-op base for embedding)[0m[0m
+[0m[0m
+[38;5;252m[1m### UI Notification Service (writes to DB)[0m[0m
+- [38;5;10mservices/uinotification/notify.go[0m — Queue-based notifier implementation, event → DB[0m[0m
+[0m[0m
+[38;5;252m[1m### API Conversion[0m[0m
+- [38;5;10mservices/convert/notification.go[0m — ToNotificationThread, ToNotifications[0m[0m
+- [38;5;10mservices/convert/notification_test.go[0m — Tests[0m[0m
+- [38;5;10mmodules/structs/notifications.go[0m — API response structs (NotificationThread, NotificationSubject, NotificationCount)[0m[0m
+[0m[0m
+[38;5;252m[1m### API Routers[0m[0m
+- [38;5;10mrouters/api/v1/notify/notifications.go[0m — NewAvailable, getFindNotificationOptions helpers[0m[0m
+- [38;5;10mrouters/api/v1/notify/user.go[0m — ListNotifications, ReadNotifications[0m[0m
+- [38;5;10mrouters/api/v1/notify/repo.go[0m — ListRepoNotifications, ReadRepoNotifications, status helpers[0m[0m
+- [38;5;10mrouters/api/v1/notify/threads.go[0m — GetThread, ReadThread[0m[0m
+- [38;5;10mrouters/api/v1/api.go[0m — Route registration (lines 959–968, 1454–1458)[0m[0m
+[0m[0m
+[38;5;252m[1m### Web Routers[0m[0m
+- [38;5;10mrouters/web/user/notification.go[0m — Web notification pages and JSON count[0m[0m
+- [38;5;10mrouters/web/user/setting/notifications.go[0m — Email notification preferences[0m[0m
+- [38;5;10mrouters/web/web.go[0m — Route registration (lines 630–633, 1743–1749)[0m[0m
+- [38;5;10mrouters/web/events/events.go[0m — SSE endpoint handler[0m[0m
+[0m[0m
+[38;5;252m[1m### Real-Time / EventSource[0m[0m
+- [38;5;10mmodules/eventsource/manager.go[0m — Manager struct, Register/Unregister/SendMessage[0m[0m
+- [38;5;10mmodules/eventsource/manager_run.go[0m — Polling loop, pushes notification-count events[0m[0m
+- [38;5;10mmodules/eventsource/event.go[0m — Event struct, WriteTo[0m[0m
+- [38;5;10mmodules/eventsource/event_test.go[0m — Tests[0m[0m
+- [38;5;10mmodules/eventsource/messenger.go[0m — Messenger channel type[0m[0m
+[0m[0m
+[38;5;252m[1m### Frontend[0m[0m
+- [38;5;10mweb_src/js/features/notification.ts[0m — Notification count badge, polling fallback[0m[0m
+- [38;5;10mweb_src/js/eventsource.sharedworker.ts[0m — SharedWorker for SSE connection sharing[0m[0m
+[0m[0m
+[38;5;252m[1m### Templates[0m[0m
+- [38;5;10mtemplates/user/notification/notification.tmpl[0m — Main notification page[0m[0m
+- [38;5;10mtemplates/user/notification/notification_div.tmpl[0m — Notification list partial (AJAX)[0m[0m
+- [38;5;10mtemplates/user/notification/notification_subscriptions.tmpl[0m — Subscriptions page[0m[0m
+- [38;5;10mtemplates/user/settings/notifications.tmpl[0m — Email preferences settings[0m[0m
+[0m[0m
+[38;5;252m[1m### Other Registered Notifiers (not UI-notifications, but part of the dispatch chain)[0m[0m
+- [38;5;10mservices/webhook/notifier.go[0m — Webhook delivery[0m[0m
+- [38;5;10mservices/mailer/mailer.go[0m — Email notifications[0m[0m
+- [38;5;10mservices/feed/notifier.go[0m — Activity feed[0m[0m
+- [38;5;10mservices/actions/init.go[0m — GitHub Actions-style workflows[0m[0m
+- [38;5;10mservices/indexer/indexer.go[0m — Search indexing[0m[0m
+- [38;5;10mservices/mirror/notifier.go[0m — Mirror sync[0m[0m
+- [38;5;10mservices/automerge/automerge.go[0m — Auto-merge checks[0m[0m
+[0m[0m
+[38;5;252m[1m### Integration Tests[0m[0m
+- [38;5;10mtests/integration/eventsource_test.go[0m — SSE integration tests[0m[0m[38;5;12m[1m✓ Created checkpoint 1
+
+[0m[0m
+[38;5;8m
+ ▸ Credits: 2.69 • Time: 2m 21s
+
+[0m[1G[0m[0m[?25h

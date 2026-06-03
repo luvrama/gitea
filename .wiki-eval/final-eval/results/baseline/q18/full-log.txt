@@ -1,0 +1,32 @@
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[32mAll tools are now trusted ([0m[31m![0m[32m). Kiro will execute tools without asking for confirmation.[0m
+Agents can sometimes do unexpected things so understand the risks.
+
+Learn more at [38;5;141mhttps://kiro.dev/docs/cli/chat/security/#using-tools-trust-all-safely[0m
+
+
+[38;5;12m[1m📷 Checkpoints are enabled! (took 9.97s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[?25l[0m[0mSearching for: [38;5;141mmerge.*pull[0m in [38;5;141m/Users/relumalai/workshop/gitea/routers/api/v1[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0mSearching for: [38;5;141mMergePullRequest[0m ([38;5;141m*.go[0m)[38;5;244m (using tool: grep)[0m
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m23 matches[0m in [38;5;244m4 files[0m under /Users/relumalai/workshop/gitea/routers/api/v1 (result is truncated)
+[38;5;244m - Completed in 0.614s[0m
+[38;5;12m[1m [1.1][0m[0m
+
+[38;5;10m ✓ [0mSuccessfully found [38;5;244m110 matches[0m in [38;5;244m32 files[0m under current directory (result is truncated)
+[38;5;244m - Completed in 1.220s[0m
+[38;5;12m[1m [1.2][0m[0m
+[?25l[0m[38;5;141m> [0mThe file that handles the pull request merge API endpoint is:[0m[0m
+[0m[0m
+[1m[38;5;10m/Users/relumalai/workshop/gitea/routers/api/v1/repo/pull.go[0m[22m[0m[0m
+[0m[0m
+Specifically, the [38;5;10mMergePullRequest[0m function starting at [1mline 885[22m handles the [38;5;10mPOST /repos/{owner}/{repo}/pulls/{index}/merge[0m API endpoint. The route is registered in [38;5;10mrouters/api/v1/api.go[0m at line 1351-1352.[0m[0m
+[0m[0m
+This is where the 409 conflict response logic for invalid commit IDs would need to be checked/fixed — the handler validates the merge request and should return a proper conflict error when the head commit ID doesn't match.[0m[0m[38;5;12m[1m✓ Created checkpoint 1
+
+[0m[0m
+[38;5;8m
+ ▸ Credits: 0.20 • Time: 10s
+
+[0m[1G[0m[0m[?25h

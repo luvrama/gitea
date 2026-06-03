@@ -1,0 +1,1 @@
+List every API endpoint that performs file I/O operations (reading/writing to disk). What happens to each endpoint if the filesystem becomes read-only?

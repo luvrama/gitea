@@ -1,0 +1,203 @@
+[38;5;11mWARNING: [0m--trust-tools arg for custom tool [38;5;141m[0m needs to be prepended with [38;5;10m@{MCPSERVERNAME}/[0m
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.20s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The user wants a complete data flow trace for creating a pull request via the API. I have ep-226.md which documents this endpoint in detail. Let me synthesize all the information from the wiki pages provided.
+[38;5;244m - Completed in 0.34s[0m
+
+[?25l[0m[38;5;141m> [0m[38;5;252m[1m# Complete Data Flow: Create Pull Request via API[0m[0m
+[0m[0m
+[1mEndpoint:[22m [38;5;10mPOST /api/v1/repos/{owner}/{repo}/pulls[0m (ep-226)[0m[0m
+[0m[0m
+[38;5;252m[1m## 1. HTTP Layer[0m[0m
+[0m[0m
+| Property | Value |[0m[0m
+|----------|-------|[0m[0m
+| Method | POST |[0m[0m
+| Path | [38;5;10m/api/v1/repos/{owner}/{repo}/pulls[0m |[0m[0m
+| Auth | Bearer token |[0m[0m
+| Request Body | [38;5;10mCreatePullRequestOption[0m (JSON) |[0m[0m
+| Handler | [38;5;10mrepo.CreatePullRequest[0m |[0m[0m
+[0m[0m
+[1mRequired fields:[22m [38;5;10mhead[0m, [38;5;10mbase[0m, [38;5;10mtitle[0m[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 2. Controller: [38;5;10mrepo.CreatePullRequest[0m[0m[0m
+[0m[0m
+The handler parses the form and performs the first validation:[0m[0m
+[0m[0m
+1. [1mValidate head ≠ base[22m — returns [38;5;10m422[0m if [38;5;10mform.Head == form.Base[0m[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 3. Utility: [38;5;10mparseCompareInfo[0m[0m[0m
+[0m[0m
+Resolves the compare context:[0m[0m
+[0m[0m
+| Action | Detail |[0m[0m
+|--------|--------|[0m[0m
+| Parse compare param | Extracts head/base branch references |[0m[0m
+| Resolve head repo | Identifies fork or same-repo head |[0m[0m
+| Check permissions | Verifies user can read head repo |[0m[0m
+| Get compare info via git | Calls git to get diff/commit info |[0m[0m
+| Validate refs are branches | Returns [38;5;10m422[0m if base or head ref is a tag/commit, not a branch |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 4. Database: Check for Duplicate PR[0m[0m
+[0m[0m
+| Store | Operation | Component |[0m[0m
+|-------|-----------|-----------|[0m[0m
+| [38;5;10mpull_request[0m | SELECT | [38;5;10missues_model.GetUnmergedPullRequest[0m |[0m[0m
+[0m[0m
+Checks if an unmerged PR already exists with the same head repo, base repo, head branch, and base branch. Returns [38;5;10m409[0m if duplicate found.[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 5. Database: Resolve Related Entities[0m[0m
+[0m[0m
+| Step | Store | Operation | Component | Purpose |[0m[0m
+|------|-------|-----------|-----------|---------|[0m[0m
+| 4 | [38;5;10mlabel[0m | SELECT | [38;5;10missues_model.GetLabelsInRepoByIDs[0m | Fetch labels by IDs from request |[0m[0m
+| 5 | [38;5;10mmilestone[0m | SELECT | [38;5;10missues_model.GetMilestoneByRepoID[0m | Fetch milestone if specified |[0m[0m
+| 6 | [38;5;10muser[0m | SELECT | [38;5;10missues_model.MakeIDsFromAPIAssigneesToAdd[0m | Resolve assignee usernames → user IDs |[0m[0m
+| 7 | [38;5;10maccess[0m | SELECT | [38;5;10maccess_model.CanBeAssigned[0m | Verify each assignee has repo access |[0m[0m
+[0m[0m
+[1mPerformance note:[22m Assignee validation loops through each assignee individually (N+1 queries). Recommendation: batch load users by IDs.[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 6. Service: [38;5;10mpull_service.NewPullRequest[0m[0m[0m
+[0m[0m
+This is the core orchestration step. It performs:[0m[0m
+[0m[0m
+[38;5;252m[1m### 6a. Authorization Checks[0m[0m
+- **Blocked users** — returns [38;5;10m403[0m if poster is blocked by repo owner[0m[0m
+- **Collaborator/member check** — returns [38;5;10m403[0m if user is not a collaborator, org member, or doesn't have write permission on head repo[0m[0m
+[0m[0m
+[38;5;252m[1m### 6b. Database Transaction (atomic)[0m[0m
+[0m[0m
+| Store | Operation | Description |[0m[0m
+|-------|-----------|-------------|[0m[0m
+| [38;5;10missue[0m | INSERT | Create the issue record |[0m[0m
+| [38;5;10mpull_request[0m | INSERT | Create the PR record linked to the issue |[0m[0m
+[0m[0m
+Also within or around the transaction:[0m[0m
+- Add assignees to the issue[0m[0m
+- Link labels and milestone[0m[0m
+[0m[0m
+[38;5;252m[1m### 6c. Git Operations (outside DB transaction)[0m[0m
+[0m[0m
+| Operation | Detail |[0m[0m
+|-----------|--------|[0m[0m
+| [1mPush to base repo ref[22m | Pushes head branch to a PR reference in the base repo (e.g., [38;5;10mrefs/pull/{index}/head[0m) |[0m[0m
+| [1mSync commit divergence[22m | Calculates behind/ahead commit counts between head and base |[0m[0m
+[0m[0m
+⚠️ [1mResiliency concern:[22m The git push happens [3mafter[23m the DB transaction commits. If the push fails, the PR exists in the database without a corresponding git ref. Cleanup attempts to remove the git ref on failure (best-effort).[0m[0m
+[0m[0m
+[38;5;252m[1m### 6d. Notifications & Side Effects[0m[0m
+[0m[0m
+| Action | Detail |[0m[0m
+|--------|--------|[0m[0m
+| Add code owners review | Automatically requests reviews from CODEOWNERS |[0m[0m
+| Webhook notifications | Triggers [38;5;10mpull_request[0m webhook event (published to [38;5;10mhook_task[0m queue) |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 7. Response Conversion: [38;5;10mconvert.ToAPIPullRequest[0m[0m[0m
+[0m[0m
+Transforms the internal [38;5;10missues_model.PullRequest[0m + [38;5;10missues_model.Issue[0m into the API response object.[0m[0m
+[0m[0m
+[38;5;252m[1m### Data Transformation[0m[0m
+[0m[0m
+| Source Field | Target Field | Transformation |[0m[0m
+|-------------|--------------|----------------|[0m[0m
+| [38;5;10mtitle[0m | [38;5;10mTitle[0m | direct copy |[0m[0m
+| [38;5;10mbody[0m | [38;5;10mContent[0m | direct copy |[0m[0m
+| [38;5;10mhead[0m | [38;5;10mHeadBranch[0m | computed (parsed from compare info) |[0m[0m
+| [38;5;10mbase[0m | [38;5;10mBaseBranch[0m | computed (parsed from compare info) |[0m[0m
+[0m[0m
+[1mResponse:[22m [38;5;10m201[0m with full [38;5;10mPullRequest[0m JSON object.[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## Complete Sequence Diagram[0m[0m
+[0m[0m
+[38;5;10mClient
+  │
+  ▼
+repo.CreatePullRequest (controller)
+  ├── Validate head ≠ base                          → 422 on failure
+  ├── parseCompareInfo (utility)
+  │     ├── Resolve head repo
+  │     ├── Check read permissions
+  │     ├── Git: get compare info
+  │     └── Validate refs are branches              → 422 on failure
+  ├── DB: GetUnmergedPullRequest (SELECT pull_request)  → 409 if exists
+  ├── DB: GetLabelsInRepoByIDs (SELECT label)
+  ├── DB: GetMilestoneByRepoID (SELECT milestone)
+  ├── DB: MakeIDsFromAPIAssigneesToAdd (SELECT user)
+  ├── DB: CanBeAssigned (SELECT access) [per assignee]
+  │
+  ▼
+pull_service.NewPullRequest (service)
+  ├── Check blocked_user                            → 403 on failure
+  ├── Check collaborator/member permission          → 403 on failure
+  ├── [DB TRANSACTION]
+  │     ├── INSERT issue
+  │     ├── INSERT pull_request
+  │     └── Add assignees, labels, milestone
+  ├── Git: push to base repo ref (refs/pull/N/head)
+  ├── Git: sync commit divergence
+  ├── Add code owners as reviewers
+  └── Trigger webhooks (hook_task queue)
+  │
+  ▼
+convert.ToAPIPullRequest (utility)
+  └── Build API response JSON
+  │
+  ▼
+HTTP 201 → PullRequest JSON
+[0m[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## Error Summary[0m[0m
+[0m[0m
+| Condition | Status | Source |[0m[0m
+|-----------|--------|--------|[0m[0m
+| head == base | 422 | [38;5;10mrepo.CreatePullRequest[0m |[0m[0m
+| Refs not branches | 422 | [38;5;10mparseCompareInfo[0m |[0m[0m
+| Duplicate unmerged PR | 409 | [38;5;10mrepo.CreatePullRequest[0m |[0m[0m
+| User blocked by owner | 403 | [38;5;10mpull_service.NewPullRequest[0m |[0m[0m
+| Not collaborator/member | 403 | [38;5;10mpull_service.NewPullRequest[0m |[0m[0m
+| Repo/branch not found | 404 | [38;5;10mrepo.CreatePullRequest[0m |[0m[0m
+| Repository archived | 423 | middleware |[0m[0m
+| Invalid assignee | 422 | [38;5;10mrepo.CreatePullRequest[0m |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## Resiliency & Risk[0m[0m
+[0m[0m
+| Risk | Detail |[0m[0m
+|------|--------|[0m[0m
+| [1mNon-atomic git + DB[22m | Git push is outside the DB transaction. A push failure leaves a PR in DB without a git ref. |[0m[0m
+| [1mCascading failure[22m | Git repo unavailability causes 500 errors. |[0m[0m
+| [1mGraceful degradation[22m | Best-effort cleanup removes git ref on failure. |[0m[0m
+| [1mN+1 queries[22m | Assignee validation is per-user, not batched. |[0m[0m
+[38;5;8m
+ ▸ Credits: 0.54 • Time: 42s
+
+[0m[1G[0m[0m[?25h

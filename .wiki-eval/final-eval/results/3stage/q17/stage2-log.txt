@@ -1,0 +1,125 @@
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[32mAll tools are now trusted ([0m[31m![0m[32m). Kiro will execute tools without asking for confirmation.[0m
+Agents can sometimes do unexpected things so understand the risks.
+
+Learn more at [38;5;141mhttps://kiro.dev/docs/cli/chat/security/#using-tools-trust-all-safely[0m
+
+
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.28s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "ToActionTask" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "ToActionTask",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.164s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "ActionJob" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "ActionJob",
+  "direct_matches": 0,
+  "total_nodes": 0,
+  "source_files_from_graph": [],
+  "source_files_from_analysis": [],
+  "all_source_files": [],
+  "endpoints": [],
+  "data_flow_hits": []
+}
+[38;5;244m - Completed in 0.122s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mpython3 graph_query.py "convert.ToActionWorkflowJob" 1[0m[38;5;244m (using tool: shell)[0m
+
+{
+  "query": "convert.ToActionWorkflowJob",
+  "direct_matches": 1,
+  "total_nodes": 10,
+  "source_files_from_graph": [
+    "models/actions/run_job.go",
+    "routers/api/v1/repo/action.go"
+  ],
+  "source_files_from_analysis": [
+    "services/convert/convert.go"
+  ],
+  "all_source_files": [
+    "models/actions/run_job.go",
+    "routers/api/v1/repo/action.go",
+    "services/convert/convert.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-052",
+      "label": "GET /api/v1/orgs/{org}/actions/jobs"
+    },
+    {
+      "id": "ep:ep-105",
+      "label": "GET /api/v1/admin/actions/jobs"
+    },
+    {
+      "id": "ep:ep-289",
+      "label": "POST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs/{job_id}/rerun"
+    },
+    {
+      "id": "ep:ep-290",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs"
+    },
+    {
+      "id": "ep:ep-291",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/runs/{run}/attempts/{attempt}/jobs"
+    },
+    {
+      "id": "ep:ep-292",
+      "label": "GET /api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-105 GET /api/v1/admin/actions/jobs",
+      "step": 3,
+      "component": "convert.ToActionWorkflowJob",
+      "file_path": "services/convert/convert.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-289 POST /api/v1/repos/{owner}/{repo}/actions/runs/{run}/jobs/{job_id}/rerun",
+      "step": 5,
+      "component": "convert.ToActionWorkflowJob",
+      "file_path": "services/convert/convert.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-292 GET /api/v1/repos/{owner}/{repo}/actions/jobs/{job_id}",
+      "step": 2,
+      "component": "convert.ToActionWorkflowJob",
+      "file_path": "services/convert/convert.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-052 GET /api/v1/orgs/{org}/actions/jobs",
+      "step": 3,
+      "component": "convert.ToActionWorkflowJob",
+      "file_path": "services/convert/convert.go",
+      "type": "utility"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.120s[0m
+
+[?25l[0m[38;5;141m> [0mThe file that handles the conversion of action job data to API response format is:[0m[0m
+[0m[0m
+[1m[38;5;10mservices/convert/convert.go[0m[22m[0m[0m
+[0m[0m
+Specifically, the [38;5;10mconvert.ToActionWorkflowJob[0m function in that file is responsible for converting the internal action job model (from [38;5;10mmodels/actions/run_job.go[0m) into the API response structure. This is where the bug likely resides — the step statuses are probably being set to the overall job status rather than being mapped individually from each step's actual status.[0m[0m
+[38;5;8m
+ ▸ Credits: 0.23 • Time: 17s
+
+[0m[1G[0m[0m[?25h

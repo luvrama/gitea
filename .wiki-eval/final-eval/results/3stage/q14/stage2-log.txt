@@ -1,0 +1,692 @@
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[32mAll tools are now trusted ([0m[31m![0m[32m). Kiro will execute tools without asking for confirmation.[0m
+Agents can sometimes do unexpected things so understand the risks.
+
+Learn more at [38;5;141mhttps://kiro.dev/docs/cli/chat/security/#using-tools-trust-all-safely[0m
+
+
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.20s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && python3 graph_query.py "repo_model.Repository" 1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Query the knowledge graph for repo_model.Repository to find connected endpoints and components
+
+{
+  "query": "repo_model.Repository",
+  "direct_matches": 2,
+  "total_nodes": 31,
+  "source_files_from_graph": [
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo_list.go"
+  ],
+  "source_files_from_analysis": [
+    "models/repo/repo_list.go"
+  ],
+  "all_source_files": [
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo_list.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-036",
+      "label": "DELETE /api/v1/orgs/{org}/repos"
+    },
+    {
+      "id": "ep:ep-064",
+      "label": "GET /api/v1/teams/{id}/repos"
+    },
+    {
+      "id": "ep:ep-065",
+      "label": "GET /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-066",
+      "label": "PUT /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-067",
+      "label": "DELETE /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-172",
+      "label": "GET /api/v1/users/{username}/repos"
+    },
+    {
+      "id": "ep:ep-173",
+      "label": "GET /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-174",
+      "label": "GET /api/v1/orgs/{org}/repos"
+    },
+    {
+      "id": "ep:ep-194",
+      "label": "GET /api/v1/users/{username}/subscriptions"
+    },
+    {
+      "id": "ep:ep-195",
+      "label": "GET /api/v1/user/subscriptions"
+    },
+    {
+      "id": "ep:ep-262",
+      "label": "POST /api/v1/repos/{owner}/{repo}/avatar"
+    },
+    {
+      "id": "ep:ep-263",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/avatar"
+    },
+    {
+      "id": "ep:ep-333",
+      "label": "GET /api/v1/repos/{owner}/{repo}/forks"
+    },
+    {
+      "id": "ep:ep-334",
+      "label": "POST /api/v1/repos/{owner}/{repo}/forks"
+    },
+    {
+      "id": "ep:ep-362",
+      "label": "GET /api/v1/repos/search"
+    },
+    {
+      "id": "ep:ep-363",
+      "label": "POST /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-364",
+      "label": "POST /api/v1/repos/{template_owner}/{template_repo}/generate"
+    },
+    {
+      "id": "ep:ep-365",
+      "label": "POST /api/v1/org/{org}/repos"
+    },
+    {
+      "id": "ep:ep-366",
+      "label": "POST /api/v1/orgs/{org}/repos"
+    },
+    {
+      "id": "ep:ep-367",
+      "label": "GET /api/v1/repos/{owner}/{repo}"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-333 GET /api/v1/repos/{owner}/{repo}/forks",
+      "step": 3,
+      "component": "repo_model.RepositoryList.LoadOwners",
+      "file_path": "models/repo/repo_list.go",
+      "type": "repository"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.105s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && python3 graph_query.py "repo_model.Repository" 2[0m[38;5;244m (using tool: shell)[0m
+Purpose: Query at depth 2 to see community connections and shared patterns
+
+{
+  "query": "repo_model.Repository",
+  "direct_matches": 2,
+  "total_nodes": 193,
+  "source_files_from_graph": [
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/user.go",
+    "modules/avatar/avatar.go",
+    "modules/avatar/hash.go",
+    "modules/gitrepo/clone.go",
+    "modules/repository/delete.go",
+    "modules/setting/api.go",
+    "modules/setting/mirror.go",
+    "modules/setting/picture.go",
+    "modules/setting/repository.go",
+    "modules/setting/service.go",
+    "modules/storage/storage.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/avatar.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/repo.go",
+    "routers/api/v1/user/watch.go",
+    "services/convert/activity.go",
+    "services/convert/issue.go",
+    "services/convert/repository.go",
+    "services/issue/template.go",
+    "services/repository/avatar.go",
+    "services/repository/create.go",
+    "services/repository/generate.go"
+  ],
+  "source_files_from_analysis": [
+    "models/repo/repo_list.go"
+  ],
+  "all_source_files": [
+    "models/issues/issue.go",
+    "models/issues/issue_pin.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/user.go",
+    "modules/avatar/avatar.go",
+    "modules/avatar/hash.go",
+    "modules/gitrepo/clone.go",
+    "modules/repository/delete.go",
+    "modules/setting/api.go",
+    "modules/setting/mirror.go",
+    "modules/setting/picture.go",
+    "modules/setting/repository.go",
+    "modules/setting/service.go",
+    "modules/storage/storage.go",
+    "routers/api/v1/api.go",
+    "routers/api/v1/org/org.go",
+    "routers/api/v1/org/team.go",
+    "routers/api/v1/repo/avatar.go",
+    "routers/api/v1/repo/fork.go",
+    "routers/api/v1/repo/language.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/repo.go",
+    "routers/api/v1/user/watch.go",
+    "services/convert/activity.go",
+    "services/convert/issue.go",
+    "services/convert/repository.go",
+    "services/issue/template.go",
+    "services/repository/avatar.go",
+    "services/repository/create.go",
+    "services/repository/generate.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-036",
+      "label": "DELETE /api/v1/orgs/{org}/repos"
+    },
+    {
+      "id": "ep:ep-064",
+      "label": "GET /api/v1/teams/{id}/repos"
+    },
+    {
+      "id": "ep:ep-065",
+      "label": "GET /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-066",
+      "label": "PUT /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-067",
+      "label": "DELETE /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-172",
+      "label": "GET /api/v1/users/{username}/repos"
+    },
+    {
+      "id": "ep:ep-173",
+      "label": "GET /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-174",
+      "label": "GET /api/v1/orgs/{org}/repos"
+    },
+    {
+      "id": "ep:ep-194",
+      "label": "GET /api/v1/users/{username}/subscriptions"
+    },
+    {
+      "id": "ep:ep-195",
+      "label": "GET /api/v1/user/subscriptions"
+    },
+    {
+      "id": "ep:ep-262",
+      "label": "POST /api/v1/repos/{owner}/{repo}/avatar"
+    },
+    {
+      "id": "ep:ep-263",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/avatar"
+    },
+    {
+      "id": "ep:ep-333",
+      "label": "GET /api/v1/repos/{owner}/{repo}/forks"
+    },
+    {
+      "id": "ep:ep-334",
+      "label": "POST /api/v1/repos/{owner}/{repo}/forks"
+    },
+    {
+      "id": "ep:ep-362",
+      "label": "GET /api/v1/repos/search"
+    },
+    {
+      "id": "ep:ep-363",
+      "label": "POST /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-364",
+      "label": "POST /api/v1/repos/{template_owner}/{template_repo}/generate"
+    },
+    {
+      "id": "ep:ep-365",
+      "label": "POST /api/v1/org/{org}/repos"
+    },
+    {
+      "id": "ep:ep-366",
+      "label": "POST /api/v1/orgs/{org}/repos"
+    },
+    {
+      "id": "ep:ep-367",
+      "label": "GET /api/v1/repos/{owner}/{repo}"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-333 GET /api/v1/repos/{owner}/{repo}/forks",
+      "step": 3,
+      "component": "repo_model.RepositoryList.LoadOwners",
+      "file_path": "models/repo/repo_list.go",
+      "type": "repository"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.137s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && python3 graph_query.py "convert.ToRepo" 1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Check the convert.ToRepo function which is likely the shared serialization layer
+
+{
+  "query": "convert.ToRepo",
+  "direct_matches": 2,
+  "total_nodes": 21,
+  "source_files_from_graph": [
+    "models/perm/access/repo_permission.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/star.go",
+    "routers/api/v1/user/watch.go",
+    "services/convert/repository.go"
+  ],
+  "source_files_from_analysis": [
+    "services/convert/repository.go"
+  ],
+  "all_source_files": [
+    "models/perm/access/repo_permission.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/star.go",
+    "routers/api/v1/user/watch.go",
+    "services/convert/repository.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-064",
+      "label": "GET /api/v1/teams/{id}/repos"
+    },
+    {
+      "id": "ep:ep-065",
+      "label": "GET /api/v1/teams/{id}/repos/{org}/{repo}"
+    },
+    {
+      "id": "ep:ep-152",
+      "label": "GET /api/v1/users/{username}/starred"
+    },
+    {
+      "id": "ep:ep-153",
+      "label": "GET /api/v1/user/starred"
+    },
+    {
+      "id": "ep:ep-172",
+      "label": "GET /api/v1/users/{username}/repos"
+    },
+    {
+      "id": "ep:ep-173",
+      "label": "GET /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-174",
+      "label": "GET /api/v1/orgs/{org}/repos"
+    },
+    {
+      "id": "ep:ep-194",
+      "label": "GET /api/v1/users/{username}/subscriptions"
+    },
+    {
+      "id": "ep:ep-195",
+      "label": "GET /api/v1/user/subscriptions"
+    },
+    {
+      "id": "ep:ep-333",
+      "label": "GET /api/v1/repos/{owner}/{repo}/forks"
+    },
+    {
+      "id": "ep:ep-362",
+      "label": "GET /api/v1/repos/search"
+    },
+    {
+      "id": "ep:ep-367",
+      "label": "GET /api/v1/repos/{owner}/{repo}"
+    },
+    {
+      "id": "ep:ep-368",
+      "label": "GET /api/v1/repositories/{id}"
+    },
+    {
+      "id": "ep:ep-369",
+      "label": "PATCH /api/v1/repos/{owner}/{repo}"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-152 GET /api/v1/users/{username}/starred",
+      "step": 3,
+      "component": "convert.ToRepo",
+      "file_path": "services/convert/repository.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-172 GET /api/v1/users/{username}/repos",
+      "step": 4,
+      "component": "convert.ToRepo",
+      "file_path": "services/convert/repository.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-173 GET /api/v1/user/repos",
+      "step": 3,
+      "component": "convert.ToRepo",
+      "file_path": "services/convert/repository.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-333 GET /api/v1/repos/{owner}/{repo}/forks",
+      "step": 5,
+      "component": "convert.ToRepo",
+      "file_path": "services/convert/repository.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-367 GET /api/v1/repos/{owner}/{repo}",
+      "step": 2,
+      "component": "convert.ToRepo",
+      "file_path": "services/convert/repository.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-368 GET /api/v1/repositories/{id}",
+      "step": 3,
+      "component": "convert.ToRepo",
+      "file_path": "services/convert/repository.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-362 GET /api/v1/repos/search",
+      "step": 5,
+      "component": "convert.ToRepo (loop)",
+      "file_path": "services/convert/repository.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-194 GET /api/v1/users/{username}/subscriptions",
+      "step": 3,
+      "component": "convert.ToRepo",
+      "file_path": "services/convert/repository.go",
+      "type": "utility"
+    },
+    {
+      "endpoint": "ep-195 GET /api/v1/user/subscriptions",
+      "step": 3,
+      "component": "convert.ToRepo",
+      "file_path": "services/convert/repository.go",
+      "type": "utility"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.121s[0m
+
+[?25l[0m[?25l[0m[0mI will run the following command: [38;5;141mcd /Users/relumalai/workshop/gitea/.wiki-eval/final-eval/scripts && python3 graph_query.py "repo_permission" 1[0m[38;5;244m (using tool: shell)[0m
+Purpose: Check repo_permission to understand the access control dependency shared across the community
+
+{
+  "query": "repo_permission",
+  "direct_matches": 4,
+  "total_nodes": 31,
+  "source_files_from_graph": [
+    "models/issues/assignees.go",
+    "models/issues/issue.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/user.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/repo.go",
+    "services/convert/issue.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/pull/pull.go"
+  ],
+  "source_files_from_analysis": [
+    "models/perm/access/repo_permission.go"
+  ],
+  "all_source_files": [
+    "models/issues/assignees.go",
+    "models/issues/issue.go",
+    "models/perm/access/repo_permission.go",
+    "models/repo/repo.go",
+    "models/repo/repo_list.go",
+    "models/user/user.go",
+    "routers/api/v1/repo/repo.go",
+    "routers/api/v1/user/repo.go",
+    "services/convert/issue.go",
+    "services/convert/repository.go",
+    "services/convert/user.go",
+    "services/pull/pull.go"
+  ],
+  "endpoints": [
+    {
+      "id": "ep:ep-172",
+      "label": "GET /api/v1/users/{username}/repos"
+    },
+    {
+      "id": "ep:ep-173",
+      "label": "GET /api/v1/user/repos"
+    },
+    {
+      "id": "ep:ep-208",
+      "label": "GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies"
+    },
+    {
+      "id": "ep:ep-209",
+      "label": "POST /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies"
+    },
+    {
+      "id": "ep:ep-210",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies"
+    },
+    {
+      "id": "ep:ep-211",
+      "label": "GET /api/v1/repos/{owner}/{repo}/issues/{index}/blocks"
+    },
+    {
+      "id": "ep:ep-212",
+      "label": "POST /api/v1/repos/{owner}/{repo}/issues/{index}/blocks"
+    },
+    {
+      "id": "ep:ep-213",
+      "label": "DELETE /api/v1/repos/{owner}/{repo}/issues/{index}/blocks"
+    },
+    {
+      "id": "ep:ep-226",
+      "label": "POST /api/v1/repos/{owner}/{repo}/pulls"
+    },
+    {
+      "id": "ep:ep-254",
+      "label": "GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission"
+    },
+    {
+      "id": "ep:ep-333",
+      "label": "GET /api/v1/repos/{owner}/{repo}/forks"
+    },
+    {
+      "id": "ep:ep-362",
+      "label": "GET /api/v1/repos/search"
+    },
+    {
+      "id": "ep:ep-368",
+      "label": "GET /api/v1/repositories/{id}"
+    }
+  ],
+  "data_flow_hits": [
+    {
+      "endpoint": "ep-172 GET /api/v1/users/{username}/repos",
+      "step": 3,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-173 GET /api/v1/user/repos",
+      "step": 2,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-333 GET /api/v1/repos/{owner}/{repo}/forks",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-368 GET /api/v1/repositories/{id}",
+      "step": 2,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-362 GET /api/v1/repos/search",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission (loop)",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-208 GET /api/v1/repos/{owner}/{repo}/issues/{index}/dependencies",
+      "step": 5,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-211 GET /api/v1/repos/{owner}/{repo}/issues/{index}/blocks",
+      "step": 4,
+      "component": "access_model.GetDoerRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "service"
+    },
+    {
+      "endpoint": "ep-254 GET /api/v1/repos/{owner}/{repo}/collaborators/{collaborator}/permission",
+      "step": 3,
+      "component": "access_model.GetIndividualUserRepoPermission",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    },
+    {
+      "endpoint": "ep-226 POST /api/v1/repos/{owner}/{repo}/pulls",
+      "step": 7,
+      "component": "access_model.CanBeAssigned",
+      "file_path": "models/perm/access/repo_permission.go",
+      "type": "repository"
+    }
+  ]
+}
+[38;5;244m - Completed in 0.124s[0m
+
+[?25l[0m[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: Now I have a clear picture of the "code community" around repo_model.Repository. Let me synthesize what these endpoints have in common based on the graph data.
+
+The endpoints in the repo_model.Repository community are:
+
+1. **Repository listing/search endpoints:**
+   - GET /api/v1/repos/search
+   - GET /api/v1/repos/{owner}/{repo}
+   - GET /api/v1/repositories/{id}
+   - GET /api/v1/users/{username}/repos
+   - GET /api/v1/user/repos
+   - GET /api/v1/orgs/{org}/repos
+
+2. **Repository CRUD/management:**
+   - POST /api/v1/user/repos
+   - POST /api/v1/org/{org}/repos
+   - POST /api/v1/orgs/{org}/repos
+   - DELETE /api/v1/orgs/{org}/repos
+   - POST /api/v1/repos/{template_owner}/{template_repo}/generate
+
+3. **Team-repo associations:**
+   - GET /api/v1/teams/{id}/repos
+   - GET /api/v1/teams/{id}/repos/{org}/{repo}
+   - PUT /api/v1/teams/{id}/repos/{org}/{repo}
+   - DELETE /api/v1/teams/{id}/repos/{org}/{repo}
+
+4. **Subscriptions/watching:**
+   - GET /api/v1/users/{username}/subscriptions
+   - GET /api/v1/user/subscriptions
+
+5. **Forks:**
+   - GET /api/v1/repos/{owner}/{repo}/forks
+   - POST /api/v1/repos/{owner}/{repo}/forks
+
+6. **Avatar:**
+   - POST /api/v1/repos/{owner}/{repo}/avatar
+   - DELETE /api/v1/repos/{owner}/{repo}/avatar
+
+What they have in common:
+- All operate on or return `repo_model.Repository` instances
+- They share the data pipeline: query repos → check permissions (access_model.GetDoerRepoPermission) → serialize via convert.ToRepo
+- They're implemented across: routers/api/v1/repo/repo.go, routers/api/v1/user/repo.go, routers/api/v1/org/team.go
+- They depend on models/perm/access/repo_permission.go for access control
+- They use services/convert/repository.go for API response serialization
+- They use models/repo/repo_list.go for bulk loading repository data
+
+[38;5;244m - Completed in 0.25s[0m
+
+[?25l[0m[38;5;141m> [0m[38;5;252m[1m## API Endpoints in the [38;5;10mrepo_model.Repository[0m Code Community[0m[0m
+[0m[0m
+The graph reveals [1m20 endpoints[22m that form a tightly connected community around the repository model:[0m[0m
+[0m[0m
+[38;5;252m[1m### The Endpoints[0m[0m
+[0m[0m
+| Category | Endpoints |[0m[0m
+|----------|-----------|[0m[0m
+| [1mRepo listing/lookup[22m | [38;5;10mGET /repos/search[0m, [38;5;10mGET /repos/{owner}/{repo}[0m, [38;5;10mGET /repositories/{id}[0m, [38;5;10mGET /users/{username}/repos[0m, [38;5;10mGET /user/repos[0m, [38;5;10mGET /orgs/{org}/repos[0m |[0m[0m
+| [1mRepo creation[22m | [38;5;10mPOST /user/repos[0m, [38;5;10mPOST /org/{org}/repos[0m, [38;5;10mPOST /orgs/{org}/repos[0m, [38;5;10mPOST /repos/{template_owner}/{template_repo}/generate[0m |[0m[0m
+| [1mRepo deletion[22m | [38;5;10mDELETE /orgs/{org}/repos[0m |[0m[0m
+| [1mTeam-repo management[22m | [38;5;10mGET /teams/{id}/repos[0m, [38;5;10mGET /teams/{id}/repos/{org}/{repo}[0m, [38;5;10mPUT /teams/{id}/repos/{org}/{repo}[0m, [38;5;10mDELETE /teams/{id}/repos/{org}/{repo}[0m |[0m[0m
+| [1mForks[22m | [38;5;10mGET /repos/{owner}/{repo}/forks[0m, [38;5;10mPOST /repos/{owner}/{repo}/forks[0m |[0m[0m
+| [1mSubscriptions[22m | [38;5;10mGET /users/{username}/subscriptions[0m, [38;5;10mGET /user/subscriptions[0m |[0m[0m
+| [1mAvatar[22m | [38;5;10mPOST /repos/{owner}/{repo}/avatar[0m, [38;5;10mDELETE /repos/{owner}/{repo}/avatar[0m |[0m[0m
+[0m[0m
+[38;5;252m[1m### What They Have in Common[0m[0m
+[0m[0m
+[1m1. Shared data pipeline:[22m They all follow the same flow:[0m[0m
+[38;5;10mQuery repos (repo_model) → Check permissions (access_model) → Serialize (convert.ToRepo)
+[0m[0m[0m
+[0m[0m
+[1m2. Three shared dependencies[22m connect the entire community:[0m[0m
+- **[38;5;10mmodels/perm/access/repo_permission.go[0m** — every endpoint that returns repo data calls [38;5;10maccess_model.GetDoerRepoPermission[0m to enforce visibility[0m[0m
+- **[38;5;10mservices/convert/repository.go[0m** ([38;5;10mconvert.ToRepo[0m) — the single serialization function that converts the internal [38;5;10mRepository[0m struct to the API response[0m[0m
+- **[38;5;10mmodels/repo/repo_list.go[0m** — bulk-loading logic (e.g., [38;5;10mRepositoryList.LoadOwners[0m) used when returning lists of repos[0m[0m
+[0m[0m
+[1m3. Router implementation concentrated in 4 files:[22m[0m[0m
+- [38;5;10mrouters/api/v1/repo/repo.go[0m — core CRUD[0m[0m
+- [38;5;10mrouters/api/v1/user/repo.go[0m — user-scoped repo lists[0m[0m
+- [38;5;10mrouters/api/v1/org/team.go[0m — team-repo associations[0m[0m
+- [38;5;10mrouters/api/v1/repo/fork.go[0m — forking[0m[0m
+[0m[0m
+[1m4. All return the same API type[22m — an [38;5;10mapi.Repository[0m JSON object (or list of them), meaning a schema change to the repository API response would ripple across all 20 endpoints.[0m[0m
+[0m[0m
+In essence, this community is defined by: [3many endpoint that reads, creates, or lists repositories shares the permission-checking and serialization layers[23m, making [38;5;10mrepo_permission.go[0m and [38;5;10mconvert/repository.go[0m the critical coupling points.[0m[0m
+[38;5;8m
+ ▸ Credits: 0.61 • Time: 44s
+
+[0m[1G[0m[0m[?25h

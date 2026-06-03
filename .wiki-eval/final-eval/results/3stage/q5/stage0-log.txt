@@ -1,0 +1,11 @@
+[38;5;11mWARNING: [0m--trust-tools arg for custom tool [38;5;141m[0m needs to be prepended with [38;5;10m@{MCPSERVERNAME}/[0m
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.20s)
+
+[0m
+[38;5;252m[0m[?25l[38;5;141m> [0mwiki[0m[0m
+[38;5;8m
+ ▸ Credits: 0.04 • Time: 3s
+
+[0m[1G[0m[0m[?25h

@@ -1,0 +1,608 @@
+{
+  "q2": {
+    "query": "If I need to add a new webhook event type, what files across routers, services, and models need to change? Trace the full webhook delivery pipeline.",
+    "recall_facts": [
+      {
+        "id": "r1",
+        "question": "Does the answer identify that a webhook event type enum or constant definition needs to be added?"
+      },
+      {
+        "id": "r2",
+        "question": "Does the answer mention PrepareWebhook or PrepareWebhooks as part of the delivery pipeline?"
+      },
+      {
+        "id": "r3",
+        "question": "Does the answer mention the hook_task table or hook_task queue for async delivery?"
+      },
+      {
+        "id": "r4",
+        "question": "Does the answer mention HookEvents struct or event subscription matching?"
+      },
+      {
+        "id": "r5",
+        "question": "Does the answer identify that a payload struct needs to be created for the new event?"
+      },
+      {
+        "id": "r6",
+        "question": "Does the answer mention the notifier pattern (webhookNotifier or similar) that dispatches events?"
+      },
+      {
+        "id": "r7",
+        "question": "Does the answer identify the routers/controllers layer as needing changes?"
+      },
+      {
+        "id": "r8",
+        "question": "Does the answer identify the services layer as needing changes?"
+      },
+      {
+        "id": "r9",
+        "question": "Does the answer identify the models layer as needing changes?"
+      },
+      {
+        "id": "r10",
+        "question": "Does the answer describe the delivery mechanism (HTTP request to webhook URL)?"
+      }
+    ],
+    "precision_facts": [
+      {
+        "id": "p1",
+        "question": "Does the answer claim webhooks are delivered synchronously (blocking the HTTP request)?"
+      },
+      {
+        "id": "p2",
+        "question": "Does the answer mention a message broker like RabbitMQ or Kafka that Gitea does not use?"
+      },
+      {
+        "id": "p3",
+        "question": "Does the answer claim webhook events are stored in a table called 'events' or 'webhook_events' (incorrect - it's hook_task)?"
+      },
+      {
+        "id": "p4",
+        "question": "Does the answer mention REST API versioning (v2, v3) that doesn't exist in Gitea?"
+      },
+      {
+        "id": "p5",
+        "question": "Does the answer claim webhooks use WebSocket or gRPC for delivery (incorrect - it's HTTP POST)?"
+      }
+    ]
+  },
+  "q3": {
+    "query": "What is the complete data flow when a user creates a pull request via the API? Trace from the HTTP handler through services, git operations, notifications, and database writes.",
+    "recall_facts": [
+      {
+        "id": "r1",
+        "question": "Does the answer identify the endpoint as POST /api/v1/repos/{owner}/{repo}/pulls or CreatePullRequest?"
+      },
+      {
+        "id": "r2",
+        "question": "Does the answer mention parseCompareInfo or comparing head vs base branches?"
+      },
+      {
+        "id": "r3",
+        "question": "Does the answer mention checking for duplicate/existing unmerged PR (GetUnmergedPullRequest)?"
+      },
+      {
+        "id": "r4",
+        "question": "Does the answer mention pull_service.NewPullRequest as the core service call?"
+      },
+      {
+        "id": "r5",
+        "question": "Does the answer mention INSERT into the issue table as part of PR creation?"
+      },
+      {
+        "id": "r6",
+        "question": "Does the answer mention INSERT into the pull_request table?"
+      },
+      {
+        "id": "r7",
+        "question": "Does the answer mention a git push operation (push to base repo ref or refs/pull)?"
+      },
+      {
+        "id": "r8",
+        "question": "Does the answer mention commit divergence sync or calculating ahead/behind?"
+      },
+      {
+        "id": "r9",
+        "question": "Does the answer mention code owners review or CODEOWNERS?"
+      },
+      {
+        "id": "r10",
+        "question": "Does the answer mention notifications being triggered after PR creation?"
+      }
+    ],
+    "precision_facts": [
+      {
+        "id": "p1",
+        "question": "Does the answer claim PR creation uses a message queue or async processing (incorrect - it is synchronous)?"
+      },
+      {
+        "id": "p2",
+        "question": "Does the answer claim the PR is created via a PATCH or PUT request (incorrect - it is POST)?"
+      },
+      {
+        "id": "p3",
+        "question": "Does the answer mention a merge operation happening during PR creation (incorrect - merge is separate)?"
+      },
+      {
+        "id": "p4",
+        "question": "Does the answer claim webhooks are called synchronously during PR creation (incorrect - they are async via queue)?"
+      },
+      {
+        "id": "p5",
+        "question": "Does the answer mention a CI/CD pipeline being triggered as part of the core PR creation flow in Gitea (incorrect - Actions are separate)?"
+      }
+    ]
+  },
+  "q4": {
+    "query": "What are all the external services called during a repository fork operation? List every network call, timeout configuration, and error handling for each.",
+    "recall_facts": [
+      {
+        "id": "r1",
+        "question": "Does the answer identify git clone (bare clone of the repository) as an external/network operation during fork?"
+      },
+      {
+        "id": "r2",
+        "question": "Does the answer mention LFS object copying or LFS batch API calls?"
+      },
+      {
+        "id": "r3",
+        "question": "Does the answer mention a timeout configuration (e.g., Git.Timeout.Mirror or 10-minute timeout)?"
+      },
+      {
+        "id": "r4",
+        "question": "Does the answer mention the non-atomic nature of the operation (DB insert then git clone)?"
+      },
+      {
+        "id": "r5",
+        "question": "Does the answer mention cleanup/rollback on failure?"
+      },
+      {
+        "id": "r6",
+        "question": "Does the answer mention push mirror or git push --mirror as a potential network call?"
+      },
+      {
+        "id": "r7",
+        "question": "Does the answer identify repo_service.ForkRepository as the service function?"
+      },
+      {
+        "id": "r8",
+        "question": "Does the answer mention notification dispatch after fork completes?"
+      },
+      {
+        "id": "r9",
+        "question": "Does the answer mention the risk of concurrent forks exhausting disk I/O?"
+      },
+      {
+        "id": "r10",
+        "question": "Does the answer mention error handling for the case where git clone fails after DB insert?"
+      }
+    ],
+    "precision_facts": [
+      {
+        "id": "p1",
+        "question": "Does the answer claim fork calls an external REST API service like GitHub or GitLab (incorrect - it is local git operations)?"
+      },
+      {
+        "id": "p2",
+        "question": "Does the answer claim fork uses a message queue for async processing (incorrect - fork is synchronous)?"
+      },
+      {
+        "id": "p3",
+        "question": "Does the answer mention Docker or container operations during fork (incorrect)?"
+      },
+      {
+        "id": "p4",
+        "question": "Does the answer claim there is a circuit breaker configured for fork operations (incorrect - it is missing)?"
+      },
+      {
+        "id": "p5",
+        "question": "Does the answer claim fork sends email notifications directly (incorrect - notifications go through notify service)?"
+      }
+    ]
+  },
+  "q6": {
+    "query": "Document the complete permission checking chain for the repository API. How does a request go from authentication through org membership, team permissions, collaborator checks, to the final allow/deny?",
+    "recall_facts": [
+      {
+        "id": "r1",
+        "question": "Does the answer mention reqToken() or token authentication as the first step?"
+      },
+      {
+        "id": "r2",
+        "question": "Does the answer mention tokenRequiresScopes or AccessTokenScopeCategory for scope checking?"
+      },
+      {
+        "id": "r3",
+        "question": "Does the answer mention repoAssignment() middleware for loading the repository?"
+      },
+      {
+        "id": "r4",
+        "question": "Does the answer mention reqRepoReader or reqRepoWriter for unit-level permission checks?"
+      },
+      {
+        "id": "r5",
+        "question": "Does the answer mention reqOwner() or reqAdmin() for elevated permission checks?"
+      },
+      {
+        "id": "r6",
+        "question": "Does the answer mention organization membership as part of the permission chain?"
+      },
+      {
+        "id": "r7",
+        "question": "Does the answer mention team permissions or team-based access?"
+      },
+      {
+        "id": "r8",
+        "question": "Does the answer mention collaborator checks?"
+      },
+      {
+        "id": "r9",
+        "question": "Does the answer describe the order/chain of these checks (authentication first, then authorization)?"
+      },
+      {
+        "id": "r10",
+        "question": "Does the answer mention reqSiteAdmin() for admin-only endpoints?"
+      }
+    ],
+    "precision_facts": [
+      {
+        "id": "p1",
+        "question": "Does the answer claim Gitea uses OAuth2 scopes from an external provider for repo permissions (incorrect - it uses its own token scopes)?"
+      },
+      {
+        "id": "p2",
+        "question": "Does the answer claim permissions are checked via a database JOIN on every request (incorrect - middleware chain)?"
+      },
+      {
+        "id": "p3",
+        "question": "Does the answer mention RBAC roles like viewer/editor/admin that Gitea does not use (incorrect - Gitea uses owner/admin/write/read)?"
+      },
+      {
+        "id": "p4",
+        "question": "Does the answer claim permission checks happen after the handler executes (incorrect - they are middleware before)?"
+      },
+      {
+        "id": "p5",
+        "question": "Does the answer mention LDAP or Active Directory as part of the permission chain (incorrect - those are auth sources, not permission checks)?"
+      }
+    ]
+  },
+  "q8": {
+    "query": "Map the complete notification system: what events trigger notifications, how are they stored, and which API endpoints serve them? List every file involved.",
+    "recall_facts": [
+      {
+        "id": "r1",
+        "question": "Does the answer identify notification API endpoints (list/read/mark as read)?"
+      },
+      {
+        "id": "r2",
+        "question": "Does the answer mention the notification table or notification storage in the database?"
+      },
+      {
+        "id": "r3",
+        "question": "Does the answer mention events that trigger notifications (e.g., issue created, PR created, comment)?"
+      },
+      {
+        "id": "r4",
+        "question": "Does the answer mention a notifier interface or notification dispatch pattern?"
+      },
+      {
+        "id": "r5",
+        "question": "Does the answer mention different notification types or statuses (unread, read, pinned)?"
+      },
+      {
+        "id": "r6",
+        "question": "Does the answer identify the notification endpoints path (/api/v1/notifications)?"
+      },
+      {
+        "id": "r7",
+        "question": "Does the answer mention email notifications as one delivery channel?"
+      },
+      {
+        "id": "r8",
+        "question": "Does the answer mention UI/web notifications as another channel?"
+      },
+      {
+        "id": "r9",
+        "question": "Does the answer identify specific files or modules involved (e.g., services/notify, models/notification)?"
+      },
+      {
+        "id": "r10",
+        "question": "Does the answer mention filtering notifications by repository or subject type?"
+      }
+    ],
+    "precision_facts": [
+      {
+        "id": "p1",
+        "question": "Does the answer claim notifications are sent via WebSocket push (incorrect - they are polled via API)?"
+      },
+      {
+        "id": "p2",
+        "question": "Does the answer claim notifications use a separate microservice (incorrect - it is in-process)?"
+      },
+      {
+        "id": "p3",
+        "question": "Does the answer mention push notifications to mobile devices (incorrect - Gitea does not have this)?"
+      },
+      {
+        "id": "p4",
+        "question": "Does the answer claim notifications are stored in Redis or a cache (incorrect - they are in the database)?"
+      },
+      {
+        "id": "p5",
+        "question": "Does the answer mention Slack or Discord as built-in notification channels (incorrect - those are webhooks, not notifications)?"
+      }
+    ]
+  },
+  "q9": {
+    "query": "If the database connection pool is exhausted, which API endpoints are affected and how do they handle it? Trace the error propagation path.",
+    "recall_facts": [
+      {
+        "id": "r1",
+        "question": "Does the answer state that ALL or most endpoints are affected since they all use the database?"
+      },
+      {
+        "id": "r2",
+        "question": "Does the answer mention connection pool or pool exhaustion specifically?"
+      },
+      {
+        "id": "r3",
+        "question": "Does the answer describe the error propagation (DB error bubbles up to handler)?"
+      },
+      {
+        "id": "r4",
+        "question": "Does the answer mention HTTP 500 or internal server error as the likely response?"
+      },
+      {
+        "id": "r5",
+        "question": "Does the answer mention XORM as the database layer?"
+      },
+      {
+        "id": "r6",
+        "question": "Does the answer mention that there is no circuit breaker or graceful degradation for DB failures?"
+      },
+      {
+        "id": "r7",
+        "question": "Does the answer mention timeout or context deadline as a related failure mode?"
+      },
+      {
+        "id": "r8",
+        "question": "Does the answer identify any endpoints that might still work without DB (e.g., health check, version)?"
+      },
+      {
+        "id": "r9",
+        "question": "Does the answer mention the resiliency assessment findings about missing DB failure handling?"
+      },
+      {
+        "id": "r10",
+        "question": "Does the answer mention that read-only endpoints and write endpoints are both affected?"
+      }
+    ],
+    "precision_facts": [
+      {
+        "id": "p1",
+        "question": "Does the answer claim Gitea has automatic connection pool scaling (incorrect - pool size is fixed)?"
+      },
+      {
+        "id": "p2",
+        "question": "Does the answer claim there is a retry mechanism for failed DB connections (incorrect - no retry)?"
+      },
+      {
+        "id": "p3",
+        "question": "Does the answer claim Gitea falls back to a read replica on pool exhaustion (incorrect - no replica support)?"
+      },
+      {
+        "id": "p4",
+        "question": "Does the answer claim endpoints return HTTP 503 Service Unavailable (incorrect - likely 500)?"
+      },
+      {
+        "id": "p5",
+        "question": "Does the answer mention a database connection queue or backpressure mechanism (incorrect - connections just fail)?"
+      }
+    ]
+  },
+  "q12": {
+    "query": "Which controllers share the most service dependencies? Identify the top 5 most tightly coupled controller pairs and list what services they share.",
+    "recall_facts": [
+      {
+        "id": "r1",
+        "question": "Does the answer identify at least 3 controller pairs?"
+      },
+      {
+        "id": "r2",
+        "question": "Does the answer list shared services/dependencies for each pair?"
+      },
+      {
+        "id": "r3",
+        "question": "Does the answer mention specific controller names (e.g., admin, repo, user, org)?"
+      },
+      {
+        "id": "r4",
+        "question": "Does the answer mention convert.ToUser or convert functions as shared dependencies?"
+      },
+      {
+        "id": "r5",
+        "question": "Does the answer identify shared utility functions (e.g., utils.GetListOptions, pagination)?"
+      },
+      {
+        "id": "r6",
+        "question": "Does the answer rank or order the pairs by coupling strength?"
+      },
+      {
+        "id": "r7",
+        "question": "Does the answer mention shared model dependencies (e.g., user_model, repo_model)?"
+      },
+      {
+        "id": "r8",
+        "question": "Does the answer explain what makes them coupled (shared services, shared models, shared patterns)?"
+      }
+    ],
+    "precision_facts": [
+      {
+        "id": "p1",
+        "question": "Does the answer claim controllers are coupled via inheritance or class hierarchy (incorrect \u2014 Go uses composition)?"
+      },
+      {
+        "id": "p2",
+        "question": "Does the answer mention microservices or service mesh (incorrect \u2014 Gitea is monolithic)?"
+      },
+      {
+        "id": "p3",
+        "question": "Does the answer claim coupling is measured by lines of code (incorrect \u2014 it is by shared dependencies)?"
+      }
+    ]
+  },
+  "q13": {
+    "query": "What is the complete dependency chain from the admin hooks endpoint (DELETE /api/v1/admin/hooks/{id}) down to the database layer? List every function call in the chain.",
+    "recall_facts": [
+      {
+        "id": "r1",
+        "question": "Does the answer identify the endpoint as DELETE /api/v1/admin/hooks/{id}?"
+      },
+      {
+        "id": "r2",
+        "question": "Does the answer mention admin.DeleteHook as the controller/handler?"
+      },
+      {
+        "id": "r3",
+        "question": "Does the answer mention a webhook model or webhook table operation?"
+      },
+      {
+        "id": "r4",
+        "question": "Does the answer mention hook_task deletion (associated tasks deleted with the webhook)?"
+      },
+      {
+        "id": "r5",
+        "question": "Does the answer show at least 3 levels of the call chain (controller \u2192 service \u2192 model/DB)?"
+      },
+      {
+        "id": "r6",
+        "question": "Does the answer mention the database DELETE operation?"
+      },
+      {
+        "id": "r7",
+        "question": "Does the answer mention authentication check (reqSiteAdmin or admin required)?"
+      },
+      {
+        "id": "r8",
+        "question": "Does the answer identify specific source files in the chain?"
+      }
+    ],
+    "precision_facts": [
+      {
+        "id": "p1",
+        "question": "Does the answer claim the deletion is async or uses a queue (incorrect \u2014 it is synchronous)?"
+      },
+      {
+        "id": "p2",
+        "question": "Does the answer mention soft delete or archiving (incorrect \u2014 it is hard delete)?"
+      },
+      {
+        "id": "p3",
+        "question": "Does the answer claim webhook deletion triggers notifications to subscribers (incorrect)?"
+      }
+    ]
+  },
+  "q14": {
+    "query": "Which API endpoints are in the same code community as the repository model (repo_model.Repository)? What do they have in common?",
+    "recall_facts": [
+      {
+        "id": "r1",
+        "question": "Does the answer identify repo_model.Repository as a key component?"
+      },
+      {
+        "id": "r2",
+        "question": "Does the answer list at least 5 API endpoints in the same community?"
+      },
+      {
+        "id": "r3",
+        "question": "Does the answer mention repository CRUD endpoints (create, get, edit, delete repo)?"
+      },
+      {
+        "id": "r4",
+        "question": "Does the answer explain what they have in common (all interact with the repo model)?"
+      },
+      {
+        "id": "r5",
+        "question": "Does the answer mention the concept of a code community or cluster?"
+      },
+      {
+        "id": "r6",
+        "question": "Does the answer mention shared services like repo_service?"
+      },
+      {
+        "id": "r7",
+        "question": "Does the answer reference source files (e.g., models/repo/)?"
+      },
+      {
+        "id": "r8",
+        "question": "Does the answer mention convert.ToRepo or repository conversion functions?"
+      }
+    ],
+    "precision_facts": [
+      {
+        "id": "p1",
+        "question": "Does the answer claim repo_model.Repository is a microservice (incorrect \u2014 it is a model struct)?"
+      },
+      {
+        "id": "p2",
+        "question": "Does the answer claim endpoints are grouped by URL path only (incorrect \u2014 community is by code dependencies)?"
+      },
+      {
+        "id": "p3",
+        "question": "Does the answer mention a graph database being used for community detection (incorrect)?"
+      }
+    ]
+  },
+  "q15": {
+    "query": "What are the top 5 most connected components (god nodes) in the codebase and which API endpoints depend on each?",
+    "recall_facts": [
+      {
+        "id": "r1",
+        "question": "Does the answer list at least 5 highly-connected components?"
+      },
+      {
+        "id": "r2",
+        "question": "Does the answer provide connection counts or edge counts for the components?"
+      },
+      {
+        "id": "r3",
+        "question": "Does the answer list API endpoints that depend on each god node?"
+      },
+      {
+        "id": "r4",
+        "question": "Does the answer mention user_model.User as a god node (it has 58 connections)?"
+      },
+      {
+        "id": "r5",
+        "question": "Does the answer mention repository as a highly connected component?"
+      },
+      {
+        "id": "r6",
+        "question": "Does the answer mention convert.ToUser as a highly connected component (28 connections)?"
+      },
+      {
+        "id": "r7",
+        "question": "Does the answer explain why these are god nodes (many dependents, high blast radius)?"
+      },
+      {
+        "id": "r8",
+        "question": "Does the answer mention reqOrgOwnership or permission-related god nodes?"
+      }
+    ],
+    "precision_facts": [
+      {
+        "id": "p1",
+        "question": "Does the answer claim god nodes are defined by lines of code (incorrect \u2014 defined by connection count)?"
+      },
+      {
+        "id": "p2",
+        "question": "Does the answer claim these components should be split into microservices (incorrect \u2014 not what the query asks)?"
+      },
+      {
+        "id": "p3",
+        "question": "Does the answer mention components with fewer than 10 connections as god nodes (incorrect \u2014 god nodes have 20+)?"
+      }
+    ]
+  }
+}

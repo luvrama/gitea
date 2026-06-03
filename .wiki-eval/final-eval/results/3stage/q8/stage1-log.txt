@@ -1,0 +1,30 @@
+[38;5;11mWARNING: [0m--trust-tools arg for custom tool [38;5;141m[0m needs to be prepended with [38;5;10m@{MCPSERVERNAME}/[0m
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.17s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The user wants to map the complete notification system. I need to select wiki pages that cover:
+1. Notification-related endpoints (ep-019 through ep-025 cover notifications)
+2. Database tables (datastores/databases.md) for how notifications are stored
+3. The module overview for context on all endpoints
+4. README for project context
+5. Maybe queues since notifications might use them
+
+Let me pick the relevant pages:
+- README.md (project context)
+- datastores/databases.md (notification storage)
+- datastores/queues.md (might be relevant for notification triggers)
+- endpoints/ep-019.md through ep-025.md (all notification endpoints)
+- modules/routers.md (complete endpoint listing)
+
+That's 10 pages, well under 15.
+[38;5;244m - Completed in 0.33s[0m
+
+[?25l[0m[38;5;141m> [0m[1mjson
+[0m[38;5;10m["README.md", "modules/routers.md", "datastores/databases.md", "datastores/queues.md", "endpoints/ep-019.md", "endpoints/ep-020.md", "endpoints/ep-021.md", "endpoints/ep-022.md", "endpoints/ep-023.md", "endpoints/ep-024.md", "endpoints/ep-025.md"]
+[0m[0m[0m
+[38;5;8m
+ ▸ Credits: 0.29 • Time: 11s
+
+[0m[1G[0m[0m[?25h

@@ -1,0 +1,276 @@
+[38;5;11mWARNING: [0m--trust-tools arg for custom tool [38;5;141m[0m needs to be prepended with [38;5;10m@{MCPSERVERNAME}/[0m
+One or more mcp server did not load correctly. See $TMPDIR/kiro-log/kiro-chat.log for more details.
+------
+[38;5;12m[1m📷 Checkpoints are enabled! (took 0.22s)
+
+[0m
+[38;5;252m[0m[?25l[?25l[0m[0m[38;5;12mI'll share my reasoning process[0m[38;5;244m (using tool: thinking)[0m: The user wants a complete documentation of the permission checking chain for the repository API, from authentication through to final allow/deny. Let me synthesize this from the wiki pages provided.
+[38;5;244m - Completed in 0.30s[0m
+
+[?25l[0m[38;5;141m> [0m[38;5;252m[1m# Repository API Permission Checking Chain[0m[0m
+[0m[0m
+[38;5;252m[1m## Overview[0m[0m
+[0m[0m
+The repository API uses a layered permission model that flows through authentication → context resolution → ownership/org membership → team permissions → collaborator checks → unit-level access. The final access mode is one of: [38;5;10mnone[0m, [38;5;10mread[0m, [38;5;10mwrite[0m, [38;5;10madmin[0m, [38;5;10mowner[0m.[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 1. Authentication Layer[0m[0m
+[0m[0m
+| Method | Header | Description |[0m[0m
+|--------|--------|-------------|[0m[0m
+| Bearer token | [38;5;10mAuthorization: Bearer <token>[0m | OAuth2 or personal access token |[0m[0m
+| Token auth | [38;5;10mAuthorization: token <token>[0m | Access token (from [38;5;10maccess_token[0m table) |[0m[0m
+[0m[0m
+Authentication resolves the [1mdoer[22m ([38;5;10mctx.Doer[0m) — the currently authenticated user. If auth fails or is absent, the doer is [38;5;10mnil[0m (anonymous).[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 2. Repository Resolution (Middleware)[0m[0m
+[0m[0m
+Before permission checks, the repo is resolved via path parameters [38;5;10m{owner}/{repo}[0m:[0m[0m
+[0m[0m
+1. [1mResolve owner[22m — [38;5;10mSELECT[0m from [38;5;10muser[0m table by [38;5;10mlower_name[0m[0m[0m
+2. [1mResolve repository[22m — [38;5;10mSELECT[0m from [38;5;10mrepository[0m table by [38;5;10mowner_id[0m + repo name[0m[0m
+3. Middleware sets [38;5;10mctx.Repo.Repository[0m and [38;5;10mctx.Repo.Owner[0m[0m[0m
+[0m[0m
+If the repo or owner doesn't exist → [1m404[22m.[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 3. Permission Computation[0m[0m
+[0m[0m
+The core permission logic (visible in ep-254's [38;5;10mGetIndividualUserRepoPermission[0m) executes these steps in order:[0m[0m
+[0m[0m
+[38;5;252m[1m### Step 3a: Site Admin Check[0m[0m
+[0m[0m
+[38;5;10mif ctx.Doer.IsAdmin → AccessMode = Admin (full access)
+[0m[0m[0m
+[0m[0m
+Site admins bypass all other checks.[0m[0m
+[0m[0m
+[38;5;252m[1m### Step 3b: Repository Owner Check[0m[0m
+[0m[0m
+[38;5;10mif ctx.Doer.ID == repo.OwnerID → AccessMode = Owner
+[0m[0m[0m
+[0m[0m
+The repo owner always has owner-level access.[0m[0m
+[0m[0m
+[38;5;252m[1m### Step 3c: Organization Membership & Team Permissions (for org-owned repos)[0m[0m
+[0m[0m
+When the repository belongs to an organization:[0m[0m
+[0m[0m
+| Step | Query | Table | Logic |[0m[0m
+|------|-------|-------|-------|[0m[0m
+| 1 | Check org membership | [38;5;10morg_user[0m | Is doer a member of the org? |[0m[0m
+| 2 | Check org ownership | [38;5;10mteam_user + team[0m | Is doer in the "Owners" team? If yes → [38;5;10mOwner[0m access |[0m[0m
+| 3 | Get user's repo teams | [38;5;10mteam[0m, [38;5;10mteam_repo[0m, [38;5;10mteam_user[0m | Find all teams the user belongs to that have access to this repo |[0m[0m
+| 4 | Compute max team access | [38;5;10mteam.authorize[0m | Take the [1mmaximum[22m [38;5;10mauthorize[0m level across all matching teams |[0m[0m
+| 5 | Check unit-level permissions | [38;5;10mteam_unit[0m | Each team grants specific permissions per unit (issues, code, PRs, etc.) |[0m[0m
+[0m[0m
+From ep-028, the org permission levels are cumulative:[0m[0m
+[38;5;10mowner > admin > write > read > none
+[0m[0m[0m
+[0m[0m
+The [38;5;10mGetOrgUserMaxAuthorizeLevel[0m query:[0m[0m
+[1msql
+[0m[38;5;10mSELECT max(team.authorize) FROM team JOIN team_user WHERE uid=? AND org_id=?
+[0m[0m[0m
+[0m[0m
+[38;5;252m[1m### Step 3d: Collaborator Check[0m[0m
+[0m[0m
+| Step | Query | Table | Logic |[0m[0m
+|------|-------|-------|-------|[0m[0m
+| 1 | Check collaboration exists | [38;5;10mcollaboration[0m | [38;5;10mSELECT[0m where [38;5;10mrepo_id[0m + [38;5;10muser_id[0m |[0m[0m
+| 2 | Get collaboration mode | [38;5;10mcollaboration.mode[0m | Returns [38;5;10mread[0m, [38;5;10mwrite[0m, or [38;5;10madmin[0m |[0m[0m
+[0m[0m
+From ep-252, valid collaborator permission levels:[0m[0m
+- [38;5;10mread[0m (AccessModeRead)[0m[0m
+- [38;5;10mwrite[0m (AccessModeWrite)  [0m[0m
+- [38;5;10madmin[0m (AccessModeAdmin)[0m[0m
+[0m[0m
+Default permission when adding a collaborator is [1mwrite[22m (ep-252).[0m[0m
+[0m[0m
+[38;5;252m[1m### Step 3e: Access Table Lookup (Computed Permissions)[0m[0m
+[0m[0m
+| Step | Query | Table | Logic |[0m[0m
+|------|-------|-------|-------|[0m[0m
+| 1 | Direct access lookup | [38;5;10maccess[0m | [38;5;10mSELECT mode FROM access WHERE user_id=? AND repo_id=?[0m |[0m[0m
+[0m[0m
+The [38;5;10maccess[0m table stores [1mpre-computed[22m permission levels. It is recalculated when:[0m[0m
+- A collaborator is added/removed (ep-252, ep-253)[0m[0m
+- A repo is added/removed from a team (ep-066, ep-067)[0m[0m
+- Team members change (ep-062, ep-063)[0m[0m
+[0m[0m
+[38;5;252m[1m### Step 3f: Public Repository Fallback[0m[0m
+[0m[0m
+[38;5;10mif repo.IsPrivate == false → minimum AccessMode = Read
+[0m[0m[0m
+[0m[0m
+Public repos grant read access to everyone, including anonymous users.[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 4. Final Access Mode Resolution[0m[0m
+[0m[0m
+The final permission is the [1mmaximum[22m of all applicable sources:[0m[0m
+[0m[0m
+[38;5;10mfinalAccess = max(
+    siteAdminAccess,       // Admin if site admin
+    ownerAccess,           // Owner if repo owner
+    orgTeamAccess,         // Max team authorize level
+    collaboratorAccess,    // From collaboration table
+    accessTableAccess,     // Pre-computed in access table
+    publicRepoAccess       // Read if public repo
+)
+[0m[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 5. Unit-Level Permission Filtering[0m[0m
+[0m[0m
+After computing the base access mode, [1mrepo units[22m ([38;5;10mrepo_unit[0m table) further gate access:[0m[0m
+[0m[0m
+| Unit | Controls |[0m[0m
+|------|----------|[0m[0m
+| code | Git operations, file content |[0m[0m
+| issues | Issue CRUD |[0m[0m
+| pull_requests | PR CRUD |[0m[0m
+| wiki | Wiki pages |[0m[0m
+| releases | Release management |[0m[0m
+| projects | Project boards |[0m[0m
+| packages | Package registry |[0m[0m
+| actions | CI/CD workflows |[0m[0m
+[0m[0m
+For org repos, team permissions are [1mper-unit[22m via [38;5;10mteam_unit[0m. A user may have [38;5;10mwrite[0m on issues but only [38;5;10mread[0m on code, depending on their team configuration.[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 6. Endpoint-Level Authorization Checks[0m[0m
+[0m[0m
+Beyond the computed permission, specific endpoints enforce additional requirements:[0m[0m
+[0m[0m
+| Check | Applies To | Example |[0m[0m
+|-------|-----------|---------|[0m[0m
+| [38;5;10mreqRepoAdmin()[0m | Admin-only operations | ep-369 (edit repo), ep-314 (branch protection) |[0m[0m
+| [38;5;10mreqRepoWriter()[0m | Write operations | Creating branches, pushing |[0m[0m
+| [38;5;10mreqRepoReader()[0m | Read operations | Listing content |[0m[0m
+| [38;5;10mreqTeamMembership()[0m | Team endpoints | ep-066 (must be org owner or team member) |[0m[0m
+| [38;5;10mCanUserDelete[0m | Repo deletion | ep-370 (must be admin, owner, or org admin) |[0m[0m
+[0m[0m
+From ep-066:[0m[0m
+[38;5;244m│ "Admin-level access to repository required to add/remove it from a team"[0m[0m
+[0m[0m
+From ep-370:[0m[0m
+[38;5;244m│ "Only admin, owner, or org admin can delete a repository"[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 7. User Blocking Layer[0m[0m
+[0m[0m
+Before collaborator operations succeed, [1muser blocking[22m is checked (ep-252):[0m[0m
+[0m[0m
+| Table | Check |[0m[0m
+|-------|-------|[0m[0m
+| [38;5;10muser_blocking[0m | Is the collaborator blocked by repo owner? |[0m[0m
+| [38;5;10muser_blocking[0m | Is the repo owner blocked by the collaborator? |[0m[0m
+[0m[0m
+If either block exists → [1m403 Forbidden[22m.[0m[0m
+[0m[0m
+This also affects starring (ep-155), watching (ep-197), and reactions (ep-301, ep-304).[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 8. Visibility Constraints[0m[0m
+[0m[0m
+[38;5;252m[1m### Repository Visibility[0m[0m
+- **Private repos**: Only accessible to owner, collaborators, org members with team access, and site admins[0m[0m
+- **Public repos**: Readable by everyone[0m[0m
+[0m[0m
+[38;5;252m[1m### Organization Visibility (ep-070)[0m[0m
+- **Public org**: Members list visible to all[0m[0m
+- **Private org**: Members list only visible to org members/admins[0m[0m
+- Controlled via [38;5;10mHasOrgOrUserVisible[0m check (ep-028)[0m[0m
+[0m[0m
+[38;5;252m[1m### Restricted Users (ep-070)[0m[0m
+[38;5;244m│ "Restricted users in org member list only see public members and their own teammates"[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 9. Permission Flow Diagram[0m[0m
+[0m[0m
+[38;5;10mRequest arrives
+    │
+    ▼
+[Authentication] → resolve ctx.Doer (or nil for anonymous)
+    │
+    ▼
+[Repo Resolution] → resolve owner + repo from path → 404 if missing
+    │
+    ▼
+[Site Admin?] ──yes──→ AccessMode = Admin → ALLOW
+    │ no
+    ▼
+[Repo Owner?] ──yes──→ AccessMode = Owner → ALLOW
+    │ no
+    ▼
+[Org Repo?] ──yes──→ [Org Owner Team?] ──yes──→ Owner
+    │ no              │ no
+    │                 ▼
+    │            [Team Access] → max(team.authorize) per unit
+    │                 │
+    ▼                 ▼
+[Collaborator?] → collaboration.mode (read/write/admin)
+    │
+    ▼
+[Access Table] → pre-computed mode
+    │
+    ▼
+[Public Repo?] ──yes──→ minimum Read
+    │ no
+    ▼
+AccessMode = None → DENY (404 for private repos)
+[0m[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## 10. Key Database Tables in the Permission Chain[0m[0m
+[0m[0m
+| Table | Role in Permission Chain |[0m[0m
+|-------|--------------------------|[0m[0m
+| [38;5;10muser[0m | Identifies doer, owner, org type |[0m[0m
+| [38;5;10mrepository[0m | Ownership, visibility (private flag) |[0m[0m
+| [38;5;10morg_user[0m | Org membership check |[0m[0m
+| [38;5;10mteam[0m | Team authorize level |[0m[0m
+| [38;5;10mteam_user[0m | User-to-team membership |[0m[0m
+| [38;5;10mteam_repo[0m | Team-to-repo assignment |[0m[0m
+| [38;5;10mteam_unit[0m | Per-unit team permissions |[0m[0m
+| [38;5;10mcollaboration[0m | Direct collaborator access |[0m[0m
+| [38;5;10maccess[0m | Pre-computed permission cache |[0m[0m
+| [38;5;10mrepo_unit[0m | Which features are enabled |[0m[0m
+| [38;5;10muser_blocking[0m | Block checks before mutations |[0m[0m
+[0m[0m
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+[0m[0m
+[0m[0m
+[38;5;252m[1m## Missing Information[0m[0m
+[0m[0m
+The wiki pages don't document:[0m[0m
+- The exact middleware registration order in the router (how [38;5;10mreqRepoAdmin[0m, [38;5;10mreqRepoWriter[0m etc. are attached to route groups)[0m[0m
+- How anonymous access is computed for public repos at the middleware level[0m[0m
+- The [38;5;10maccess[0m table recalculation algorithm internals (only that it's triggered by collaborator/team changes)[0m[0m
+- OAuth2 scope-based permission restrictions on top of user permissions[0m[0m
+[38;5;8m
+ ▸ Credits: 0.61 • Time: 54s
+
+[0m[1G[0m[0m[?25h

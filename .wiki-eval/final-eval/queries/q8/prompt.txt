@@ -1,0 +1,1 @@
+Map the complete notification system: what events trigger notifications, how are they stored, and which API endpoints serve them? List every file involved.

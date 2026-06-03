@@ -1,0 +1,1 @@
+What is the complete dependency chain from the admin hooks endpoint (DELETE /api/v1/admin/hooks/{id}) down to the database layer? List every function call in the chain.

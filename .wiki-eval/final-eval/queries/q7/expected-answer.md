@@ -1,0 +1,62 @@
+# Q7 Expected Answer: Endpoints Triggering Git Operations
+
+Source: endpoints with git/gitrepo in Workflow section
+
+Total: 56 endpoints
+
+- ep-004.md: GET /api/v1/signing-key.gpg
+- ep-005.md: GET /api/v1/repos/{owner}/{repo}/signing-key.gpg
+- ep-006.md: GET /api/v1/signing-key.pub
+- ep-007.md: GET /api/v1/repos/{owner}/{repo}/signing-key.pub
+- ep-011.md: GET /api/v1/gitignore/templates
+- ep-012.md: GET /api/v1/gitignore/templates/{name}
+- ep-016.md: GET /api/v1/settings/api
+- ep-017.md: GET /api/v1/settings/repository
+- ep-032.md: POST /api/v1/orgs/{org}/rename
+- ep-104.md: POST /api/v1/admin/users/{username}/rename
+- ep-106.md: GET /api/v1/admin/actions/runs
+- ep-107.md: GET /api/v1/admin/unadopted
+- ep-108.md: POST /api/v1/admin/unadopted/{owner}/{repo}
+- ep-109.md: DELETE /api/v1/admin/unadopted/{owner}/{repo}
+- ep-112.md: POST /api/v1/admin/users/{username}/repos
+- ep-130.md: PUT /api/v1/user/actions/secrets/{secretname}
+- ep-214.md: GET /api/v1/repos/{owner}/{repo}/git/commits/{sha}
+- ep-215.md: GET /api/v1/repos/{owner}/{repo}/commits
+- ep-216.md: GET /api/v1/repos/{owner}/{repo}/git/commits/{sha}.{diffType}
+- ep-222.md: GET /api/v1/repos/{owner}/{repo}/pulls
+- ep-225.md: GET /api/v1/repos/{owner}/{repo}/pulls/{index}.{diffType}
+- ep-226.md: POST /api/v1/repos/{owner}/{repo}/pulls
+- ep-232.md: GET /api/v1/repos/{owner}/{repo}/pulls/{index}/commits
+- ep-233.md: GET /api/v1/repos/{owner}/{repo}/pulls/{index}/files
+- ep-235.md: POST /api/v1/repos/{owner}/{repo}/push_mirrors-sync
+- ep-238.md: POST /api/v1/repos/{owner}/{repo}/push_mirrors
+- ep-243.md: POST /api/v1/repos/{owner}/{repo}/releases
+- ep-244.md: PATCH /api/v1/repos/{owner}/{repo}/releases/{id}
+- ep-245.md: DELETE /api/v1/repos/{owner}/{repo}/releases/{id}
+- ep-246.md: GET /api/v1/repos/{owner}/{repo}/git/trees/{sha}
+- ep-247.md: GET /api/v1/repos/{owner}/{repo}/git/refs
+- ep-248.md: GET /api/v1/repos/{owner}/{repo}/git/refs/{ref}
+- ep-249.md: POST /api/v1/repos/{owner}/{repo}/diffpatch
+- ep-265.md: PUT /api/v1/repos/{owner}/{repo}/actions/secrets/{secretname}
+- ep-280.md: GET /api/v1/repos/{owner}/{repo}/actions/workflows
+- ep-281.md: GET /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}
+- ep-283.md: POST /api/v1/repos/{owner}/{repo}/actions/workflows/{workflow_id}/dispatches
+- ep-299.md: GET /api/v1/repos/{owner}/{repo}/git/notes/{sha}
+- ep-306.md: GET /api/v1/repos/{owner}/{repo}/branches/{branch}
+- ep-307.md: DELETE /api/v1/repos/{owner}/{repo}/branches/{branch}
+- ep-308.md: POST /api/v1/repos/{owner}/{repo}/branches
+- ep-309.md: GET /api/v1/repos/{owner}/{repo}/branches
+- ep-310.md: PUT /api/v1/repos/{owner}/{repo}/branches/{branch}
+- ep-311.md: PATCH /api/v1/repos/{owner}/{repo}/branches/{branch}
+- ep-312.md: GET /api/v1/repos/{owner}/{repo}/branch_protections/{name}
+- ep-313.md: GET /api/v1/repos/{owner}/{repo}/branch_protections
+- ep-314.md: POST /api/v1/repos/{owner}/{repo}/branch_protections
+- ep-315.md: PATCH /api/v1/repos/{owner}/{repo}/branch_protections/{name}
+- ep-316.md: DELETE /api/v1/repos/{owner}/{repo}/branch_protections/{name}
+- ep-317.md: POST /api/v1/repos/{owner}/{repo}/branch_protections/priority
+- ep-318.md: POST /api/v1/repos/{owner}/{repo}/merge-upstream
+- ep-323.md: POST /api/v1/repos/{owner}/{repo}/hooks/{id}/tests
+- ep-334.md: POST /api/v1/repos/{owner}/{repo}/forks
+- ep-363.md: POST /api/v1/user/repos
+- ep-364.md: POST /api/v1/repos/{template_owner}/{template_repo}/generate
+- ep-370.md: DELETE /api/v1/repos/{owner}/{repo}
