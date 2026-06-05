@@ -1,5 +1,16 @@
 # Final Evaluation Summary
 
+## How These Numbers Are Calculated
+
+- **Credits** are extracted from the kiro-cli session output. Each log file ends with `▸ Credits: X.XX • Time: Xm Xs`. 
+- **Baseline credits**: from `results/baseline/q{N}/full-log.txt`
+- **3-Stage credits**: sum of `results/3stage/q{N}/stage0-log.txt` + `stage1-log.txt` + `stage2-log.txt`
+- **Cost reduction**: `(1 - 3stage_credits / baseline_credits) × 100`
+- **Source classification**: from `results/3stage/q{N}/classification.txt` (output of the classifier stage)
+
+To verify any number: open the corresponding log file and search for "Credits:" at the end.
+
+
 ## Queries
 
 **Q1:** List all API endpoints related to repository management. For each, provide: HTTP method, URL path, handler function, file location, and what authentication/permissions are required.
