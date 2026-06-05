@@ -1,0 +1,734 @@
+{
+  "q1_baseline": {
+    "query": "1",
+    "approach": "baseline",
+    "type": "countable",
+    "found": 0,
+    "correct": 0,
+    "ground_truth": 200,
+    "precision": 0,
+    "recall": 0.0,
+    "f1": 0,
+    "credits": 3.52
+  },
+  "q1_3stage": {
+    "query": "1",
+    "approach": "3stage",
+    "type": "countable",
+    "found": 205,
+    "correct": 200,
+    "ground_truth": 200,
+    "precision": 97.6,
+    "recall": 100.0,
+    "f1": 98.8,
+    "credits": 1.25
+  },
+  "q5_baseline": {
+    "query": "5",
+    "approach": "baseline",
+    "type": "countable",
+    "found": 0,
+    "correct": 0,
+    "ground_truth": 206,
+    "precision": 0,
+    "recall": 0.0,
+    "f1": 0,
+    "credits": 3.82
+  },
+  "q5_3stage": {
+    "query": "5",
+    "approach": "3stage",
+    "type": "countable",
+    "found": 114,
+    "correct": 114,
+    "ground_truth": 206,
+    "precision": 100.0,
+    "recall": 55.3,
+    "f1": 71.2,
+    "credits": 0.92
+  },
+  "q7_baseline": {
+    "query": "7",
+    "approach": "baseline",
+    "type": "countable",
+    "found": 0,
+    "correct": 0,
+    "ground_truth": 56,
+    "precision": 0,
+    "recall": 0.0,
+    "f1": 0,
+    "credits": 15.47
+  },
+  "q7_3stage": {
+    "query": "7",
+    "approach": "3stage",
+    "type": "countable",
+    "found": 17,
+    "correct": 12,
+    "ground_truth": 56,
+    "precision": 70.6,
+    "recall": 21.4,
+    "f1": 32.9,
+    "credits": 0.65
+  },
+  "q10_baseline": {
+    "query": "10",
+    "approach": "baseline",
+    "type": "countable",
+    "found": 0,
+    "correct": 0,
+    "ground_truth": 56,
+    "precision": 0,
+    "recall": 0.0,
+    "f1": 0,
+    "credits": 7.85
+  },
+  "q10_3stage": {
+    "query": "10",
+    "approach": "3stage",
+    "type": "countable",
+    "found": 55,
+    "correct": 25,
+    "ground_truth": 56,
+    "precision": 45.5,
+    "recall": 44.6,
+    "f1": 45.0,
+    "credits": 0.87
+  },
+  "q2_baseline": {
+    "query": "2",
+    "approach": "baseline",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 70.0,
+    "precision": 100.0,
+    "f1": 82.4,
+    "credits": 3.23
+  },
+  "q2_3stage": {
+    "query": "2",
+    "approach": "3stage",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 70.0,
+    "precision": 100.0,
+    "f1": 82.4,
+    "credits": 0.55
+  },
+  "q3_baseline": {
+    "query": "3",
+    "approach": "baseline",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      true,
+      true,
+      false,
+      true
+    ],
+    "precision_details": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 50.0,
+    "precision": 100.0,
+    "f1": 66.7,
+    "credits": 3.66
+  },
+  "q3_3stage": {
+    "query": "3",
+    "approach": "3stage",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "precision_details": [
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 100.0,
+    "precision": 80.0,
+    "f1": 88.9,
+    "credits": 0.54
+  },
+  "q4_baseline": {
+    "query": "4",
+    "approach": "baseline",
+    "type": "narrative",
+    "recall_details": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 20.0,
+    "precision": 100.0,
+    "f1": 33.3,
+    "credits": 6.28
+  },
+  "q4_3stage": {
+    "query": "4",
+    "approach": "3stage",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true
+    ],
+    "precision_details": [
+      false,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 80.0,
+    "precision": 80.0,
+    "f1": 80.0,
+    "credits": 0.29
+  },
+  "q6_baseline": {
+    "query": "6",
+    "approach": "baseline",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 80.0,
+    "precision": 100.0,
+    "f1": 88.9,
+    "credits": 5.1
+  },
+  "q6_3stage": {
+    "query": "6",
+    "approach": "3stage",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      false,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 60.0,
+    "precision": 100.0,
+    "f1": 75.0,
+    "credits": 0.61
+  },
+  "q8_baseline": {
+    "query": "8",
+    "approach": "baseline",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 70.0,
+    "precision": 100.0,
+    "f1": 82.4,
+    "credits": 2.69
+  },
+  "q8_3stage": {
+    "query": "8",
+    "approach": "3stage",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false,
+      true,
+      true
+    ],
+    "precision_details": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 70.0,
+    "precision": 100.0,
+    "f1": 82.4,
+    "credits": 0.55
+  },
+  "q9_baseline": {
+    "query": "9",
+    "approach": "baseline",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      false,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 70.0,
+    "precision": 100.0,
+    "f1": 82.4,
+    "credits": 3.76
+  },
+  "q9_3stage": {
+    "query": "9",
+    "approach": "3stage",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "precision_details": [
+      true,
+      true,
+      true,
+      true,
+      true
+    ],
+    "recall": 100.0,
+    "precision": 100.0,
+    "f1": 100.0,
+    "credits": 0.65
+  },
+  "q12_baseline": {
+    "query": "12",
+    "approach": "baseline",
+    "type": "narrative",
+    "recall_details": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true
+    ],
+    "recall": 12.5,
+    "precision": 100.0,
+    "f1": 22.2,
+    "credits": 1.06
+  },
+  "q12_3stage": {
+    "query": "12",
+    "approach": "3stage",
+    "type": "narrative",
+    "recall_details": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true
+    ],
+    "recall": 25.0,
+    "precision": 100.0,
+    "f1": 40.0,
+    "credits": 2.6
+  },
+  "q13_baseline": {
+    "query": "13",
+    "approach": "baseline",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true
+    ],
+    "precision_details": [
+      true,
+      true,
+      true
+    ],
+    "recall": 62.5,
+    "precision": 100.0,
+    "f1": 76.9,
+    "credits": 1.85
+  },
+  "q13_3stage": {
+    "query": "13",
+    "approach": "3stage",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      false,
+      true,
+      false,
+      true,
+      false,
+      false,
+      true
+    ],
+    "precision_details": [
+      true,
+      true,
+      true
+    ],
+    "recall": 50.0,
+    "precision": 100.0,
+    "f1": 66.7,
+    "credits": 1.41
+  },
+  "q14_baseline": {
+    "query": "14",
+    "approach": "baseline",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      true,
+      false
+    ],
+    "precision_details": [
+      true,
+      false,
+      true
+    ],
+    "recall": 62.5,
+    "precision": 66.7,
+    "f1": 64.5,
+    "credits": 2.2
+  },
+  "q14_3stage": {
+    "query": "14",
+    "approach": "3stage",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      true,
+      true,
+      false,
+      false,
+      false,
+      true,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true
+    ],
+    "recall": 50.0,
+    "precision": 100.0,
+    "f1": 66.7,
+    "credits": 0.61
+  },
+  "q15_baseline": {
+    "query": "15",
+    "approach": "baseline",
+    "type": "narrative",
+    "recall_details": [
+      true,
+      true,
+      false,
+      false,
+      true,
+      false,
+      true,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true
+    ],
+    "recall": 50.0,
+    "precision": 100.0,
+    "f1": 66.7,
+    "credits": 4.12
+  },
+  "q15_3stage": {
+    "query": "15",
+    "approach": "3stage",
+    "type": "narrative",
+    "recall_details": [
+      false,
+      true,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ],
+    "precision_details": [
+      true,
+      true,
+      true
+    ],
+    "recall": 25.0,
+    "precision": 100.0,
+    "f1": 40.0,
+    "credits": 1.74
+  },
+  "q16_baseline": {
+    "query": "16",
+    "approach": "baseline",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 1.48
+  },
+  "q16_3stage": {
+    "query": "16",
+    "approach": "3stage",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 0.72
+  },
+  "q17_baseline": {
+    "query": "17",
+    "approach": "baseline",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 0.38
+  },
+  "q17_3stage": {
+    "query": "17",
+    "approach": "3stage",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 0.23
+  },
+  "q18_baseline": {
+    "query": "18",
+    "approach": "baseline",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 0.2
+  },
+  "q18_3stage": {
+    "query": "18",
+    "approach": "3stage",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 0.11
+  },
+  "q19_baseline": {
+    "query": "19",
+    "approach": "baseline",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 1.14
+  },
+  "q19_3stage": {
+    "query": "19",
+    "approach": "3stage",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 1.48
+  },
+  "q20_baseline": {
+    "query": "20",
+    "approach": "baseline",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 1.16
+  },
+  "q20_3stage": {
+    "query": "20",
+    "approach": "3stage",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 0.35
+  },
+  "q21_baseline": {
+    "query": "21",
+    "approach": "baseline",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 0.79
+  },
+  "q21_3stage": {
+    "query": "21",
+    "approach": "3stage",
+    "type": "localization",
+    "files_found": 1,
+    "files_total": 1,
+    "pass": true,
+    "credits": 0.24
+  }
+}
