@@ -1,0 +1,122 @@
+{
+  "q1_baseline_countable": {
+    "precision": 0,
+    "recall": 0.0,
+    "f1": 0,
+    "credits": 3.52
+  },
+  "q1_3stage_countable": {
+    "precision": 97.6,
+    "recall": 100.0,
+    "f1": 98.8,
+    "credits": 1.25
+  },
+  "q5_baseline_countable": {
+    "precision": 0,
+    "recall": 0.0,
+    "f1": 0,
+    "credits": 3.82
+  },
+  "q5_3stage_countable": {
+    "precision": 100.0,
+    "recall": 55.3,
+    "f1": 71.2,
+    "credits": 0.92
+  },
+  "q7_baseline_countable": {
+    "precision": 0,
+    "recall": 0.0,
+    "f1": 0,
+    "credits": 15.47
+  },
+  "q7_3stage_countable": {
+    "precision": 70.6,
+    "recall": 21.4,
+    "f1": 32.9,
+    "credits": 0.65
+  },
+  "q10_baseline_countable": {
+    "precision": 0,
+    "recall": 0.0,
+    "f1": 0,
+    "credits": 7.85
+  },
+  "q10_3stage_countable": {
+    "precision": 45.5,
+    "recall": 44.6,
+    "f1": 45.0,
+    "credits": 0.87
+  },
+  "q16_baseline_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 1.48
+  },
+  "q16_3stage_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 0.72
+  },
+  "q17_baseline_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 0.38
+  },
+  "q17_3stage_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 0.23
+  },
+  "q18_baseline_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 0.2
+  },
+  "q18_3stage_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 0.11
+  },
+  "q19_baseline_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 1.14
+  },
+  "q19_3stage_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 1.48
+  },
+  "q20_baseline_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 1.16
+  },
+  "q20_3stage_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 0.35
+  },
+  "q21_baseline_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 0.79
+  },
+  "q21_3stage_localization": {
+    "pass": true,
+    "files_found": 1,
+    "files_total": 1,
+    "credits": 0.24
+  }
+}
